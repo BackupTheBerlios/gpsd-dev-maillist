@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] How should the python bindings work?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20How%20should%20the%20python%20bindings%20work%3F&In-Reply-To=%3C2flvfaqmptt.fsf%40saruman.uio.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000382.html">
+   <LINK REL="Next"  HREF="000386.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] How should the python bindings work?</H1>
+    <B>Petter Reinholdtsen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20How%20should%20the%20python%20bindings%20work%3F&In-Reply-To=%3C2flvfaqmptt.fsf%40saruman.uio.no%3E"
+       TITLE="[Gpsd-dev] How should the python bindings work?">pere at hungry.com
+       </A><BR>
+    <I>Sat Dec 25 15:10:06 CET 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000382.html">[Gpsd-dev] How should the python bindings work?
+</A></li>
+        <LI>Next message: <A HREF="000386.html">[Gpsd-dev] How should the python bindings work?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#383">[ date ]</a>
+              <a href="thread.html#383">[ thread ]</a>
+              <a href="subject.html#383">[ subject ]</a>
+              <a href="author.html#383">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>[Eric S. Raymond]
+&gt;<i> I have just checked in to the SVN repository a small change that
+</I>&gt;<i> gives the gps class initializer a third 'verbose' argument.  When
+</I>&gt;<i> that is 1, the poll method will dump its incoming data to stderr.
+</I>&gt;<i> Try using that to see exactly what the client sees on each poll.
+</I>
+[Petter Reinholdtsen]
+&gt;<i> I will test this in the morning.
+</I>
+After fixing the typo in your code, I was able to test.  Here is the
+fix.
+
+Index: gps.py
+===================================================================
+--- gps.py      (revision 1162)
++++ gps.py      (working copy)
+@@ -254,7 +254,7 @@
+        &quot;Wait for and read data being streamed from gpsd.&quot;
+         data = self.sock.recv(1024)
+         if self.verbose:
+-            sys.stderr(&quot;GPS DATA %s\n&quot;, repr(data))
++            sys.stderr.write(&quot;GPS DATA %s\n&quot; % repr(data))
+        return self.__unpack(data)
+
+     def query(self, commands):
+
+When I now run my small test program (modified to set verbose=1), I
+get this output
+
+  % ./test.py
+  GPS DATA 'GPSD,W=1,X=1\r\n'
+  GPS DATA 'GPSD,P=?,D=?,T=?,V=?,S=0\r\n'
+  GPS DATA 'GPSD,P=?,D=?,A=?,S=0\r\nGPSD,Q=?,M=1\r\nGPSD,Y=3:27 9 355 0 0:13 11 318 0 0:30 10 146 0 0:\r\n'
+  Traceback (most recent call last):
+    File &quot;./test.py&quot;, line 6, in ?
+      session.poll()
+    File &quot;/skole/tjener/home0/pere/src/openstreetmapsvn/gpsdsvn/trunk/gps.py&quot;, line 258, in poll
+      return self.__unpack(data)
+    File &quot;/skole/tjener/home0/pere/src/openstreetmapsvn/gpsdsvn/trunk/gps.py&quot;, line 212, in __unpack
+      i1 = int(data)
+  ValueError: invalid literal for int(): 0
+  GPSD
+  %
+
+I believe the problem is in the poll() implementation, which is
+assuming this code will return one line at the time, while in reality
+it will return several lines if several lines are available:
+
+  data = self.sock.recv(1024)
+
+I suspect the easiest way to fix this is to convert the socket to a
+fileobj, and use readline():
+
+  data = self.sock.makefile().readline()
+
+What do you think?  It is probably not very effective to call
+makefile() every time.  It might be better to cache this new fileobj
+object.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000382.html">[Gpsd-dev] How should the python bindings work?
+</A></li>
+	<LI>Next message: <A HREF="000386.html">[Gpsd-dev] How should the python bindings work?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#383">[ date ]</a>
+              <a href="thread.html#383">[ thread ]</a>
+              <a href="subject.html#383">[ subject ]</a>
+              <a href="author.html#383">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

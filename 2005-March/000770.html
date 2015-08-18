@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Zero configuration and gpsd's design direction
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Zero%20configuration%20and%20gpsd%27s%20design%20direction&In-Reply-To=%3C20050302214428.GA17107%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000769.html">
+   <LINK REL="Next"  HREF="000771.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Zero configuration and gpsd's design direction</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Zero%20configuration%20and%20gpsd%27s%20design%20direction&In-Reply-To=%3C20050302214428.GA17107%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Zero configuration and gpsd's design direction">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Mar  2 22:44:28 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000769.html">[Gpsd-dev] Zero configuration and gpsd's design direction
+</A></li>
+        <LI>Next message: <A HREF="000771.html">[Gpsd-dev] Zero configuration and gpsd's design direction
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#770">[ date ]</a>
+              <a href="thread.html#770">[ thread ]</a>
+              <a href="subject.html#770">[ subject ]</a>
+              <a href="author.html#770">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+&gt;<i> I have a real problem with things probing my serial ports unsupervised.
+</I>&gt;<i> My hosts have a large array of things hanging off the /dev/tty's.
+</I>&gt;<i> 
+</I>&gt;<i> To name a few in my office alone:
+</I>&gt;<i> 	fax/modems
+</I>&gt;<i>         cell phones
+</I>&gt;<i> 	PDAs
+</I>&gt;<i> 	mice
+</I>&gt;<i> 	tablets
+</I>&gt;<i> 	printers
+</I>&gt;<i> 	Linux consoles
+</I>&gt;<i> 	Router consoles
+</I>&gt;<i> 	IP Switch consoles
+</I>&gt;<i> 	MPEG Encoder consoles
+</I>&gt;<i> 	UPS
+</I>&gt;<i> 	Alarm Systems
+</I>&gt;<i> 	Stepper motors.
+</I>&gt;<i> 
+</I>&gt;<i> Many of the dumber ones implement single character commands or
+</I>&gt;<i> strange autobauding.  No way I want to imagine some device banging
+</I>&gt;<i> on these without prior permission.
+</I>
+I hear you.  No, it's very clear that sending probe strings to random
+serial devices is a bad, baaaaad idea.  Fortunately we don't have to
+do this, since GPSes send packets that are easy to recognize at
+1-second intervals.  gpsd doesn't send probe strings to anything that
+it hasn't already seem a well-formed and checksummed packet from.
+
+The other helpful thing is that (under Linux, at least) we can check
+to see what devices are already opened by another process and ignore them.
+So, device scanning would see only devices that are live but not opened
+by any other program, and only *read* those.  Does that seem safe enough?
+
+There are other filters we could apply.  On USB devices, we can ignore
+any port that doesn't have a class of 0xff (vendor private).
+
+&gt;<i> There is also the very real case where I might have more than one
+</I>&gt;<i> GPS hooked up at the same time.  Maybe I am transfering waypoints,
+</I>&gt;<i> uploading maps, etc.
+</I>
+That's a good point.  So you need to be able to select a device, not
+just have the first GPS discovered.
+ 
+&gt;<i> gpsd should open /dev/gps by default, then implement one or all of:
+</I>&gt;<i> 	1. input tty on the command line
+</I>&gt;<i> 	2. prompt for the tty
+</I>&gt;<i> 	3. read a config file.
+</I>
+Naahhh.  Thinking about your requirements, I just had a brainstorm,
+We've already got one perfectly good control channel, why not use it?
+There's a much simpler way.  An F command accepted on port 2947.
+
+The F command says: go probe this (specified) device file.  If it's a
+GPS, store that path for future use.  The way we keep this from being
+a DoS tool is: F only works if gpsd *does not have a device currently
+open*.  The -p command-line option is equivalent to an initial F command.
+
+You get to open post 2947 and pick your device by hand -- heck, use
+netcat if you want.  For autoconfiguration, a hotplug script can send
+an F command to port 2947 whenever a USB device of the proper class
+wakes up.  The best part is, the hotplug script doesn't even have to
+look at gpsd's response!
+
+Beautiful, ain't it?  
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000769.html">[Gpsd-dev] Zero configuration and gpsd's design direction
+</A></li>
+	<LI>Next message: <A HREF="000771.html">[Gpsd-dev] Zero configuration and gpsd's design direction
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#770">[ date ]</a>
+              <a href="thread.html#770">[ thread ]</a>
+              <a href="subject.html#770">[ subject ]</a>
+              <a href="author.html#770">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

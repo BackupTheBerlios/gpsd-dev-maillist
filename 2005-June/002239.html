@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Considering a 2.27 point release
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Considering%20a%202.27%20point%20release&In-Reply-To=%3C20050627195520.GA22366%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002237.html">
+   <LINK REL="Next"  HREF="002240.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Considering a 2.27 point release</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Considering%20a%202.27%20point%20release&In-Reply-To=%3C20050627195520.GA22366%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Considering a 2.27 point release">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Jun 27 21:55:21 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002237.html">[Gpsd-dev] Considering a 2.27 point release
+</A></li>
+        <LI>Next message: <A HREF="002240.html">[Gpsd-dev] Considering a 2.27 point release
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2239">[ date ]</a>
+              <a href="thread.html#2239">[ thread ]</a>
+              <a href="subject.html#2239">[ subject ]</a>
+              <a href="author.html#2239">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+&gt;<i> &gt; I remain concerned about Rob Janssen's report of possible
+</I>&gt;<i> &gt; state-machine lockups in the presence of heavy disk activity.
+</I>&gt;<i> 
+</I>&gt;<i> This weekend I reformatted the backupdrive in ext2 and made another
+</I>&gt;<i> backup.  It did not happen.  I think the writing characteristics of
+</I>&gt;<i> reiserfs are an essential part of getting this triggered.
+</I>
+Good to know.  I have added a note to this effect in the TODO.
+
+&gt;<i> &gt; I expect Rob will be working on fixing the PPS code.  Odds are this
+</I>&gt;<i> &gt; is a pthreads bug that will have to be worked around.
+</I>&gt;<i> 
+</I>&gt;<i> I think I have to dive into the pthreads manual, unless an expert here can
+</I>&gt;<i> tell me if a thread exit could close an fd that has been opened in the
+</I>&gt;<i> parent and just got cloned into the child thread and is not explicitly
+</I>&gt;<i> closed there.
+</I>
+Alas, I am not such an expert.
+ 
+&gt;<i> &gt; The known TSIP driver problems are still annoying but can still be lived
+</I>&gt;<i> &gt; with.
+</I>&gt;<i> 
+</I>&gt;<i> I think the TSIP driver has no problems of its own anymore, it just
+</I>&gt;<i> suffers a bit from the current state of the data management.  So when that
+</I>&gt;<i> gets tuned up, the TSIP driver should work OK.
+</I>
+I think you're right.  Added:
+
+    This may be a symptom of more general problems in data management
+    on devices that ship several sentences of fix and related data
+    per cycle.
+
+One more note: as a result of my investigations into dynamic-memory
+behavior I am now pretty confident that your Reiserfs lockup is not
+specifically related to the SiRF code.  Because, as it turns out, there is
+very little dynamic memory allocation going on in the daemon and none at all
+in the SiRF driver.  In fact, this is all of it:
+
+garmin.c:618:	    session-&gt;GarminBuffer = calloc( sizeof(Packet_t), 1);
+libgpsd_core.c:65:    struct gps_device_t *session = (struct gps_device_t *)calloc(sizeof(struct gps_device_t), 1);
+libgpsd_core.c:70:    session-&gt;gpsdata.gps_device = strdup(device);
+
+Both of the libgpsd_core.c instances are in gpsd_init(), so they only
+fire when a GPS session is being initialized.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002237.html">[Gpsd-dev] Considering a 2.27 point release
+</A></li>
+	<LI>Next message: <A HREF="002240.html">[Gpsd-dev] Considering a 2.27 point release
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2239">[ date ]</a>
+              <a href="thread.html#2239">[ thread ]</a>
+              <a href="subject.html#2239">[ subject ]</a>
+              <a href="author.html#2239">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

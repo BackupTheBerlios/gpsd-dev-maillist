@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] ntp-pps
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntp-pps&In-Reply-To=%3CPine.LNX.4.64.0609200953240.25922%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004364.html">
+   <LINK REL="Next"  HREF="004368.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] ntp-pps</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntp-pps&In-Reply-To=%3CPine.LNX.4.64.0609200953240.25922%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] ntp-pps">gem at rellim.com
+       </A><BR>
+    <I>Wed Sep 20 19:12:23 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004364.html">[Gpsd-dev] ntp-pps
+</A></li>
+        <LI>Next message: <A HREF="004368.html">[Gpsd-dev] ntp-pps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4366">[ date ]</a>
+              <a href="thread.html#4366">[ thread ]</a>
+              <a href="subject.html#4366">[ subject ]</a>
+              <a href="author.html#4366">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Rob!
+
+On Wed, 20 Sep 2006, Rob Janssen wrote:
+
+&gt;<i> &gt; Check the archives.  Like today for instance.  I always assume that if
+</I>&gt;<i> &gt; two people report a problem then 20 must have the problem.  And the
+</I>&gt;<i> &gt; Garmin is not exactly a rare beast either.
+</I>&gt;<i>
+</I>&gt;<i> I don't see any messages reporting problems here.  Where are they?
+</I>
+You can lead a horse to water, but you can't make them drink....
+
+&gt;<i> &gt; So, do we agree here?  Can I remove the gpsd fudge once and for all?
+</I>&gt;<i> &gt; ntpd already has a config file with its own fidge to do this and
+</I>&gt;<i> &gt; applying a second fudge seems pointless to me.
+</I>&gt;<i>
+</I>&gt;<i> It is required to get within the sync window.  When you remove it
+</I>&gt;<i> entirely, others will get problems.  It would be better to lower it by so
+</I>&gt;<i> much that you get correct lock and still give users with other, slower,
+</I>&gt;<i> receivers a chance.
+</I>
+So, then how about we split the difference.  Your ideal is 0.675, mine is
+0.125.  So how about 0.400?    Although with a 500mS lock range that
+only gives me 0.225 of pull in which is a bit on the edge.
+
+&gt;<i> I would not assume that everyone has suitable internet connectivity on
+</I>&gt;<i> their system.  Especially because one of the reasons for having a local
+</I>&gt;<i> time receiver is to cover the case of no internet connectivity.
+</I>
+I do not assume that.  Please do not put words in my mouth that I did
+not say nor ever even thought.  You want a straw man then bring your
+own.
+
+But I know that ntpd always needs calibration at least once.  If a
+user can not get his system calibrated at least once then all bets are
+off.  The off by one second issue can be solved once just by using a
+broadcast radio listening to a time source accurate to one second.
+
+&gt;<i> &gt; Mine is only 125mS off.  The fudge in the gpsd code is the one that
+</I>&gt;<i> &gt; assumes
+</I>&gt;<i> &gt; 675mS off!   Remove the 675mS fudge in the gpsd code and my 125mS looks
+</I>&gt;<i> &gt; very good.  It even passes your +/- 400mS test nicely.
+</I>&gt;<i>
+</I>&gt;<i> You keep assuring that 125ms offset is the norm, without providing any
+</I>&gt;<i> evidence.
+</I>
+Never.  I have said that MY system is solid at 0.125.  Feedback from
+other users of GPS-18/LVC have reported similar values.  Unlike you I do
+not assert in anyway that what I see is the norm.
+
+I would rather remove the assumption of 0.125, 0.675, or any other value
+from the code.  You want to keep assumptions in the code.  Although I
+might be able to live with an assumption of 0.400.
+
+&gt;<i> All my testing always yielded in excess of 500ms offset.
+</I>&gt;<i> It looks like you are after solving your own problem, but do not care
+</I>&gt;<i> about other situations.
+</I>
+Look in the mirror.
+
+&gt;<i> &gt; The fudge in gpsd and the fudge in ntpd are added.
+</I>&gt;<i>
+</I>&gt;<i> So the suggestion is to adjust the one in ntpd.
+</I>
+Yes, and then to let ntpd decide whether to use the PPS or not.
+
+&gt;<i> But when the difference added in ntpd is more than the allowed offset in
+</I>&gt;<i> the pps monitor, there will be no pps lock.
+</I>&gt;<i> with your receiver.  You can solve that by lowering the 0.675 to e.g.
+</I>&gt;<i> 0.500.
+</I>
+Sure I can solve it for me.  We are trying to get a way that works for
+everyone.  2 other GPS-18/LVC users in the last week.
+
+And .500 will not work for me.  That only give me a .025 lock range!
+(0.500 - 0.400 = 0.100 lock edge, and ideally I am at 0.125, so a 0.025
+lock range).
+
+&gt;<i> As I have said before, NMEA is unsuitable for time sync.  But people keep
+</I>&gt;<i> trying.
+</I>
+You dispute my 0.019ppm?  Looks pretty damn good to me and the price is
+right!  Maybe if you upped your baud rate fro 4800 baud you would get
+better results too.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFFEXZ88KZibdeR3qURAt0CAKC0ov1WIj+HfUM9cpIlRGxii1fWpgCfcSCC
+QgR0Hm04SxYYBeFAt3unSZ0=
+=yXxE
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004364.html">[Gpsd-dev] ntp-pps
+</A></li>
+	<LI>Next message: <A HREF="004368.html">[Gpsd-dev] ntp-pps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4366">[ date ]</a>
+              <a href="thread.html#4366">[ thread ]</a>
+              <a href="subject.html#4366">[ subject ]</a>
+              <a href="author.html#4366">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

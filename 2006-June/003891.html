@@ -1,0 +1,140 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Changing USB - GPS baud rates
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Changing%20USB%20-%20GPS%20baud%20rates&In-Reply-To=%3C080DF432-60F3-4D1D-82B2-D4238433D5BF%40qwest.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003896.html">
+   <LINK REL="Next"  HREF="003892.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Changing USB - GPS baud rates</H1>
+    <B>Dan Oetting</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Changing%20USB%20-%20GPS%20baud%20rates&In-Reply-To=%3C080DF432-60F3-4D1D-82B2-D4238433D5BF%40qwest.net%3E"
+       TITLE="[Gpsd-dev] Changing USB - GPS baud rates">dan_oetting at qwest.net
+       </A><BR>
+    <I>Sat Jun 17 21:02:23 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003896.html">[Gpsd-dev] Changing USB - GPS baud rates
+</A></li>
+        <LI>Next message: <A HREF="003892.html">[Gpsd-dev] Changing USB - GPS baud rates
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3891">[ date ]</a>
+              <a href="thread.html#3891">[ thread ]</a>
+              <a href="subject.html#3891">[ subject ]</a>
+              <a href="author.html#3891">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Jun 17, 2006, at 7:50 AM, Rob Janssen wrote:
+
+&gt;<i>
+</I>&gt;&gt;<i> There may be alternate ways to change/track baud rates that are more
+</I>&gt;&gt;<i> reliable than assuming you can predict the timing. For instance, when
+</I>&gt;&gt;<i> changing the GPS baud rate, send the command to the GPS and wait for
+</I>&gt;&gt;<i> the receiver to detect the framing errors indicating that the GPS is
+</I>&gt;&gt;<i> transmitting at the new speed before commanding the UART to change.
+</I>&gt;<i>
+</I>&gt;<i> I think what we are currently working on is not the command that  
+</I>&gt;<i> changes
+</I>&gt;<i> the speed of existing communication between gpsd and the receiver,  
+</I>&gt;<i> but the
+</I>&gt;<i> hunting for correct speed at gpsd startup (autodetection of the  
+</I>&gt;<i> speed),
+</I>&gt;<i> This is more difficult because there is no initial synchronized  
+</I>&gt;<i> condition.
+</I>
+What I am describing is a receiver that tracks the baud rate changes  
+autonomously so the same code that handles the initial autobaud  
+detection will handle commanded baud rate changes and as a side bonus  
+will handle unexpected changes as well. The startup state would be  
+the same as just after a baud rate change where further output is  
+blocked until the receiver locks onto the GPS. In the case of a  
+commanded baud rate change, a hint could be left to help the receiver  
+pick the new mode when it changes.
+
+&gt;&gt;<i> The receiver can detect that the GPS baud rate is different than the
+</I>&gt;&gt;<i> UART speed because there will be many framing errors in the received
+</I>&gt;&gt;<i> data.
+</I>&gt;<i>
+</I>&gt;<i> One issue that complicates this way of detection is that it is not  
+</I>&gt;<i> really
+</I>&gt;<i> simple to get framing errors communicated to the application in a Unix
+</I>&gt;<i> system.  Currently they are just ignored.
+</I>
+The process won't be as efficient but the code is probably simplified  
+by ignoring framing errors.
+
+&gt;<i> When you want to look for framing errors, you will have to cater for
+</I>&gt;<i> parity as well (for example, TSIP adds odd parity to each databyte.
+</I>&gt;<i> currently it is first detected at no-parity, then when gpsd  
+</I>&gt;<i> recognizes the
+</I>&gt;<i> TSIP protocol it switches the serial interface to odd parity to be  
+</I>&gt;<i> able to
+</I>&gt;<i> really communicate)
+</I>
+The 9th bit parity would show up as a framing error on half the  
+bytes. Without framing error reports it can only be deduced by  
+detecting the protocol first as is currently done.
+
+
+&gt;&gt;<i> Looking at what normal data would look like at various baud rates, I
+</I>&gt;&gt;<i> think it should be possible to directly detect a number of nearby
+</I>&gt;&gt;<i> speeds and in most cases jump directly to the correct speed. Once on
+</I>&gt;&gt;<i> the correct speed, detecting and setting correct data, parity and
+</I>&gt;&gt;<i> stop bits should also be fairly simple.
+</I>&gt;<i>
+</I>&gt;<i> Aren't you assuming that you already know the protocol?
+</I>&gt;<i> I don't think it is that simple to directly detect both an unknown  
+</I>&gt;<i> speed
+</I>&gt;<i> and an unknown protocol (NMEA, SiRF, TSIP, Zodiac etc) from a  
+</I>&gt;<i> buffer of
+</I>&gt;<i> garbage read at an incorrect speed.
+</I>&gt;<i> However, when you already know it is NMEA it might be possible to  
+</I>&gt;<i> guess
+</I>&gt;<i> the speed.
+</I>
+The buffer isn't totally lacking information. At Nx speed the lower  
+N-1 bits of each byte will always be 0s. So a simple rule would be to  
+step down by 8x when all that is seen is nulls otherwise step down to  
+the highest frequency seen in the data. When the receiver is slower  
+than the data, the information gets mangled more but there may still  
+be statistical patterns that can be recognized that correspond to  
+each protocol at different higher speeds If nothing else, just step  
+up by a factor of 8 and look again.
+
+-- Dan Oetting
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003896.html">[Gpsd-dev] Changing USB - GPS baud rates
+</A></li>
+	<LI>Next message: <A HREF="003892.html">[Gpsd-dev] Changing USB - GPS baud rates
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3891">[ date ]</a>
+              <a href="thread.html#3891">[ thread ]</a>
+              <a href="subject.html#3891">[ subject ]</a>
+              <a href="author.html#3891">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

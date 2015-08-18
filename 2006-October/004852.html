@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Flaky subtype display and asynchronous notifications
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Flaky%20subtype%20display%20and%20asynchronous%20notifications&In-Reply-To=%3C5E8664C3-0A74-4E8C-AB19-37FD4139F980%40gritch.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004851.html">
+   <LINK REL="Next"  HREF="004850.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Flaky subtype display and asynchronous notifications</H1>
+    <B>Jeff Francis</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Flaky%20subtype%20display%20and%20asynchronous%20notifications&In-Reply-To=%3C5E8664C3-0A74-4E8C-AB19-37FD4139F980%40gritch.org%3E"
+       TITLE="[Gpsd-dev] Flaky subtype display and asynchronous notifications">jeff at gritch.org
+       </A><BR>
+    <I>Tue Oct 31 23:32:04 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004851.html">[Gpsd-dev] Flaky subtype display and asynchronous notifications
+</A></li>
+        <LI>Next message: <A HREF="004850.html">[Gpsd-dev] Flaky subtype display and asynchronous notifications
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4852">[ date ]</a>
+              <a href="thread.html#4852">[ thread ]</a>
+              <a href="subject.html#4852">[ subject ]</a>
+              <a href="author.html#4852">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>   In the new cgps code I sent out earlier today, I did it this way:
+
+   1.  Set the callback handler to a probe routine.
+   2.  Send an &quot;I&quot;.
+   3.  Watch for an &quot;I&quot; response.
+   4.  If we've waited more than 10 seconds, default to generic NMEA  
+and go to step 6
+   5.  else wait two seconds and go back to #2.
+   6.  Upon detection, change the callback handler for either compass  
+or GPS receiver and set other various options
+   7.  go on your merry way
+
+
+   It's icky ugly code at the moment, but it does work, and seems to  
+work pretty well with everything I've tried it with so far (which  
+does not include a True North compass, admittedly).
+
+
+On Oct 31, 2006, at 1:59 PM, Gary E. Miller wrote:
+
+&gt;<i> -----BEGIN PGP SIGNED MESSAGE-----
+</I>&gt;<i> Hash: SHA1
+</I>&gt;<i>
+</I>&gt;<i> Yo Eric!
+</I>&gt;<i>
+</I>&gt;<i> On Tue, 31 Oct 2006, Eric S. Raymond wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> It's a timing thing.  My GPS is sending FV responses all right, the
+</I>&gt;&gt;<i> probe in the SiRF-binary driver works, but it takes the chip a  
+</I>&gt;&gt;<i> large and
+</I>&gt;&gt;<i> variable amount of time to ship an FV response.
+</I>&gt;<i>
+</I>&gt;<i> Gonna have the sme problem with the garmin.  There are some info  
+</I>&gt;<i> strings
+</I>&gt;<i> the Garmin just sends when it feels like it and you can not force  
+</I>&gt;<i> them.
+</I>&gt;<i>
+</I>&gt;<i> Send/expect is just a bit too linear for where gpsd is at now.   
+</I>&gt;<i> Need to
+</I>&gt;<i> think more non-modal.  Not that I have a solution either.  Maybe set a
+</I>&gt;<i> flag that you are  waiting for an event and not close the gps until  
+</I>&gt;<i> the
+</I>&gt;<i> flags are cleared or a timeout is hit.
+</I>&gt;<i>
+</I>&gt;<i> Something like this could work for a one-shot fix mode too.  Wake up
+</I>&gt;<i> the GPS, wait for a good fix (or 4), ship the resultsand  go to sleep.
+</I>&gt;<i>
+</I>&gt;<i> RGDS
+</I>&gt;<i> GARY
+</I>&gt;<i> -  
+</I>&gt;<i> ---------------------------------------------------------------------- 
+</I>&gt;<i> -----
+</I>&gt;<i> Gary E. Miller Rellim 20340 Empire Ave., Suite E-3, Bend, OR 97701
+</I>&gt;<i> 	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+</I>&gt;<i>
+</I>&gt;<i> -----BEGIN PGP SIGNATURE-----
+</I>&gt;<i> Version: GnuPG v1.4.3 (GNU/Linux)
+</I>&gt;<i>
+</I>&gt;<i> iD8DBQFFR8dB8KZibdeR3qURAk13AJ9p8jOAS3etjQXR9M4+wB6RAQvljQCg1PYv
+</I>&gt;<i> K1DBZfDoev3gk50vhYRMcho=
+</I>&gt;<i> =7RTm
+</I>&gt;<i> -----END PGP SIGNATURE-----
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004851.html">[Gpsd-dev] Flaky subtype display and asynchronous notifications
+</A></li>
+	<LI>Next message: <A HREF="004850.html">[Gpsd-dev] Flaky subtype display and asynchronous notifications
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4852">[ date ]</a>
+              <a href="thread.html#4852">[ thread ]</a>
+              <a href="subject.html#4852">[ subject ]</a>
+              <a href="author.html#4852">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

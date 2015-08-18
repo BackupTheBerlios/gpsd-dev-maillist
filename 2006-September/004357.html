@@ -1,0 +1,205 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] ntp-pps
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntp-pps&In-Reply-To=%3CPine.LNX.4.64.0609171448060.27787%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004354.html">
+   <LINK REL="Next"  HREF="004364.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] ntp-pps</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntp-pps&In-Reply-To=%3CPine.LNX.4.64.0609171448060.27787%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] ntp-pps">gem at rellim.com
+       </A><BR>
+    <I>Mon Sep 18 00:19:24 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004354.html">[Gpsd-dev] ntp-pps
+</A></li>
+        <LI>Next message: <A HREF="004364.html">[Gpsd-dev] ntp-pps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4357">[ date ]</a>
+              <a href="thread.html#4357">[ thread ]</a>
+              <a href="subject.html#4357">[ subject ]</a>
+              <a href="author.html#4357">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Rob!
+
+On Sun, 17 Sep 2006, Rob Janssen wrote:
+
+&gt;<i> It is not broken.  You call it broken, but I think you are the only one
+</I>&gt;<i> having problems.  At least, problems have not been reported here by
+</I>&gt;<i> others.
+</I>
+Check the archives.  Like today for instance.  I always assume that if
+two people report a problem then 20 must have the problem.  And the
+Garmin is not exactly a rare beast either.
+
+&gt;<i> Then you can adjust the fudge to compensate.
+</I>
+As I do, but that requires a recompile of drivers.c and that is a pain.
+
+&gt;<i> As I wrote, the offset for NMEA is hard to get right because there are so
+</I>&gt;<i> many different implementations for NMEA.
+</I>&gt;<i> The offset should be settable inside gpsd but Eric does not want
+</I>&gt;<i> configuration so it has to be solved elsewhere.
+</I>
+So, do we agree here?  Can I remove the gpsd fudge once and for all?
+ntpd already has a config file with its own fidge to do this and
+applying a second fudge seems pointless to me.
+
+&gt;<i> &gt; PPS has no idea of WHAT second this is, so the worst damage it could do is
+</I>&gt;<i> &gt; move things under the one second window fixed by the NMEA time.
+</I>&gt;<i>
+</I>&gt;<i> No, the worst damage it can do is to lock plus or minus one second.
+</I>&gt;<i> That is because the PPS monitor adds in the absolute time of the
+</I>&gt;<i> systemclock with the relative time of the PPS pulses, and hands the result
+</I>&gt;<i> to ntpd.
+</I>
+And that is why, at least until the system is calibrated, that ntpd should
+always be run with multiple chimers.  That is ntpd best practice already,
+so problem solved.  Once the proper fudges are applied in ntp.conf this
+is not an issue.
+
+&gt;<i> So, when there are no checks and the clock is more than 500ms off (as it
+</I>&gt;<i> seems to be for you),
+</I>
+Mine is only 125mS off.  The fudge in the gpsd code is the one that assumes
+675mS off!   Remove the 675mS fudge in the gpsd code and my 125mS looks
+very good.  It even passes your +/- 400mS test nicely.
+
+&gt;<i> and there are no other external references to
+</I>&gt;<i> compare with, the system clock will happily lock off by one second,  That
+</I>&gt;<i> is bad and must be avoided.
+</I>
+Here we agree and disagree.  We both agree it must be avoided.  We both
+agree that with the proper fudge(2) this is easily avoided.  It is using a
+single number, buried in gpsd. to represent all GPS/PPS fudges that I do
+not agree with.
+
+&gt;<i> What do you mean, code from me??
+</I>
+Well you certainly seem to defend it.  So at least for the point of this
+discussion it is &quot;your code&quot;.
+
+&gt;<i> fudge is an ntpd option, a statement you put in your /etc/ntpd.conf
+</I>
+Agreed  It is also in the gpsd code here:
+
+drivers.c, line 83:
+
+             /* this magic number is derived from observation */
+             (void)ntpshm_put(session, session-&gt;gpsdata.fix.time + 0.675);
+
+The fudge in gpsd and the fudge in ntpd are added.
+
+&gt;<i> No code needed for that!
+</I>
+OK, split the hair, no new code, just a bit of old code removed.
+
+So can we agree this code (&quot;+ 0.675&quot;) can be removed?  That also solves
+my problem.
+
+&gt;<i> That could be done, but it would mean that everyone has to use a fudge,
+</I>
+As the code shows above, everyone already does use a fudge, a bad one
+for many.
+
+&gt;<i> Maybe it is best to zero the offset for NMEA because it is so unreliable.
+</I>
+So, we are agreed?  I can remove the code above?  With that I can also
+use a +/-400mS window.
+
+&gt;<i> But for other protocols, the hardwired offset seems to do a reasonable
+</I>&gt;<i> job.
+</I>
+Speak for yourself.  That is not the case for me on Garmin GPS-18/LVC
+(NMEA).  Garmin binary has no PPS and can work well with just the one
+fudge in ntpd.  Fix others as you see fit.
+
+&gt;<i> &gt; If you have a solution then please commit some code.  Quickly.
+</I>&gt;<i>
+</I>&gt;<i> You seem to be thinking that a solution implies that code is required, but
+</I>&gt;<i> I disagree with that.
+</I>
+Do we agree on the code removal?
+
+&gt;<i> I think the PUT_MAX_OFFSET should be put back to 400 ms.
+</I>&gt;<i> You can make your system operative by adding the proper fudge command in
+</I>&gt;<i> /etc/ntpd.conf.
+</I>
+Been there, done that, does not work.  No reasoning involved, simple
+testing has proven this.
+
+&gt;<i> Someone with a large collection of NMEA receivers (or a poll on the user
+</I>&gt;<i> list?) should find the typical offset found for NMEA, which may be
+</I>&gt;<i> different from the 675ms I determined from my own receivers (that are old
+</I>&gt;<i> and connected over slow 4800 bps serial).
+</I>
+I suspect the problem is far more related to the speed of your serial
+connection than to the GPS involved.  I run my GPS-18/LVC ar 19200 to
+reduce latency and jitter in the time of the NMEA.  Some GPS run at
+57600 or even higher speeds.  Expecting one fudge to work over such a
+range of serials speeds is not realistic.
+
+&gt;<i> The remainder of the offset can then by put in /etc/ntpd.conf
+</I>
+Here we agree.
+
+&gt;<i> Still, no code required.
+</I>
+Here we do not.  See above.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFFDcnv8KZibdeR3qURAofRAKCCOdGjC03RiWjR6ZKcNlb+G+KzmACff5UY
+t1ibkYHiZ2rBHG24E8/7vj8=
+=09N+
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004354.html">[Gpsd-dev] ntp-pps
+</A></li>
+	<LI>Next message: <A HREF="004364.html">[Gpsd-dev] ntp-pps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4357">[ date ]</a>
+              <a href="thread.html#4357">[ thread ]</a>
+              <a href="subject.html#4357">[ subject ]</a>
+              <a href="author.html#4357">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

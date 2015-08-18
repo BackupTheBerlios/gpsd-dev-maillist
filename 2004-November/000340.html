@@ -1,0 +1,95 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd 2.3 and Fedora Core 3
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%202.3%20and%20Fedora%20Core%203&In-Reply-To=%3C20041119141826.GA31016%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000339.html">
+   <LINK REL="Next"  HREF="000334.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd 2.3 and Fedora Core 3</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%202.3%20and%20Fedora%20Core%203&In-Reply-To=%3C20041119141826.GA31016%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] gpsd 2.3 and Fedora Core 3">esr at thyrsus.com
+       </A><BR>
+    <I>Fri Nov 19 15:18:26 CET 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000339.html">[Gpsd-dev] gpsd 2.3 and Fedora Core 3
+</A></li>
+        <LI>Next message: <A HREF="000334.html">[Gpsd-dev] Solving the no-GPGSA problem
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#340">[ date ]</a>
+              <a href="thread.html#340">[ thread ]</a>
+              <a href="subject.html#340">[ subject ]</a>
+              <a href="author.html#340">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Wojciech Kazubski &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">wk at ire.pw.edu.pl</A>&gt;:
+&gt;<i> To avoid error messages, the file should be created only 
+</I>&gt;<i> when  /etc/udev/rules.d exists:
+</I>&gt;<i> ...
+</I>&gt;<i> if [ -d  /etc/udev/rules.d ]; then
+</I>&gt;<i>    ....
+</I>&gt;<i> fi
+</I>&gt;<i> ...
+</I>&gt;<i> I dont know when udev re-reads config file, but it is cooperating with hotplug 
+</I>&gt;<i> and should be able to create new USB device on the fly.
+</I>&gt;<i> For standard serial port, maybe create both udev entry and a symlink (if it 
+</I>&gt;<i> does not already exist). Then the symlink will work until reboot.
+</I>&gt;<i> 
+</I>&gt;<i> Wojciech Kazubski
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="http://lists.berlios.de/mailman/listinfo/gpsd-dev">http://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>
+Here's what I have:
+
+%post -n gpsd
+/sbin/chkconfig --add gpsd
+/sbin/chkconfig gpsd on
+/sbin/ldconfig
+if [ -f /etc/udev/rules.d/ ] then echo 'KERNEL=&quot;ttyS0&quot;, SYMLINK=&quot;gps&quot;' &gt;/etc/udev/rules.d/80-gpsd.rules
+
+%postun -n gpsd
+/sbin/ldconfig
+if [ -f /etc/udev/rules.d/ ] then rm /etc/udev/rules.d/80-gpsd.rules
+
+If you can tell me what (if anything) needs to be added, I'll do it.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000339.html">[Gpsd-dev] gpsd 2.3 and Fedora Core 3
+</A></li>
+	<LI>Next message: <A HREF="000334.html">[Gpsd-dev] Solving the no-GPGSA problem
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#340">[ date ]</a>
+              <a href="thread.html#340">[ thread ]</a>
+              <a href="subject.html#340">[ subject ]</a>
+              <a href="author.html#340">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

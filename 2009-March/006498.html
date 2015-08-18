@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Infinite Garmin reconfigure loop
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Infinite%20Garmin%20reconfigure%20loop&In-Reply-To=%3C49BADFDE.2020705%40isoar.ca%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006496.html">
+   <LINK REL="Next"  HREF="006500.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Infinite Garmin reconfigure loop</H1>
+    <B>Andrew E. Mileski</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Infinite%20Garmin%20reconfigure%20loop&In-Reply-To=%3C49BADFDE.2020705%40isoar.ca%3E"
+       TITLE="[Gpsd-dev] Infinite Garmin reconfigure loop">andrewm at isoar.ca
+       </A><BR>
+    <I>Fri Mar 13 23:36:14 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006496.html">[Gpsd-dev] [Gpsd-users] Reverse-engineering AIDVM
+</A></li>
+        <LI>Next message: <A HREF="006500.html">[Gpsd-dev] Infinite Garmin reconfigure loop
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6498">[ date ]</a>
+              <a href="thread.html#6498">[ thread ]</a>
+              <a href="subject.html#6498">[ subject ]</a>
+              <a href="author.html#6498">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Andrew E Mileski wrote:
+&gt;<i> Discovered this on a Garmin GPS16, but I suspect it affects other
+</I>&gt;<i> Garmins:
+</I>&gt;<i> 
+</I>&gt;<i> 1. A Garmin GPS in NMEA mode is detected.
+</I>&gt;<i> 
+</I>&gt;<i> 2. PGRMC is sent to reconfigure to Garmin binary mode.  If successful,
+</I>&gt;<i> the GPS echoes the phrase.
+</I>&gt;<i> 
+</I>&gt;<i> 3. nmea_parse() sees the echo as RMC because the talker ID is ignored,
+</I>&gt;<i> and fails to recognize the echo as PGRMC and ignore it.
+</I>&gt;<i> 
+</I>&gt;<i> 4. The mode is changed back to NMEA, resulting in an infinite loop.
+</I>&gt;<i> 
+</I>&gt;<i> The simplest solution would be to change the order of the entries in
+</I>&gt;<i> nmea_phrase[] so that 3 letter phrases, with talker ID ignored, are
+</I>&gt;<i> parsed after exact matches.
+</I>&gt;<i> 
+</I>&gt;<i> A temporary workaround is to manually set the GPS to binary mode, so
+</I>&gt;<i> that the reconfiguration loop is never entered.
+</I>
+Just grabbed the latest SVN (5457), and though the code has changed a
+lot since the above report, the problem still seems to be in
+there:
+
+gpsd: Garmin Serial packet seen when NMEA expected.
+gpsd: switch_driver(Garmin Serial) called...
+gpsd: Reconfiguring for Garmin Serial...
+gpsd: pps-detect (DCD) on /dev/ttyS1 changed to 1
+gpsd: PPS pulse rejected. No fix.
+gpsd: =&gt; GPS: 
+245047524d432c412c2c3130302c2c2c2c2c2c412c2c312c322c312c33302a34420d0a
+gpsd: Garmin Serial packet seen when NMEA expected.
+gpsd: switch_driver(Garmin Serial) called...
+gpsd: Reconfiguring for Garmin Serial...
+
+This bug is in file driver_nmea.c routine nmea_parse(), in the
+nmea_phrase[] array.
+
+-- 
+Andrew E. Mileski
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006496.html">[Gpsd-dev] [Gpsd-users] Reverse-engineering AIDVM
+</A></li>
+	<LI>Next message: <A HREF="006500.html">[Gpsd-dev] Infinite Garmin reconfigure loop
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6498">[ date ]</a>
+              <a href="thread.html#6498">[ thread ]</a>
+              <a href="subject.html#6498">[ subject ]</a>
+              <a href="author.html#6498">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

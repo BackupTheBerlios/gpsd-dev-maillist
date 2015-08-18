@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Web interface proposal
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Web%20interface%20proposal&In-Reply-To=%3CAANLkTin-9v0X%3DzLiR%2BKhvPdWpf%2BnC8coX_-dVjooqgAa%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008815.html">
+   <LINK REL="Next"  HREF="008819.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Web interface proposal</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Web%20interface%20proposal&In-Reply-To=%3CAANLkTin-9v0X%3DzLiR%2BKhvPdWpf%2BnC8coX_-dVjooqgAa%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Web interface proposal">thomas at mich.com
+       </A><BR>
+    <I>Tue Mar 15 22:10:15 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008815.html">[Gpsd-dev] regression status on NetBSD: mostly works
+</A></li>
+        <LI>Next message: <A HREF="008819.html">[Gpsd-dev] Web interface proposal
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8817">[ date ]</a>
+              <a href="thread.html#8817">[ thread ]</a>
+              <a href="subject.html#8817">[ subject ]</a>
+              <a href="author.html#8817">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Eric expressed interest in my web interface for my forg
+(github.com/tz1/webgpsd).  So for the next iteration, I thought I
+would start the discussion.
+
+Let me describe the features and functions and see what I can start to
+port and a few problems.
+
+First, both support multiple devices, but what is the best way to
+handle it?  Multiple satellite position displays?  Select the device
+first?  For maps, if there is more than one device, which one do I use
+(webgpsd checks the DoP each second and has a &quot;best&quot; which is always
+used for the web pages).
+
+The way I've implemented it is to look for the relevant HTTP strings
+in the request sent to gpsd, e.g &quot;<A HREF="http://netbook.local:294/XXX">http://netbook.local:294/XXX</A>&quot;
+creates &quot;GET /XXX HTTP/1.1...&quot;  If the GET and HTTP/1.? match, I parse
+what is between to pick what is returned.  I could check the rest of
+the strings, but most of the stuff is stateless and with the right
+tags is universal.
+
+I default to a base status page with a meta refresh=5 tag that
+displays a table of standard GPS information and a satellite table
+which works on any browser, safari, firefox, IE, or even Lynx or text
+browsers because it is HTML formatted - json is available for pure
+text  (&quot;json&quot; in the path will return json used by the satellite
+stats).  I have links to the other feature pages, google maps (moving
+with traffic), radar, and the satellite status.
+
+I return a KML network location link if the text has &quot;kml&quot; in it so
+google earth can be used to track the GPS.
+
+I have a Google Maps v2 API responder that will send an XML marker for
+older google maps applications.
+
+I include a google map v3 API moving map that uses an XML query which
+I respond to and US weather radar from wunderground.com (which has a
+scrapable lat/lon/radious generator which has allowed me to dodge bad
+storms on my harley).
+
+Attached is an example I don't know of the listserv will allow it
+through - it doesn't show the track or speed since the GPS is still,
+but shows the satellites, the signal strength (boxes), number, and
+HDOP which is the magenta circle.  This is all in HTML5 canvas with
+javascript with XHTML requests and json parsing.  I'm in the process
+of updating it.
+
+So would this be a good idea to add to gpsd-ng?  Could it or an
+enhanced version replace some of the other client utilities?
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: Satellite Status_1300220249460.png
+Type: image/png
+Size: 59748 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110315/802b4562/attachment.png">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110315/802b4562/attachment.png</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008815.html">[Gpsd-dev] regression status on NetBSD: mostly works
+</A></li>
+	<LI>Next message: <A HREF="008819.html">[Gpsd-dev] Web interface proposal
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8817">[ date ]</a>
+              <a href="thread.html#8817">[ thread ]</a>
+              <a href="subject.html#8817">[ subject ]</a>
+              <a href="author.html#8817">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

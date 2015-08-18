@@ -1,0 +1,89 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] Add missing configure fix for Xaw Header
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Add%20missing%20configure%20fix%20for%20Xaw%20Header&In-Reply-To=%3C4554C2CE.6010503%40knitter.ch%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005019.html">
+   <LINK REL="Next"  HREF="005021.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] Add missing configure fix for Xaw Header</H1>
+    <B>Andreas Stricker</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Add%20missing%20configure%20fix%20for%20Xaw%20Header&In-Reply-To=%3C4554C2CE.6010503%40knitter.ch%3E"
+       TITLE="[Gpsd-dev] [PATCH] Add missing configure fix for Xaw Header">andy at knitter.ch
+       </A><BR>
+    <I>Fri Nov 10 19:19:58 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005019.html">[Gpsd-dev] [Gpsd-commit-watch] r3848 - trunk
+</A></li>
+        <LI>Next message: <A HREF="005021.html">[Gpsd-dev] Chris's pile of documents
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5020">[ date ]</a>
+              <a href="thread.html#5020">[ thread ]</a>
+              <a href="subject.html#5020">[ subject ]</a>
+              <a href="author.html#5020">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I tried to build gpsd on a Debian sarge machine without libxaw7-dev
+installed. It failed after the make command with gcc bitching about
+missing X11/Xaw/Label.h header.
+Installing the developpent package helped.
+The patch below disables building of X utilities in this case.
+
+Index: configure.ac
+===================================================================
+--- configure.ac    (Revision 3847)
++++ configure.ac    (Arbeitskopie)
+@@ -119,6 +119,7 @@
+  AC_CHECK_LIB(Xt, XtToolkitInitialize, XT_LIBS=&quot;-lXt&quot;,,
+     ${X_PRE_LIBS} ${X11_LIBS})
+  AC_SUBST(XT_LIBS)
++AC_CHECK_HEADER([X11/Xaw/Label.h],, motif_includes=&quot;no&quot;)
+  AC_CHECK_LIB(Xaw, XawInitializeWidgetSet, XAW_LIBS=&quot;-lXaw&quot;,,
+     ${X_PRE_LIBS} ${X11_LIBS})
+  AC_SUBST(XAW_LIBS)
+@@ -148,7 +149,7 @@
+  fi
+  AC_SUBST(XP_LIBS)
+  AC_SUBST(XM_LIBS)
+-AM_CONDITIONAL([HAVE_MOTIF], [test &quot;$XM_LIBS&quot; != &quot;&quot;])
++AM_CONDITIONAL([HAVE_MOTIF], [test &quot;$XM_LIBS&quot; != &quot;&quot; &amp;&amp; test &quot;$motif_includes&quot; 
+!= &quot;no&quot;])
+  ac_x=&quot;yes&quot;
+  else
+  dnl X11 disabled
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005019.html">[Gpsd-dev] [Gpsd-commit-watch] r3848 - trunk
+</A></li>
+	<LI>Next message: <A HREF="005021.html">[Gpsd-dev] Chris's pile of documents
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5020">[ date ]</a>
+              <a href="thread.html#5020">[ thread ]</a>
+              <a href="subject.html#5020">[ subject ]</a>
+              <a href="author.html#5020">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

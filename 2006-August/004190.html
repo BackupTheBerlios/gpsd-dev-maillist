@@ -1,0 +1,179 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Fix repeatedly lost on a TomTom ONE.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Fix%20repeatedly%20lost%20on%20a%20TomTom%20ONE.&In-Reply-To=%3C1156496533.4287.44.camel%40deep-space-9.dsnet%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004189.html">
+   <LINK REL="Next"  HREF="004191.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Fix repeatedly lost on a TomTom ONE.</H1>
+    <B>Stelian Pop</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Fix%20repeatedly%20lost%20on%20a%20TomTom%20ONE.&In-Reply-To=%3C1156496533.4287.44.camel%40deep-space-9.dsnet%3E"
+       TITLE="[Gpsd-dev] Fix repeatedly lost on a TomTom ONE.">stelian at popies.net
+       </A><BR>
+    <I>Fri Aug 25 11:02:13 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004189.html">[Gpsd-dev] Fix repeatedly lost on a TomTom ONE.
+</A></li>
+        <LI>Next message: <A HREF="004191.html">[Gpsd-dev] Fix repeatedly lost on a TomTom ONE.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4190">[ date ]</a>
+              <a href="thread.html#4190">[ thread ]</a>
+              <a href="subject.html#4190">[ subject ]</a>
+              <a href="author.html#4190">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Le jeudi 24 ao&#251;t 2006 &#224; 18:42 -0600, Chris Kuethe a &#233;crit :
+&gt;<i> On 8/24/06, Stelian Pop &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">stelian at popies.net</A>&gt; wrote:
+</I>&gt;<i> &gt; Hi,
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; I'm trying to set-up gpsd and (a customized version of) cgpxlogger on a
+</I>&gt;<i> &gt; TomTom ONE navigation system (the TomTom has an ARM processor, has a
+</I>&gt;<i> &gt; Sirf Star III GPS, runs Linux, and the navigation system is done by a
+</I>&gt;<i> &gt; proprietary application).
+</I>&gt;<i> 
+</I>&gt;<i> w00t. This is two people today hacking with gpsd on ARM boxen. This
+</I>&gt;<i> ONE device sounds a lot like another... well, let's call it pretender
+</I>&gt;<i> to the throne. Linux, ARM, SiRFstar, gpsd and proprietary nav app. I
+</I>&gt;<i> don't suppose they're storing their database in SQLite are they? ;)
+</I>
+This device doesn't use gpsd by default and does not store the GPS data,
+it only uses it for navigation. The maps are stored in some proprietary
+format, I don't think it is based on SQLite.
+
+This device has a lot of storage space (it uses a standard SD card for
+storage, I have 200 MB free on mine), and I want to use this free space
+to save the GPS traces in some usable format.
+
+gpsd seemed like a good solution to me since it allows for multiple
+clients: one for tracing, one for visualising the data in real time etc.
+
+&gt;<i> &gt; I have a problem with gpsd losing the fix something like every one or
+</I>&gt;<i> &gt; two seconds. Launching cgps for example shows the fix is acquired for
+</I>&gt;<i> &gt; one or two seconds, then the fix is lost and the values go n/a, then it
+</I>&gt;<i> &gt; comes back again and again...
+</I>&gt;<i> 
+</I>&gt;<i> Sounds like fallout from our experiments with buffering policies.
+</I>&gt;<i> 
+</I>&gt;<i> &gt; Hacking the source I found out the culprit to be the
+</I>&gt;<i> &gt;          mask |= CYCLE_START_SET
+</I>&gt;<i> &gt; set in nmea_parse.c:processGPGGA(). In my tests (look at the NMEA data
+</I>&gt;<i> &gt; below), 'gpsdata.sentence_time' is always one second before
+</I>&gt;<i> &gt; 'gpsdata.newdata.time'.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; If I comment the CYCLE_START_SET line, the fix is no longer lost, and
+</I>&gt;<i> &gt; all seems perfect. This is with the latest SVN version.
+</I>&gt;<i> 
+</I>&gt;<i> you could try the --enabled-wired-policy option to configure... i
+</I>&gt;<i> believe i saw a patch to cgps to send the j command to en-/dis-able
+</I>&gt;<i> buffering. which accomplishes the same thing.
+</I>
+gpsd was compiled with the default configure value for wired-policy,
+which is to enable it. config.h contains indeed 
+	#define WIRED_POLICY 1
+
+Or do you want me to test with the wired-policy _disabled_ instead ?
+
+&gt;<i> If you want to test your logger, you can point it at gpsd.mainframe.cx
+</I>&gt;<i> - it's a static test station I have set up and it's running with
+</I>&gt;<i> --enable-wired-policy
+</I>
+Thanks for the information. Right now the logger doesn't do much but I
+may enhance it a bit to add distance based logging etc.
+
+Right now the logger is based on cgpxlogger, so it logs GPX data. XML is
+a rather verbose format, is there a better - more compact - format for
+logging ? (which can be easily translated to GPX or other standard
+format later, using gpsbabel or a custom script) ?
+
+&gt;<i> &gt; I'm not sure if this is a bug in my GPS device or a bug in the code. My
+</I>&gt;<i> &gt; limited understanding of the NMEA protocol may be the issue...
+</I>&gt;<i> 
+</I>&gt;<i> I've explained your nmea trace below. I guess this could be a bug, if
+</I>&gt;<i> you define bug to be &quot;behaviour I don't expect&quot;.
+</I>
+Sure :)
+
+Let me reformulate: the problem is caused by a 1 second difference
+between two times: the &quot;sentence&quot; time and the time specified in the
+GPGGA sentence. From the reading of the code, it is not clear to me what
+the &quot;sentence&quot; time is supposed to be.
+
+Based on what the &quot;sentence&quot; time is, this can be qualified as a bug in
+gpsd, or a bug in the GPS device :)
+
+&gt;<i> &gt; (FYI, I've kept in the log blow a few unknown sentences reported by
+</I>&gt;<i> &gt; gpsd. These are most probably not related to my problem...)
+</I>&gt;<i> 
+</I>&gt;<i> Not really related, but I'll give you the 25-cent tour anyway.
+</I>&gt;<i> 
+</I>&gt;<i> &gt; gpsd: &lt;= GPS: $PFEC,GPint,GSA01,DTM00,ZDA01,RMC01,GLL00,VTG00,GSV05*3B
+</I>&gt;<i> &gt; gpsd: unknown sentence: &quot;$PFEC,GPint,GSA01,DTM00,ZDA01,RMC01,GLL00,VTG00,GSV05*3B\x0d\x0a&quot;
+</I>&gt;<i> &gt; gpsd: &lt;= GPS: $PMOTG,ZDA,1*2F
+</I>&gt;<i> &gt; gpsd: unknown sentence: &quot;$PMOTG,ZDA,1*2F\x0d\x0a&quot;
+</I>&gt;<i> &gt; gpsd: &lt;= GPS: $PGRMCE*0E
+</I>&gt;<i> &gt; gpsd: unknown sentence: &quot;$PGRMCE*0E\x0d\x0a&quot;
+</I>&gt;<i> &gt; gpsd: &lt;= GPS: $PSRF105,1*3E
+</I>&gt;<i> &gt; gpsd: unknown sentence: &quot;$PSRF105,1*3E\x0d\x0a&quot;
+</I>&gt;<i> 
+</I>&gt;<i> These are probe strings to determine what sort of receiver you have.
+</I>&gt;<i> Some receivers ignore them, some will reply with $GPWTF ;) and others
+</I>&gt;<i> will give you a distinguishable acknowledgement. I'm surprised that
+</I>&gt;<i> $PSRF105 didn't identify the SiRFstar, because PSRF105 is enables
+</I>&gt;<i> debugging mode. Enabling debug mode when debugging is already enabled
+</I>&gt;<i> returns an OK message and that's how we fingerprint SiRFstar. Do you
+</I>&gt;<i> know what version of firmware you're running?
+</I>
+If I believe what the nav application is telling me it could be v1.21
+
+The reason why the GPS doesn't reply to probes is because I have not
+used gpsd on the gps device node directly. Since I don't want to disrupt
+the nav application (which reads on the GPS device), I make gpsd read a
+named pipe created by the nav application and used by it to forward GPS
+data to other programs). And the pipe device works in one direction
+only, from the GPS to gpsd.
+
+In a better world the navigation application would be free software, and
+I could modify it to be a gpsd client. But we are living in an imperfect
+world :)
+
+Stelian.
+-- 
+Stelian Pop &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">stelian at popies.net</A>&gt;
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004189.html">[Gpsd-dev] Fix repeatedly lost on a TomTom ONE.
+</A></li>
+	<LI>Next message: <A HREF="004191.html">[Gpsd-dev] Fix repeatedly lost on a TomTom ONE.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4190">[ date ]</a>
+              <a href="thread.html#4190">[ thread ]</a>
+              <a href="subject.html#4190">[ subject ]</a>
+              <a href="author.html#4190">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

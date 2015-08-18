@@ -1,0 +1,118 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Fix from future?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Fix%20from%20future%3F&In-Reply-To=%3C20050623195004.GA23206%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002218.html">
+   <LINK REL="Next"  HREF="002220.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Fix from future?</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Fix%20from%20future%3F&In-Reply-To=%3C20050623195004.GA23206%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Fix from future?">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Jun 23 21:50:04 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002218.html">[Gpsd-dev] Fix from future?
+</A></li>
+        <LI>Next message: <A HREF="002220.html">[Gpsd-dev] Fix from future?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2219">[ date ]</a>
+              <a href="thread.html#2219">[ thread ]</a>
+              <a href="subject.html#2219">[ subject ]</a>
+              <a href="author.html#2219">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+&gt;<i> &gt; Now, after upgrading to gpsd 2.26, the date is displayed as:
+</I>&gt;<i> &gt; D=2036-02-06T15:22:25.00Z
+</I>&gt;<i> &gt;  which is some 30 years ahead!
+</I>&gt;<i> 
+</I>&gt;<i> Strange that it is not 2038...
+</I>&gt;<i> Is this with an NMEA receiver?
+</I>
+Must be.  I'm certainly not seeing this behavior on my SiRF GPSes.
+
+Wojciech, if you'll send me some NMEA that produces a bad date when 
+looped through gpsfake, I should be able to fix this rapidly.
+ 
+&gt;<i> &gt; The disconect/reconnect bug is still there. Gpsd stoped to output data
+</I>&gt;<i> &gt; when left for night even with a client connected.
+</I>&gt;<i> 
+</I>&gt;<i> I have a gpsd with 3 receivers, 3 xgps's and a sirfmon connected and
+</I>&gt;<i> it remains alive for days.  But I have seen daemons go haywire on a
+</I>&gt;<i> heavy loaded system.  Is your system running a backup during the
+</I>&gt;<i> night?  That may be the reason.
+</I>
+It might well be.  But, Rob, I'm still worried about this.  Right now my 
+effort is going to upgrading the session-faking logic in gpsfake so I
+can really torture-test the daemon -- throw a bunch of weird patterns of 
+client connects and disconnects at it and watch for lockups.
+
+I'm also trying to do a dynamic-allocation audit with valgrind.  I haven't
+got far with that; I keep running into technical problems with valgrind itself.
+
+&gt;<i> &gt; Some fields on xgps (Altitude, EPH, EPV, Climb) toggle between something
+</I>&gt;<i> &gt; real
+</I>&gt;<i> &gt; and n/a. Status toggles between 2D an 3D fix.
+</I>&gt;<i> 
+</I>&gt;<i> I think it needs some work in this area, but Eric wanted to release...
+</I>
+Correct on both counts.  It had been a month, after all.  The ordinary users
+deserved the bug fixes and features that had been piling up.
+
+But, Rob: Wojciech's problem is slightly different from yours and
+harder to solve.  Because TSIP identifies itself, the code could in
+theory know what the last packet in an update cycle is and suppress
+all reports prior to that, if you were willing to accept less than a
+second of latency in favor of getting an accumulated report.
+
+This isn't feasible for NMEA devices because we don't in advance know
+the sequence of sentences in one cycle.  We can detect *start* of cycle,
+but not the end of cycle.  Thus, we can't know when to ship accumulated
+fix data until it is obsolete by timestamp.  We have to ship out each
+new fragment of NMEA content as it arrives.
+
+xgps is a test client.  It's intended to show developers what the 
+daemon is doing, so it doesn't buffer old information but rather 
+presents the contents of each O response as it comes up.
+
+Hmmm...I think the FAQ needs an entry on this.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002218.html">[Gpsd-dev] Fix from future?
+</A></li>
+	<LI>Next message: <A HREF="002220.html">[Gpsd-dev] Fix from future?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2219">[ date ]</a>
+              <a href="thread.html#2219">[ thread ]</a>
+              <a href="subject.html#2219">[ subject ]</a>
+              <a href="author.html#2219">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

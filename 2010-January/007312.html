@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] IPv6 Support patch
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20IPv6%20Support%20patch&In-Reply-To=%3C20100111135353.GC3318%40lxiv.inria.fr%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007311.html">
+   <LINK REL="Next"  HREF="007313.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] IPv6 Support patch</H1>
+    <B>Olivier Mehani</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20IPv6%20Support%20patch&In-Reply-To=%3C20100111135353.GC3318%40lxiv.inria.fr%3E"
+       TITLE="[Gpsd-dev] IPv6 Support patch">olivier.mehani at inria.fr
+       </A><BR>
+    <I>Mon Jan 11 14:53:53 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007311.html">[Gpsd-dev] RMC doesn't update year
+</A></li>
+        <LI>Next message: <A HREF="007313.html">[Gpsd-dev] IPv6 Support patch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7312">[ date ]</a>
+              <a href="thread.html#7312">[ thread ]</a>
+              <a href="subject.html#7312">[ subject ]</a>
+              <a href="author.html#7312">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+On Fri, Dec 18, 2009 at 03:39:16PM -0500, Eric Raymond wrote:
+&gt;<i> &gt; I attach a Quilt patchset with several patches addressing Greg's
+</I>&gt;<i> &gt; points.
+</I>&gt;<i> I have just spent about 30 minutes trying to apply these to gpsd trunk.
+</I>&gt;<i> I'm sorry, but there has been too much change since 2.39 for these to 
+</I>&gt;<i> apply anything even close to cleanly.  I would try to reconcile by hand,
+</I>&gt;<i> but I don't understand the IPv6 API well enough to be sure I wouldn't
+</I>&gt;<i> miss something subtle but critical.
+</I>&gt;<i> 
+</I>&gt;<i> I will be happy to merge in IPv6 support, but you will need to generate
+</I>&gt;<i> a patch set against SVN trunk or (at leastt) our more recent 2.40 release.
+</I>
+Here is the a patchset for the same features, but against SVN rev 6917.
+I ran the same verifications on it as previously, and had the same
+results.
+
+The last two patches in this set implement -4 and -6 command line
+options for (resp.) gpsd and the utilities. The documentation has been
+updated accordingly. 
+
+A note though: the API in libgps has changed for gps_open() and
+gps_open_r() as a new argument has been added to specifi the adress
+family. netlib_connectsock() has undergone the same modifications, but
+it doesn't seem to be part of the public API.
+
+Maybe would it be wiser to have functions like gps_open_af() and
+gps_open_af_r(), with the two previous ones being wrappers around it? I
+saw pro and cons in both solutions, so decided to go for the simplest.
+Nothing that sed can't easily fix (:
+
+To have the same behavior as before, AF_UNSPEC (0) should be given for
+af. Other valid values are AF_INET and AF_INET6. The C++ bindings don't
+have this problem as the change is hidden thanks to polymorphism of
+gpsmm::open().
+
+
+As I side note, I suspect there is a typo in libgps_core.c:main() where
+the usage line reads &#8220;usage: libps...&#8221; instead of &#8220;usage: libgps...&#8221;.
+                                                             ^
+
+Sorry for the delay in replying. It turns out that actually subscribing
+to the IMAP folder a mailing list is delivered helps following it (;
+
+-- 
+Olivier Mehani &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">olivier.mehani at inria.fr</A>&gt;
+PGP fingerprint: 4435 CF6A 7C8D DD9B E2DE  F5F9 F012 A6E2 98C6 6655
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: gpsd-r6917_ipv6.tar.bz2
+Type: application/x-tar-bz2
+Size: 14923 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100111/85ad4e15/attachment.bin">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100111/85ad4e15/attachment.bin</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 490 bytes
+Desc: Cryptographic signature
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100111/85ad4e15/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100111/85ad4e15/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007311.html">[Gpsd-dev] RMC doesn't update year
+</A></li>
+	<LI>Next message: <A HREF="007313.html">[Gpsd-dev] IPv6 Support patch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7312">[ date ]</a>
+              <a href="thread.html#7312">[ thread ]</a>
+              <a href="subject.html#7312">[ subject ]</a>
+              <a href="author.html#7312">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

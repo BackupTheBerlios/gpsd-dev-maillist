@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd &amp; Mac OS X launchd(8)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20%26%20Mac%20OS%20X%20launchd%288%29&In-Reply-To=%3C10E17FEB-3216-4ACB-B1CF-CE37BBC8D9F4%40nicholasfamilycentral.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004211.html">
+   <LINK REL="Next"  HREF="004227.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd &amp; Mac OS X launchd(8)</H1>
+    <B>Frank Nicholas</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20%26%20Mac%20OS%20X%20launchd%288%29&In-Reply-To=%3C10E17FEB-3216-4ACB-B1CF-CE37BBC8D9F4%40nicholasfamilycentral.com%3E"
+       TITLE="[Gpsd-dev] gpsd &amp; Mac OS X launchd(8)">frank at nicholasfamilycentral.com
+       </A><BR>
+    <I>Sat Sep  2 01:31:53 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004211.html">[Gpsd-dev] State of the J commmand patch.
+</A></li>
+        <LI>Next message: <A HREF="004227.html">[Gpsd-dev] gpsd &amp; Mac OS X launchd(8)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4207">[ date ]</a>
+              <a href="thread.html#4207">[ thread ]</a>
+              <a href="subject.html#4207">[ subject ]</a>
+              <a href="author.html#4207">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I'm interested in starting gpsd with launchd(8), on Mac OS X.  This  
+is the preferred method.  Several of the features that have been  
+added to gpsd, in the last year, do not work well with the intentions  
+of launchd(8).
+
+launchd(8) has been released by Apple, under the Apache License,  
+Version 2.0.  More information can be found at:  <A HREF="http://">http://</A> 
+launchd.macosforge.org/ .  launchd(8) replaces init, mach_init,  
+xinetd, RC, SystemStarter, watchdog, and cron, on Mac OS X.  Some of  
+these subsystems (Vixie Cron, xinetd, etc.) are still available, and  
+are themselves launched by launchd(8).
+
+This is from the man page of launchd(8), regarding what it expects of  
+items started with it:
+
+&quot;EXPECTATIONS
+      Daemons or agents managed by launchd are expected to behave  
+certain ways.
+
+      A daemon or agent launched by launchd MUST NOT do the following  
+in the
+      process directly launched by launchd:
+
+            o   fork(2) and have the parent process exit(3) or _exit(2).
+            o   Call daemon(3)
+
+      A daemon or agent launched by launchd SHOULD NOT do the  
+following as a
+      part of their startup initialization:
+
+            o   Setup the user ID or group ID.
+            o   Setup the working directory.
+            o   chroot(2)
+            o   setsid(2)
+            o   Close &quot;stray&quot; file descriptors.
+            o   Change stdio(3) to /dev/null.
+            o   Setup resource limits with setrusage(2).
+            o   Setup priority with setpriority(2).
+            o   Ignore the SIGTERM signal.
+
+      A daemon or agent launched by launchd SHOULD:
+
+            o   Launch on demand given criteria specified in the XML  
+property
+                list.  More information can be found in launch(3).
+            o   Catch the SIGTERM signal.&quot;
+
+The items above, that launchd(8) requests daemons/agents SHOULD NOT  
+do, are listed, because they are controlled by launchd(8), based on  
+parameters given to it, in the XML property list used to launch the  
+item.
+
+I understand why some of of the design choices were made with gpsd.   
+I don't believe there is a flag or method for gpsd, to NOT do some of  
+the items above.  I'm requesting a startup flag, or compile option,  
+related to it running under launchd(8), that would allow it to behave  
+as launchd(8) prefers.
+
+Does this sound realistic?  If so, would it require too much effort?   
+If the above requirements &amp; desirables are doable, I'll submit a gpsd  
+XML property list for launchd(8).  Otherwise, I'll continue to launch  
+it as a SystemStarter item, until SystemStarter is finally removed  
+from Mac OS X (it's already deprecated).  If anyone has questions  
+regarding launchd(8), I'd be glad to send additional information and  
+links to other resources.
+
+Thanks,
+Frank
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004211.html">[Gpsd-dev] State of the J commmand patch.
+</A></li>
+	<LI>Next message: <A HREF="004227.html">[Gpsd-dev] gpsd &amp; Mac OS X launchd(8)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4207">[ date ]</a>
+              <a href="thread.html#4207">[ thread ]</a>
+              <a href="subject.html#4207">[ subject ]</a>
+              <a href="author.html#4207">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

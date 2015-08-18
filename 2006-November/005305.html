@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Further enquiry about &quot;SVN 3934 Change to gpsd.c-	Clarifiation please&quot;
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Further%20enquiry%20about%20%22SVN%203934%20Change%20to%20gpsd.c-%0A%09Clarifiation%20please%22&In-Reply-To=%3C20061124175311.GB13625%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005304.html">
+   <LINK REL="Next"  HREF="005306.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Further enquiry about &quot;SVN 3934 Change to gpsd.c-	Clarifiation please&quot;</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Further%20enquiry%20about%20%22SVN%203934%20Change%20to%20gpsd.c-%0A%09Clarifiation%20please%22&In-Reply-To=%3C20061124175311.GB13625%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Further enquiry about &quot;SVN 3934 Change to gpsd.c-	Clarifiation please&quot;">esr at thyrsus.com
+       </A><BR>
+    <I>Fri Nov 24 18:53:11 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005304.html">[Gpsd-dev] Further enquiry about &quot;SVN 3934 Change to gpsd.c-	Clarifiation please&quot;
+</A></li>
+        <LI>Next message: <A HREF="005306.html">[Gpsd-dev] Update to &quot; Further enquiry about &quot;SVN 3934 Change to	gpsd.c- Clarifiation please&quot;&quot;
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5305">[ date ]</a>
+              <a href="thread.html#5305">[ thread ]</a>
+              <a href="subject.html#5305">[ subject ]</a>
+              <a href="author.html#5305">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Mick Durkin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mick.durkin at saunalahti.fi</A>&gt;:
+&gt;<i> Do you mean that now I should fire up the daemon and it will sit and
+</I>&gt;<i> wait for a client to come along (e.g. cgps) and then it should
+</I>&gt;<i> trigger the probe?
+</I>
+Correct.
+ 
+&gt;<i> If so, I did not have success. Here is what happened.
+</I>
+It looks though gpsd_activate() never gets called.
+
+That's a clue.  Looks like maybe I didn't rip out enough code when
+I removed a gpsd_activate() call.  Try 
+this patch:
+
+Index: gpsd.c
+===================================================================
+--- gpsd.c	(revision 3971)
++++ gpsd.c	(working copy)
+@@ -495,12 +495,10 @@
+      * accessibility here -- we don't need full device activation, and
+      * in particular we don't need to configure the device.
+      */
+-    if (gpsd_open(chp) &lt; 0) {
++    if (gpsd_open(chp) &lt; 0)
+ 	return NULL;
+-    }
+-    gpsd_report(LOG_RAW, &quot;flagging descriptor %d in open_device\n&quot;, chp-&gt;gpsdata.gps_fd);
+-    FD_SET(chp-&gt;gpsdata.gps_fd, &amp;all_fds);
+-    adjust_max_fd(chp-&gt;gpsdata.gps_fd, true);
++    else
++	gpsd_close(chp);
+     return chp;
+ }
+ /*@ +statictrans @*/
+
+&gt;<i> Sorry to be a pain.
+</I>
+Don't apologize, you're being extremely helpful.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005304.html">[Gpsd-dev] Further enquiry about &quot;SVN 3934 Change to gpsd.c-	Clarifiation please&quot;
+</A></li>
+	<LI>Next message: <A HREF="005306.html">[Gpsd-dev] Update to &quot; Further enquiry about &quot;SVN 3934 Change to	gpsd.c- Clarifiation please&quot;&quot;
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5305">[ date ]</a>
+              <a href="thread.html#5305">[ thread ]</a>
+              <a href="subject.html#5305">[ subject ]</a>
+              <a href="author.html#5305">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

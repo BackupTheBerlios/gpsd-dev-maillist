@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Bug in gps_unpack/jpon_unpack
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Bug%20in%20gps_unpack/jpon_unpack&In-Reply-To=%3Ca2d3b4551002102037y3a4ac79ic19cde221aa0844f%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007364.html">
+   <LINK REL="Next"  HREF="007365.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Bug in gps_unpack/jpon_unpack</H1>
+    <B>Don Weeks</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Bug%20in%20gps_unpack/jpon_unpack&In-Reply-To=%3Ca2d3b4551002102037y3a4ac79ic19cde221aa0844f%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Bug in gps_unpack/jpon_unpack">don.l.weeks.jr at gmail.com
+       </A><BR>
+    <I>Thu Feb 11 05:37:01 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007364.html">[Gpsd-dev] C++ wrapper: gps close and no-fix
+</A></li>
+        <LI>Next message: <A HREF="007365.html">[Gpsd-dev] gpsd interface to turn on/off gps radio
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7363">[ date ]</a>
+              <a href="thread.html#7363">[ thread ]</a>
+              <a href="subject.html#7363">[ subject ]</a>
+              <a href="author.html#7363">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Given:
+
+int gps_unpack(char *buf, struct gps_data_t *gpsdata)
+/* unpack a gpsd response into a status structure, buf must be writeable */
+{
+char *ns, *sp, *tp;
+int i;
+
+libgps_debug_trace((1, &quot;gps_unpack(%s)\n&quot;, buf));
+
+/* detect and process a JSON response */
+if (buf[0] == '{') {
+const char *jp = buf, **next = &jp;
+while (next != NULL &amp;&amp; *next != NULL &amp;&amp; next[0][0] != '\0') {
+libgps_debug_trace((1,
+&quot;gps_unpack() segment parse '%s'\n&quot;,
+*next));
+(void)libgps_json_unpack(*next, gpsdata, next);
+
+
+
+and
+
+
+
+int libgps_json_unpack(const char *buf,
+struct gps_data_t *gpsdata,
+const char **end)
+/* the only entry point - unpack a JSON object into gpsdata_t substructures
+*/
+{
+int status;
+  char *classtag = nstrstr(buf, &quot;\&quot;class\&quot;:&quot;)
+if (classtag == NULL)
+return -1;
+
+
+We can return a -1 from the classtag check and yet we don't check the return
+code in gps_unpack. Is this a bug? I am certainly hitting it badly for some
+reason. Nasty infinite loop.
+
+I changed the (void)libgps_json_unpack(*next, gpsdata, next); to if
+((void)libgps_json_unpack(*next, gpsdata, next) == -1) break; which is
+working. I have not had time to work through the details on what this will
+do but if anyone knows why this is happening or if a better fix is
+available, let me know.
+       Don
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100210/6f92749d/attachment.html">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100210/6f92749d/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007364.html">[Gpsd-dev] C++ wrapper: gps close and no-fix
+</A></li>
+	<LI>Next message: <A HREF="007365.html">[Gpsd-dev] gpsd interface to turn on/off gps radio
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7363">[ date ]</a>
+              <a href="thread.html#7363">[ thread ]</a>
+              <a href="subject.html#7363">[ subject ]</a>
+              <a href="author.html#7363">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

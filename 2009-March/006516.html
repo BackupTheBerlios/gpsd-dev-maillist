@@ -1,0 +1,142 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd release status
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20release%20status&In-Reply-To=%3C1237247285.11235.59.camel%40pcmartin.koesching.it-schaller.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006558.html">
+   <LINK REL="Next"  HREF="006519.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd release status</H1>
+    <B>Martin Schaller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20release%20status&In-Reply-To=%3C1237247285.11235.59.camel%40pcmartin.koesching.it-schaller.de%3E"
+       TITLE="[Gpsd-dev] gpsd release status">martin-s at users.sourceforge.net
+       </A><BR>
+    <I>Tue Mar 17 00:48:05 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006558.html">[Gpsd-dev] gpsd release status
+</A></li>
+        <LI>Next message: <A HREF="006519.html">[Gpsd-dev] gpsd release status
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6516">[ date ]</a>
+              <a href="thread.html#6516">[ thread ]</a>
+              <a href="subject.html#6516">[ subject ]</a>
+              <a href="author.html#6516">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+On Mo, 2009-03-16 at 04:26 -0400, Eric S. Raymond wrote:
+
+&gt;<i> Um, what memory corruption bug?
+</I>
+I have reported it nearly a year ago. But you got my report already I
+have seen. It was quite hard to find, because the application crashed at
+locations totally unrelated to libgps.
+
+&gt;<i> &gt; IMO libgps is a complete mess. It corrupts memory, it gives out wrong
+</I>&gt;<i> &gt; coordinates if LC_ALL is set to something which uses &quot;,&quot; as decimal
+</I>&gt;<i> &gt; separator (which unfortunatley many distributions do, and no, setting
+</I>&gt;<i> &gt; LC_NUMERIC doesn't fix this because LC_ALL overrides LC_NUMERIC) and it
+</I>&gt;<i> &gt; changes shared library versions due to its api design faster than any
+</I>&gt;<i> &gt; other package (currenty version 17) making it impossible to upgrade
+</I>&gt;<i> &gt; libgps without breaking every installed app that uses it.
+</I>&gt;<i> 
+</I>&gt;<i> That last is unfair.  I know, because I can check the changelogs, that
+</I>&gt;<i> the shared-library version of libgps has not needed to be incremented
+</I>&gt;<i> since mid-2006 at the latest.  That's nearly three years, which is as
+</I>&gt;<i> good as most service libraries do.
+</I>
+Ok, I take it back. Mid 2006 is a good time frame. It is just a bit
+frustrating. We are doing nightly builds of navit for various platforms.
+We need 2 versions for windows: One for win32 and one for arm wince,
+which covers most windows installations. We need n versions for linux,
+and even they break regularily. And one of the most frequent reasons was
+a libgps version change.
+But the changes could have been avoided if the struct gps_data_t would
+have been made opaque to the user and accessor functions would have been
+used instead.
+Apart from that there is another annoyance: The location of the members
+of struct gps_data_t starting with gps_device is dependant on configure
+parameters which are not available to the libgps user. That means if
+--enable-oceanserver or --enable-tnt is used, the client gets the wrong
+location and corrupt data. This especially affects gps_fd which is
+needed to call gps_poll efficiently.
+
+&gt;<i> We have a recent attempted fix for the locale problem, which we do
+</I>&gt;<i> know about.  But I don't know how to test for it.  If you could
+</I>&gt;<i> supply a recipe for reproducing it, I'd make sure it gets fixed and that a
+</I>&gt;<i> test gets included in our normal regression tests.
+</I>
+Ok, I will provide one tomorrow.
+An easy fix would be to do a setlocale(LC_ALL,&quot;C&quot;). But this will
+override the language settings meaning that the application is in
+english only.
+Best would be to avoid sscanf and parse the numbers directly.
+Since we also have that problems at other locations in navit we use
+g_ascii_strtod from glib, but I guess that isn't an option for libgps.
+Maybe something similar could be implemented there.
+
+&gt;<i> &gt; Currently navit uses libgps, but due to above problems I intend to drop
+</I>&gt;<i> &gt; it and write our own method of accessing gpsd.
+</I>&gt;<i> 
+</I>&gt;<i> You're going to risk causing yourself some serious grief in the near
+</I>&gt;<i> future if you do that. I've been putting it off as long as I can --
+</I>&gt;<i> about three years now -- but we aren't going to be able to avoid
+</I>&gt;<i> redesigning the GPSD protocol much longer. When we're forced to it,
+</I>&gt;<i> that is rather likely to cause a flag day for anybody who is doing
+</I>&gt;<i> their own transactions over the socket -- including you.  libgps should be
+</I>&gt;<i> able to keep the transition painless, but only if you actually use it.
+</I>
+I would like to use it, but unfortunately it is a significant
+contributor to bug reports for us. And usually it takes some time what
+problem in particular exists.
+Quote from our irc channel:
+yeah.. it wrote &quot;navit:main_init:Warning: LC_ALL is set, this might lead
+to problems&quot; but i didn't expect problems in gps position ;)
+
+&gt;<i> In fact, I know that code well enough to make a guarantee -- if you give
+</I>&gt;<i> me recipes for reproducing the bugs you have encountered, I *will* fix
+</I>&gt;<i> them within the next week, before 2.39 ships.
+</I>
+Ok, thank you. I will provide one tomorrow for the LC_ALL problem.
+
+Best regards,
+
+Martin Schaller
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006558.html">[Gpsd-dev] gpsd release status
+</A></li>
+	<LI>Next message: <A HREF="006519.html">[Gpsd-dev] gpsd release status
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6516">[ date ]</a>
+              <a href="thread.html#6516">[ thread ]</a>
+              <a href="subject.html#6516">[ subject ]</a>
+              <a href="author.html#6516">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

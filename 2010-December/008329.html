@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPS date fail due to week counter rollover (not a	gpsd bug)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPS%20date%20fail%20due%20to%20week%20counter%20rollover%20%28not%20a%0A%09gpsd%20bug%29&In-Reply-To=%3Crmir5dfuo8r.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008339.html">
+   <LINK REL="Next"  HREF="008326.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPS date fail due to week counter rollover (not a	gpsd bug)</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPS%20date%20fail%20due%20to%20week%20counter%20rollover%20%28not%20a%0A%09gpsd%20bug%29&In-Reply-To=%3Crmir5dfuo8r.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] GPS date fail due to week counter rollover (not a	gpsd bug)">gdt at ir.bbn.com
+       </A><BR>
+    <I>Sat Dec 18 15:52:52 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008339.html">[Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)
+</A></li>
+        <LI>Next message: <A HREF="008326.html">[Gpsd-dev] gpsd_report missing for test_bits
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8329">[ date ]</a>
+              <a href="thread.html#8329">[ thread ]</a>
+              <a href="subject.html#8329">[ subject ]</a>
+              <a href="author.html#8329">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; writes:
+
+&gt;<i> Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;:
+</I>&gt;&gt;<i>   Declare that disambiguating the week field into time is the GPS
+</I>&gt;&gt;<i>   receiver's problem.
+</I>&gt;<i>
+</I>&gt;<i> Well, in an absolute sense of course it is.  I'm just trying to come up
+</I>&gt;<i> with ways to minimize the pain.
+</I>
+Sure, but it's an important philisophical point.
+
+&gt;&gt;<i>   If there are GPS receivers that support getting time at powerup to get
+</I>&gt;&gt;<i>   the above right, help them.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i>   Have gpsd disambiguate 2-digit years using the local clock.  But since
+</I>&gt;&gt;<i>   we release often relative to 100-year rollover, that's not a worry and
+</I>&gt;&gt;<i>   the current &quot;assume 20XX&quot; seems fine.
+</I>&gt;<i>
+</I>&gt;<i> Combining these: Up to now, we've had a policy of not trusting the system 
+</I>&gt;<i> clock.  But maybe we could trust it to a limited extent at gpsd startup.  
+</I>&gt;<i> Rules something like this: 
+</I>
+I concur &quot;not trusting&quot; is in the large sensible.   But &quot;what century is
+it&quot; seems fair.
+
+&gt;<i> 1. If the system clock is zero or negative, emit a warning and disable
+</I>&gt;<i> all heuristics.  (Negative probably means we're on a 32-bit machine 
+</I>&gt;<i> after the 2038 rollover.)
+</I>
+You mean &quot;a machine with 32-bit time_t&quot; :-) There's nothing wrong with
+32-bit machines with 64-bit time_t.
+
+I don't think you need to worry about 2038 now.  In 2030, make gpsd fail
+to compile on machines with 32-bit time_t.
+
+&gt;<i> 2. If it's positive, use it to set both the century and the time of the 
+</I>&gt;<i> last GPS week rollover. (For that latter, subtract the GPS epoch and divide
+</I>&gt;<i> by 1024 * SECONDS_PER_WEEK.)
+</I>&gt;<i>
+</I>&gt;<i> 3. If an incoming ZDA conflicts with the year set in step 2. emit a warning.
+</I>
+Sure, that sounds fine - plus disable any time sync.
+
+&gt;&gt;<i> Also, while I don't argue with your characterization that 64-bit Linux
+</I>&gt;&gt;<i> has 64-bit time_t and thus can cope and 32-bit Linux has 32-bit time_t
+</I>&gt;&gt;<i> and cannot, I find it a bit odd that this type changes size based on
+</I>&gt;&gt;<i> processor, and suggest we be careful about the difference between time_t
+</I>&gt;&gt;<i> size and processor word size.
+</I>&gt;<i>
+</I>&gt;<i> Historically, I believe that time_t size was tied to processor word size
+</I>&gt;<i> bacause time was typedefed to either int (on 32-bit machines) or long
+</I>&gt;<i> (on 16-bit machines). 
+</I>
+I would characterize that as a decision that time_t should be 32 bits
+and using int/long to get the equivalent of the not-yet-specified
+int32_t.
+
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20101218/d35b9e9e/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20101218/d35b9e9e/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008339.html">[Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)
+</A></li>
+	<LI>Next message: <A HREF="008326.html">[Gpsd-dev] gpsd_report missing for test_bits
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8329">[ date ]</a>
+              <a href="thread.html#8329">[ thread ]</a>
+              <a href="subject.html#8329">[ subject ]</a>
+              <a href="author.html#8329">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

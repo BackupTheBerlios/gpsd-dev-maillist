@@ -1,0 +1,94 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] sirf.c is reverted
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20sirf.c%20is%20reverted&In-Reply-To=%3C20050608133129.GB4613%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002040.html">
+   <LINK REL="Next"  HREF="002032.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] sirf.c is reverted</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20sirf.c%20is%20reverted&In-Reply-To=%3C20050608133129.GB4613%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] sirf.c is reverted">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Jun  8 15:31:29 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002040.html">[Gpsd-dev] sirf.c is reverted
+</A></li>
+        <LI>Next message: <A HREF="002032.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2585 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2041">[ date ]</a>
+              <a href="thread.html#2041">[ thread ]</a>
+              <a href="subject.html#2041">[ subject ]</a>
+              <a href="author.html#2041">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Andreas Brauchli &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">a.brauchli at elementarea.net</A>&gt;:
+&gt;<i> here you go:
+</I>&gt;<i> speed is fine, altitude too
+</I>
+Excellent.
+ 
+&gt;<i> the only concern is that it's still lagging some secs. (5-10) behind -
+</I>&gt;<i> could this be the behavior of the device?
+</I>
+Very likely.  I've time-profiled gpsd extensively; on my system the
+latency it introduces in negligible, on the order of a hundredth of a
+second.
+
+OK, next let's try a small change that decouples the getlong macro from the
+getword macro.  Does this work?
+
+Index: sirf.c
+===================================================================
+--- sirf.c	(revision 2587)
++++ sirf.c	(working copy)
+@@ -108,7 +108,8 @@
+ 
+ #define getbyte(off)	((unsigned char)buf[off])
+ #define getword(off)	((short)((getbyte(off) &lt;&lt; 8) | getbyte(off+1)))
+-#define getlong(off)	((int)((getword(off) &lt;&lt; 16) | (getword(off+2) &amp; 0xffff)))
++#define getlong(off)	((int)((getbyte(off) &lt;&lt; 24) | (getbyte(off+1) &lt;&lt; 16) \
++				| (getbyte(off+3) &lt;&lt; 8) | getbyte(off+4)))
+ 
+ static void sirfbin_mode(struct gps_device_t *session, int mode)
+ {
+
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002040.html">[Gpsd-dev] sirf.c is reverted
+</A></li>
+	<LI>Next message: <A HREF="002032.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2585 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2041">[ date ]</a>
+              <a href="thread.html#2041">[ thread ]</a>
+              <a href="subject.html#2041">[ subject ]</a>
+              <a href="author.html#2041">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

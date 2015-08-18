@@ -1,0 +1,158 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] recent PPS
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20recent%20PPS&In-Reply-To=%3Calpine.LNX.1.10.0911190910500.19142%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007106.html">
+   <LINK REL="Next"  HREF="007113.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] recent PPS</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20recent%20PPS&In-Reply-To=%3Calpine.LNX.1.10.0911190910500.19142%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] recent PPS">gem at rellim.com
+       </A><BR>
+    <I>Thu Nov 19 18:28:03 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007106.html">[Gpsd-dev] recent PPS
+</A></li>
+        <LI>Next message: <A HREF="007113.html">[Gpsd-dev] recent PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7109">[ date ]</a>
+              <a href="thread.html#7109">[ thread ]</a>
+              <a href="subject.html#7109">[ subject ]</a>
+              <a href="author.html#7109">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Miroslav!
+
+On Thu, 19 Nov 2009, Miroslav Lichvar wrote:
+
+&gt;<i> &gt; I can buy that 0.2% is maybe too tight (many would disagree) but 10%
+</I>&gt;<i> &gt; seems pretty outrageous to me.  Maybe there is a compromise that about
+</I>&gt;<i> &gt; a wider window during a pull-in time, but for long term time keeping the
+</I>&gt;<i> &gt; tight checks have shown their value in filtering out noise.
+</I>&gt;<i>
+</I>&gt;<i> In the current code half of the noise will pass through anyway as the
+</I>&gt;<i> cycle and duration are checked only from one side.
+</I>
+You lost me here.  What noise are we passing through?  I don't want to
+go overboard, but if there are obvious further checks let's consider them.
+
+&gt;<i> Latest ntpd versions use the median filter even for SHM samples, it
+</I>&gt;<i> should be very effective in filtering out noise.
+</I>
+Yeah, was looking at that.  Why make its job harder?
+&gt;<i>
+</I>&gt;<i> Look for slew_delta_tick and max_tick_bias in
+</I>&gt;<i> <A HREF="http://git.tuxfamily.org/chrony/chrony.git/?p=gitroot/chrony/chrony.git;a=blob_plain;f=sys_linux.c;hb=HEAD">http://git.tuxfamily.org/chrony/chrony.git/?p=gitroot/chrony/chrony.git;a=blob_plain;f=sys_linux.c;hb=HEAD</A>
+</I>
+But how does chrony even see a PPS pulse.  Their readme says they have no
+refclock drivers.
+
+&gt;<i> &gt; Hard for me to believe that anyone interested in good time keeping could
+</I>&gt;<i> &gt; abide by that.
+</I>&gt;<i>
+</I>&gt;<i> Sometimes slewing (even that fast) is considered as a better alternative
+</I>&gt;<i> to stepping time.
+</I>
+In which case gpsd should just get out of the way for a while.
+
+&gt;<i> &gt; Would you consider wider checks for the first hour gpsd runs, or some
+</I>&gt;<i> &gt; sort of adaptive window?
+</I>&gt;<i>
+</I>&gt;<i> How about wrapping the constants in a macro which could be adjusted in
+</I>&gt;<i> configure?
+</I>
+No need to work on the config until we have a manual solution.
+
+You do realize that the only ntpshm check against the sysclock is
+only that the last serial time fix is less than one second old?  Only
+if the clock slewed more than one second in one second will we reject
+a PPS pulse.  If the clock is that bad we need to reject it.
+
+&gt;<i> &gt; &gt; Precision is calculated from offset. As H&#229;kan pointed out earlier,
+</I>&gt;<i> &gt; &gt; current offset (which is again based on local time) doesn't indicate
+</I>&gt;<i> &gt; &gt; how good is the PPS signal.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; I can not agree with that, sure the number is a mish-mash, but it
+</I>&gt;<i> &gt; has real value as a 'goodness' indicator.
+</I>&gt;<i>
+</I>&gt;<i> Jitter is a much better indicator, it's calculated in ntpd and visible
+</I>&gt;<i> in ntpq output if you want to do a quick check. Also, if there is a
+</I>&gt;<i> time1 specified in ntp.conf to compensate for an error, the offset
+</I>&gt;<i> visible in gpsd will be different from the offset ntpd is trying to
+</I>&gt;<i> correct.
+</I>
+Not sure what you are arguing for here.  I made your precision change as
+requested.  After further tests and ntpd code review I can see it is a
+no-op.
+
+So, once again, the ntpshm provided precision GOES NOWHERE.
+
+&gt;<i> BTW, raw PPS signal I'm getting here from GPS 18x LVC has about 2us
+</I>&gt;<i> jitter.
+</I>
+I really doubt that.  I believe your measurement, or the ntpd value, has
+that much jitter.
+
+&gt;<i> &gt; I have been looking at the ntpd code and it does not appear to use
+</I>&gt;<i> &gt; the precision we provide for that purpose.  In fact it seems to
+</I>&gt;<i> &gt; pretty much ignore the provided precision.
+</I>&gt;<i>
+</I>&gt;<i> Hm, I thought that it was included in peer dispersion, but it really
+</I>&gt;<i> looks like it's used only for reporting. Chrony ignores the precision
+</I>&gt;<i> too, so I guess anything will work fine.
+</I>
+See, we agree.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 109 NW Wilmington Ave., Suite E, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFLBYAlBmnRqz71OvMRAjQnAJ9LyOgmdu6MsgtS7kACqt/515zq9QCfT6UK
+Z3MFImbRl9svYGPgBjQBGBE=
+=/d+8
+-----END PGP SIGNATURE-----
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007106.html">[Gpsd-dev] recent PPS
+</A></li>
+	<LI>Next message: <A HREF="007113.html">[Gpsd-dev] recent PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7109">[ date ]</a>
+              <a href="thread.html#7109">[ thread ]</a>
+              <a href="subject.html#7109">[ subject ]</a>
+              <a href="author.html#7109">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,155 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch,	master, updated. release-2.95-358-gaac58d4 (fwd)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20Project%20gpsd%20at%20BerliOS%20branch%2C%0A%09master%2C%20updated.%20release-2.95-358-gaac58d4%20%28fwd%29&In-Reply-To=%3C84bp46u9xq.fsf%40sauna.l.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008377.html">
+   <LINK REL="Next"  HREF="008379.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch,	master, updated. release-2.95-358-gaac58d4 (fwd)</H1>
+    <B>Timo Juhani Lindfors</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20Project%20gpsd%20at%20BerliOS%20branch%2C%0A%09master%2C%20updated.%20release-2.95-358-gaac58d4%20%28fwd%29&In-Reply-To=%3C84bp46u9xq.fsf%40sauna.l.org%3E"
+       TITLE="[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch,	master, updated. release-2.95-358-gaac58d4 (fwd)">timo.lindfors at iki.fi
+       </A><BR>
+    <I>Mon Dec 27 23:29:05 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008377.html">[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-358-gaac58d4 (fwd)
+</A></li>
+        <LI>Next message: <A HREF="008379.html">[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-358-gaac58d4 (fwd)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8378">[ date ]</a>
+              <a href="thread.html#8378">[ thread ]</a>
+              <a href="subject.html#8378">[ subject ]</a>
+              <a href="author.html#8378">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+&quot;Gary E. Miller&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt; writes:
+&gt;<i> First you have mentioned rural areas of Finland.  Of course your
+</I>&gt;<i> application my have unique needs, but for 99% of the gpsd users that
+</I>&gt;<i> is not an issue.
+</I>
+Heh sorry, it's just that RTK-GPS is often used in rural areas :-)
+
+&gt;<i> Maybe I should have said that: I have no ubx, and therefore know nothing, nor
+</I>&gt;<i> care to know anything about UBX.
+</I>
+Ah you mean you have no receiver that supports sending data in ubx
+format.
+
+&gt;<i> A description of the RXM content is what I was looking for a link to.
+</I>&gt;<i> Unless it is proprietary, private or ubx only, then I don't care.
+</I>
+Isn't official NMEA documentation also somewhat expensive? And yes
+RXM-RAW is a message type in UBX protocol so it is UBX-only
+obviously. If you do
+
+$ git clone <A HREF="http://iki.fi/lindi/git/ubx-gps.git/">http://iki.fi/lindi/git/ubx-gps.git/</A>
+$ less ubx-gps/ubx.h
+
+you can read the C data structure definitions that are DFSG-free:
+
+
+
+//================================================================
+//! RXM_RAW: Periodic/Polled
+/*!
+Raw Measurement Data
+This message contains all information needed to be able to generate a &lt;a href=\&quot;<A HREF="http://www.aiub-download.unibe.ch/rinex/">http://www.aiub-download.unibe.ch/rinex/</A>'&gt;RINEX&lt;/a&gt; file.
+
+
+This Message's id is #UBXID_RXM_RAW
+*/
+//================================================================
+
+typedef struct GPS_UBX_RXM_RAW_s
+{
+	I4  iTOW;                     //!&lt; Measurement integer millisecond GPS time of week  (Receiver Time)
+	I2  week;                     //!&lt; Measurement GPS week number (Receiver Time).
+	U1  numSV;                    //!&lt; # of satellites following.
+	U1  res1;                     //!&lt; Reserved
+	//REPEAT: GPS_UBX_RXM_RAW_CPMES_t repeat0[numSV];          
+
+} GPS_UBX_RXM_RAW_t,*GPS_UBX_RXM_RAW_pt;
+
+
+//! Optional Sub-Structure of #GPS_UBX_RXM_RAW_t
+typedef struct GPS_UBX_RXM_RAW_CPMES_s
+{
+	R8  cpMes;                    //!&lt; Carrier phase measurement [L1 cycles]
+	R8  prMes;                    //!&lt; Pseudorange measurement [m]
+	R4  doMes;                    //!&lt; Doppler measurement [Hz]
+	U1  sv;                       //!&lt; Space Vehicle Number
+	I1  mesQI;                    //!&lt; Nav Measurements Quality Indicator:
+	I1  cno;                      //!&lt; Signal strength C/No. (dbHz)
+	U1  lli;                      //!&lt; Loss of lock indicator (RINEX definition)
+
+} GPS_UBX_RXM_RAW_CPMES_t,*GPS_UBX_RXM_RAW_CPMES_pt;
+
+
+
+#define UBXID_RXM_RAW 0x0210 //!&lt; message id for RXM-RAW
+	
+
+//================================================================
+//! RXM_SFRB: Periodic
+/*!
+Subframe Buffer
+The content of one single subframe buffer
++For GPS satellites, the 10 dwrd values contain the parity checked subframe data for 10 Words. Each dwrd has 24 Bits with valid data (Bits 23 to 0). The remaining 8 bits (31 to 24) have an undefined value. The direction within the Word is that the higher order bits are received from the SV first. Example: The Preamble can be found in dwrd[0], at bit position 23 down to 16. For more details on the data format please refer to the ICD-GPS-200C Interface document.
++For SBAS satellites, the 250 Bit message block can be found in dwrd[0] to dwrd[6] for the first 224 bits. The remaining 26 bits are in dwrd[7], whereas Bits 25 and 24 are the last two data bits, and Bits 23 down to 0 are the parity bits. For more information on SBAS data format, please refer to RTCA/DO-229C (MOPS), Appendix A.
+
+
+This Message's id is #UBXID_RXM_SFRB
+*/
+//================================================================
+
+typedef struct GPS_UBX_RXM_SFRB_s
+{
+	U1  chn;                      //!&lt; Channel Number
+	U1  svid;                     //!&lt; ID of Satellite transmitting Subframe
+	X4  dwrd[10];                 //!&lt; Words of Data
+
+} GPS_UBX_RXM_SFRB_t,*GPS_UBX_RXM_SFRB_pt;
+
+
+#define UBXID_RXM_SFRB 0x0211 //!&lt; message id for RXM-SFRB
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008377.html">[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-358-gaac58d4 (fwd)
+</A></li>
+	<LI>Next message: <A HREF="008379.html">[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-358-gaac58d4 (fwd)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8378">[ date ]</a>
+              <a href="thread.html#8378">[ thread ]</a>
+              <a href="subject.html#8378">[ subject ]</a>
+              <a href="author.html#8378">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

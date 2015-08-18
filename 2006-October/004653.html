@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] SiRF tweaks
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20SiRF%20tweaks&In-Reply-To=%3C20061025151213.GA26971%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004636.html">
+   <LINK REL="Next"  HREF="004657.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] SiRF tweaks</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20SiRF%20tweaks&In-Reply-To=%3C20061025151213.GA26971%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] SiRF tweaks">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Oct 25 17:12:13 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004636.html">[Gpsd-dev] SiRF tweaks
+</A></li>
+        <LI>Next message: <A HREF="004657.html">[Gpsd-dev] SiRF tweaks
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4653">[ date ]</a>
+              <a href="thread.html#4653">[ thread ]</a>
+              <a href="subject.html#4653">[ subject ]</a>
+              <a href="author.html#4653">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Chris Kuethe &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">chris.kuethe at gmail.com</A>&gt;:
+&gt;<i> On 10/24/06, Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+</I>&gt;<i> &gt; Chris Kuethe wrote:
+</I>&gt;<i> &gt; &gt; Turn on sirf message 7 unconditionally. Software solvers need it, and
+</I>&gt;<i> &gt; &gt; for regular display, we get the week display wrong - toggles between
+</I>&gt;<i> &gt; &gt; truncated and extended week number.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; If you want to enable this in the driver init, and add the appropriate
+</I>&gt;<i> &gt; handler code to the message type case, go to it.
+</I>&gt;<i> 
+</I>&gt;<i> OK. I've seen gpsd/cgps flashing between extended and truncated week
+</I>&gt;<i> number. By making message 7 the authoritative source of week number,
+</I>&gt;<i> the problem goes away. I'll look  into not screwing that up. :)
+</I>
+OK.  I think this only matters for sirfmon, yes?
+ 
+&gt;<i> I was musing that it might be nice to have the software version
+</I>&gt;<i> reported every so often. But it's not really good for anything. Well,
+</I>&gt;<i> that's not quite true. We use it to decide whether to stay in SiRF
+</I>&gt;<i> binary mode. Perhaps if we cached the version, we could make that be
+</I>&gt;<i> part of the response to the &quot;I&quot; command?
+</I>
+That's not a bad idea.
+ 
+&gt;<i> Change recommended: make it possible to consume this data over the
+</I>&gt;<i> wire. Either poll for it or don't disable it if the receiver is
+</I>&gt;<i> already safely sending it. gpsd might not use it internally, but it
+</I>&gt;<i> should pass raw data along if a client app signals that it would like
+</I>&gt;<i> that data.
+</I>
+I could go with &quot;don't disable it if already safely sending&quot;, basically to
+decrease the amount of state we have to restore on exit.
+ 
+&gt;<i> &gt; OK, but under what circumstances are you recommending we turn on
+</I>&gt;<i> &gt; tracker mode?
+</I>&gt;<i> 
+</I>&gt;<i> Given the port speed required to support tracker mode: when the user
+</I>&gt;<i> requests it. And consider not disabling it if the the port is already
+</I>&gt;<i> running fast enough?
+</I>
+Same comment as above.
+ 
+&gt;<i> I was thinking aloud. Trying to take off the gpsd developer hat - as a
+</I>&gt;<i> user, I am annoyed by any software that unnecessarily reconfigures my
+</I>&gt;<i> hardware without giving me a chance to prevent that reconfiguration or
+</I>&gt;<i> undo it. It seems bluetooth users would agree with me. :P
+</I>
+Not sure how Bluetooth is special here.
+
+&gt;<i>                                               Just reading
+</I>&gt;<i> over my protocol references again to see if it's possible to fully
+</I>&gt;<i> describe the device's configuration, and then to restore it.
+</I>
+Right, that's a key question to answer at this point.  Even if it's
+not possible to restore *everything*, it may be possible to do a good
+enough job to avoid a mode switch.
+
+&gt;<i> We already allow a switch from NMEA to vendor binary - some things
+</I>&gt;<i> just aren't available in NMEA. It doesn't seem like and unreasonable
+</I>&gt;<i> step to then say: &quot;give me everything the gps can tell me. I know what
+</I>&gt;<i> I'm doing&quot;
+</I>
+Ah, so you're meditating on a new chattiness command.  I see.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004636.html">[Gpsd-dev] SiRF tweaks
+</A></li>
+	<LI>Next message: <A HREF="004657.html">[Gpsd-dev] SiRF tweaks
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4653">[ date ]</a>
+              <a href="thread.html#4653">[ thread ]</a>
+              <a href="subject.html#4653">[ subject ]</a>
+              <a href="author.html#4653">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

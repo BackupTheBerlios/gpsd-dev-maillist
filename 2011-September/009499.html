@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Old PPS code support broken in 3.x
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Old%20PPS%20code%20support%20broken%20in%203.x&In-Reply-To=%3C4FB0CADD-9CB6-442C-A98B-868A8172C707%40aus-city.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009498.html">
+   <LINK REL="Next"  HREF="009500.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Old PPS code support broken in 3.x</H1>
+    <B>David Cottle</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Old%20PPS%20code%20support%20broken%20in%203.x&In-Reply-To=%3C4FB0CADD-9CB6-442C-A98B-868A8172C707%40aus-city.com%3E"
+       TITLE="[Gpsd-dev] Old PPS code support broken in 3.x">webmaster at aus-city.com
+       </A><BR>
+    <I>Fri Sep  9 07:21:00 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009498.html">[Gpsd-dev] Old PPS code support broken in 3.x
+</A></li>
+        <LI>Next message: <A HREF="009500.html">[Gpsd-dev] Old PPS code support broken in 3.x
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9499">[ date ]</a>
+              <a href="thread.html#9499">[ thread ]</a>
+              <a href="subject.html#9499">[ subject ]</a>
+              <a href="author.html#9499">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi All,
+
+Thanks for looking into it! Sorry about referencing old - anyway it's all in sync.
+
+Don't have a choice with OS as it's a webserver also parallels dropped support for Fedora that I loved, so my licensed forced me to redhat.
+
+Anyway thanks again, and any fixes let me know, I van build the rpm and test it on the server.
+
+Cheers,
+David 
+
+Sent from my iPhone
+
+On 09/09/2011, at 10:46, &quot;Gary E. Miller&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt; wrote:
+
+&gt;<i> -----BEGIN PGP SIGNED MESSAGE-----
+</I>&gt;<i> Hash: SHA1
+</I>&gt;<i> 
+</I>&gt;<i> Yo Eric!
+</I>&gt;<i> 
+</I>&gt;<i> On Thu, 8 Sep 2011, Eric Raymond wrote:
+</I>&gt;<i> 
+</I>&gt;&gt;<i> Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+</I>&gt;&gt;&gt;<i> There are two ways to get PPS data into gpsd so gpsd can send it out
+</I>&gt;&gt;&gt;<i> to ntpd.  One way using kernel PPS and one using ioctl()s.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> If I ever knew this, I had forgotten it.
+</I>&gt;<i> 
+</I>&gt;<i> Only just diagnosed.  I would not bet taht the problem is exactly as I
+</I>&gt;<i> suggest.
+</I>&gt;<i> 
+</I>&gt;&gt;<i> Thanks for the explanation.  I'll grep for 'ioctl(' and see if I can make
+</I>&gt;&gt;<i> anything of what I find.
+</I>&gt;<i> 
+</I>&gt;<i> Basically gpsd_ppsmonitor() needs root perms early in its execution.  Those
+</I>&gt;<i> places are noted in comments.
+</I>&gt;<i> 
+</I>&gt;<i> That is called like this:
+</I>&gt;<i> 
+</I>&gt;<i>            (void)pthread_create(&amp;pt, NULL, gpsd_ppsmonitor, (void *)session);
+</I>&gt;<i> 
+</I>&gt;<i> from ntpd_link_activate() which is called from add_device() in turn
+</I>&gt;<i> called from handle_control()
+</I>&gt;<i> 
+</I>&gt;<i> Sadly handle_control() is called in main() after the priviledges are dropped.
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> RGDS
+</I>&gt;<i> GARY
+</I>&gt;<i> - ---------------------------------------------------------------------------
+</I>&gt;<i> Gary E. Miller Rellim 109 NW Wilmington Ave., Suite E, Bend, OR 97701
+</I>&gt;<i>    <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+</I>&gt;<i> 
+</I>&gt;<i> -----BEGIN PGP SIGNATURE-----
+</I>&gt;<i> Version: GnuPG v1.4.3 (GNU/Linux)
+</I>&gt;<i> 
+</I>&gt;<i> iD8DBQFOaWHhBmnRqz71OvMRAjboAJ9AA7qmXffNVzvSs91mHeIG+TO9LACeM4dV
+</I>&gt;<i> QVQXUBA1l+0P9+eiH7qxnS0=
+</I>&gt;<i> =YIDD
+</I>&gt;<i> -----END PGP SIGNATURE-----
+</I>&gt;<i> 
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009498.html">[Gpsd-dev] Old PPS code support broken in 3.x
+</A></li>
+	<LI>Next message: <A HREF="009500.html">[Gpsd-dev] Old PPS code support broken in 3.x
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9499">[ date ]</a>
+              <a href="thread.html#9499">[ thread ]</a>
+              <a href="subject.html#9499">[ subject ]</a>
+              <a href="author.html#9499">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

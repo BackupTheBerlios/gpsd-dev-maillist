@@ -1,0 +1,89 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd bug and feature queue is now empty
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20bug%20and%20feature%20queue%20is%20now%20empty&In-Reply-To=%3C20050527091658.GA1077%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001962.html">
+   <LINK REL="Next"  HREF="001918.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd bug and feature queue is now empty</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20bug%20and%20feature%20queue%20is%20now%20empty&In-Reply-To=%3C20050527091658.GA1077%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] gpsd bug and feature queue is now empty">esr at thyrsus.com
+       </A><BR>
+    <I>Fri May 27 11:16:58 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001962.html">[Gpsd-dev] gpsd bug and feature queue is now empty
+</A></li>
+        <LI>Next message: <A HREF="001918.html">[Gpsd-dev] gpsd bug and feature queue is now empty
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1963">[ date ]</a>
+              <a href="thread.html#1963">[ thread ]</a>
+              <a href="subject.html#1963">[ subject ]</a>
+              <a href="author.html#1963">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+&gt;<i> The source type is the type as defined in the message the GPS is sending. 
+</I>&gt;<i> it is a 16-bit signed integer.
+</I>&gt;<i> It is pulled out of the buffer as two unsigned 8-bit bytes that are strung
+</I>&gt;<i> together in the proper order.  But this yields a 16-bit unsigned value. 
+</I>&gt;<i> This must be immediately cast to a signed 16-bit value.  That is what the
+</I>&gt;<i> (short) cast in getw does.
+</I>&gt;<i> 
+</I>&gt;<i> If this is not done and it is later cast to a 32-bit signed integer value,
+</I>&gt;<i> the 16 bits are not sign-extended into 32 bits, but the value us merely
+</I>&gt;<i> zeropadded.  So after your change, a negative value in the 16-bit word
+</I>&gt;<i> will appear as a large positive value in the result.
+</I>
+Aaarrggh.  You're right.  And I am decades out of date -- this was
+what the brouhaha in X3J11 over &quot;value-preserving&quot;
+vs. &quot;signedness-preserving&quot; semantics of unsigned intermediate
+quantities was about back in the late 1980s, back when we were
+wrestling with the 16-to-32-bit transition.  I had managed to forget
+all that, even though I was a reviewer for the damn standard!
+
+Well, it's easily fixed.  My point-of-call casts are good documentation for
+the width and signedness the caller wants.  I'll put the
+interior casts back in and write a getl() that doesn't use getw() to keep
+splint happy.
+
+Thanks...
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001962.html">[Gpsd-dev] gpsd bug and feature queue is now empty
+</A></li>
+	<LI>Next message: <A HREF="001918.html">[Gpsd-dev] gpsd bug and feature queue is now empty
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1963">[ date ]</a>
+              <a href="thread.html#1963">[ thread ]</a>
+              <a href="subject.html#1963">[ subject ]</a>
+              <a href="author.html#1963">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

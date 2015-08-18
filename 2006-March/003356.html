@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] perl module name
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20perl%20module%20name&In-Reply-To=%3C91981b3e0603281528v4a2dc1e2v96a1562c14038daf%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003354.html">
+   <LINK REL="Next"  HREF="003357.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] perl module name</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20perl%20module%20name&In-Reply-To=%3C91981b3e0603281528v4a2dc1e2v96a1562c14038daf%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] perl module name">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Wed Mar 29 01:28:55 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003354.html">[Gpsd-dev] perl  module name
+</A></li>
+        <LI>Next message: <A HREF="003357.html">[Gpsd-dev] perl module name
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3356">[ date ]</a>
+              <a href="thread.html#3356">[ thread ]</a>
+              <a href="subject.html#3356">[ subject ]</a>
+              <a href="author.html#3356">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>The daemon is called gpsd, and when you probe it, answers &quot;GPSD&quot; - i
+think the protocol's name is GPSD.
+
+I'd be inclined to use Net::GPSD... think about Net::LDAP, Net::DNS,
+Net::BGP, Net::otherPerlStuff ... they typically provide a
+straightforward perl interface to the protocol, and may include a
+sample/useful client app. Most of the magic lies in the gpsd program,
+and the protocol is just there to make it easy to get your copy of the
+data.
+
+You could very well be the only person using the PERL interface; I've
+been using IO::Socket and parsing the data myself. Less additional
+stuff to call into PERL, no dependencies on client machines, and PERL
+is good at string munging.
+
+I'm not sure I like an XML protocol. Too hard to parse in shell
+script... but you're welcome to try sell me on it. I have a number of
+shell scripts that use position...
+
+POS=`echo p | nc $GPSSERVER 2947 | awk -F = '{print $2}`
+
+piece of cake. How do I do that with an XML protocol? Yes, I see where
+you're going with it: gpsd could do lots of nifty things, but we're
+out of room in the protocol for a lot of them.
+
+CK
+On 3/28/06, Michael R. Davis &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mrdvt92 at yahoo.com</A>&gt; wrote:
+&gt;<i> My gpsd perl module is just about as good as it's going to get and is
+</I>&gt;<i> ready for any would be testers out there.  The CPAN manager suggested
+</I>&gt;<i> that I use the name of the gpsd protocol vice just &quot;GPS:gpsd&quot;.  Does
+</I>&gt;<i> the protocol have a name or just the deamon?  I assume that if we
+</I>&gt;<i> implement a different interface (e.g. xml or multi-char) we would
+</I>&gt;<i> rename the protocol.  Any suggestions?  I think &quot;Net::GPSD::Client&quot;
+</I>&gt;<i> might be a good name.  Has anyone actually been useing the perl
+</I>&gt;<i> interface besides me?
+</I>&gt;<i> Thanks,
+</I>&gt;<i> Mike (mrdvt92)
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> ---
+</I>&gt;<i> &gt; You may want to consider Net::GPSD or possibly GPS::Net::GPSD if
+</I>&gt;<i> &gt; this is just the code to implement the gpsd client.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Unless the protocol itself actually has a name, in which case you
+</I>&gt;<i> &gt; should probably be using that.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Lowercasing the gpsd isn't a good idea, and indeed GPS::gpsd,
+</I>&gt;<i> &gt; because it's not clear if you are implementing a client or a server.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Lower case like that is sometimes used to indicate you are
+</I>&gt;<i> &gt; implementing the thing itself, or that you simulate some very
+</I>&gt;<i> &gt; specific things, such as the File::chmod and File::pushd examples,
+</I>&gt;<i> &gt; which implement equivalents of very specific things from C.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Adam K
+</I>&gt;<i>
+</I>&gt;<i> __________________________________________________
+</I>&gt;<i> Do You Yahoo!?
+</I>&gt;<i> Tired of spam?  Yahoo! Mail has the best spam protection around
+</I>&gt;<i> <A HREF="http://mail.yahoo.com">http://mail.yahoo.com</A>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="http://lists.berlios.de/mailman/listinfo/gpsd-dev">http://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>
+
+--
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003354.html">[Gpsd-dev] perl  module name
+</A></li>
+	<LI>Next message: <A HREF="003357.html">[Gpsd-dev] perl module name
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3356">[ date ]</a>
+              <a href="thread.html#3356">[ thread ]</a>
+              <a href="subject.html#3356">[ subject ]</a>
+              <a href="author.html#3356">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,150 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Enhanced udev utility
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Enhanced%20udev%20utility&In-Reply-To=%3C4AA1657D.4050007%40wildgooses.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006826.html">
+   <LINK REL="Next"  HREF="006824.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Enhanced udev utility</H1>
+    <B>Ed W</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Enhanced%20udev%20utility&In-Reply-To=%3C4AA1657D.4050007%40wildgooses.com%3E"
+       TITLE="[Gpsd-dev] Enhanced udev utility">lists at wildgooses.com
+       </A><BR>
+    <I>Fri Sep  4 21:07:41 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006826.html">[Gpsd-dev] GPSD runs as wrong group when using	serial	port	console
+</A></li>
+        <LI>Next message: <A HREF="006824.html">[Gpsd-dev] Enhanced udev utility
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6823">[ date ]</a>
+              <a href="thread.html#6823">[ thread ]</a>
+              <a href="subject.html#6823">[ subject ]</a>
+              <a href="author.html#6823">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Eric S. Raymond wrote:
+&gt;<i> Ed W &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">lists at wildgooses.com</A>&gt;:
+</I>&gt;<i>   
+</I>&gt;&gt;<i> Hi, I have a need for an enhanced udev utility which will get watch the 
+</I>&gt;&gt;<i> input from generic serial to usb adaptors and decide if they are a gps 
+</I>&gt;&gt;<i> or a modem.  If it's a GPS then we pass it to gpsd, if it's a modem then 
+</I>&gt;&gt;<i> pass it somewhere else. This is hopefully quite useful because at 
+</I>&gt;&gt;<i> present gpsd snaffles any serial device
+</I>&gt;&gt;<i>     
+</I>&gt;<i>
+</I>&gt;<i> But releases it if it's not identifiably a GPS. I have trouble seeing how a
+</I>&gt;<i> seperate utiliyy could do a beter job than the preent combination of udev 
+</I>&gt;<i> script and gpsd, which tosses USB devices at gpsd nd has it release then if it
+</I>&gt;<i> can't achieve sync on the data stream.
+</I>&gt;<i>
+</I>&gt;<i> What do you want the hypothetical utility to do that this combination is 
+</I>&gt;<i> not already doing?
+</I>&gt;<i>   
+</I>
+Well, that would be some of the way there if gpsd actually worked the 
+way you describe, but at least on my installation it doesn't:
+
+Here I plug in a generic serial to usb adaptor with nothing connected to it:
+
+Sep  4 19:01:58 localhost user.info kernel: [ 1127.813801] usb 1-2.2: 
+new full speed USB device using ehci_hcd and address 6
+Sep  4 19:01:58 localhost user.notice gpsd[4338]: gpsd: select waits
+Sep  4 19:01:58 localhost user.info kernel: [ 1127.910955] usb 1-2.2: 
+configuration #1 chosen from 1 choice
+Sep  4 19:01:58 localhost user.info kernel: [ 1127.911499] pl2303 
+1-2.2:1.0: pl2303 converter detected
+Sep  4 19:01:58 localhost user.info kernel: [ 1127.913592] usb 1-2.2: 
+pl2303 converter now attached to ttyUSB1
+Sep  4 19:01:59 localhost daemon.info gpsd.hotplug: 
+gpsd_control(action=add, arg=/dev/ttyUSB1)
+Sep  4 19:01:59 localhost user.notice gpsd[4338]: gpsd: control socket 
+connect on 7
+Sep  4 19:01:59 localhost daemon.info gpsd.hotplug: reached a running gpsd
+Sep  4 19:01:59 localhost user.notice gpsd[4338]: gpsd: &lt;= control(7): 
++/dev/ttyUSB1\x0d
+Sep  4 19:01:59 localhost user.notice gpsd[4338]: gpsd: &lt;= control(7): 
+adding /dev/ttyUSB1
+Sep  4 19:01:59 localhost user.notice gpsd[4338]: gpsd: opening GPS data 
+source at '/dev/ttyUSB1'
+Sep  4 19:01:59 localhost user.notice gpsd[4338]: gpsd: speed 9600, 8N1
+Sep  4 19:01:59 localhost user.notice gpsd[4338]: gpsd: =&gt; GPS: 
+2450415348512c5249442a32380d0a
+Sep  4 19:01:59 localhost user.notice gpsd[4338]: gpsd: Navcom: command 
+dump: 0299661c0800040200001203
+Sep  4 19:01:59 localhost user.notice gpsd[4338]: gpsd: =&gt; GPS: 
+0299661c0800040200001203
+Sep  4 19:01:59 localhost user.notice gpsd[4338]: gpsd: Navcom: sent 
+command 0x1c (Test Support Block)
+Sep  4 19:01:59 localhost user.notice gpsd[4338]: gpsd: Navcom: command 
+0x1c mode = 02, length = 0
+Sep  4 19:01:59 localhost user.notice gpsd[4338]: gpsd: Navcom: command 
+dump: 029966200e000001ae02000071000000f203
+Sep  4 19:01:59 localhost user.notice gpsd[4338]: gpsd: =&gt; GPS: 
+029966200e000001ae02000071000000f203
+Sep  4 19:01:59 localhost user.notice gpsd[4338]: gpsd: Navcom: sent 
+command 0x20 (Data Request) - data block id = ae at rate 00
+Sep  4 19:01:59 localhost user.notice gpsd[4338]: gpsd: Navcom: command 
+dump: 029966200e00000186020a0071000000d003
+Sep  4 19:01:59 localhost user.notice gpsd[4338]: gpsd: =&gt; GPS: 
+029966200e00000186020a0071000000d003
+Sep  4 19:01:59 localhost user.notice gpsd[4338]: gpsd: writing 
+superstar2 control type 2d len 6:012dd2000000
+Sep  4 19:01:59 localhost user.notice gpsd[4338]: gpsd: =&gt; GPS: 012dd2000000
+Sep  4 19:01:59 localhost user.notice gpsd[4338]: gpsd: garmin_gps Linux 
+USB module not active.
+Sep  4 19:01:59 localhost user.notice gpsd[4338]: gpsd: no probe matched...
+Sep  4 19:01:59 localhost user.notice gpsd[4338]: gpsd: 
+gpsd_activate(1): opened GPS (8)
+Sep  4 19:01:59 localhost user.notice gpsd[4338]: gpsd: select waits
+Sep  4 19:02:00 localhost user.notice gpsd[4338]: gpsd: select waits
+
+
+Then:
+$ telnet localhost 2947
+k
+GPSD,K=1 /dev/ttyUSB1
+
+
+So it hasn't &quot;released it&quot;, or in fact given me a nice clear log message 
+that this is definitely not a gps?
+
+I will reply about &quot;why&quot; in a second message
+
+Ed W
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006826.html">[Gpsd-dev] GPSD runs as wrong group when using	serial	port	console
+</A></li>
+	<LI>Next message: <A HREF="006824.html">[Gpsd-dev] Enhanced udev utility
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6823">[ date ]</a>
+              <a href="thread.html#6823">[ thread ]</a>
+              <a href="subject.html#6823">[ subject ]</a>
+              <a href="author.html#6823">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

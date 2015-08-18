@@ -1,0 +1,137 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Input packets buffering bug(s)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3Crmisk2zda3x.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008095.html">
+   <LINK REL="Next"  HREF="008097.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Input packets buffering bug(s)</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3Crmisk2zda3x.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] Input packets buffering bug(s)">gdt at ir.bbn.com
+       </A><BR>
+    <I>Sat Jul 31 16:00:50 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008095.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+        <LI>Next message: <A HREF="008097.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8096">[ date ]</a>
+              <a href="thread.html#8096">[ thread ]</a>
+              <a href="subject.html#8096">[ subject ]</a>
+              <a href="author.html#8096">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Olivier Cornu &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">o.cornu at gmail.com</A>&gt; writes:
+
+&gt;<i> On Fri, Jul 30, 2010 at 19:48, Olivier Cornu &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">o.cornu at gmail.com</A>&gt; wrote:
+</I>&gt;&gt;<i> On Fri, Jul 30, 2010 at 13:46, Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt; wrote:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> I suspect that 'gpsd -N 10' will be very illuminating.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I'll try to run it in debug mode and see if i can parse anything helpful.
+</I>&gt;<i>
+</I>&gt;<i> So far i haven't spotted much, except perhaps that gpsd keeps saying
+</I>&gt;<i> that the device is offline (pretty much after each NMEA sentences
+</I>&gt;<i> bundle) when it clearly isn't:
+</I>&gt;<i>
+</I>&gt;<i> $ ./gpsd -nN -D2 /dev/rfcomm0
+</I>
+I said -D10, not -D2 :-) Seriously, there is much more detail about how
+many bytes are in the input buffer at higher levels.
+
+&gt;<i> gpsd: launching (Version 2.96~dev)
+</I>&gt;<i> gpsd: listening on port gpsd
+</I>&gt;<i> gpsd: running with effective group ID 1000
+</I>&gt;<i> gpsd: running with effective user ID 1000
+</I>&gt;<i> gpsd: opening GPS data source type 4 at '/dev/rfcomm0'
+</I>&gt;<i> gpsd: speed 57600, 8N1
+</I>&gt;<i> gpsd: speed 9600, 8O1
+</I>&gt;<i> gpsd: speed 57600, 8N1
+</I>&gt;<i> gpsd: gpsd_activate(): opened GPS (fd 5)
+</I>&gt;<i> gpsd: NTPD ntpd_link_activate: 1
+</I>&gt;<i> gpsd: /dev/rfcomm0 identified as type Generic NMEA (2.669800 sec @ 57600bps)
+</I>&gt;<i> gpsd: =&gt; Probing device subtype 0
+</I>&gt;<i> gpsd: GPS on /dev/rfcomm0 is offline (0.000683 sec since data)
+</I>&gt;<i> gpsd: =&gt; Probing device subtype 1
+</I>&gt;<i> gpsd: =&gt; Probing device subtype 2
+</I>&gt;<i> gpsd: unknown sentence:
+</I>&gt;<i> &quot;$GPGSV,2,1,08,12,76,358,,09,51,120,,30,50,274,,27,42,122,*75\x0d\x0a&quot;
+</I>&gt;<i> gpsd: =&gt; Probing device subtype 3
+</I>&gt;<i> gpsd: GPS on /dev/rfcomm0 is offline (0.000315 sec since data)
+</I>&gt;<i> gpsd: =&gt; Probing device subtype 4
+</I>&gt;<i> gpsd: =&gt; Probing device subtype 5
+</I>&gt;<i> gpsd: unknown sentence:
+</I>&gt;<i> &quot;$GPGSV,2,1,08,12,76,358,,09,51,120,,30,50,274,,27,42,122,*75\x0d\x0a&quot;
+</I>&gt;<i> gpsd: =&gt; Probing device subtype 6
+</I>&gt;<i> gpsd: GPS on /dev/rfcomm0 is offline (0.000301 sec since data)
+</I>&gt;<i> gpsd: =&gt; Probing device subtype 7
+</I>&gt;<i> gpsd: =&gt; Probing device subtype 8
+</I>&gt;<i> gpsd: unknown sentence:
+</I>&gt;<i> &quot;$GPGSV,2,1,08,12,76,358,,09,51,120,,30,50,274,,27,42,122,*75\x0d\x0a&quot;
+</I>&gt;<i> gpsd: GPS on /dev/rfcomm0 is offline (0.000276 sec since data)
+</I>&gt;<i> gpsd: unknown sentence:
+</I>&gt;<i> &quot;$GPGSV,2,1,08,12,76,358,,09,51,120,,30,50,274,,27,42,122,*75\x0d\x0a&quot;
+</I>&gt;<i> gpsd: GPS on /dev/rfcomm0 is offline (0.000094 sec since data)
+</I>&gt;<i> ^Cgpsd: received terminating signal 2.
+</I>&gt;<i> gpsd: closing GPS=/dev/rfcomm0 (5)
+</I>&gt;<i> gpsd: exiting.
+</I>&gt;<i>
+</I>&gt;<i> It comes from libgpsd_core.c:819
+</I>&gt;<i> I'm not sure at this point what consequences it might have...
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Oh, and (although it seems unrelated) as the above log shows, gpsd
+</I>&gt;<i> does not cope well with null SNRs and ignore the corresponding GSV
+</I>&gt;<i> sentences (fwiw: i'm not crafting those ones myself). That clearly
+</I>&gt;<i> looks abusive.
+</I>&gt;<i> In case you wonder why they're null: it's because the GPS acquired a
+</I>&gt;<i> fix very recently and knowns about those sats being there even though
+</I>&gt;<i> it does not currently receive their signals.
+</I>
+well, that could be fixed (but ENOPATCH so far :-)
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100731/4f801121/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100731/4f801121/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008095.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+	<LI>Next message: <A HREF="008097.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8096">[ date ]</a>
+              <a href="thread.html#8096">[ thread ]</a>
+              <a href="subject.html#8096">[ subject ]</a>
+              <a href="author.html#8096">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

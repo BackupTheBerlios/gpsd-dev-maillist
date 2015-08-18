@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] ship board navigational software and gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ship%20board%20navigational%20software%20and%20gpsd&In-Reply-To=%3C4B8F88A4.3030903%40babel.com.au%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007381.html">
+   <LINK REL="Next"  HREF="007383.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] ship board navigational software and gpsd</H1>
+    <B>Del</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ship%20board%20navigational%20software%20and%20gpsd&In-Reply-To=%3C4B8F88A4.3030903%40babel.com.au%3E"
+       TITLE="[Gpsd-dev] ship board navigational software and gpsd">del at babel.com.au
+       </A><BR>
+    <I>Thu Mar  4 11:17:08 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007381.html">[Gpsd-dev] 2.91 release is imminent
+</A></li>
+        <LI>Next message: <A HREF="007383.html">[Gpsd-dev] ntpq -p output and a big thanks
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7382">[ date ]</a>
+              <a href="thread.html#7382">[ thread ]</a>
+              <a href="subject.html#7382">[ subject ]</a>
+              <a href="author.html#7382">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+To pick this thread up from about a week ago:
+
+Eric Raymond wrote:
+
+&gt;&gt;<i> In terms of the code that extracting TPV data from NMEA sentences, there
+</I>&gt;&gt;<i> are about half a dozen sentences that are applicable.  Each different
+</I>&gt;&gt;<i> sentence type contains a separate function in driver_nmea.c to extract
+</I>&gt;&gt;<i> the data.  For extracting non-TPV data, there are probably 20 - 30
+</I>&gt;&gt;<i> sentences that are applicable.  It bothers me a little that there isn't
+</I>&gt;&gt;<i> a single function in driver_nmea.c to handle an arbitrary NMEA sentence,
+</I>&gt;&gt;<i> which then looks at a director or lookup table to find a method of
+</I>&gt;&gt;<i> handing each different data element.  Personally if I was designing it
+</I>&gt;&gt;<i> from scratch I would have taken a different approach, but that might be
+</I>&gt;&gt;<i> a change too far.  Thoughts?
+</I>&gt;<i>
+</I>&gt;<i> I'm not quite sure what you're advocating.  Somethuing like what you describe
+</I>&gt;<i> lives near driver_nmea.c:877 in the function nmea_parse(). How would you
+</I>&gt;<i> organize it differently?
+</I>
+To answer the question of what I'm advocating:  The nmea_phrase[] is an 
+array of structs, each struct contains elements which contain the 
+sentence name, the number of fields, and a pointer to a decoder 
+function.  There are about a dozen or so decoder functions, one for each 
+type of NMEA sentence, each coded separately.  The decoder function is 
+passed a count of fields, the fields as an array of strings, and a 
+pointer to the current session object into which to decode the fields.
+
+I would create one generic decoder function which had the same prototype 
+as the decoder functions that already existed, but also obtained (by a 
+configuration object lookup or as an additional parameter) an array of 
+pointers to the actual fields within the session object (I have to admit 
+I'm not sure how I'd generate those), and an equivalent array of field 
+types.
+
+That would then loop over the array of fields, and for each field would 
+simply decode that field from a string into the appropriate field object 
+and poke that into the session object using the matching pointer that it 
+had obtained.  I may need a set of decoder functions, such as one to 
+decode a latitude, one to decode a speed in knots, one to decode a 
+temperature, etc.
+
+The reason for doing this is to reduce the number of decoder functions. 
+  Otherwise to decode the 20 or so sentences that deal with non-TPV data 
+would require 20 or so additional decoder functions.  Most of those 
+functions would take similar data from different positions in the NMEA 
+sentence and do similar things with it.  e.g. the IIVWR and IIMWV 
+sentences contain roughly similar (or at least overlapping) data in a 
+different order, so there would be a certain amount of code repetition 
+between a processVWR function and processMWV function.
+
+Anyway, I understand we're in pre-2.91 code freeze so I'm not touching 
+anything for the time being, just drafting up some design ideas, and in 
+any case I'm in the midst of doing some software testing on another 
+project so I won't have time to touch it for a few weeks, but that gives 
+you an idea of what I'm thinking.
+
+-- 
+Del
+Babel Com Australia
+<A HREF="http://www.babel.com.au/">http://www.babel.com.au/</A>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007381.html">[Gpsd-dev] 2.91 release is imminent
+</A></li>
+	<LI>Next message: <A HREF="007383.html">[Gpsd-dev] ntpq -p output and a big thanks
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7382">[ date ]</a>
+              <a href="thread.html#7382">[ thread ]</a>
+              <a href="subject.html#7382">[ subject ]</a>
+              <a href="author.html#7382">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

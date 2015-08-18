@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] More fixes...
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20More%20fixes...&In-Reply-To=%3C12196.213.84.187.156.1114935569.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001510.html">
+   <LINK REL="Next"  HREF="001516.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] More fixes...</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20More%20fixes...&In-Reply-To=%3C12196.213.84.187.156.1114935569.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] More fixes...">gpsd at xs4all.nl
+       </A><BR>
+    <I>Sun May  1 10:19:29 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001510.html">[Gpsd-dev] More fixes...
+</A></li>
+        <LI>Next message: <A HREF="001516.html">[Gpsd-dev] More fixes...
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1515">[ date ]</a>
+              <a href="thread.html#1515">[ thread ]</a>
+              <a href="subject.html#1515">[ subject ]</a>
+              <a href="author.html#1515">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;&gt;<i> The output I sent is from &quot;ntpq -p&quot;, not &quot;ntpdc -p&quot;.
+</I>&gt;&gt;<i> The latter displays a lot of rubbish values on my system, not sure what
+</I>&gt;&gt;<i> is
+</I>&gt;&gt;<i> going wrong there.  I never use it...
+</I>&gt;&gt;<i> In case of ntpq, the output for sure is in milliseconds.
+</I>&gt;<i>
+</I>&gt;<i> Oh, never used that one.  Here are mine for comparison:
+</I>&gt;<i>
+</I>&gt;<i> # ntpq -p
+</I>&gt;<i>      remote           refid      st t when poll reach   delay   offset
+</I>&gt;<i> jitter
+</I>&gt;<i> ==============================================================================
+</I>&gt;<i> - -SHM(0)          .GPS.            0 l    7   16  377    0.000   11.177
+</I>&gt;<i> 3.060
+</I>&gt;<i>
+</I>&gt;<i> So you are better by a factor of 1,000!
+</I>
+But you are probably using the current implementation that derives time
+from serial messages.  This is inaccurate because the messages are sent
+via some buffer queue, and are received in the system by buffering serial
+devices and device drivers.
+I have a second definition for my GPS that uses this method.  Compare:
+
++SHM(1)          .GPS1.           0 l   13   16  377    0.000  -19.330 
+48.299
+
+This is why I want to add PPS handling for those receivers that support it.
+
+A major problem with serial message handling is also that there is a fixed
+offset between the time in the message and the actual time it is sent,
+which often is left undefined in the manual.  At some point in time the
+seconds mark ticks, the receiver does al its calculations, prepares
+messages, and sends them out.  Then there is the serial transfer time. 
+There can be hundreds of milliseconds between the time indicated in the
+message and the actual time it arrives in gpsd.
+You won't notice that when you use only gpsd to sync the clock, but add
+some external clocks to see it.
+I already added some &quot;tweak&quot; value to the received time to get them
+approximately OK on my system...
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001510.html">[Gpsd-dev] More fixes...
+</A></li>
+	<LI>Next message: <A HREF="001516.html">[Gpsd-dev] More fixes...
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1515">[ date ]</a>
+              <a href="thread.html#1515">[ thread ]</a>
+              <a href="subject.html#1515">[ subject ]</a>
+              <a href="author.html#1515">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

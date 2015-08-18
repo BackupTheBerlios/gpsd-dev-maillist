@@ -1,0 +1,133 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-commit-watch] r3548 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20r3548%20-%20trunk&In-Reply-To=%3C20061024185954.GA32531%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004632.html">
+   <LINK REL="Next"  HREF="004635.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-commit-watch] r3548 - trunk</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20r3548%20-%20trunk&In-Reply-To=%3C20061024185954.GA32531%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] [Gpsd-commit-watch] r3548 - trunk">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Oct 24 20:59:54 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004632.html">[Gpsd-dev] Micro-optimization with significant gain (was:	[Gpsd-commit-watch] r3632 - trunk)
+</A></li>
+        <LI>Next message: <A HREF="004635.html">[Gpsd-dev] SiRF tweaks
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4633">[ date ]</a>
+              <a href="thread.html#4633">[ thread ]</a>
+              <a href="subject.html#4633">[ subject ]</a>
+              <a href="author.html#4633">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Chris Kuethe &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">chris.kuethe at gmail.com</A>&gt;:
+&gt;<i> On 9/29/06, Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+</I>&gt;<i> &gt;Chris Kuethe &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">chris.kuethe at gmail.com</A>&gt;:
+</I>&gt;<i> &gt;&gt; Can I have a flag to inhibit reconfiguration?
+</I>&gt;<i> &gt;You mean a configure option?  Yes, sure, I don't see any problem there.
+</I>&gt;<i> &gt;It's runtime options I want to avoid, specifically because they break
+</I>&gt;<i> &gt;zero administration.
+</I>&gt;<i> 
+</I>&gt;<i> I'd like to see that be a runtime option. It doesn't break zero
+</I>&gt;<i> adminstration because it defaults to the current behaviour, but it's
+</I>&gt;<i> still packager friendly. Having to compile a special don't-reconfigure
+</I>&gt;<i> version means I can't just add a prebuilt package, .rpm or .deb and
+</I>&gt;<i> tell gpsd to not be clever and just pass me whatever the gps said.
+</I>&gt;<i> 
+</I>&gt;<i> Administration is when you have to keep going back to a program and
+</I>&gt;<i> fiddling settings. One RTFM to figure out how to invoke it to meet
+</I>&gt;<i> your needs is plenty acceptable.
+</I>
+Not when it's supposed to be invoked by a udev script that doesn't
+know what options to pass it.  The conceptual problem here, Chris, is
+that you think like a developer rather than a user, from the inside
+outwards.  To you, specially invoking gpsd is no big deal -- but 
+a no-reconfigure flag *wouldn't solve the problem for users*.
+
+And RTFM is not a good answer.  When *users* (not techies like us) are
+involved, the need for documentation is a demonstration of design
+failure.
+
+I've been using gpsd to train myself out of this bad habit,
+actually. It took a lot of mental effort for me to get to the point
+where I adopted no-compromise zero configuration as a main goal.
+Having achieved enlightenment, I forgo departing the mundane plane in
+order to shower bodhisattva-like whacks with the clue stick on my
+fellow programmers.  See my recent remarks about the proposed -t option 
+for cgps as an example.
+
+Here's *your* whack.  Why do you want a no-reconfigure flag?  Because
+it messes with your GPS settings.  Fine, if that's the actual problem,
+think from the outside-in for a moment; wouldn't it be smarter to try
+to save settings on startup and restore any changed settings on exit
+from gpsd?
+
+It may turn out this isn't possible.  But it's *the question you
+should have asked first*.  Whenever you feel an urge to add an option
+or a mode flag, you should teach yourself to ask whether there's a way
+to get the actual Right Thing to happen without it.
+
+&gt;<i> &gt;I think this needs to be command-enabled.  Some of our embedded users
+</I>&gt;<i> &gt;are actually going to care about the extra cycles processing the
+</I>&gt;<i> &gt;tracker data eats.  And I think I remember that I disabled after
+</I>&gt;<i> &gt;leap-second acquisition because it led rto trouble at low baud rates.
+</I>&gt;<i> 
+</I>&gt;<i> Ya figure? Look at byte 5 of the sirf message, if it's not a position
+</I>&gt;<i> or time report, just skip it. No parsing required beyond that which
+</I>&gt;<i> we'd have to do anyway. Embedded users: you can chime in any time
+</I>&gt;<i> now...
+</I>
+You may have misunderstood me.  The problem isn't excessive processor
+overhead, it's that at low baud rates there aren't enough frames per
+second available for an entire cycle's worth of data with the subframe
+stuff in.
+
+&gt;<i> Leap second acquisition would be troublesome at low baud rates, which
+</I>&gt;<i> is why the manuals tend to indicate the use of 57600 for working with
+</I>&gt;<i> the tracker data.
+</I>
+And the above is why.  I wanted the code to be as resilient as possible 
+at any baud rate.
+ 
+I'll launch a detailed discussion of command-set extension in another post.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004632.html">[Gpsd-dev] Micro-optimization with significant gain (was:	[Gpsd-commit-watch] r3632 - trunk)
+</A></li>
+	<LI>Next message: <A HREF="004635.html">[Gpsd-dev] SiRF tweaks
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4633">[ date ]</a>
+              <a href="thread.html#4633">[ thread ]</a>
+              <a href="subject.html#4633">[ subject ]</a>
+              <a href="author.html#4633">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

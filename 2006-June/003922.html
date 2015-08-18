@@ -1,0 +1,225 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] patch for Clear-at-Start-of-Cycle/Never-Clear
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20patch%20for%20Clear-at-Start-of-Cycle/Never-Clear&In-Reply-To=%3Cp06230969c0bc13c49c7a%40%5B192.168.11.10%5D%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003905.html">
+   <LINK REL="Next"  HREF="003744.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] patch for Clear-at-Start-of-Cycle/Never-Clear</H1>
+    <B>Robin L Darroch</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20patch%20for%20Clear-at-Start-of-Cycle/Never-Clear&In-Reply-To=%3Cp06230969c0bc13c49c7a%40%5B192.168.11.10%5D%3E"
+       TITLE="[Gpsd-dev] patch for Clear-at-Start-of-Cycle/Never-Clear">robin at spade-men.com
+       </A><BR>
+    <I>Tue Jun 20 13:22:44 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003905.html">[Gpsd-dev] patch for Clear-at-Start-of-Cycle/Never-Clear
+</A></li>
+        <LI>Next message: <A HREF="003744.html">[Gpsd-dev] speed in knots or m/s???
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3922">[ date ]</a>
+              <a href="thread.html#3922">[ thread ]</a>
+              <a href="subject.html#3922">[ subject ]</a>
+              <a href="author.html#3922">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I'll try to play the role of peacemaker here, as it seems to be 
+needed.  Many of the misunderstandings here appear to stem from 
+breakdowns in communication, so hopefully can be remedied - I don't 
+think we're actually on opposite sides on this issue, for all that it 
+might appear so to any casual observer.
+
+I am not the only person to report problems with the current 
+buffering logic, and that is what I'm trying to fix.  Bear in mind 
+that the broken behaviour from the buffer-clearing with NMEA devices 
+is something that manifested in recent (2.30+?) releases of GPSd.  My 
+intent here is to preserve the usefulness of GPSd in an everyday 
+context, thereby making it more likely that GPS software developers 
+will want to use it, rather than less.
+
+&gt;<i>You keep saying this, even after Gary Miller and I have repeatedly pointed out
+</I>&gt;<i>that (a) claiming to have valid data for this cycle when you only have it for
+</I>&gt;<i>the last cycle is *not* a mere theoretical problem, it's a flat-out lie, and
+</I>&gt;<i>(b) that lie *could get people killed*.
+</I>
+I'm prepared to accept (a).  (b) is something of a hyperbolic 
+statement - anyone fool enough to trust their lives to the 
+sub-2-second accuracy of open source software which they have not 
+personally audited and verified to provide the level of accuracy they 
+require, is someone that will do the gene pool a favour by removing 
+themselves.
+
+However, (a) is presented as a black and white statement, when there 
+are shades of grey in an implementation such as GPSd.  We offer a 
+query-based client access method.  Because - by its very nature - 
+that allows for a client to query for GPS information at some instant 
+other than the very same instant a report comes from the GPS, we will 
+always be &quot;lying&quot; to those clients.  We allow them to ask &quot;what is my 
+position?&quot;, and GPSd will respond with &quot;your position is X&quot;, even if 
+in fact the position *was* X some time in the past second or two, but 
+is no longer.  I am prepared to accept that in Watcher mode, we can 
+claim &quot;clear at start of cycle&quot; logic to provide a somewhat pedantic 
+version of the truth: we can make no such claim for query mode 
+clients, because they will not necessarily make requests that return 
+the timestamp, therefore they can always delude themselves that 
+historical data is present data.  I would not propose doing away with 
+query-mode support to resolve this, and I don't expect you would 
+either.
+
+&gt;<i>I will not -- repeat *not* -- ship a deceptive, half-assed feel-good
+</I>&gt;<i>&quot;solution&quot; to this problem.  Every time you argue that I should, and
+</I>&gt;<i>every time you try to slip in your preferred deceptive half-assed
+</I>&gt;<i>feel-good &quot;solution&quot; under the oh-so-helpful guise of a fix, you
+</I>&gt;<i>diminish your chances that I will trust your judgment in the future.
+</I>
+I understand your inclination to use that kind of language, but it is 
+not warranted.  I am not trying to &quot;slip&quot; something in &quot;under the 
+guise&quot; of a fix - I am actually trying to offer users who experience 
+the same problems I have, and who would elect to solve it the same 
+way (i.e. by reverting to behaviour which gpsd used to exhibit), the 
+*option* of doing that.  Most installations of GPSd are not, to my 
+knowledge, public servers which offer certified-valid GPS data to 
+naive and anonymous clients: instead, I guess (and I acknowledge that 
+this is a guess) they are generally private installations where the 
+same person who builds and installs the daemon is the one who 
+operates (and perhaps even develops) the client programs.
+
+&gt;<i>You crossed a line with the patch you are talking about, when you
+</I>&gt;<i>tried for approximately the third time to slide in a choice of default
+</I>&gt;<i>I have told you repeatedly I consider *WRONG*, apparently hoping I
+</I>&gt;<i>wouldn't notice or wouldn't care enough to reverse it.  That attempt
+</I>&gt;<i>went beyond merely annoying and began to seriously piss me off.
+</I>
+If you had read through the messages to which I attached my patches, 
+you would have seen that I explicitly stated *what* the default was, 
+and *why* I had chosen it.  The one time I may not have mentioned the 
+rationale for the default along with a copy of the patch was the last 
+time I posted (at which time I was actually offering the patch to 
+someone else) - and even then I still discussed the default setting. 
+I'm sorry if you missed what I wrote, but at no time did I attempt to 
+deceive you about it: I even mentioned that I would understand if you 
+decided to change the default when incorporating the patch.  I 
+understand how you could have missed it - it's entirely possible that 
+I've missed significant things in some of your messages too: becoming 
+this involved in debate, ironically, tends to make oversights or 
+misunderstanding more likely.
+
+To show that I am not making this up, here is the text from my 
+original posting of the patch:
+
+&gt;&gt;&gt;<i>
+</I>I'd made the default the more user-friendly version, in order to keep 
+it simple for the novices who may otherwise be thrown by the 
+artificial jitter.  This is purely to save unnecessary repetition of 
+questions about jitter on the users mailing list.  I don't see that 
+there are any real disadvantages to committing as is, but if my 
+choice of default is the only thing getting in the way of this 
+getting committed, then feel free to reverse the configure default 
+and commit.
+&lt;&lt;&lt;
+
+&gt;<i>I've been grappling with the buffering problem for nearly two years.
+</I>&gt;<i>Let me say it loud and clear: on this topic I do not accept your
+</I>&gt;<i>assumptions, and I do not agree with your value judgments.
+</I>
+Understood.  Some of what I am working on is, in fact, personal 
+experience rather than assumption, and it is clear that I am not 
+alone in such experience, but on the value judgement we clearly will 
+continue to have differing views.  Such is the joy of open-source 
+software. :)
+
+&gt;<i>I'm prepared to accept a per-session J switch *with a default of no
+</I>&gt;<i>smoothing* because it enables fine-grained control of the policy and
+</I>&gt;<i>allows users to choose their own tradeoff between strict correctness
+</I>&gt;<i>and convenience.  It *will* default to strict correctness, and *that*
+</I>&gt;<i>*is* *final*.
+</I>
+OK - understood and accepted.  As my original text stated, I was 
+happy for you to change the default.  Are you still prepared to 
+accept a combination of per-session logic and a compile-time 
+configuration option (with, naturally, the no-smoothing default)?
+
+&gt;<i>The J switch isn't a high priority for me; I have other things to worry
+</I>&gt;<i>about, like finally nailing Til's hunt bug.  If you get it done before
+</I>&gt;<i>I do, fine; you do good work when you're not riding a hobbyhorse.  If
+</I>&gt;<i>you hadn't grossly overplayed your hand on this one issue I'd have
+</I>&gt;<i>given you commit privileges some time ago.
+</I>
+Thanks :)  Actually, I spend more of my time with GPSd flying an 
+aeroplane than riding a hobby horse, but I take your point.  Yes, I 
+*was* quite determined to get back the usability that GPSd had in the 
+past, and was quite surprised by the strength of opposition from 
+people for whom the changed logic had made and would make no 
+difference... but the points have been made (and made and made) on 
+both sides for long enough.  I believe I understand your position, 
+and I think you understand mine also.
+
+&gt;<i>I am *not* willing to listen to any more interminable screeds repeating
+</I>&gt;<i>arguments I have considered, analyzed, and rejected. My patience is exhausted.
+</I>&gt;<i>Write the code or drop the subject.
+</I>
+OK - attached is the compile-time configuration option with (I 
+believe - please check!) the default set to *enabling* 
+clear-at-start-of-cycle logic, i.e. no smoothing by default.  This 
+means any user who chooses to build GPSd with never-clear logic will 
+have to know to do that, and will have to do it explicitly by the use 
+of the --disable-casoc configure option.
+
+If that is acceptable as far as it goes, then (when I get the time, 
+as I expect it will take considerably more work) I'll start working 
+on adding per-client buffer logic selection.
+
+I hope that clears up some of the misunderstandings - especially the 
+notion that I was trying to slip anything into the GPSd code under 
+the radar.  I've tried to be as open and up-front about my proposed 
+patches as possible, and will continue to endeavour to do so.
+
+Regards,
+Robin
+-- 
+
+-------------------------------------------------------------------------
+  Robin L. Darroch - PO Box 2715, South Hedland WA 6722 - +61 421 503 966
+       <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at darroch.id.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at nyca.org.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: CaSoC-compile.patch
+Type: application/octet-stream
+Size: 3706 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20060620/72a9819b/attachment.obj">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20060620/72a9819b/attachment.obj</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003905.html">[Gpsd-dev] patch for Clear-at-Start-of-Cycle/Never-Clear
+</A></li>
+	<LI>Next message: <A HREF="003744.html">[Gpsd-dev] speed in knots or m/s???
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3922">[ date ]</a>
+              <a href="thread.html#3922">[ thread ]</a>
+              <a href="subject.html#3922">[ subject ]</a>
+              <a href="author.html#3922">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,103 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Patches and improvements: altitude/track/velocity jitter, compound query through libgps, mode in O/W output
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Patches%20and%20improvements%3A%20altitude/track/velocity%20jitter%2C%0A%20compound%20query%20through%20libgps%2C%20mode%20in%20O/W%20output&In-Reply-To=%3Cp06230925c05a533714d3%40%5B192.168.11.10%5D%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003406.html">
+   <LINK REL="Next"  HREF="003403.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Patches and improvements: altitude/track/velocity jitter, compound query through libgps, mode in O/W output</H1>
+    <B>Robin L Darroch</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Patches%20and%20improvements%3A%20altitude/track/velocity%20jitter%2C%0A%20compound%20query%20through%20libgps%2C%20mode%20in%20O/W%20output&In-Reply-To=%3Cp06230925c05a533714d3%40%5B192.168.11.10%5D%3E"
+       TITLE="[Gpsd-dev] Patches and improvements: altitude/track/velocity jitter, compound query through libgps, mode in O/W output">robin at spade-men.com
+       </A><BR>
+    <I>Thu Apr  6 07:25:01 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003406.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+        <LI>Next message: <A HREF="003403.html">[Gpsd-dev] Cycle time and the jitter problem.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3407">[ date ]</a>
+              <a href="thread.html#3407">[ thread ]</a>
+              <a href="subject.html#3407">[ subject ]</a>
+              <a href="author.html#3407">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>OK - big subject line for what I think is a considerable collection 
+of improvements for gpsd.
+
+1) Following on from the discussion of recent days (under the old 
+subject of &quot;Altitude not always being reported&quot;), I've now had time 
+to work on and test a patch for altitude/track/velocity reporting (as 
+posted a couple of days ago), which works well for me, and I would 
+appreciate if anyone else could report if they find problems with it.
+
+2) Testing (1) turned up a behavioural bug in how libgps determined 
+mode from O or W responses (it regarded the presence of an altitude 
+value as determining whether or not the fix was 3D, which is 
+incorrect).  I've resolved that by extending the output of O by one 
+field (the last field is now the mode, exactly as reported by the M 
+command).
+
+3) Working on (2) reminded me of a problem which I'd encountered 
+during early development of gpstoge, that libgps did not properly 
+parse the response to a compound query (e.g. &quot;pavtm\n&quot; as opposed to 
+&quot;p\n&quot; or &quot;o\n&quot;).  This turned out to be a bug in the gps_unpack() 
+function in libgps.c ... which I believe I've resolved (tested 
+successfully with single and compound queries).
+
+1 and 3 are essentially bug-fixes, however (as mentioned in my 
+previous e-mail) I'd appreciate feedback as to whether my resolution 
+of 2 seems reasonable/appropriate to everyone.  Bear in mind that 
+since I've modified both libgps.c and gpsd.c, there's no need to do 
+anything to make clients work with the new O output unless you've 
+manually written a parser for it for some reason... and even then, it 
+should work since it just extends the output by one field at the end.
+
+Following this message will be the patches themselves, and following 
+that will be a small request for help! :)
+
+Cheers,
+Robin
+-- 
+
+-------------------------------------------------------------------------
+  Robin L. Darroch - PO Box 2715, South Hedland WA 6722 - +61 421 503 966
+       <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at darroch.id.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at nyca.org.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003406.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+	<LI>Next message: <A HREF="003403.html">[Gpsd-dev] Cycle time and the jitter problem.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3407">[ date ]</a>
+              <a href="thread.html#3407">[ thread ]</a>
+              <a href="subject.html#3407">[ subject ]</a>
+              <a href="author.html#3407">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

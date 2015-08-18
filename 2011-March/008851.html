@@ -1,0 +1,157 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] time presence and precision, tags,	class member queries.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20time%20presence%20and%20precision%2C%20tags%2C%0A%09class%20member%20queries.&In-Reply-To=%3C4D81548D.4010702%40radagast.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008852.html">
+   <LINK REL="Next"  HREF="008829.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] time presence and precision, tags,	class member queries.</H1>
+    <B>Dave Platt</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20time%20presence%20and%20precision%2C%20tags%2C%0A%09class%20member%20queries.&In-Reply-To=%3C4D81548D.4010702%40radagast.org%3E"
+       TITLE="[Gpsd-dev] time presence and precision, tags,	class member queries.">dplatt at radagast.org
+       </A><BR>
+    <I>Thu Mar 17 01:23:41 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008852.html">[Gpsd-dev] time presence and precision, tags,	class member queries.
+</A></li>
+        <LI>Next message: <A HREF="008829.html">[Gpsd-dev] sub-second accuracy in GPGGA timestamps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8851">[ date ]</a>
+              <a href="thread.html#8851">[ thread ]</a>
+              <a href="subject.html#8851">[ subject ]</a>
+              <a href="author.html#8851">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+&gt;&gt;<i> this apparently representative product only claims +-500ns accuracy for PPS
+</I>&gt;&gt;<i> and 100 microseconds to 1 millisecond over RS232/RS485.
+</I>&gt;<i> 
+</I>&gt;<i> I believe the PPS number, I would be shocked if they could get 100uSec over
+</I>&gt;<i> just serial. 100mSec would be more like it.
+</I>
+It's probably better than 100 mSec (if you're just looking at the
+asynchronous-serial stream) - I'd believe a millisecond or
+three.
+
+On modern systems (with modern UARTs) the inner limit to handling
+the serial packets is probably that of the UART's receive buffer.
+By design, these UARTs usually don't generate an interrupt the
+moment the first character arrives... they'll queue characters
+up until the buffer has several bytes in it, or until some amount
+of time has elapsed since the first such character (4 character
+times by default in the 16550D).
+
+At 4800 baud, this architecture could result in a delay of
+up to a couple of milliseconds in the processing of inbound
+packets, and the end-of-packet latency could shift unpredictably
+from one packet to the next.
+
+Systems which feed the PPS signal from the GPS to the DSR
+or CD or CTS input to the PC's UART wouldn't suffer from this
+UART delay... you'd be limited by IRQ overhead and latency.
+There are tweaks available to the Linux kernel (and other
+kernels) to do high-resolution PPS time capture based on this
+IRQ, and I'd imagine that getting the slop down to 100 uSec
+ought to be possible.
+
+For the PPS signal itself... you can see some data on this
+by looking at the results being plotted from my GPS-stabilized
+10 MHz frequency standard (a VE2ZAZ design) at
+
+  <A HREF="http://snulbug.mtview.ca.us/dave/fll.png">http://snulbug.mtview.ca.us/dave/fll.png</A>
+
+The green data on the graph is the most relevant.  The
+frequency-standard tracker is measuring the number of
+100-nanosecond counts (from the 10 MHz oscillator) over
+each 16-second period (with the periods being delimited
+by the PPS signals from a Motorola Oncore UT+ GPS module).
+The green dots show the difference between the measured count,
+and 160,000,000.  If everything were perfect you'd see
+green lines at +1, 0, and -1, and nowhere else.
+
+Part of the added &quot;slop&quot; is due to the controller's PIC
+micro clocking, part of it is drift and noise in the 10 MHz
+oscillator, and part of it is GPS PPS timing slop.  The
+controller averages out these error counts over a fairly
+long period (currently 30 minutes) before deciding whether to
+trim the 10 MHz oscillator speed upwards or downwards, and by
+how much (the control voltage is shown as the red trace).
+
+I can clearly see correlations between the control voltage,
+and the temperature in my garage, and I was even able to see
+a change in the weather last year.   I plan to build a secondary
+temperature controller and make this device into a &quot;double oven&quot;
+design.
+
+Occasionally, the slop/error/noise exceeds a safety limit,
+and the controller reports a &quot;holdover&quot; event (i.e. the state
+of the frequency lock is uncertain).  The blue line at the top
+shows the lock status... it's mostly locked, but you can see a
+few blue dots just below the line which are 16-second periods
+during which the lock state was questionable.  If it had
+remained in &quot;holdover&quot; state for more than a couple of minutes,
+the controller would have reported &quot;lock lost&quot; and turned off
+the 10 MHz signal.
+
+There are a very few points in the graph where the accumulated
+timing slop over 16 seconds rose as high as 600 nSec, but it was
+usually less than that.  An error-analysis graph I ran a few
+months ago showed that 90% or more of the 16-second intervals
+had a timing slop of 300 nSec or less.
+
+I suspect that the timing slop would be reduced if I put up
+a better GPS antenna... I'm currently using a small patch
+antenna, indoors, under a wood-and-asphalt roof.  I stuck a
+better antenna outdoors a while ago (a Trimble &quot;bullet&quot; type)
+and the GPS display seemed to be indicating quite a bit of
+improvement in the SNR... this might let the GPS track more
+satellites accurately and reduce the impact of noise on the
+timing determinations.
+
+The Oncore UT+ has its TIME RAIM feature enabled, and
+so it'll stop sending PPS (and thus force a holdover) if
+its internal sanity checks conclude that its PPS accuracy
+has degraded below about 500 nSec.  I suspect (but am not
+certain) that this was what triggered many of the holdover
+events shown in the graph... too few satellites in clear view
+of my wimpy antenna resulted in too much timing slop.
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008852.html">[Gpsd-dev] time presence and precision, tags,	class member queries.
+</A></li>
+	<LI>Next message: <A HREF="008829.html">[Gpsd-dev] sub-second accuracy in GPGGA timestamps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8851">[ date ]</a>
+              <a href="thread.html#8851">[ thread ]</a>
+              <a href="subject.html#8851">[ subject ]</a>
+              <a href="author.html#8851">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

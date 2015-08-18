@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Input packets buffering bug(s)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3CAANLkTimnJcOL09JJ5%3DXO3joZAHb%2Bh1YjWm6jpxLsjJmT%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008168.html">
+   <LINK REL="Next"  HREF="008179.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Input packets buffering bug(s)</H1>
+    <B>Olivier Cornu</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3CAANLkTimnJcOL09JJ5%3DXO3joZAHb%2Bh1YjWm6jpxLsjJmT%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Input packets buffering bug(s)">o.cornu at gmail.com
+       </A><BR>
+    <I>Thu Sep 16 16:30:44 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008168.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+        <LI>Next message: <A HREF="008179.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8177">[ date ]</a>
+              <a href="thread.html#8177">[ thread ]</a>
+              <a href="subject.html#8177">[ subject ]</a>
+              <a href="author.html#8177">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Wed, Sep 15, 2010 at 17:28, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> Olivier Cornu &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">o.cornu at gmail.com</A>&gt;:
+</I>&gt;&gt;<i> However, i remember feeling surprised at how esr fixed this when he
+</I>&gt;&gt;<i> explained it to me on IRC. Although i don't remember the details, the
+</I>&gt;&gt;<i> surprise was about being able to empty the input buffer without
+</I>&gt;&gt;<i> changing a core (function?) logic which, according to me, was
+</I>&gt;&gt;<i> necessary to avoid this kind of behavior.
+</I>&gt;<i>
+</I>&gt;<i> However, there is strong ireason to believe I actually *did* fix it.
+</I>&gt;<i> Namely, that the race condition in our test framework that was cousing
+</I>&gt;<i> final lines of logfiles to never be processed got fixed.
+</I>
+Originally, i had a lag growing in the order of several dozen seconds
+every minute. Now, i only have a constant one-tick lag, under some
+conditions (it disappears when i increase logging verbosity). There's
+no doubt you fixed something that hugely improved the situation.
+I feel i have to say a word about it because you mention it: i don't
+know/remember whether the multi-packet issue and the &quot;logfiles final
+lines&quot; issue were the same (i take your word for it, though).
+
+What happened is i noticed a similarity in both behaviors: namely, the
+lagging-input pattern.
+In such a situation, and when you have no other reasonable clue as to
+what is wrong, i believe it's good heuristics to start where your
+instinct felt something fishy; Especially when this place
+coincidentally happens to be involved in the process. Yet, although
+i'd love my instinct to lead me straight to problems' cores, it's
+hardly always the case. :-)
+Notice my suspicion of the two problems being related was surrounded
+with several conditionals. It did not mean to be offensive in any way,
+and if it has been i apologize about it. Fwiw, let me say it straight:
+i of course agree it could be a distinct bug.
+
+Overall, this already is a very long thread: i'd propose to
+investigate the current issue in a separate one, regardless of whether
+it's the same problem or not...
+
+&gt;<i>
+</I>&gt;&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; It might (rightly so) sound
+</I>&gt;&gt;<i> like a weak argument to you, yet it's enough for me to suspect this is
+</I>&gt;&gt;<i> a core-gpsd bug (i'd love to be proven wrong).
+</I>&gt;<i>
+</I>&gt;<i> It is possible that it is a core bug, but if so it must be a different one.
+</I>&gt;<i>
+</I>&gt;<i> Greg Troxel tried to rteproduce this problem and failed. &#160;Clearly we
+</I>&gt;<i> need better instrumentation.
+</I>
+As i understand it, Greg's USB issues with multi-packets were way
+smaller and way less systematic than in my bluetooth case.
+Seeing how dramatic the improvement was for bluetooth, it is not
+surprising that the rare USB issues pretty much entirely disappeared.
+Besides, considering the apparently rather vicious nature of this bug,
+its not systematically showing up in a USB context is hardly a
+surprise either.
+In fact, i believe we have no evidence this heisenbug ever occurred in
+a USB context.
+
+What we (i) do know however, is that it shows up rather easily using
+bluetooth, for example running the Java mobile example code i provided
+above.
+It's unfortunate we do not have a simpler test, but at least we have
+one: i can tweak it as you wish for testing purposes...
+Or do you mean Greg (or someone else) has tried to reproduce this bug
+using that code and failed?
+
+
+-- 
+Olivier
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008168.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+	<LI>Next message: <A HREF="008179.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8177">[ date ]</a>
+              <a href="thread.html#8177">[ thread ]</a>
+              <a href="subject.html#8177">[ subject ]</a>
+              <a href="author.html#8177">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

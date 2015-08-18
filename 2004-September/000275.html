@@ -1,0 +1,138 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] I'm trying to clean things off the gpsd to-do list
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20I%27m%20trying%20to%20clean%20things%20off%20the%20gpsd%20to-do%20list&In-Reply-To=%3C200409241618.i8OGIawv017676%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000269.html">
+   <LINK REL="Next"  HREF="000276.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] I'm trying to clean things off the gpsd to-do list</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20I%27m%20trying%20to%20clean%20things%20off%20the%20gpsd%20to-do%20list&In-Reply-To=%3C200409241618.i8OGIawv017676%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] I'm trying to clean things off the gpsd to-do list">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Fri Sep 24 18:18:36 CEST 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000269.html">[Gpsd-dev] pl2303 - weeding out gps devices
+</A></li>
+        <LI>Next message: <A HREF="000276.html">[Gpsd-dev] gpsd authentication
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#275">[ date ]</a>
+              <a href="thread.html#275">[ thread ]</a>
+              <a href="subject.html#275">[ subject ]</a>
+              <a href="author.html#275">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>My current plan is to do a 2.1 cleanup release once I get the patches
+fron Jens Oberender that will allow preople configuring from source to
+condition out drivers.  There are no actual code changes in the tree
+since 2.0, though I did just move some unit-conversion constants from
+gpsd.h to gps.h because they should be visible to clients.
+
+I've been trying to clean things off the to-do list.  Working out that
+USB device scanning cannot be made to work well enough to be worth
+trying removed one.  Lonnie Mendez and Jiang Zhang and I have agreed
+that Cypress M8 support belongs at kernel level, so that cleans off 
+another.
+
+Here are the remaining to-do list items.  I'm looking for (a) feedback
+on whether these are worth pursuing at all, and (b) help if they are.
+
+    * Mine the contrib directory for good ideas
+
+    There is code in there that can do some interesting tricks with
+    SiRF-II chipsets.  Lonnie Mendez is working on this.
+
+We have the option to write a driver that would speak SiRF-II binary,
+but I'm not sure I see any point in it.  Functionally SiRF binary does
+not appear to give us anything we need and don't get from NMEA.  You can take 
+a look at &lt;<A HREF="http://www.sectron.cz/md/cz/pro/gps/download/gps_protocol.pdf">http://www.sectron.cz/md/cz/pro/gps/download/gps_protocol.pdf</A>&gt;;
+other than (maybe) Push-To-Fix mode, I don't see anything interesting there.
+
+Less radically, we have the option of switching SiRF chips to a higher
+baud rate and collecting updates more than once per second.  Do we care?
+
+    * gpsd.py is unsatisfactory
+
+    It only handles straight NMEA devices.  It should be replaced by a
+    Python extension built around libgps.a.
+
+I go back and forth about this.  Yes, it would be nice; on the other
+hand, the only client for this is currently gpsprobe.
+
+    * Do the research to figure out just what the heck is going on
+      with status bits
+
+    NMEA actually has *three* kinds of validity bits.  Mode, status,
+    and the Active/Void bit (some sources interpret 'V' as 'Navigation
+    receiver warning').  Sentences that have an Active/Void send V
+    when there is no fix, so the position data is no good.
+
+    Let's look at which sentences send what:
+
+		    GPRMC     GPGLL     GPGGA     GPGSA
+    Returns fix      Yes       Yes       Yes        No
+    Returns status   No        Yes       Yes        No
+    Returns mode     No        No        No         Yes
+    Returns A/V      Yes       Yes       No         No
+
+    In addition, some sentences use empty fields to signify invalid data.
+
+    My first conclusion from looking at this table is that the
+    designers of NMEA 0183 should be hung for galloping incompetence.
+    But never mind that.  What are we to make of this mess?
+
+    The fact that the FV18 sends GPMRC/GPGLL/GPGGA but not GPGSA
+    argues that GPGSA is optional.  I don't see how it can be, since it
+    seems to be the only status bit that applies to altitude.  Just how are
+    we supposed to know when altitude is valid if it doesn't ship GSA?  
+    Can a receiver ever ship a non-empty but invalid altitude?
+
+    Which of these override which other bits?  I don't think status is ever
+    nonzero when mode is zero. So status overrides mode.  What other such
+    relationships are there?
+
+This is the big one.  gpsd should have a consistent and *documented*
+theory of how it interprets state bits and determines when NMEA data
+is invalid.  I need help with this.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+This would be the best of all possible worlds, if there were
+no religion in it.	-- John Adams, in a letter to Thomas Jefferson.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000269.html">[Gpsd-dev] pl2303 - weeding out gps devices
+</A></li>
+	<LI>Next message: <A HREF="000276.html">[Gpsd-dev] gpsd authentication
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#275">[ date ]</a>
+              <a href="thread.html#275">[ thread ]</a>
+              <a href="subject.html#275">[ subject ]</a>
+              <a href="author.html#275">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

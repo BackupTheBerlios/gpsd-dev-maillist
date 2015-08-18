@@ -1,0 +1,80 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Single-writer/many-reader consistency
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3CAANLkTinZMT-Fjx4pnPGLS%3DBbKXWd8g0-jUPHN_uF3NDM%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009108.html">
+   <LINK REL="Next"  HREF="009113.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Single-writer/many-reader consistency</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3CAANLkTinZMT-Fjx4pnPGLS%3DBbKXWd8g0-jUPHN_uF3NDM%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Single-writer/many-reader consistency">thomas at mich.com
+       </A><BR>
+    <I>Sat Mar 26 23:04:52 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009108.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+        <LI>Next message: <A HREF="009113.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9111">[ date ]</a>
+              <a href="thread.html#9111">[ thread ]</a>
+              <a href="subject.html#9111">[ subject ]</a>
+              <a href="author.html#9111">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sat, Mar 26, 2011 at 5:26 PM, Terje Mathisen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">terje at tmsw.no</A>&gt; wrote:
+
+&gt;<i> This is effectively _never_ needed though, since my suggested code for a
+</I>&gt;<i> 4-entry buffer just has to make sure that the counter has been updated by
+</I>&gt;<i> less than 3 samples, i.e. making sure that maximum 2 seconds have passed
+</I>&gt;<i> with the process sleeping in the middle of the read operation. Since the
+</I>&gt;<i> ntpd process is as (near-) realtime priority as we can make it, sleeping for
+</I>&gt;<i> two+ seconds like that means that something is _very_ wrong indeed, but the
+</I>&gt;<i> shm code would simply retry the read and succeed.
+</I>
+I think you will get more updates from GPSD with a faster GPS (or is
+it throttled to PPS even if not hardware PPS?).
+
+If the update can tolerate 2 seconds sleep, what is wrong with simply
+waiting 1 system tick (10mS typical and likely to have barriers
+executed in the tick routine) between two comparison (memcpy) reads of
+a single SHM buffer so the cache would update from any writes through
+to the buffer?  usleep(10000) is a lot less code and overhead than any
+of these other complex mechanisms.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009108.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+	<LI>Next message: <A HREF="009113.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9111">[ date ]</a>
+              <a href="thread.html#9111">[ thread ]</a>
+              <a href="subject.html#9111">[ subject ]</a>
+              <a href="author.html#9111">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

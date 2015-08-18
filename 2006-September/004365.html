@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] more about time
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20more%20about%20time&In-Reply-To=%3C23156.213.84.187.156.1158770966.squirrel%40webmail.xs4all.nl%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004358.html">
+   <LINK REL="Next"  HREF="004367.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] more about time</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20more%20about%20time&In-Reply-To=%3C23156.213.84.187.156.1158770966.squirrel%40webmail.xs4all.nl%3E"
+       TITLE="[Gpsd-dev] more about time">gpsd at xs4all.nl
+       </A><BR>
+    <I>Wed Sep 20 18:49:26 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004358.html">[Gpsd-dev] more about time
+</A></li>
+        <LI>Next message: <A HREF="004367.html">[Gpsd-dev] more about time
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4365">[ date ]</a>
+              <a href="thread.html#4365">[ thread ]</a>
+              <a href="subject.html#4365">[ subject ]</a>
+              <a href="author.html#4365">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+&gt;&gt;<i> I think the time handling for NMEA messages should be ripped out of
+</I>&gt;&gt;<i> drivers.c and moved into nmea_parse.c, and handled in a way similar to
+</I>&gt;&gt;<i> what is going on in the SiRF driver.  I.e. use ZDA time when that is
+</I>&gt;&gt;<i> available, hopefully that corresponds better to real time (anyone knows
+</I>&gt;&gt;<i> if
+</I>&gt;&gt;<i> the ZDA time is real time vs time of last fix?).
+</I>&gt;<i>
+</I>&gt;<i> Long term, I would love to see how you this gets coded.
+</I>
+I am not going to write code that I cannot test myself.  I know all too
+well that this will lead to errors.
+
+However, I invite you to look at the sirf.c driver and the mechanism it
+uses to select the time source.
+Delete the #ifdef NTPSHM_ENABLE section from drivers.c and introduce some
+of them to nmea_parse.c, in those handlers that retrieve a time from the
+message.
+Use a driver-private-storage member (called time_seen in sirf.c) that
+holds a bit pattern with each bit corresponding with a certain message
+type, and the more significant bit corresponding with more reliable time
+source.
+(e.g. a message claiming to hold current UTC time would be more reliable
+than a message giving the timestamp for the fix data in that message)
+
+Then, using the IS_HIGHEST_BIT macro, put the data in the ntp shm segment
+only when the actual received message is the best available source
+(because no better messages have been seen from the receiver before).
+This is done using:
+
+#define TIME_SEEN_x   0x04 (for example)
+
+session-&gt;driver.name.time_seen |= TIME_SEEN_x;
+if (IS_HIGHEST_BIT(session-&gt;driver.sirf.time_seen,TIME_SEEN_x))
+    (void)ntpshm_put(session, time + offset);
+
+This way, you can have different offsets for different message types, to
+compensate for the different types of time appearing in there.
+And by assuring that you keep looking only at one type of message (after
+things have settled), you probably avoid strange types of jitter.
+
+However, because so many aspects of time in NMEA messages are undefined,
+it will probably still be difficult to keep different receivers in a
+locking window.
+And that is required (forgot this in my previous reply), because you
+cannot read back the fudge that ntpd is using, and if ntpd is locked to
+the GPS and how far the system time is off from it.  The ntpd shared
+memory is a one-way communication channel, unfortunately.
+
+Rob
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004358.html">[Gpsd-dev] more about time
+</A></li>
+	<LI>Next message: <A HREF="004367.html">[Gpsd-dev] more about time
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4365">[ date ]</a>
+              <a href="thread.html#4365">[ thread ]</a>
+              <a href="subject.html#4365">[ subject ]</a>
+              <a href="author.html#4365">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,162 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Support for Ocean Server Digital Compas
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2008-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Support%20for%20Ocean%20Server%20Digital%20Compas&In-Reply-To=%3C48C727C8.4000803%40konink.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006135.html">
+   <LINK REL="Next"  HREF="006137.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Support for Ocean Server Digital Compas</H1>
+    <B>Stefan de Konink</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Support%20for%20Ocean%20Server%20Digital%20Compas&In-Reply-To=%3C48C727C8.4000803%40konink.de%3E"
+       TITLE="[Gpsd-dev] Support for Ocean Server Digital Compas">stefan at konink.de
+       </A><BR>
+    <I>Wed Sep 10 03:50:00 CEST 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006135.html">[Gpsd-dev] Support for Ocean Server Digital Compas
+</A></li>
+        <LI>Next message: <A HREF="006137.html">[Gpsd-dev] EVK-5H patches against current
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6136">[ date ]</a>
+              <a href="thread.html#6136">[ thread ]</a>
+              <a href="subject.html#6136">[ subject ]</a>
+              <a href="author.html#6136">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Eric S. Raymond schreef:
+&gt;<i> Stefan de Konink &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">stefan at konink.de</A>&gt;:
+</I>&gt;&gt;<i> Now I know that GPSd isn't (by default) doing compass things, but I
+</I>&gt;&gt;<i> wonder if someone could tell me what would be a better solution:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> 1) Create two instances of GPSd one doing GPS, one doing Compass data
+</I>&gt;&gt;<i> 2) Integrate the two in one instance
+</I>&gt;<i> 
+</I>&gt;<i> Second would be better, I think.
+</I>&gt;<i> 
+</I>&gt;&gt;<i> The compass supports different output modes, including the NMEA, HCHDT
+</I>&gt;&gt;<i> sentence. Now this sounds attractive, but the compass also provides a
+</I>&gt;&gt;<i> proprietary sentence called OHPR that outputs all parameters (pitch,
+</I>&gt;&gt;<i> roll, etc.) on a single line.
+</I>&gt;<i> 
+</I>&gt;<i> Add it to the NMEA driver.  Guard it with an appropriate configuration #ifdef.
+</I>
+I have created a patch (WIP).
+
+<A HREF="http://ipv4.kinkrsoftware.nl/contrib/elphel/wip.diff">http://ipv4.kinkrsoftware.nl/contrib/elphel/wip.diff</A>
+
+
+
+I'm trying to debug now under what circumstances oceanserver_configure
+is called, if it is ever called. The device has different modes, and I
+actually want to parse it in $OHPR mode, but I totally don't get the
+structure that can lead to this...
+
+The above code snippet allows to figure out what kind of device it is,
+it could be better, because the device allows something like 'V\n' and
+it will give back its name. This must probably be implemented in a
+probe_detect function. I also have updated the packet.c code, so...
+
+gpsd: Packet type 1 accepted 26 =
+24433239302e38502d302e3352312e345433342e332a30390d0a
+gpsd: Packet discard of 26, chars remaining is 0 =
+gpsd: packet sniff on /dev/ttyUSB0 finds type 1
+gpsd: switch_driver(Generic NMEA) called...
+gpsd: selecting Generic NMEA driver...
+gpsd: =&gt; PROBING SUBTYPE 0
+gpsd: blabla
+gpsd: blabla2 0
+gpsd: GPS sent 26 new characters
+gpsd: Accepted packet on /dev/ttyUSB0.
+gpsd: =&gt; PARSE INPUT
+gpsd: switch_driver(OceanServer Digital Compas OS5000) called...
+gpsd: selecting OceanServer Digital Compas OS5000 driver...
+gpsd: blabla
+gpsd: blabla2 0
+gpsd: unflagging descriptor 4
+gpsd: closing GPS=/dev/ttyUSB0 (4)
+gpsd: select waits
+gpsd: select waits
+
+
+But looking at this, it actually never 'reconfigures' itself to the
+'mode' I want to read out from, at blabla2 it does not work out well.
+
+The output of the device is typically:
+$C...*NMEACRC
+$OHPR ... *NMEACRC
+$HCHDT,...*NMEACRC
+Or 'raw' output.
+
+How can I 'probe' on my driver? With this I mean, how can I select the
+driver, make it send the 'V\n' sequence and based on that look at the
+resulting string?
+
+And how can I make the device to actually switch 'mode' (make the
+_configure) called?
+
+
+&gt;&gt;<i> The non trivial thing here is that I need to build in a calibration
+</I>&gt;&gt;<i> step. Like GPSd the device runs some interactive interface that is able
+</I>&gt;&gt;<i> to do filtering and does calibration. It might be interesting to support
+</I>&gt;&gt;<i> it through GPSd, alternatively I need to shutdown the daemon.
+</I>&gt;<i> 
+</I>&gt;<i> I don't undertstand this paragraph.  What are you trying to tell us that 
+</I>&gt;<i> gpsd needs to do to support calibration?
+</I>
+The compass requires a hardware calibration (rotating it around Y and Z
+axis) this needs to be initiated by a command sequence to the device. I
+wonder if it is possible to make this sequence go through gpsd to the
+device itself.
+
+Is it in the current GPSd possible to hookup more than one device?
+
+
+
+Stefan
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.9 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - <A HREF="http://enigmail.mozdev.org">http://enigmail.mozdev.org</A>
+
+iEYEARECAAYFAkjHJ8cACgkQYH1+F2Rqwn3+ZACfaF3dX1QUCZ321c1Z8/yx3kCR
+BB8An0pp8s2YqZ3SJ88s82X+le/kDWQE
+=lYyI
+-----END PGP SIGNATURE-----
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006135.html">[Gpsd-dev] Support for Ocean Server Digital Compas
+</A></li>
+	<LI>Next message: <A HREF="006137.html">[Gpsd-dev] EVK-5H patches against current
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6136">[ date ]</a>
+              <a href="thread.html#6136">[ thread ]</a>
+              <a href="subject.html#6136">[ subject ]</a>
+              <a href="author.html#6136">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Changes to get the Trimble Thunderbolt to send callback	messages
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2008-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Changes%20to%20get%20the%20Trimble%20Thunderbolt%20to%20send%20callback%0A%09messages&In-Reply-To=%3C2946f6c50811031355i3b9230d6ya1924d7921411a52%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006189.html">
+   <LINK REL="Next"  HREF="006190.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Changes to get the Trimble Thunderbolt to send callback	messages</H1>
+    <B>Mike Echalk</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Changes%20to%20get%20the%20Trimble%20Thunderbolt%20to%20send%20callback%0A%09messages&In-Reply-To=%3C2946f6c50811031355i3b9230d6ya1924d7921411a52%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Changes to get the Trimble Thunderbolt to send callback	messages">mechalk.spam at gmail.com
+       </A><BR>
+    <I>Mon Nov  3 22:55:32 CET 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006189.html">[Gpsd-dev] libXaw
+</A></li>
+        <LI>Next message: <A HREF="006190.html">[Gpsd-dev] Yay, we get a leap second added this year
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6187">[ date ]</a>
+              <a href="thread.html#6187">[ thread ]</a>
+              <a href="subject.html#6187">[ subject ]</a>
+              <a href="author.html#6187">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I am writing an application that needs to listen to a Trimble Thunderbolt
+for time and position updates. I have source code that already parses the
+raw data from Trimble but I was hoping to use the gpsd library instead.
+
+To test the gpsd library, I checked out the code from the head of the
+subversion trunk. I then wrote a simple test program that uses the libgpsmm
+library to set a callback method and print out the buffer every time I get
+an update. From the trimble documentation and other code that I have, I know
+that the trimble outputs two messages (0x8fab and 0x8fac) every second
+automatically. However, when I use gpsd, I get the updates for the 0x8fac
+messages but never get an update for the 0x8fab message.
+
+I made some changes to tsip.c to get it to work how I want it to, but I'm
+not sure if these changes are correct. See attached file.
+Line 68 - I added the variables to the gpsd_set_speed function instead of
+the hard coded parity and stopbits parameters. The trimble thunderbolt uses
+8N1 which was different from the hardcoded values.
+
+Lines 310 and 529 - Removed the CYCLE_START_SET mask from these two packet
+types. Can someone explain what the CYCLE_START_SET mask represents? I
+removed it because it prevented the 0x8fab message from being sent back and
+always caused the status timer on cgps to reset.
+
+Line 681 - I used the context-&gt;leap_seconds value until the packet gps
+returned a valid leap seconds value. The rest of the data in the packet is
+correct.
+
+Line 687 - This is the line that I don't think is the correct way to fix
+this problem. I added LATLON_SET to the mask. This causes an update to
+occur, but the latitude and longitude were not actually set. Is there a way
+to make gpsd call the callback method when only the TIME_SET mask is set?
+
+Thanks,
+Mike
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20081103/554d4393/attachment.html">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20081103/554d4393/attachment.html</A>&gt;
+-------------- next part --------------
+An embedded and charset-unspecified text was scrubbed...
+Name: changes.txt
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20081103/554d4393/attachment.txt">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20081103/554d4393/attachment.txt</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006189.html">[Gpsd-dev] libXaw
+</A></li>
+	<LI>Next message: <A HREF="006190.html">[Gpsd-dev] Yay, we get a leap second added this year
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6187">[ date ]</a>
+              <a href="thread.html#6187">[ thread ]</a>
+              <a href="subject.html#6187">[ subject ]</a>
+              <a href="author.html#6187">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

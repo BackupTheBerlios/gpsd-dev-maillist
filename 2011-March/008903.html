@@ -1,0 +1,83 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [ntp:hackers] ntpd shm changes
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20ntpd%20shm%20changes&In-Reply-To=%3CAANLkTimpw9uUDDPNBKv5q9Ab7rG_3qxWY1TMsXKiNyTA%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008902.html">
+   <LINK REL="Next"  HREF="008905.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [ntp:hackers] ntpd shm changes</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20ntpd%20shm%20changes&In-Reply-To=%3CAANLkTimpw9uUDDPNBKv5q9Ab7rG_3qxWY1TMsXKiNyTA%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [ntp:hackers] ntpd shm changes">thomas at mich.com
+       </A><BR>
+    <I>Sun Mar 20 15:17:25 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008902.html">[Gpsd-dev] [ntp:hackers] ntpd shm changes
+</A></li>
+        <LI>Next message: <A HREF="008905.html">[Gpsd-dev] [ntp:hackers] ntpd shm changes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8903">[ date ]</a>
+              <a href="thread.html#8903">[ thread ]</a>
+              <a href="subject.html#8903">[ subject ]</a>
+              <a href="author.html#8903">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sun, Mar 20, 2011 at 8:39 AM, Jon Schlueter &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jon.schlueter at gmail.com</A>&gt; wrote:
+
+&gt;<i> I would tend to agree, the &quot;Double checked locking is broken&quot; debate would
+</I>&gt;<i> hold in the realm as well.
+</I>&gt;<i>
+</I>&gt;<i> <A HREF="http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html">http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html</A>
+</I>
+I don't think double-checking can give any advantage over single-checking.
+You either need a locking mechanism, a way to disable interrupts
+(across all cores!), or use some kind of queuing/serialization
+mechanism.
+
+I don't think there are SHM locks across architectures, only semaphore
+objects, but at some point using SHM+semaphore+code is going to be
+bigger than using a pipe of some kind and checking if it would block
+if the other end wasn't there.
+
+You might be able to get away with using it as a file object - map the
+shared memory.  A write(shmfd,buf,sizeof(buf)) and the corresponding
+read should be atomic at the OS level, at least if it is less than a
+sector or page, probably even if it is larger.  (I used this for my
+minigpsd for the nokia tablets to update the shm object)
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008902.html">[Gpsd-dev] [ntp:hackers] ntpd shm changes
+</A></li>
+	<LI>Next message: <A HREF="008905.html">[Gpsd-dev] [ntp:hackers] ntpd shm changes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8903">[ date ]</a>
+              <a href="thread.html#8903">[ thread ]</a>
+              <a href="subject.html#8903">[ subject ]</a>
+              <a href="author.html#8903">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

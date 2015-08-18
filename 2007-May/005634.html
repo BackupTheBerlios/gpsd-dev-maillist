@@ -1,0 +1,178 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Status of interface to ntpd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Status%20of%20interface%20to%20ntpd&In-Reply-To=%3C200705152032.17322.mick.durkin%40saunalahti.fi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005633.html">
+   <LINK REL="Next"  HREF="005635.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Status of interface to ntpd</H1>
+    <B>Mick Durkin</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Status%20of%20interface%20to%20ntpd&In-Reply-To=%3C200705152032.17322.mick.durkin%40saunalahti.fi%3E"
+       TITLE="[Gpsd-dev] Status of interface to ntpd">mick.durkin at saunalahti.fi
+       </A><BR>
+    <I>Tue May 15 19:32:17 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005633.html">[Gpsd-dev] Status of interface to ntpd
+</A></li>
+        <LI>Next message: <A HREF="005635.html">[Gpsd-dev] Status of interface to ntpd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5634">[ date ]</a>
+              <a href="thread.html#5634">[ thread ]</a>
+              <a href="subject.html#5634">[ subject ]</a>
+              <a href="author.html#5634">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Yo Gary!
+
+The drilling a hole option is a non-starter. The folks in the upstairs flat 
+would not be too happy if I drill a hole through their floor! Also, I am a 
+just a tenant here, renting from a Finnish colleague who is away on a 
+university course, so I don't want to make holes in his walls.
+
+Back home in UK I have a possibility to mount the antenna high on my roof 
+above all the obstructions, so signal should be good. I will also be lower 
+down the globe which might help; here is 60N and home is 53N.
+
+Here is the output from ntpdc -p :-
+
+[<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">root at linuxbox</A> ~]# ntpdc -p
+     remote           local      st poll reach  delay   offset    disp
+=======================================================================
+=SHM(0)          127.0.0.1        0   16  377 0.00000 -0.007194 0.01524
+*SHM(1)          127.0.0.1        0   16  377 0.00000  0.000006 0.01573
+=fartein.ifi.uio 192.168.1.10     2   64  377 0.02214 -0.000159 0.06464
+=ntp1.kolumbus.f 192.168.1.10     2   64  377 0.00644  0.000258 0.05917
+=ntp2.kolumbus.f 192.168.1.10     2   64  377 0.00623 -0.000075 0.06476
+=nic.lth.se      192.168.1.10     2   64  377 0.02255  0.000676 0.06383
+
+I've not tried that before and don't know if it is good or not, so I will read 
+the man and see what it means.
+
+I don't use dhcp that I know of, but maybe that was some background FC6 junk 
+going off. I can't remember how I found out it was dhclient-script but I 
+fixed it ages ago and have had no problems since. Again, I guess I need 
+to &quot;man dhcp&quot; or something to see what -N does.
+
+You said &quot;initialization issues with PPS&quot;; can I be of help? I never noticed 
+any particular problems whenever I got a decent signal and tried to interface 
+to ntpd.
+
+What do you do that causes problems? I normally run ntpd all the time, but of 
+course, unless gpsd is up, the fallback is to use public servers. It seems to 
+find my gpsd output immediately I start the gpsd daemon.
+
+
+BR
+
+Mick
+
+On Tuesday 15 May 2007 19:59:04 Gary E. Miller wrote:
+&gt;<i> Yo Mick!
+</I>&gt;<i>
+</I>&gt;<i> On Tue, 15 May 2007, Mick Durkin wrote:
+</I>&gt;<i> &gt; Now that the &quot;good&quot; weather has arrived in Finland (afternoon
+</I>&gt;<i> &gt; temperatures above 16 degrees C/ 60 degrees F!!) I have been able to hang
+</I>&gt;<i> &gt; my gps antenna out of my window and get some signal for my Jupiter-T to
+</I>&gt;<i> &gt; slurp.
+</I>&gt;<i>
+</I>&gt;<i> Do what I did, drill a hole in your roof and permanently mount your antenna
+</I>&gt;<i> outside.  Fill the hole with good caulking at you will have good time all
+</I>&gt;<i> year.
+</I>&gt;<i>
+</I>&gt;<i> &gt; I am gathering some test data to submit with the code ready to put it in
+</I>&gt;<i> &gt; the SVN tree, so maybe it can get into the next release?
+</I>&gt;<i>
+</I>&gt;<i> I don't know what the current plans are for a new release. gpsd releases
+</I>&gt;<i> come in spurts.
+</I>&gt;<i>
+</I>&gt;<i> &gt; To the point of the subject line. I seem to remember you were not
+</I>&gt;<i> &gt; happy about the behaviour of the ntpd interface, or am I wrong?
+</I>&gt;<i>
+</I>&gt;<i> I have not had much time, am in the middle of a divorce battle, but I have
+</I>&gt;<i> narrowed down my problems to initialization issues with PPS.  Once it
+</I>&gt;<i> start working it stays good.  That makes it a bit tricky to nail down.
+</I>&gt;<i>
+</I>&gt;<i> My divorce mess is almost over and getting some bits of free time to play
+</I>&gt;<i> with this stuff again.
+</I>&gt;<i>
+</I>&gt;<i> &gt; In fact, my initial tests revealed a bug in my driver where I wrongly
+</I>&gt;<i> &gt; applied a leap second correction. The 1PPS was seen by ntpd as the best
+</I>&gt;<i> &gt; quality source and it was fighting with my public time server data. The
+</I>&gt;<i> &gt; difference was a magical 14000 milliseconds, so that was a good clue.
+</I>&gt;<i>
+</I>&gt;<i> Those leap seconds are a constant pain.
+</I>&gt;<i>
+</I>&gt;<i> &gt; Once that was corrected, ntpd happily eats the 1PPS and gpsd-generated
+</I>&gt;<i> &gt; NMEA produced from my binary driver data. Here is a snapshot of ntpq -p
+</I>&gt;<i> &gt; output:-
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; [<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">root at linuxbox</A> ~]# ntpq -p
+</I>&gt;<i>
+</I>&gt;<i> That looks great.  Try 'ntpdc -p'.
+</I>&gt;<i>
+</I>&gt;<i> &gt; Maybe pps.peer only happens if you have
+</I>&gt;<i> &gt; a &quot;hardware&quot; 1PPS source rather than the output of gpsd?
+</I>&gt;<i>
+</I>&gt;<i> Dunno, never noticed that before.  All I care about is the time is very
+</I>&gt;<i> good.
+</I>&gt;<i>
+</I>&gt;<i> &gt; On the way to getting this to work, I did find a problem with the OS's
+</I>&gt;<i> &gt; handling of the ntp.conf file under Fedora Core 6. It was being stomped
+</I>&gt;<i> &gt; on by a script file (dhclient-script) and I had to mangle that file so
+</I>&gt;<i> &gt; that the &quot;servers&quot; data in ntp.conf was not damaged. If you are using
+</I>&gt;<i> &gt; FC6, maybe it was this behaviour that caused you problems?
+</I>&gt;<i>
+</I>&gt;<i> I rarely use dhcp, When I do I use the '-N' parameter to avoid stomping on
+</I>&gt;<i> the ntpd.conf.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> RGDS
+</I>&gt;<i> GARY
+</I>&gt;<i> ---------------------------------------------------------------------------
+</I>&gt;<i> Gary E. Miller Rellim 20340 Empire Ave., Suite E-3, Bend, OR 97701
+</I>&gt;<i> 	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005633.html">[Gpsd-dev] Status of interface to ntpd
+</A></li>
+	<LI>Next message: <A HREF="005635.html">[Gpsd-dev] Status of interface to ntpd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5634">[ date ]</a>
+              <a href="thread.html#5634">[ thread ]</a>
+              <a href="subject.html#5634">[ subject ]</a>
+              <a href="author.html#5634">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

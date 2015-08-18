@@ -1,0 +1,214 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] autoconf cleanup
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2008-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20autoconf%20cleanup&In-Reply-To=%3Crmimygxinj5.fsf_-_%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006177.html">
+   <LINK REL="Next"  HREF="006173.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] autoconf cleanup</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20autoconf%20cleanup&In-Reply-To=%3Crmimygxinj5.fsf_-_%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] autoconf cleanup">gdt at ir.bbn.com
+       </A><BR>
+    <I>Wed Oct 22 00:36:14 CEST 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006177.html">[Gpsd-dev] ncurses build failure
+</A></li>
+        <LI>Next message: <A HREF="006173.html">[Gpsd-dev] xgpsspeed does not need motif
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6181">[ date ]</a>
+              <a href="thread.html#6181">[ thread ]</a>
+              <a href="subject.html#6181">[ subject ]</a>
+              <a href="author.html#6181">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Here is my current autoconf/autoamke cleanup patch; please disregard all
+previous ones.
+
+Changelog:
+
+Find athena widgets not only as Xaw but also as Xaw8.
+
+Define HAVE_XAW if found and conditionalize xgpsspeed build on that.
+Drop motif libary from link of xgpsspeed.
+
+When checking for ncursse.h, define HAVE_NCURSES_H so that programs that
+use that will build on systems without curses.h.  Substitute
+NCURSES_LIBS.
+
+When calling mkgmtime_test, don't assume . in PATH.
+
+
+Index: configure.ac
+===================================================================
+--- configure.ac	(revision 4818)
++++ configure.ac	(working copy)
+@@ -195,11 +195,18 @@
+     AC_MSG_WARN([libXt problem - xgps won't be built.])
+   fi
+   AC_CHECK_HEADER([X11/Xaw/Label.h],, motif_includes=&quot;no&quot;)
+-  AC_CHECK_LIB(Xaw, XawInitializeWidgetSet, XAW_LIBS=&quot;-lXaw&quot;,,
++  dnl We can't use AC_SEARCH_LIBS because it always modifes LIBS.
++  dnl Instead, check for two common places (xorg way and the
++  dnl traditional way) by hand.
++  AC_CHECK_LIB(Xaw, XawInitializeWidgetSet, XAW_LIBS=&quot;-lXaw&quot;,
++     AC_CHECK_LIB(Xaw8, XawInitializeWidgetSet, XAW_LIBS=&quot;-lXaw8&quot;,,${X_PRE_LIBS} ${X11_LIBS}),
+ 	  ${X_PRE_LIBS} ${X11_LIBS})
+   AC_SUBST(XAW_LIBS)
+-  if test x&quot;$ac_cv_lib_Xaw_XawInitializeWidgetSet&quot; = &quot;xno&quot;; then
+-    AC_MSG_WARN([libXaw problem - xgps won't be built.])
++  if test x&quot;$XAW_LIBS&quot; = &quot;x&quot;; then
++    AC_MSG_WARN([libXaw problem - xgpsspeed won't be built.])
++    AM_CONDITIONAL([HAVE_XAW],false)
++  else
++    AM_CONDITIONAL([HAVE_XAW],true)
+   fi
+   AC_CHECK_LIB(Xext, XShapeQueryVersion, XEXT_LIBS=&quot;-lXext&quot;,,
+ 	  ${X_PRE_LIBS} ${X11_LIBS})
+@@ -242,11 +249,20 @@
+ fi
+ dnl End of X11 checks
+ 
+-AC_CHECK_HEADER(ncurses.h, ac_ncurses='yes', ac_ncurses='no')
+-AM_CONDITIONAL([HAVE_NCURSES], [test x&quot;$ac_ncurses&quot; = &quot;xyes&quot;])
+-AC_CHECK_LIB(ncurses, initscr, ac_ncurses_lib='yes', ac_ncurses_lib='no')
+-if test x&quot;$ac_ncurses_lib&quot; = &quot;xno&quot; -o x&quot;$ac_ncurses&quot; = &quot;xno&quot; ; then
+-  AC_MSG_WARN([Not including curses support])
++dnl Check for curses headers and libraries.  The presence of the
++dnl library is used to decide whether or not to build some programs.
++dnl Those programs use ncurses.h if found, and otherwise use curses.h.
++dnl TODO: give an example of what system uses curses.h with
++dnl libncurses.  We define our own variables to reduce the risk of
++dnl breaking if autoconf changes (private) variable names.
++AC_CHECK_HEADERS(ncurses.h)
++AC_CHECK_LIB(ncurses, initscr, NCURSES_LIBS=&quot;-lncurses&quot;)
++AC_SUBST(NCURSES_LIBS)
++if test x&quot;$NCURSES_LIBS&quot; = x&quot;&quot; ; then
++  AC_MSG_WARN([Not including curses support])		   
++  AM_CONDITIONAL([HAVE_NCURSES],false)
++else
++  AM_CONDITIONAL([HAVE_NCURSES],true)
+ fi
+ 
+ dnl check for NMEA support
+Index: Makefile.am
+===================================================================
+--- Makefile.am	(revision 4818)
++++ Makefile.am	(working copy)
+@@ -3,15 +3,21 @@
+ 
+ #SUBDIRS = contrib
+ 
++XMLTO = xmlto
++
+ #
+-# Build stuff depending on Motif
++# Conditionally add programs depending on libraries that may or may not be present.
+ #
++if HAVE_NCURSES
++CURSESPROGS = cgps sirfmon
++endif
+ if HAVE_MOTIF
+-MOTIF_PROGS = xgps xgpsspeed
++MOTIF_PROGS = xgps
+ endif
++if HAVE_XAW
++XAW_PROGS = xgpsspeed
++endif
+ 
+-XMLTO = xmlto
+-
+ if HAVE_DBUS
+ INCLUDES = $(DBUS_CFLAGS) $(DBUS_GLIB_CFLAGS) -DDBUS_API_SUBJECT_TO_CHANGE=1
+ DBUSPROGS = gpxlogger
+@@ -23,11 +29,7 @@
+ RTCM104PAGES = rtcmdecode.1
+ endif
+ 
+-
+-if HAVE_NCURSES
+-CURSESPROGS = cgps sirfmon
+-endif
+-bin_PROGRAMS = $(DBUSPROGS) $(MOTIF_PROGS) $(RTCM104PROGS) $(CURSESPROGS) gpsctl gpspipe gpsflash cgpxlogger
++bin_PROGRAMS = $(DBUSPROGS) $(MOTIF_PROGS) $(XAW_PROGS) $(RTCM104PROGS) $(CURSESPROGS) gpsctl gpspipe gpsflash cgpxlogger
+ sbin_PROGRAMS = gpsd
+ check_PROGRAMS = bits_test gpsmm_test packet_test mkgmtime_test
+ if HAVE_PYTHON
+@@ -54,13 +56,13 @@
+ xgpsspeed_SOURCES = \
+ 	$(xgpsspeed_c_sources) \
+ 	xgpsspeed.icon
+-xgpsspeed_LDADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(XAW_LIBS) $(XM_LIBS) $(X_LIBS) $(X_PRE_LIBS) libgps.la -lm $(LIBPTHREAD)
++xgpsspeed_LDADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(XAW_LIBS) $(X_LIBS) $(X_PRE_LIBS) libgps.la -lm $(LIBPTHREAD)
+ 
+ #
+ # Build cgps
+ #
+ cgps_SOURCES = cgps.c
+-cgps_LDADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) -lncurses libgps.la -lm $(LIBPTHREAD)
++cgps_LDADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(NCURSES_LIBS) libgps.la -lm $(LIBPTHREAD)
+ 
+ #
+ # Build cgpxlogger
+@@ -91,7 +93,7 @@
+ # Build sirfmon
+ #
+ sirfmon_SOURCES = sirfmon.c
+-sirfmon_LDADD = $(LIBM) -lncurses libgps.la -lm $(LIBPTHREAD)
++sirfmon_LDADD = $(LIBM) $(NCURSES_LIBS) libgps.la -lm $(LIBPTHREAD)
+ 
+ #
+ # Build rtcmdecode
+@@ -429,7 +431,7 @@
+ 
+ # Regression-test the calendar functions
+ time_regress: mkgmtime_test
+-	mkgmtime_test
++	./mkgmtime_test
+ 
+ # Do all normal regression tests
+ testregress: gps-regress rtcm-regress packet-regress undump-regress time_regress
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 193 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20081021/ab6834e5/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20081021/ab6834e5/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006177.html">[Gpsd-dev] ncurses build failure
+</A></li>
+	<LI>Next message: <A HREF="006173.html">[Gpsd-dev] xgpsspeed does not need motif
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6181">[ date ]</a>
+              <a href="thread.html#6181">[ thread ]</a>
+              <a href="subject.html#6181">[ subject ]</a>
+              <a href="author.html#6181">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

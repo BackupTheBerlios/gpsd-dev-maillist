@@ -1,0 +1,96 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpspipes, O message based on RMC or GGA fix
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpspipes%2C%20O%20message%20based%20on%20RMC%20or%20GGA%20fix&In-Reply-To=%3C434kidPNM7724S25.1159629278%40cmsweb25.cms.usa.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004476.html">
+   <LINK REL="Next"  HREF="004478.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpspipes, O message based on RMC or GGA fix</H1>
+    <B>Petr Slansky</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpspipes%2C%20O%20message%20based%20on%20RMC%20or%20GGA%20fix&In-Reply-To=%3C434kidPNM7724S25.1159629278%40cmsweb25.cms.usa.net%3E"
+       TITLE="[Gpsd-dev] gpspipes, O message based on RMC or GGA fix">slansky at usa.net
+       </A><BR>
+    <I>Sat Sep 30 17:14:38 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004476.html">[Gpsd-dev] Test
+</A></li>
+        <LI>Next message: <A HREF="004478.html">[Gpsd-dev] gpspipes, O message based on RMC or GGA fix
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4477">[ date ]</a>
+              <a href="thread.html#4477">[ thread ]</a>
+              <a href="subject.html#4477">[ subject ]</a>
+              <a href="author.html#4477">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gentlemen,
+
+please, check this &quot;GGA&quot; code in nmea_parse.c
+
+        if (altitude[0] == '\0') {
+            if (session-&gt;gpsdata.fix.mode == MODE_3D) {
+                session-&gt;gpsdata.fix.mode = session-&gt;gpsdata.status ? MODE_2D
+:<i> MODE_NO_FIX;
+</I>                mask |= MODE_SET;
+            }
+        } else {
+
+I think that status and fix mode cannot be mixed in this way...
+
+gps.h:#define STATUS_NO_FIX     0       /* no */
+gps.h:#define STATUS_FIX        1       /* yes, without DGPS */
+gps.h:#define STATUS_DGPS_FIX   2       /* yes, with DGPS */
+
+gps.h:#define MODE_NOT_SEEN     0       /* mode update not seen yet */
+gps.h:#define MODE_NO_FIX       1       /* none */
+gps.h:#define MODE_2D   2       /* good for latitude/longitude */
+gps.h:#define MODE_3D   3       /* good for altitude/climb too */
+
+In the &quot;else&quot; case (altitude is present), why not to set mode to MODE_3D and
+update mask with MODE_SET?
+
+With regards,
+Petr
+
+
+---------------------------------
+  Petr Slansky, <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">slansky at usa.net</A>
+---------------------------------
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004476.html">[Gpsd-dev] Test
+</A></li>
+	<LI>Next message: <A HREF="004478.html">[Gpsd-dev] gpspipes, O message based on RMC or GGA fix
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4477">[ date ]</a>
+              <a href="thread.html#4477">[ thread ]</a>
+              <a href="subject.html#4477">[ subject ]</a>
+              <a href="author.html#4477">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,156 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH 6/7] Added NOISE_IS flag.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%206/7%5D%20Added%20NOISE_IS%20flag.&In-Reply-To=%3C1295508912.17762.38567.camel%40rudd%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008510.html">
+   <LINK REL="Next"  HREF="008512.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH 6/7] Added NOISE_IS flag.</H1>
+    <B>Thomas Sprinkmeier</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%206/7%5D%20Added%20NOISE_IS%20flag.&In-Reply-To=%3C1295508912.17762.38567.camel%40rudd%3E"
+       TITLE="[Gpsd-dev] [PATCH 6/7] Added NOISE_IS flag.">thomas.sprinkmeier at cohdawireless.com
+       </A><BR>
+    <I>Thu Jan 20 08:35:12 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008510.html">[Gpsd-dev] [PATCH 5/5] added &quot;json_noise_dump&quot; to send noise	statistics
+</A></li>
+        <LI>Next message: <A HREF="008512.html">[Gpsd-dev] [PATCH 7/7] Displaying GPGST info
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8511">[ date ]</a>
+              <a href="thread.html#8511">[ thread ]</a>
+              <a href="subject.html#8511">[ subject ]</a>
+              <a href="author.html#8511">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>2 more patches, seems to be working now.
+
+I added NOISE_IS and am using it to trigger sending GPGST data.
+
+Clients are now getting notified.
+
+---
+ driver_nmea.c |   33 +++++++++++++++++++++++----------
+ gpsd.c        |    6 ++++++
+ gpsd.h-tail   |    3 ++-
+ 3 files changed, 31 insertions(+), 11 deletions(-)
+
+diff --git a/driver_nmea.c b/driver_nmea.c
+index 5294730..8401115 100644
+--- a/driver_nmea.c
++++ b/driver_nmea.c
+@@ -424,19 +424,32 @@ static gps_mask_t processGPGST(int count, char *field[], struct gps_device_t *se
+      * 9 Checksum
+ */
+     if (count &lt; 8) {
+-        return ERROR_SET;
++      return 0;
+     }
+ 
+-    session-&gt;gpsdata.noise_stats.utctime = atof(field[1]);
+-    session-&gt;gpsdata.noise_stats.rms_deviation = atof(field[2]);
+-    session-&gt;gpsdata.noise_stats.smajor_deviation = atof(field[3]);
+-    session-&gt;gpsdata.noise_stats.sminor_deviation = atof(field[4]);
+-    session-&gt;gpsdata.noise_stats.smajor_orientation = atof(field[5]);
+-    session-&gt;gpsdata.noise_stats.lat_err_deviation = atof(field[6]);
+-    session-&gt;gpsdata.noise_stats.longt_err_deviation = atof(field[7]);
+-    session-&gt;gpsdata.noise_stats.alt_err_deviation = atof(field[8]);
++#define PARSE_FIELD(n) (*field[n] ? atof(field[n]) : NAN)
++    session-&gt;gpsdata.noise_stats.utctime             = PARSE_FIELD(1);
++    session-&gt;gpsdata.noise_stats.rms_deviation       = PARSE_FIELD(2);
++    session-&gt;gpsdata.noise_stats.smajor_deviation    = PARSE_FIELD(3);
++    session-&gt;gpsdata.noise_stats.sminor_deviation    = PARSE_FIELD(4);
++    session-&gt;gpsdata.noise_stats.smajor_orientation  = PARSE_FIELD(5);
++    session-&gt;gpsdata.noise_stats.lat_err_deviation   = PARSE_FIELD(6);
++    session-&gt;gpsdata.noise_stats.longt_err_deviation = PARSE_FIELD(7);
++    session-&gt;gpsdata.noise_stats.alt_err_deviation   = PARSE_FIELD(8);
++#undef PARSE_FIELD
+ 
+-    return NOISE_SET;
++    gpsd_report(LOG_DATA,
++		&quot;GST: utc = %.2f, rms = %.2f, maj = %.2f, min = %.2f, ori = %.2f, lat = %.2f, lon = %.2f, alt = %.2f\n&quot;,
++                session-&gt;gpsdata.noise_stats.utctime,
++                session-&gt;gpsdata.noise_stats.rms_deviation,
++                session-&gt;gpsdata.noise_stats.smajor_deviation,
++                session-&gt;gpsdata.noise_stats.sminor_deviation,
++                session-&gt;gpsdata.noise_stats.smajor_orientation,
++                session-&gt;gpsdata.noise_stats.lat_err_deviation,
++                session-&gt;gpsdata.noise_stats.longt_err_deviation,
++                session-&gt;gpsdata.noise_stats.alt_err_deviation);
++
++    return NOISE_IS | ONLINE_IS;
+ }
+ 
+ 
+diff --git a/gpsd.c b/gpsd.c
+index 4cd735b..8ce176b 100644
+--- a/gpsd.c
++++ b/gpsd.c
+@@ -1301,6 +1301,12 @@ static void json_report(struct subscriber_t *sub,
+ 	(void)throttled_write(sub, buf, strlen(buf));
+     }
+ 
++    if ((changed &amp; NOISE_IS) != 0) {
++	json_noise_dump(&amp;device-&gt;gpsdata,
++		      buf, sizeof(buf));
++	(void)throttled_write(sub, buf, strlen(buf));
++    }
++
+     if ((changed &amp; SATELLITE_IS) != 0) {
+ 	json_sky_dump(&amp;device-&gt;gpsdata,
+ 		      buf, sizeof(buf));
+diff --git a/gpsd.h-tail b/gpsd.h-tail
+index bebc581..e7d2dee 100644
+--- a/gpsd.h-tail
++++ b/gpsd.h-tail
+@@ -259,7 +259,8 @@ typedef enum {
+ #define PACKET_IS	0x10000000u
+ #define CLEAR_IS	0x20000000u	/* sentence starts a reporting cycle */
+ #define REPORT_IS	0x40000000u	/* sentence ends a reporting cycle */
+-#define NODATA_IS	0x80000000u	/* no data read from fd */ 
++#define NOISE_IS	0x80000000u	/* sentence contains pseudorange noise information */
++#define NODATA_IS	0x8000000000000000llu	/* no data read from fd */ 
+ #define DATA_IS	~(ONLINE_IS|PACKET_IS|CLEAR_IS|REPORT_IS)
+ 
+ typedef /*@unsignedintegraltype@*/ unsigned int driver_mask_t;
+-- 
+1.7.0.4
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008510.html">[Gpsd-dev] [PATCH 5/5] added &quot;json_noise_dump&quot; to send noise	statistics
+</A></li>
+	<LI>Next message: <A HREF="008512.html">[Gpsd-dev] [PATCH 7/7] Displaying GPGST info
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8511">[ date ]</a>
+              <a href="thread.html#8511">[ thread ]</a>
+              <a href="subject.html#8511">[ subject ]</a>
+              <a href="author.html#8511">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] regression failures
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20regression%20failures&In-Reply-To=%3Crmiy6etemjy.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007867.html">
+   <LINK REL="Next"  HREF="007869.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] regression failures</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20regression%20failures&In-Reply-To=%3Crmiy6etemjy.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] regression failures">gdt at ir.bbn.com
+       </A><BR>
+    <I>Sat Jun  5 13:38:57 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007867.html">[Gpsd-dev] regression failures
+</A></li>
+        <LI>Next message: <A HREF="007869.html">[Gpsd-dev] regression failures
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7868">[ date ]</a>
+              <a href="thread.html#7868">[ thread ]</a>
+              <a href="subject.html#7868">[ subject ]</a>
+              <a href="author.html#7868">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; writes:
+
+&gt;<i> Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;:
+</I>&gt;&gt;<i> I have fixed a few regression failures on NetBSD, but many remain after
+</I>&gt;&gt;<i> the multipacket fix.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> A 'gmake check' output is at <A HREF="http://www.lexort.com/gpsd/">http://www.lexort.com/gpsd/</A>
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> The failures are pretty repeatable, and I don't have a good idea what's
+</I>&gt;&gt;<i> going on.  Before the multipacket fix, there were only a few failures
+</I>&gt;&gt;<i> and one was due to the et-332 udp address problem.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> I'm curious how gmake check runs on OpenBSD or FreeBSD, or really
+</I>&gt;&gt;<i> anything other than Linux (since esr says it works there).
+</I>&gt;<i>
+</I>&gt;<i> Do you get regressions succeeding at afbb03e2393e73f21241afed0716fd11cdf46164
+</I>&gt;<i> that is just before the multipacket fix?
+</I>
+not succeeding, but ok except for
+
+  Processing ./test/daemon/ac12_binary.log
+  Binary files /tmp/log-copy-20998.chk and /tmp/test-whole-20998.chk differ
+  [not sure what's up here, but unrelated to multipacket bug I think]
+
+  et-332
+  [loopback address bug]
+
+  [%N lossage]
+
+
+I ran the tests 20 times over night on release-2.94-244-g2477648
+
+and got
+
+OUT.check.1:Regression test FAILED: 14 errors in 52 tests total  (0 not found).
+OUT.check.2:Regression test FAILED: 11 errors in 52 tests total  (0 not found).
+OUT.check.3:Regression test FAILED: 12 errors in 52 tests total  (0 not found).
+OUT.check.4:Regression test FAILED: 15 errors in 52 tests total  (0 not found).
+OUT.check.5:Regression test FAILED: 14 errors in 52 tests total  (0 not found).
+OUT.check.6:Regression test FAILED: 12 errors in 52 tests total  (0 not found).
+OUT.check.7:Regression test FAILED: 18 errors in 52 tests total  (0 not found).
+OUT.check.8:Regression test FAILED: 12 errors in 52 tests total  (0 not found).
+OUT.check.9:Regression test FAILED: 10 errors in 52 tests total  (0 not found).
+OUT.check.10:Regression test FAILED: 10 errors in 52 tests total  (0 not found).
+OUT.check.11:Regression test FAILED: 12 errors in 52 tests total  (0 not found).
+OUT.check.12:Regression test FAILED: 9 errors in 52 tests total  (0 not found).
+OUT.check.13:Regression test FAILED: 12 errors in 52 tests total  (0 not found).
+OUT.check.14:Regression test FAILED: 15 errors in 52 tests total  (0 not found).
+OUT.check.15:Regression test FAILED: 15 errors in 52 tests total  (0 not found).
+OUT.check.16:Regression test FAILED: 16 errors in 52 tests total  (0 not found).
+OUT.check.17:Regression test FAILED: 14 errors in 52 tests total  (0 not found).
+OUT.check.18:Regression test FAILED: 12 errors in 52 tests total  (0 not found).
+OUT.check.19:Regression test FAILED: 13 errors in 52 tests total  (0 not found).
+OUT.check.20:Regression test FAILED: 14 errors in 52 tests total  (0 not found).
+
+so obviously something is nondeterministic.
+
+The revision you asked me to check on the other hand:
+
+OUT.check.release-2.94-237-gafbb03e:Regression test FAILED: 2 errors in 52 tests total  (0 not found).
+
+I'll try to bisect; maybe it was the timing change.
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100605/0f331bdb/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100605/0f331bdb/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007867.html">[Gpsd-dev] regression failures
+</A></li>
+	<LI>Next message: <A HREF="007869.html">[Gpsd-dev] regression failures
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7868">[ date ]</a>
+              <a href="thread.html#7868">[ thread ]</a>
+              <a href="subject.html#7868">[ subject ]</a>
+              <a href="author.html#7868">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

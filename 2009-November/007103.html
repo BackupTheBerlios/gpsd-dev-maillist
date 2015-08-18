@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Patches fix errors and warnings on Mac OS X.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Patches%20fix%20errors%20and%20warnings%20on%20Mac%20OS%20X.&In-Reply-To=%3CF386988B-C73E-4664-A5E9-36D28B9AE973%40ledford.cc%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007101.html">
+   <LINK REL="Next"  HREF="007104.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Patches fix errors and warnings on Mac OS X.</H1>
+    <B>Michael Ledford</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Patches%20fix%20errors%20and%20warnings%20on%20Mac%20OS%20X.&In-Reply-To=%3CF386988B-C73E-4664-A5E9-36D28B9AE973%40ledford.cc%3E"
+       TITLE="[Gpsd-dev] Patches fix errors and warnings on Mac OS X.">michael at ledford.cc
+       </A><BR>
+    <I>Thu Nov 19 05:51:30 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007101.html">[Gpsd-dev] ncurses probelm
+</A></li>
+        <LI>Next message: <A HREF="007104.html">[Gpsd-dev] Patches fix errors and warnings on Mac OS X.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7103">[ date ]</a>
+              <a href="thread.html#7103">[ thread ]</a>
+              <a href="subject.html#7103">[ subject ]</a>
+              <a href="author.html#7103">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hello all,
+
+The following corrects some of the errors and warning while trying to  
+build the current SVN revision on Mac OS X Leopard, 10.5.8. Even with  
+these patches it still does not fully build. I am still trying to  
+figure out the other problems. In the meantime here are the diffs.
+
+Sincerely,
+Michael
+
+-------------- next part --------------
+An embedded and charset-unspecified text was scrubbed...
+Name: diff.txt
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091118/19b52e42/attachment.txt">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091118/19b52e42/attachment.txt</A>&gt;
+-------------- next part --------------
+
+
+
+Index: driver_evermore.c
+===================================================================
+--- driver_evermore.c	(revision 6540)
++++ driver_evermore.c	(working copy)
+@@ -413,7 +413,7 @@
+  			   speed_t speed, char parity, int stopbits)
+  {
+      /*@ -type @*/
+-    gpsd_report(LOG_PROG, &quot;evermore_speed(%d%c%d)\n&quot;, speed, parity,  
+stopbits);
++    gpsd_report(LOG_PROG, &quot;evermore_speed(%lu%c%d)\n&quot;, speed, parity,  
+stopbits);
+      /* parity and stopbit switching aren't available on this chip */
+      if (parity!=session-&gt;gpsdata.dev.parity || stopbits! 
+=(int)session-&gt;gpsdata.dev.parity) {
+  	return false;
+Index: driver_tsip.c
+===================================================================
+--- driver_tsip.c	(revision 6540)
++++ driver_tsip.c	(working copy)
+@@ -986,7 +986,7 @@
+  }
+
+  static bool tsip_speed_switch(struct gps_device_t *session,
+-			      unsigned int speed,
++			      speed_t speed,
+  			      char parity, int stopbits)
+  {
+      unsigned char buf[100];
+Index: driver_ubx.c
+===================================================================
+--- driver_ubx.c	(revision 6540)
++++ driver_ubx.c	(working copy)
+@@ -689,7 +689,7 @@
+
+      for(i=0;i&lt;22;i++)
+  	buf[i] = original_port_settings[i];	/* copy the original port  
+settings */
+-    usart_mode = (ulong)getleul(buf, 4);
++    usart_mode = (unsigned long)getleul(buf, 4);
+      usart_mode &amp;=~ 0xE00;	/* zero bits 11:9 */
+      switch (parity) {
+      case (int)'E':
+Index: serial.c
+===================================================================
+--- serial.c	(revision 6540)
++++ serial.c	(working copy)
+@@ -201,7 +201,7 @@
+  	(void)usleep(200000);
+  	(void)tcflush(session-&gt;gpsdata.gps_fd, TCIOFLUSH);
+      }
+-    gpsd_report(LOG_INF, &quot;speed %d, %d%c%d\n&quot;,
++    gpsd_report(LOG_INF, &quot;speed %lu, %d%c%d\n&quot;,
+  		gpsd_get_speed(&amp;session-&gt;ttyset), 9-stopbits, parity, stopbits);
+
+      session-&gt;gpsdata.dev.baudrate = (unsigned int)speed;
+Index: driver_navcom.c
+===================================================================
+--- driver_navcom.c	(revision 6540)
++++ driver_navcom.c	(working copy)
+@@ -1190,7 +1190,7 @@
+
+  #ifdef ALLOW_RECONFIGURE
+  static bool navcom_speed(struct gps_device_t *session,
+-			 unsigned int speed, char parity, int stopbits)
++			 speed_t speed, char parity, int stopbits)
+  {
+      /* parity and stopbit switching aren't implemented */
+      if (parity!=session-&gt;gpsdata.dev.parity || stopbits! 
+=(int)session-&gt;gpsdata.dev.parity) {
+Index: driver_superstar2.c
+===================================================================
+--- driver_superstar2.c	(revision 6540)
++++ driver_superstar2.c	(working copy)
+@@ -398,7 +398,7 @@
+  	session-&gt;gpsdata.PRN[i] = (int)getub(buf, 11*i + 15) &amp; 0x1f;
+  	session-&gt;gpsdata.ss[i] = (double)getub(buf, 11*i * 15 +1 )/4.0;
+  	session-&gt;gpsdata.raw.codephase[i] = (double)getleul(buf, 11*i * 15  
++ 2);
+-	ul = (ulong)getleul(buf, 11*i * 15 + 6);
++	ul = (unsigned long)getleul(buf, 11*i * 15 + 6);
+
+  	session-&gt;gpsdata.raw.satstat[i] = (unsigned int)(ul &amp; 0x03L);
+  	session-&gt;gpsdata.raw.carrierphase[i] = (double)((ul &gt;&gt; 2) &amp; 0x03ffL);
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007101.html">[Gpsd-dev] ncurses probelm
+</A></li>
+	<LI>Next message: <A HREF="007104.html">[Gpsd-dev] Patches fix errors and warnings on Mac OS X.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7103">[ date ]</a>
+              <a href="thread.html#7103">[ thread ]</a>
+              <a href="subject.html#7103">[ subject ]</a>
+              <a href="author.html#7103">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

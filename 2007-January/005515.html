@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] State of Diego's Navcom driver,	and the regression tests.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20State%20of%20Diego%27s%20Navcom%20driver%2C%0A%09and%20the%20regression%20tests.&In-Reply-To=%3C91981b3e0701180744q5856c52fkaee2389b6d6606d%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005514.html">
+   <LINK REL="Next"  HREF="005516.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] State of Diego's Navcom driver,	and the regression tests.</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20State%20of%20Diego%27s%20Navcom%20driver%2C%0A%09and%20the%20regression%20tests.&In-Reply-To=%3C91981b3e0701180744q5856c52fkaee2389b6d6606d%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] State of Diego's Navcom driver,	and the regression tests.">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Thu Jan 18 16:44:04 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005514.html">[Gpsd-dev] State of Diego's Navcom driver,	and the regression tests.
+</A></li>
+        <LI>Next message: <A HREF="005516.html">[Gpsd-dev] Navcom patch &amp; RINEX
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5515">[ date ]</a>
+              <a href="thread.html#5515">[ thread ]</a>
+              <a href="subject.html#5515">[ subject ]</a>
+              <a href="author.html#5515">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 1/18/07, Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt; wrote:
+&gt;<i> I can understand why you want this, but that's now how the numeric
+</I>&gt;<i> functions and IEEE754 are specified.
+</I>
+I know... more fun reading about signed zero
+<A HREF="http://docs.sun.com/source/806-3568/ncg_goldberg.html">http://docs.sun.com/source/806-3568/ncg_goldberg.html</A>
+
+&gt;<i> <A HREF="http://www.opengroup.org/onlinepubs/009695399/functions/atan2.html">http://www.opengroup.org/onlinepubs/009695399/functions/atan2.html</A>
+</I>&gt;<i>
+</I>&gt;<i> On NetBSD/i386 4.99.1, I get
+</I>&gt;<i>
+</I>&gt;<i> &gt; ./foo
+</I>&gt;<i> 0.000000 0.000000 0.000000 0.000000 0.000000 -0.000000
+</I>&gt;<i> 0 0 0 0 0 -0
+</I>&gt;<i>
+</I>&gt;<i> and the same on NetBSD/sparc64 3.1_STABLE.  It would be very
+</I>&gt;<i> interesting to see the output on real Solaris on sparc, OSF/1 Alpha,
+</I>&gt;<i> and for historical interest a VAX (which doesn't use IEEE754).
+</I>
+Same output on OpenBSD on i386, amd64, and sparc64. Interesting, given
+the origin of that part of libm...
+
+<A HREF="http://www.openbsd.org/cgi-bin/cvsweb/src/lib/libm/src/e_atan2.c?rev=1.3">http://www.openbsd.org/cgi-bin/cvsweb/src/lib/libm/src/e_atan2.c?rev=1.3</A>
+<A HREF="http://www.openbsd.org/cgi-bin/cvsweb/src/lib/libm/src/w_atan2.c?rev=1.2">http://www.openbsd.org/cgi-bin/cvsweb/src/lib/libm/src/w_atan2.c?rev=1.2</A>
+
+Solaris does this:
+$ uname -a
+SunOS amnesiac 5.9 Generic sun4u sparc SUNW,Sun-Fire-880
+$ ./foo
+atan2: DOMAIN error
+atan2: DOMAIN error
+atan2: DOMAIN error
+atan2: DOMAIN error
+0.000000 0.000000 0.000000 0.000000 0.000000 -0.000000
+0 0 0 0 0 -0
+
+&gt;<i> But, from the spec the output I get seems wrong:
+</I>&gt;<i> But, if you care what atan2 returns for such inputs, I think that's
+</I>&gt;<i> asking for trouble.
+</I>
+Discussion on how we handle this this is now open. Let's pick the
+parts of the spec we like, and (make sure we can) consistently adhere
+to them everywhere. If it means normalizing all zeros to +0, fine. If
+it means writing wrappers like the one you showed us, fine. At least
+those are consistent. Right now these differences in behaviour are
+getting in the way of regression tests...
+
+CK
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005514.html">[Gpsd-dev] State of Diego's Navcom driver,	and the regression tests.
+</A></li>
+	<LI>Next message: <A HREF="005516.html">[Gpsd-dev] Navcom patch &amp; RINEX
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5515">[ date ]</a>
+              <a href="thread.html#5515">[ thread ]</a>
+              <a href="subject.html#5515">[ subject ]</a>
+              <a href="author.html#5515">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

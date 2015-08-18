@@ -1,0 +1,150 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] PPS serial port support lost... ioctl-related change?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS%20serial%20port%20support%20lost...%20ioctl-related%20change%3F&In-Reply-To=%3C20101217050924.GA25986%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008306.html">
+   <LINK REL="Next"  HREF="008315.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] PPS serial port support lost... ioctl-related change?</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS%20serial%20port%20support%20lost...%20ioctl-related%20change%3F&In-Reply-To=%3C20101217050924.GA25986%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] PPS serial port support lost... ioctl-related change?">esr at thyrsus.com
+       </A><BR>
+    <I>Fri Dec 17 06:09:24 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008306.html">[Gpsd-dev] PPS serial port support lost... ioctl-related change?
+</A></li>
+        <LI>Next message: <A HREF="008315.html">[Gpsd-dev] deheader (was: PPS serial port support lost...	ioctl-related change?)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8307">[ date ]</a>
+              <a href="thread.html#8307">[ thread ]</a>
+              <a href="subject.html#8307">[ subject ]</a>
+              <a href="author.html#8307">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Dave Platt &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">dplatt at radagast.org</A>&gt;:
+&gt;<i> By adding debug printouts I think I've pinned down the cause
+</I>&gt;<i> of the problem, to a code change made a couple of days ago
+</I>&gt;<i> to libgpsd_core.c:  cf0546b12c91cb0121a4a643e0c4eef8a27e6997
+</I>&gt;<i> seems to be the culprit.
+</I>
+My doing.  I'll explain below.
+ 
+&gt;<i> This change had the effect of completely eliminating the
+</I>&gt;<i> following lines:
+</I>&gt;<i> 
+</I>&gt;<i> #ifdef HAVE_SYS_IOCTL_H
+</I>&gt;<i> #include &lt;sys/ioctl.h&gt;
+</I>&gt;<i> #endif /* HAVE_SYS_IOCTL_H */
+</I>&gt;<i> 
+</I>&gt;<i> As a result, the TIOCMIWAIT symbol is never defined,
+</I>&gt;<i> and all of the code which is conditionally compiled
+</I>&gt;<i> based on the presence of this symbol simply doesn't
+</I>&gt;<i> get built... the init_kernel_pps and gpsd_ppsmonitor
+</I>&gt;<i> functions are gone, and the PPS-monitoring thread is not
+</I>&gt;<i> started.
+</I>
+Well spotted.  I've just pushed a commit that should solve this problem.
+It includes &lt;sys/ioctl.h&gt; if (and only if) PPS_ENABLE is defined.
+ 
+&gt;<i> It looks as if the HAVE_SYS_IOCTL_H flag is no longer
+</I>&gt;<i> being determined by the configuration script... so just
+</I>&gt;<i> putting these three lines back into libgpsd_core.c doesn't
+</I>&gt;<i> fix the problem.  Always including &lt;sys/ioctl.h&gt; does fix
+</I>&gt;<i> it for me, but I suspect that this might break compatibility
+</I>&gt;<i> on some other systems.
+</I>
+OK, here's what happened.
+
+Some week ago I wrote a tool called deheader (learn more at 
+<A HREF="http://www.catb.org/~esr/deheader/">http://www.catb.org/~esr/deheader/</A>) that finds &quot;ghost&quot; inclusions not
+actually required for compilation.  C and C++ projects tend to
+accumulate these over time as fossils of old code.
+
+I used gpsd as my guinea pig for the tool.  It found a lot of crap it 
+could remove, but also broke the build a few times.  This was expected;
+it's not really possible to exclude all false positives, and the tool
+has to be applied carefully in the knowledge that some hand-reversion
+of the results is likely to be required.
+
+The PPS code happens to be particularly vulnerable because a lot of it is
+gated on a symbol defined in &lt;sys/ioctl.h&gt;, which could be removed without
+breaking the compile.  Matters were not helped by the fact that someone
+(quite correctly) conditioned the code on this:
+
+    defined(ENABLE_PPS) &amp;&amp; defined(TIOCMIWAIT)
+
+If they had only used defined(ENABLE_PPS) the build would have broken when
+I removed the #include.
+
+No, deheader didn't remove that inclusion.  It leaves inclusions
+inside #if/#endif alone precisely to avoid subtle problems.  I removed
+it by hand, later.  Because while studying the header dependencies in
+the code I became disgusted with the thick layer of
+conditional-inclusion goo in front of a lot of the source files and
+decided to try to get rid of as much of it as possible.
+
+My strategy for doing this was to take POSIX and the Single Unix Specification
+seriously, unconditionally include any header that's needed in gpsd and 
+specified in the standards, and throw away as many as possible of the autoconf
+feature tests - which is a lot of them, because they date from a time when
+standards conformance was more a wish and a promise than a reality.  
+
+We are now down to *zero* autoconf-conditional inclusions of system
+files - well, not counting the new location of #include &lt;sys/ioctl.h&gt;
+because it's gated by a feature rather than platform condition, and I
+think the PPS code is now the only place that happens.
+
+I love this simplification and intend to keep it.  Someday I'll
+probably take a fire ax, chop loose the whole bloated mass of autoconf
+crud that is our build system, and replace it with scons or something.
+But even this partial decoupling makes the code significantly easier
+to read and is going to reduce our porting and long-term maintainance
+problems.
+
+As for &lt;sys/ioctl.h&gt;...if we push the code onto a platform that doesn't have
+that file, I *want* the build to break.  Loudly, rather than silently
+disabling the feature and leaving someone like you head-scratching 
+about the runtime behavior.  I'm pretty sure it won't be a problem
+on any of our current target platforms.
+
+I apologize for the transient inconvenience.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008306.html">[Gpsd-dev] PPS serial port support lost... ioctl-related change?
+</A></li>
+	<LI>Next message: <A HREF="008315.html">[Gpsd-dev] deheader (was: PPS serial port support lost...	ioctl-related change?)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8307">[ date ]</a>
+              <a href="thread.html#8307">[ thread ]</a>
+              <a href="subject.html#8307">[ subject ]</a>
+              <a href="author.html#8307">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

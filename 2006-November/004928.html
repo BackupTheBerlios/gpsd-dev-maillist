@@ -1,0 +1,159 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Garmin Binary
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Garmin%20Binary&In-Reply-To=%3Ceiml5k%24m5o%241%40sea.gmane.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004927.html">
+   <LINK REL="Next"  HREF="004929.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Garmin Binary</H1>
+    <B>Eivind Tagseth</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Garmin%20Binary&In-Reply-To=%3Ceiml5k%24m5o%241%40sea.gmane.org%3E"
+       TITLE="[Gpsd-dev] Garmin Binary">eivindt-gmane at multinet.no
+       </A><BR>
+    <I>Mon Nov  6 07:36:29 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004927.html">[Gpsd-dev] Garmin Binary
+</A></li>
+        <LI>Next message: <A HREF="004929.html">[Gpsd-dev] Garmin Binary
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4928">[ date ]</a>
+              <a href="thread.html#4928">[ thread ]</a>
+              <a href="subject.html#4928">[ subject ]</a>
+              <a href="author.html#4928">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gary E. Miller wrote:
+&gt;<i> -----BEGIN PGP SIGNED MESSAGE-----
+</I>&gt;<i> Hash: SHA1
+</I>&gt;<i> 
+</I>&gt;<i> Yo Eivind!
+</I>&gt;<i> 
+</I>&gt;<i> On Sun, 5 Nov 2006, Eivind Tagseth wrote:
+</I>&gt;<i> 
+</I>&gt;&gt;<i> The check for the garmin_gps driver in /proc is incorrect and breaks
+</I>&gt;&gt;<i> [...]
+</I>&gt;<i> 
+</I>&gt;<i> Oh, that was stupid on my part.  Thanks for finding it and for sending
+</I>&gt;<i> the patch.  Your patch is committed.  Otherwise how is it working for
+</I>&gt;<i> you?
+</I>&gt;<i> 
+</I>
+I'm seeing the same as someone else, it seems to be working fine with 
+-D6, but not with any lower debug levels.
+
+The detection seems to work, but there are a few messages about unknown 
+packets:
+
+$ gpsd -N -D5 /dev/ttyUSB0
+
+gpsd: probe found Garmin USB binary driver...
+gpsd: Get Garmin Product Data
+gpsd: SendPacket(), writing 6 bytes: 10fe00021003
+gpsd: PrintSERPacket(, 00, 0x4, )
+gpsd: Unknown packet id: 00, Sz: 0x4, pkt:00000001
+gpsd: PrintSERPacket(, 00, 0x4, ) = 00
+gpsd: SendPacket(), wrote 6 bytes
+gpsd: Set Garmin to send reports every 1 second
+gpsd: SendPacket(), writing 8 bytes: 100a023100c31003
+gpsd: PrintSERPacket(, 00, 00, )
+gpsd: Unknown packet id: 00, Sz: 00, pkt:
+gpsd: PrintSERPacket(, 00, 00, ) = 00
+gpsd: SendPacket(), wrote 8 bytes
+gpsd: gpsd_activate: opened GPS (4)
+gpsd: flagging descriptor 4 in open_device
+gpsd: polling 4
+gpsd: polling 4
+gpsd: garmin_ser_parse()
+gpsd: SendPacket(), writing 6 bytes: 100600fa1003
+gpsd: PrintSERPacket(, 00, 0x4, )
+gpsd: Unknown packet id: 00, Sz: 0x4, pkt:00000001
+gpsd: PrintSERPacket(, 00, 0x4, ) = 00
+gpsd: SendPacket(), wrote 6 bytes
+gpsd: garmin_ser_parse() Type: 0xff, Len: 0x93, chksum: 00
+gpsd: PrintSERPacket(, 0xff, 0x93, )
+gpsd: Appl, Product Data, sz: 147
+gpsd: Garmin Product ID: 292, SoftVer: 3.00
+gpsd: Garmin Product Desc: GPSMap60CX Software Version 3.00
+gpsd: PrintSERPacket(, 0xff, 0x93, ) = 00
+gpsd: unflagging descriptor 4
+gpsd: closing GPS=/dev/ttyUSB0 (4)
+gpsd: garmin_close()
+
+but as soon as I connect with xgps:
+
+gpsd: client connect on 4
+gpsd: checking client(0)
+gpsd: &lt;= client(0): w+x
+gpsd: client(0): assigning channel...
+gpsd: User requires 2, channel type is 7
+gpsd: closing GPS=/dev/ttyUSB0 (-1)
+gpsd: garmin_close()
+gpsd: opening GPS data source at '/dev/ttyUSB0'
+gpsd: Set garmin_gps driver mode = 0
+gpsd: PrintUSBPacket()
+gpsd: Private, Set Mode: 1
+gpsd: SendPacket(), wrote 16 bytes
+gpsd: probe found Garmin USB binary driver...
+gpsd: Get Garmin Product Data
+gpsd: SendPacket(), writing 6 bytes: 10fe00021003
+gpsd: PrintSERPacket(, 00, 0x4, )
+gpsd: Unknown packet id: 00, Sz: 0x4, pkt:00000001
+gpsd: PrintSERPacket(, 00, 0x4, ) = 00
+gpsd: SendPacket(), wrote 6 bytes
+gpsd: Set Garmin to send reports every 1 second
+gpsd: SendPacket(), writing 8 bytes: 100a023100c31003
+gpsd: PrintSERPacket(, 00, 00, )
+gpsd: Unknown packet id: 00, Sz: 00, pkt:
+gpsd: PrintSERPacket(, 00, 00, ) = 00
+gpsd: SendPacket(), wrote 8 bytes
+gpsd: gpsd_activate: opened GPS (6)
+gpsd: flagging descriptor 6 in assign_channel
+gpsd: client(0): channel 6 already active.
+gpsd: =&gt; client(0): GPSD,W=1,X=1162794755.716061
+gpsd: polling 6
+
+and there it stays...
+
+
+
+
+
+Eivind
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004927.html">[Gpsd-dev] Garmin Binary
+</A></li>
+	<LI>Next message: <A HREF="004929.html">[Gpsd-dev] Garmin Binary
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4928">[ date ]</a>
+              <a href="thread.html#4928">[ thread ]</a>
+              <a href="subject.html#4928">[ subject ]</a>
+              <a href="author.html#4928">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

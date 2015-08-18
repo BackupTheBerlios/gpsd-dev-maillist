@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPSD as a GPSD data source
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20as%20a%20GPSD%20data%20source&In-Reply-To=%3C20090916093120.GD26676%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006855.html">
+   <LINK REL="Next"  HREF="006844.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPSD as a GPSD data source</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20as%20a%20GPSD%20data%20source&In-Reply-To=%3C20090916093120.GD26676%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] GPSD as a GPSD data source">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Sep 16 11:31:20 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006855.html">[Gpsd-dev] GPSD as a GPSD data source
+</A></li>
+        <LI>Next message: <A HREF="006844.html">[Gpsd-dev] non-blocking
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6858">[ date ]</a>
+              <a href="thread.html#6858">[ thread ]</a>
+              <a href="subject.html#6858">[ subject ]</a>
+              <a href="author.html#6858">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Dan Kane &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">dan at southernkane.com</A>&gt;:
+&gt;<i> Some basic requirements for this functionality:
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 1) Accept remote URL as a source datafeed
+</I>&gt;<i> 2) Contact remote URL to request datafeed
+</I>&gt;<i> 3) Accept remote request for datafeed
+</I>&gt;<i> 4) Retransmit GPS data to remote datafeed
+</I>
+Yes.
+
+&gt;<i> There is mention in the docs that a runtime addition to the pool of GPS
+</I>&gt;<i> data sources must be perfomed by a root-privileged process. I think we
+</I>&gt;<i> now have a use-case where this is problematic.
+</I>
+It's actually not strictly necessary that the process have root. What
+*is* necessary is that it have write access to the gpsd control socket.
+This way you get to use the Unix permission system to guard against
+people who shouldn't be able to point gpsd at arbitrary serial
+devices, possibly DOSing those devices.
+
+The potential consequences of attackers messing with devices on the
+gpsd host is also why I have several times refused requests to add a
+command to the daemon's regular set to ship control strings to a
+specified device.  Can you say &quot;security nightmare&quot;?
+
+Imagine, if you will, a rival pizzeria that's a money-laundering
+outfit for the Mafia. Noza Costra Pizza doesn't like competition, do
+it hires a cracker to screw with Pappa Crappio's operation.  Your
+design has to not give him an opening.
+
+&gt;<i> At GPSD startup - any known remote clients can be specified...no
+</I>&gt;<i> problem.
+</I>&gt;<i> 
+</I>&gt;<i> While GPSD is running - an unknown set of GPSD-enabled devices could
+</I>&gt;<i> request connection. As each pizza delivery driver turns on his n810/n900
+</I>&gt;<i> (OK, I confess my fetish for this device....iloveitiloveitiloveit), it
+</I>&gt;<i> should request a connection with PapaCrappios pizza server.
+</I>
+Ah, so you're saying we need a way for gpsd instances on the pizza trucks to
+register themselves into the source pool of the master gpsd instance at
+Papa Crappio's?  Interesting...
+
+Your scenario also implies that there are situations where two gpsds will want
+to be *mutually* slaved - might help, for example, if each pizza truck knew 
+where all the others were.
+
+My problem with this scenario is that if &quot;register me&quot; is an unsecured
+operation a gpsd could be DOSed by an attacker spamming it with
+registration requests.  Another issue is masquereading - Noza Costra
+could register itself, then send bogus location information.
+
+The security and authentication issues here are not unsolvable, obviously,
+but the mechanisms for doing so are too heavyweight to put in gpsd itself.
+I think this case would be best handled by the application suite in
+the pizza trucks sending the request not through gpsd but to a tiny 
+server at Pappa Crappio's that has write access to the gpsd control port.
+That way, at least all the security gorp gets to live in a different
+process that can specialize in that stuff.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006855.html">[Gpsd-dev] GPSD as a GPSD data source
+</A></li>
+	<LI>Next message: <A HREF="006844.html">[Gpsd-dev] non-blocking
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6858">[ date ]</a>
+              <a href="thread.html#6858">[ thread ]</a>
+              <a href="subject.html#6858">[ subject ]</a>
+              <a href="author.html#6858">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

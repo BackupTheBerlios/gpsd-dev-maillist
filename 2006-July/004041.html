@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Extreme weirdness as I chase a core dump
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Extreme%20weirdness%20as%20I%20chase%20a%20core%20dump&In-Reply-To=%3C20060727163722.GB26953%40space.mit.edu%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004040.html">
+   <LINK REL="Next"  HREF="004044.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Extreme weirdness as I chase a core dump</H1>
+    <B>Geoffrey B. Crew</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Extreme%20weirdness%20as%20I%20chase%20a%20core%20dump&In-Reply-To=%3C20060727163722.GB26953%40space.mit.edu%3E"
+       TITLE="[Gpsd-dev] Extreme weirdness as I chase a core dump">gbc at space.mit.edu
+       </A><BR>
+    <I>Thu Jul 27 18:37:23 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004040.html">[Gpsd-dev] Extreme weirdness as I chase a core dump
+</A></li>
+        <LI>Next message: <A HREF="004044.html">[Gpsd-dev] Extreme weirdness as I chase a core dump
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4041">[ date ]</a>
+              <a href="thread.html#4041">[ thread ]</a>
+              <a href="subject.html#4041">[ subject ]</a>
+              <a href="author.html#4041">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Thu, Jul 27, 2006 at 03:28:30AM -0400, Eric S. Raymond wrote:
+&gt;<i> OK, this is bizarre.
+</I>&gt;<i>
+</I>&gt;<i> After Marshall Crocker reported that gpsd is core-dumping when he configures 
+</I>&gt;<i> it with  
+</I>&gt;<i> 
+</I>&gt;<i> 	configure --enable-max-client-fd=8 --enable-max-devices=1
+</I>&gt;<i> 
+</I>&gt;<i> I was able to reproduce that immediately....
+</I>
+I wasn't.  I just did an svn update (At revision 3365), added those
+3 printfs, made clean, autogen.sh'd, ./configure'd, and ran it, and
+it worked fine:
+
+  # ./gpsd -n -N -D 3 /dev/ttyUSB0
+  gpsd: launching (Version 2.33)
+  gpsd: listening on port 2947
+  gpsd: running with effective group ID 0
+  gpsd: running with effective user ID 0
+  gpsd: opening GPS data source at '/dev/ttyUSB0'
+  gpsd: Set garmin_gps driver mode = 0
+  gpsd: PrintPacket()
+  gpsd: Private, Set Mode: 0
+  gpsd: Get garmin_gps driver version
+  gpsd: PrintPacket()
+  gpsd: Private, ID: Info Req
+  gpsd: PrintPacket()
+  gpsd: Packet: Type 96 0 0, ID: 0, Sz: 0
+  gpsd: PrintPacket()
+  gpsd: Packet: Type 120 96 0, ID: 0, Sz: 0
+  gpsd: PrintPacket()
+  gpsd: Packet: Type 230 126 158, ID: 0, Sz: 0
+  gpsd: PrintPacket()
+  gpsd: Packet: Type 96 6 30, ID: 0, Sz: 0
+  gpsd: Garmin driver never answered to INFO_REQ.
+  gpsd: no probe matched...
+  gpsd: speed 9600, 8N1
+  gpsd: gpsd_activate: opened GPS (4)
+  Start of channel scan
+  Checking channel 0 of 1, channel=0x80515c0, channel+MAXDEVICES=0x8055ff0, 1
+  Got here 1
+  Got here 2
+  gpsd: packet sniff finds type -1
+  End of channel scan
+  Start of channel scan
+  Checking channel 0 of 1, channel=0x80515c0, channel+MAXDEVICES=0x8055ff0, 1
+  Got here 1
+  Got here 2
+  gpsd: packet sniff finds type -1
+  End of channel scan
+  Start of channel scan
+  Checking channel 0 of 1, channel=0x80515c0, channel+MAXDEVICES=0x8055ff0, 1
+  Got here 1
+  Got here 2
+  ...
+
+It smells like something is wrong someplace where you aren't looking.
+
+Clearly there is something else I'd need to do to reproduce the bug
+(something in your working copy?) or else some compiler bug (I'm on
+FC4, with  gcc --version gcc (GCC) 4.0.2 20051125 (Red Hat 4.0.2-8)).
+If its the latter, turning off optimization or running in a debugger
+might change the behavior.
+
+-- 
+
+		Geoff
+		<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gbc at space.mit.edu</A>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004040.html">[Gpsd-dev] Extreme weirdness as I chase a core dump
+</A></li>
+	<LI>Next message: <A HREF="004044.html">[Gpsd-dev] Extreme weirdness as I chase a core dump
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4041">[ date ]</a>
+              <a href="thread.html#4041">[ thread ]</a>
+              <a href="subject.html#4041">[ subject ]</a>
+              <a href="author.html#4041">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] connection problems with Garmin eTrex
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20connection%20problems%20with%20Garmin%20eTrex&In-Reply-To=%3C1149965913.7135.9.camel%40mother.subnetz.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003726.html">
+   <LINK REL="Next"  HREF="003745.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] connection problems with Garmin eTrex</H1>
+    <B>Tilman Koschnick</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20connection%20problems%20with%20Garmin%20eTrex&In-Reply-To=%3C1149965913.7135.9.camel%40mother.subnetz.org%3E"
+       TITLE="[Gpsd-dev] connection problems with Garmin eTrex">til at subnetz.org
+       </A><BR>
+    <I>Sat Jun 10 20:58:33 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003726.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+        <LI>Next message: <A HREF="003745.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3738">[ date ]</a>
+              <a href="thread.html#3738">[ thread ]</a>
+              <a href="subject.html#3738">[ subject ]</a>
+              <a href="author.html#3738">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sat, 2006-06-10 at 01:11 -0400, Eric S. Raymond wrote:
+&gt;<i> Michael R. Davis &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mrdvt92 at yahoo.com</A>&gt;:
+</I>&gt;<i> &gt; Til,
+</I>&gt;<i> &gt; I had a similar experience on MIP arch with the pl2303 driver.  I think
+</I>&gt;<i> &gt; there must be some bug in pl2303 module.  If you read from the device
+</I>&gt;<i> &gt; at the wrong rate (e.g. cat /dev/xxx) it will lock up.  On openwrt it
+</I>&gt;<i> &gt; required a hard reboot.  I have since put stty /dev/xxx 4800 in my init
+</I>&gt;<i> &gt; before any reading.  Haven't check it since a recent upgrade.
+</I>&gt;<i> &gt; Mike
+</I>&gt;<i> 
+</I>&gt;<i> Can you give me more details about this?  What was the last version of the 
+</I>&gt;<i> driver that had this bug?  Is there a recipe for reproducing it that
+</I>&gt;<i> is reliable?
+</I>
+I don't have this problem - I can happily cat at different speeds, it's
+just garbage, but the device doesn't lock up.
+
+&gt;<i> I'm also not sure of Til's status.  You report getting fuser to work;
+</I>&gt;<i> is the hunt still failing to lock on 7N1?  Have you a lock that exhibits
+</I>&gt;<i> this failure reliably?
+</I>
+Working on that. A first observation: After manually switching speeds, I
+get some garbage first, I guess while a buffer is cleared up, before the
+first legible sentences arrive:
+
+(#553)<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">til at mother</A>:~/gpsd$ stty -F /dev/ttyUSB0 speed 4800
+9600
+(#554)<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">til at mother</A>:~/gpsd$ cat /dev/ttyUSB0
+&#9618;&lt;f&#9618;f`~0f0&#9618;&#65533;fx&#65533;&#65533;&#65533;&#65533;&#65533;&#65533;&#65533;xf
+                       &#65533;`&#65533;~&#65533;&#65533;&#65533;&#65533;&#65533;&#65533;&#65533;&#65533;&#408;x&#9618;&#24600;
+`~&#65533;f&#9618;&#9618;&#9618;&#9618;&#9618;&#9618;&#9618;&#9618;&#9618;&#9618;&#9618;&#9618;&#9618;&#9618;&#9618;&#9618;fL&#65533;f`~&#65533;ffp&#9618;&#9618;&#9618;&#9618;$GPRMC,,V,,,,,,,100606,0.5,E,N*3C
+*66
+$GPGSA,A,1,,,,,,,,,,,,,,,*1E
+
+$GPGSV,3,1,10,05,40,240,00,09,75,318,00,14,06,322,00,17,36,063,00*7A
+...
+
+Could it be that by the time the buffer is cleared and the first prober
+sentence arrives, gpsd has switched speed again?
+
+Remember, gpsd doesn't lock on at 7N2 all the time either - sometimes it
+goes right past and ends up segfaulting. It reports trying nonsensical
+speeds as well:
+
+gpsd: speed 9600, 8N1
+gpsd: gpsd_activate: opened GPS (5)
+gpsd: speed 4800, 8N1
+gpsd: speed 9600, 8N1
+gpsd: speed 19200, 8N1
+gpsd: speed 38400, 8N1
+gpsd: speed 57600, 8N1
+gpsd: speed 1674785152, 8N1
+gpsd: speed 0, 7N2
+gpsd: speed 4800, 7N2
+
+...
+gpsd: speed -1785044608, 8N1
+gpsd: speed 0, 7N2
+...
+
+Cheers, Til
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 307 bytes
+Desc: This is a digitally signed message part
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20060610/c27fa422/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20060610/c27fa422/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003726.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+	<LI>Next message: <A HREF="003745.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3738">[ date ]</a>
+              <a href="thread.html#3738">[ thread ]</a>
+              <a href="subject.html#3738">[ subject ]</a>
+              <a href="author.html#3738">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

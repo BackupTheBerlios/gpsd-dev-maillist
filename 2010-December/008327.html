@@ -1,0 +1,111 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPS%20date%20fail%20due%20to%20week%20counter%20rollover%20%28not%20a%0A%20gpsd%20bug%29&In-Reply-To=%3C20101218143250.GA5964%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008325.html">
+   <LINK REL="Next"  HREF="008328.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPS%20date%20fail%20due%20to%20week%20counter%20rollover%20%28not%20a%0A%20gpsd%20bug%29&In-Reply-To=%3C20101218143250.GA5964%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)">esr at thyrsus.com
+       </A><BR>
+    <I>Sat Dec 18 15:32:50 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008325.html">[Gpsd-dev] GPS date fail due to week counter rollover (not a	gpsd bug)
+</A></li>
+        <LI>Next message: <A HREF="008328.html">[Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8327">[ date ]</a>
+              <a href="thread.html#8327">[ thread ]</a>
+              <a href="subject.html#8327">[ subject ]</a>
+              <a href="author.html#8327">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;:
+&gt;<i>   Declare that disambiguating the week field into time is the GPS
+</I>&gt;<i>   receiver's problem.
+</I>
+Well, in an absolute sense of course it is.  I'm just trying to come up
+with ways to minimize the pain.
+
+&gt;<i>   If there are GPS receivers that support getting time at powerup to get
+</I>&gt;<i>   the above right, help them.
+</I>&gt;<i> 
+</I>&gt;<i>   Have gpsd disambiguate 2-digit years using the local clock.  But since
+</I>&gt;<i>   we release often relative to 100-year rollover, that's not a worry and
+</I>&gt;<i>   the current &quot;assume 20XX&quot; seems fine.
+</I>
+Combining these: Up to now, we've had a policy of not trusting the system 
+clock.  But maybe we could trust it to a limited extent at gpsd startup.  
+Rules something like this: 
+
+1. If the system clock is zero or negative, emit a warning and disable
+all heuristics.  (Negative probably means we're on a 32-bit machine 
+after the 2038 rollover.)
+
+2. If it's positive, use it to set both the century and the time of the 
+last GPS week rollover. (For that latter, subtract the GPS epoch and divide
+by 1024 * SECONDS_PER_WEEK.)
+
+3. If an incoming ZDA conflicts with the year set in step 2. emit a warning.
+ 
+&gt;<i> Also, while I don't argue with your characterization that 64-bit Linux
+</I>&gt;<i> has 64-bit time_t and thus can cope and 32-bit Linux has 32-bit time_t
+</I>&gt;<i> and cannot, I find it a bit odd that this type changes size based on
+</I>&gt;<i> processor, and suggest we be careful about the difference between time_t
+</I>&gt;<i> size and processor word size.
+</I>
+Historically, I believe that time_t size was tied to processor word size
+bacause time was typedefed to either int (on 32-bit machines) or long
+(on 16-bit machines). 
+
+&gt;<i> Is there any expectation that Linux on i386 will change to 64-bit
+</I>&gt;<i> time_t?
+</I>
+I don't know.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 190 bytes
+Desc: Digital signature
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20101218/7ec498ce/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20101218/7ec498ce/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008325.html">[Gpsd-dev] GPS date fail due to week counter rollover (not a	gpsd bug)
+</A></li>
+	<LI>Next message: <A HREF="008328.html">[Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8327">[ date ]</a>
+              <a href="thread.html#8327">[ thread ]</a>
+              <a href="subject.html#8327">[ subject ]</a>
+              <a href="author.html#8327">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] PPS
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS&In-Reply-To=%3Calpine.LNX.1.10.0911111506500.28400%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007039.html">
+   <LINK REL="Next"  HREF="007041.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] PPS</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS&In-Reply-To=%3Calpine.LNX.1.10.0911111506500.28400%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] PPS">gem at rellim.com
+       </A><BR>
+    <I>Thu Nov 12 00:13:59 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007039.html">[Gpsd-dev] PPS
+</A></li>
+        <LI>Next message: <A HREF="007041.html">[Gpsd-dev] PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7040">[ date ]</a>
+              <a href="thread.html#7040">[ thread ]</a>
+              <a href="subject.html#7040">[ subject ]</a>
+              <a href="author.html#7040">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo H&#229;kan!
+
+On Thu, 12 Nov 2009, H&#229;kan Johansson wrote:
+
+&gt;<i> &gt; Not seen it yet.  Do not ever expect to see it.  I am tempted to rip out
+</I>&gt;<i> &gt; the termination code.  I hate to have to restart gpsd just because I
+</I>&gt;<i> &gt; jiggled the PPS pin for 10 seconds.  Not pass the bad data to ntpd sure,
+</I>&gt;<i> &gt; but keep trying to get a good lock.
+</I>&gt;<i>
+</I>&gt;<i> I've actually seen it happen now, or the effects at least.  Left my computer
+</I>&gt;<i> for an hour.  Before it was sending data with ntpshm_pps, but with some
+</I>&gt;<i> seconds already occasionally missing.  Afterwards only ntpshm_put was still
+</I>&gt;<i> delivering.
+</I>
+Send me a log showing the PPS events.  You are making a case for not
+terminating the pps monitor at all, which is my preference.
+
+&gt;<i> &gt; There has also been chatter that some GPS may allow a valid PPS without
+</I>&gt;<i> &gt; a valid 2D fix.  Always checking and logging the PPS data will allow us
+</I>&gt;<i> &gt; to see if that is possible.
+</I>&gt;<i>
+</I>&gt;<i> Yes, I have to Oncores which can do that with position hold.  When in that
+</I>&gt;<i> mode, the modules do not set the bits in the serial data marking a valid
+</I>&gt;<i> position fix.  Which is reasonable and fair enough.  (They do however tell
+</I>&gt;<i> where they have been told that they are.)  Currently the message decoding for
+</I>&gt;<i> the oncores will then not mark a valid position fix, with the side-effect of
+</I>&gt;<i> preventing the PPS to work.  I think that either I have to change the decoder
+</I>&gt;<i> to claim position fix when in position hold mode, or some sort of marker that
+</I>&gt;<i> the timing is good is needed.
+</I>
+So you see why I went that direction.
+
+&gt;<i> &gt; &gt; Would it not be beneficial to increase the allowed range of the period
+</I>&gt;<i> &gt; &gt; lock
+</I>&gt;<i> &gt; &gt; (now just +/- 100 us) to allow the pps signal to help drive the system
+</I>&gt;<i> &gt; &gt; clock
+</I>&gt;<i> &gt; &gt; earlier?  The other code at least allows one part in thousand error.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Not sure what line of code you are referring to.
+</I>&gt;<i>
+</I>&gt;<i> Oh, I meant the new
+</I>&gt;<i>
+</I>&gt;<i> if ( 999900 &lt; cycle &amp;&amp; 1000100 &gt; cycle ) {
+</I>&gt;<i>
+</I>&gt;<i> which is even stricter than the other check:
+</I>&gt;<i>
+</I>&gt;<i> } else if (cycle &gt; 999000 &amp;&amp; cycle &lt; 1001000 ) {
+</I>
+Those two checks do different things.  The first is ONLY  the case
+where the pulse is so short that TIOCMGET does not see it.  If the
+cycle is off by more than 100uS from 1S then TIOCMGET should have seen
+it and that test should fail.
+
+The second check is for the short pulses and for longer pulses that
+are detectable by TIOCMGET,
+
+Neither case has anything to do with 'pull-in'.  If the system clock
+is so unstable as to not be 1mS accurate from pule to pulse then
+you should just use that system as a boat anchor.
+
+The 'pull-in' is handled elsewhere in the code.
+
+When I get my GPS-18/LVC back running, and fix the Garmin Binary code
+I can use that to look at the other cases.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 109 NW Wilmington Ave., Suite E, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFK+0U5BmnRqz71OvMRAgUCAJ9gwM6W8myCBCVlE14VFMXPlwsHGACgvVsV
+xvBIYfKz0UDkxkzkdtN5p7c=
+=3RNH
+-----END PGP SIGNATURE-----
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007039.html">[Gpsd-dev] PPS
+</A></li>
+	<LI>Next message: <A HREF="007041.html">[Gpsd-dev] PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7040">[ date ]</a>
+              <a href="thread.html#7040">[ thread ]</a>
+              <a href="subject.html#7040">[ subject ]</a>
+              <a href="author.html#7040">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

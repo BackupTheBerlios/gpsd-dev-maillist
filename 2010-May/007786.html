@@ -1,0 +1,154 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Input packets buffering bug(s)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3Crmiljb4ujuo.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007785.html">
+   <LINK REL="Next"  HREF="007787.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Input packets buffering bug(s)</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3Crmiljb4ujuo.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] Input packets buffering bug(s)">gdt at ir.bbn.com
+       </A><BR>
+    <I>Fri May 28 17:27:59 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007785.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+        <LI>Next message: <A HREF="007787.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7786">[ date ]</a>
+              <a href="thread.html#7786">[ thread ]</a>
+              <a href="subject.html#7786">[ subject ]</a>
+              <a href="author.html#7786">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+  I tried it last night and still regression broke.... didn't have time
+  to investigate but here is the patch I was working with....
+
+  <A HREF="http://gpsd.pastebin.com/jvTmJWUS">http://gpsd.pastebin.com/jvTmJWUS</A>
+
+  It may be more nefarious than that even...
+
+I just tested:
+
+  ublox antaris 4 usb
+  netbsd-5 i386
+  git master plus your patch
+
+The patch works as intended.  only 16 characters are read usually.  When
+a whole sentence is found, there is little extra in the buffer.  The
+whole cycle follows.  So I think all of these bytes (+ (* 33 16) 8) -
+536 of them are arriving all at once.  They all have the same time.
+
+gpsd: Read 16 chars to buffer offset 0 (total 16): 244750524d432c3134333433382e3030
+gpsd: Read 16 chars to buffer offset 16 (total 32): 2c412c343232332e33393631312c4e2c
+gpsd: Read 16 chars to buffer offset 32 (total 48): 30373130382e38353139322c572c302e
+gpsd: Read 16 chars to buffer offset 48 (total 64): 3034312c3238332e31372c3238303531
+gpsd: Read 16 chars to buffer offset 64 (total 80): 302c2c2c412a37330d0a244750565447
+gpsd: Packet discard of 74, chars remaining is 6 = 244750565447
+gpsd: &lt;= GPS: $GPRMC,143438.00,A,4223.39611,N,07108.85192,W,0.041,283.17,280510,,,A*73\x0d\x0a
+gpsd: Read 16 chars to buffer offset 6 (total 22): 2447505654472c3238332e31372c542c
+gpsd: Read 16 chars to buffer offset 22 (total 38): 34312c4e2c302e3037372c4b2c412a33
+gpsd: Read 16 chars to buffer offset 38 (total 54): 370d0a2447504747412c313433343338
+gpsd: Packet discard of 41, chars remaining is 13 = 2447504747412c313433343338
+gpsd: &lt;= GPS: $GPVTG,283.17,T,,M,0.041,N,0.077,K,A*37\x0d\x0a
+gpsd: Read 16 chars to buffer offset 13 (total 29): 2447504747412c3134333433382e3030
+gpsd: Read 16 chars to buffer offset 29 (total 45): 2c30373130382e38353139322c572c31
+gpsd: Read 16 chars to buffer offset 45 (total 61): 2c30372c352e31322c31312e332c4d2c
+gpsd: Read 16 chars to buffer offset 61 (total 77): 2d33332e372c4d2c2c2a35440d0a2447
+gpsd: Packet discard of 75, chars remaining is 2 = 2447
+gpsd: &lt;= GPS: $GPGGA,143438.00,4223.39611,N,07108.85192,W,1,07,5.12,11.3,M,-33.7,M,,*5D\x0d\x0a
+gpsd: Read 16 chars to buffer offset 2 (total 18): 2447504753412c412c332c31352c3236
+gpsd: Read 16 chars to buffer offset 18 (total 34): 382c30392c32372c32322c31392c2c2c
+gpsd: Read 16 chars to buffer offset 34 (total 50): 2c2c2c362e37332c352e31322c342e33
+gpsd: Read 16 chars to buffer offset 50 (total 66): 382a30340d0a2447504753562c332c31
+gpsd: Packet discard of 56, chars remaining is 10 = 2447504753562c332c31
+gpsd: &lt;= GPS: $GPGSA,A,3,15,26,18,09,27,22,19,,,,,,6.73,5.12,4.38*04\x0d\x0a
+gpsd: Read 16 chars to buffer offset 10 (total 26): 2447504753562c332c312c31322c3135
+gpsd: Read 16 chars to buffer offset 26 (total 42): 2c32362c33372c3035372c33352c3231
+gpsd: Read 16 chars to buffer offset 42 (total 58): 2c33392c3139382c2c31382c38332c30
+gpsd: Read 16 chars to buffer offset 58 (total 74): 36392c32392a37360d0a244750475356
+gpsd: Packet discard of 68, chars remaining is 6 = 244750475356
+gpsd: &lt;= GPS: $GPGSV,3,1,12,15,22,066,32,26,37,057,35,21,39,198,,18,83,069,29*76\x0d\x0a
+gpsd: Read 16 chars to buffer offset 6 (total 22): 2447504753562c332c322c31322c3039
+gpsd: Read 16 chars to buffer offset 22 (total 38): 362c34302c32372c35322c3036302c33
+gpsd: Read 16 chars to buffer offset 38 (total 54): 392c32342c35352c3234342c2c32322c
+gpsd: Read 16 chars to buffer offset 54 (total 70): 35362c3330382c33382a37410d0a2447
+gpsd: Packet discard of 68, chars remaining is 2 = 2447
+gpsd: &lt;= GPS: $GPGSV,3,2,12,09,62,076,40,27,52,060,39,24,55,244,,22,56,308,38*7A\x0d\x0a
+gpsd: Read 16 chars to buffer offset 2 (total 18): 2447504753562c332c332c31322c3134
+gpsd: Read 16 chars to buffer offset 18 (total 34): 392c3236302c2c30362c30312c323733
+gpsd: Read 16 chars to buffer offset 34 (total 50): 2c2c31322c30392c3133332c2c31392c
+gpsd: Read 16 chars to buffer offset 50 (total 66): 30352c3330392c32382a37370d0a2447
+gpsd: Packet discard of 64, chars remaining is 2 = 2447
+gpsd: &lt;= GPS: $GPGSV,3,3,12,14,29,260,,06,01,273,,12,09,133,,19,05,309,28*77\x0d\x0a
+gpsd: Read 16 chars to buffer offset 2 (total 18): 244750474c4c2c343232332e33393631
+gpsd: Read 16 chars to buffer offset 18 (total 34): 4e2c30373130382e38353139322c572c
+gpsd: Read 16 chars to buffer offset 34 (total 50): 3134333433382e30302c412c412a3730
+gpsd: Read 16 chars to buffer offset 50 (total 66): 0d0a2447505a44412c3134333433382e
+gpsd: Packet discard of 52, chars remaining is 14 = 2447505a44412c3134333433382e
+gpsd: &lt;= GPS: $GPGLL,4223.39611,N,07108.85192,W,143438.00,A,A*70\x0d\x0a
+gpsd: Read 16 chars to buffer offset 14 (total 30): 2447505a44412c3134333433382e3030
+gpsd: Read 8 chars to buffer offset 30 (total 38): 2c30302a36330d0a
+gpsd: Packet discard of 38, chars remaining is 0 = 
+gpsd: &lt;= GPS: $GPZDA,143438.00,28,05,2010,00,00*63\x0d\x0a
+
+For nmea, we probably don't really need to be as small as 16.  We should
+be able to use 59, so that 9 sentences in aggregate are pulled in.  Sure
+enough, that still works.  Actually it's trickier, because each
+packet_get reads bytes and then consumes a sentence.  So as long as
+there is some combination of reading N characters that are there and
+consuming a sentence and the last read of the USB frame being short,
+it's ok.  With 72, the buffer fills up, and with 69 it's ok.
+
+Given that all the world is not NMEA, and that a few system calls don't
+hurt much, I think the change to 16 should be committed.
+
+A better fix is to add explicit consumption of the output buffer, and to
+have callers of packet_get loop calling it until it reports that a full
+packet was not obtained.  I can't see anything in gpsd_poll which marks
+the output buffer consumed.
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100528/3a50366b/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100528/3a50366b/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007785.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+	<LI>Next message: <A HREF="007787.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7786">[ date ]</a>
+              <a href="thread.html#7786">[ thread ]</a>
+              <a href="subject.html#7786">[ subject ]</a>
+              <a href="author.html#7786">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

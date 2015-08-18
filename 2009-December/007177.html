@@ -1,0 +1,95 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] trunk: segfault in gpsd_dbus.c
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20trunk%3A%20segfault%20in%20gpsd_dbus.c&In-Reply-To=%3C1259736433.22386.9.camel%40nomovok.homedomain%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007200.html">
+   <LINK REL="Next"  HREF="007178.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] trunk: segfault in gpsd_dbus.c</H1>
+    <B>Antti Kaijanm&#228;ki</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20trunk%3A%20segfault%20in%20gpsd_dbus.c&In-Reply-To=%3C1259736433.22386.9.camel%40nomovok.homedomain%3E"
+       TITLE="[Gpsd-dev] [PATCH] trunk: segfault in gpsd_dbus.c">antti.kaijanmaki at nomovok.com
+       </A><BR>
+    <I>Wed Dec  2 07:47:13 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007200.html">[Gpsd-dev] make distcheck - works for anyone?
+</A></li>
+        <LI>Next message: <A HREF="007178.html">[Gpsd-dev] [PATCH] trunk: segfault in gpsd_dbus.c
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7177">[ date ]</a>
+              <a href="thread.html#7177">[ thread ]</a>
+              <a href="subject.html#7177">[ subject ]</a>
+              <a href="author.html#7177">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi!
+
+This patch fixes a segfault in the current trunk. The gpsfix is used
+before being initialized.
+
+ -- Antti
+
+
+Index: gpsd_dbus.c
+===================================================================
+--- gpsd_dbus.c (revision 6670)
++++ gpsd_dbus.c (working copy)
+@@ -32,8 +32,7 @@
+     /*DBusMessageIter  iter;*/
+     dbus_uint32_t      serial; /* collected, but not used */
+     char*              gpsd_devname;
+-    /* this packet format was designed before we split eph */
+-    double             eph = EMIX(gpsfix-&gt;epx, gpsfix-&gt;epy);
++    double             eph;
+ 
+     /* if the connection is non existent, return without doing anything */
+     if (connection == NULL) return;
+@@ -42,6 +41,9 @@
+     gpsfix = &amp;(gpsdata-&gt;fix);
+     gpsd_devname = gpsdata-&gt;dev.path;
+ 
++    /* this packet format was designed before we split eph */
++    eph = EMIX(gpsfix-&gt;epx, gpsfix-&gt;epy);
++
+     /* Send the named signel.  */
+     message = dbus_message_new_signal(&quot;/org/gpsd&quot;, &quot;org.gpsd&quot;, &quot;fix&quot;);
+     dbus_message_append_args (message,
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007200.html">[Gpsd-dev] make distcheck - works for anyone?
+</A></li>
+	<LI>Next message: <A HREF="007178.html">[Gpsd-dev] [PATCH] trunk: segfault in gpsd_dbus.c
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7177">[ date ]</a>
+              <a href="thread.html#7177">[ thread ]</a>
+              <a href="subject.html#7177">[ subject ]</a>
+              <a href="author.html#7177">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

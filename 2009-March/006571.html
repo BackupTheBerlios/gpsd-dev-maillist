@@ -1,0 +1,104 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] ntp gpsd interface issues - mistake in proposed mods and	another observation
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntp%20gpsd%20interface%20issues%20-%20mistake%20in%20proposed%20mods%20and%0A%09another%20observation&In-Reply-To=%3CKJEAKDJOMACLJIHFIMPFIEPMCAAA.tj%40telensa.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006573.html">
+   <LINK REL="Next"  HREF="006574.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] ntp gpsd interface issues - mistake in proposed mods and	another observation</H1>
+    <B>Tim Jackson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntp%20gpsd%20interface%20issues%20-%20mistake%20in%20proposed%20mods%20and%0A%09another%20observation&In-Reply-To=%3CKJEAKDJOMACLJIHFIMPFIEPMCAAA.tj%40telensa.com%3E"
+       TITLE="[Gpsd-dev] ntp gpsd interface issues - mistake in proposed mods and	another observation">tj at telensa.com
+       </A><BR>
+    <I>Wed Mar 18 18:40:04 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006573.html">[Gpsd-dev] There are two blockers before 2.39 can ship
+</A></li>
+        <LI>Next message: <A HREF="006574.html">[Gpsd-dev] Release is imminent, hold all commits please.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6571">[ date ]</a>
+              <a href="thread.html#6571">[ thread ]</a>
+              <a href="subject.html#6571">[ subject ]</a>
+              <a href="author.html#6571">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Dear All
+
+Further testing has revealed a mistake in one of my bug fixes. Not quite
+sure why this did not show up in earlier testing. I had suggested that the
+the 'valid' flag in the shared memory should be cleared prior to the shared
+memory interface write. I still believe this is correct. However in my
+suggested bug fix I cleared the WRONG valid flag in the case of the PPS
+interface. If you look at the proposed code it clears the serial data based
+timestamp valid flag in both ntpshm_put AND ntpshm_pps, obviously in the
+case of the PPS interface it should be clearing the PPS timestamp valid
+flag.
+
+So line 199 (in my modded version of ntpshm.c) should be
+
+	shmTimeP-&gt;valid = 0;
+
+NOT
+
+	shmTime-&gt;valid = 0;
+
+Another observation from testing that I currently don't understand. I expect
+I will be able to figure it out but maybe others will already know the
+answer and this would be greatly appreciated.
+
+With the mods suggested (after correcting my mistake!) the system will lock
+up reliably and accurately when compared with our network time server.
+Typically within +/-100us once it has settled down. This is observed by
+including the time server in the ntp configuration so that you can see the
+time offset to both the GPS shared memory interface and the time server.
+
+However if either the timeserver is removed from the ntp configuration or
+ntp cannot reach it (eg by disconnecting the test machine network cable) ntp
+then starts to go round a cycle where it rejects the gpsd shared memory
+interface servers, uses the local clock for a while then resynchronises to
+gpsd then rejects it again. It is as if although ntp is not synchronised to
+the timeserver it needs it there in order to be able to use gpsd. This means
+that it is not possible to synchronise ntp off gpsd alone.
+
+Has this been observed before? Does anyone have an explanation? If not I'll
+let you know what I find.
+
+Tim
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006573.html">[Gpsd-dev] There are two blockers before 2.39 can ship
+</A></li>
+	<LI>Next message: <A HREF="006574.html">[Gpsd-dev] Release is imminent, hold all commits please.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6571">[ date ]</a>
+              <a href="thread.html#6571">[ thread ]</a>
+              <a href="subject.html#6571">[ subject ]</a>
+              <a href="author.html#6571">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

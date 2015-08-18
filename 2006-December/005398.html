@@ -1,0 +1,200 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Advice on how a driver is expected to behave
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Advice%20on%20how%20a%20driver%20is%20expected%20to%20behave&In-Reply-To=%3C20061206223536.GB9439%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005396.html">
+   <LINK REL="Next"  HREF="005402.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Advice on how a driver is expected to behave</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Advice%20on%20how%20a%20driver%20is%20expected%20to%20behave&In-Reply-To=%3C20061206223536.GB9439%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Advice on how a driver is expected to behave">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Dec  6 23:35:36 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005396.html">[Gpsd-dev] Advice on how a driver is expected to behave
+</A></li>
+        <LI>Next message: <A HREF="005402.html">[Gpsd-dev] Advice on how a driver is expected to behave
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5398">[ date ]</a>
+              <a href="thread.html#5398">[ thread ]</a>
+              <a href="subject.html#5398">[ subject ]</a>
+              <a href="author.html#5398">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Mick Durkin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mick.durkin at saunalahti.fi</A>&gt;:
+&gt;<i> I am trying to bring my driver into line with the latest version of the SVN 
+</I>&gt;<i> (4094) and there have been recent changes to the methods and some splitting 
+</I>&gt;<i> of information in the header files which have caused me a bit of head 
+</I>&gt;<i> scratching.
+</I>
+My guess is you're reacting to the packet-sniffer context getting broken out
+into a new struct gps_packet_t.  The good news for you is that this does
+not affect the driver API at all.
+ 
+&gt;<i> Here is how I think it goes, so please guide/correct me if I am wrong:-
+</I>
+Working...
+
+&gt;<i> 1) If we fire up the daemon in -N mode with &quot;gpsd -N -D1
+</I>&gt;<i> /dev/ttyS0&quot;, the only effect compared to normal operation should be
+</I>&gt;<i> that it does not go into true daemon mode (and doesn't drop
+</I>&gt;<i> privileges?) but otherwise behaves normally.  Using the -N allows us
+</I>&gt;<i> to keep control over the code and allow easy exit when testing.
+</I>
+Correct.
+
+&gt;<i> 2) Right up front, we scan all compiled drivers in turn to see if
+</I>&gt;<i> they support the probe_detect call and trigger that entry point,
+</I>&gt;<i> using a free file descriptor (it always seems to be fd = 4 for
+</I>&gt;<i> me). If a probe matures, that driver gets the port and we stop
+</I>&gt;<i> checking further. If there are no probes supported or none of them
+</I>&gt;<i> responds, we will determine the device later by a port scan at
+</I>&gt;<i> different baud rates. That activity doesn't concern me here.
+</I>
+Correct.
+
+&gt;<i> 3) If we got a good probe, we then issue a subtype probe (if
+</I>&gt;<i> supported). This subtype probe should get the version data and maybe
+</I>&gt;<i> do some other good things. The arguments of the gpsd_activate()
+</I>&gt;<i> function triggering this call are such that there is no configurator
+</I>&gt;<i> call triggered at this point.
+</I>
+Correct.
+
+&gt;<i> 4) We then sit in a loop, waiting until we have detected a good
+</I>&gt;<i> packet in the main parser. When the packet type is known, because we
+</I>&gt;<i> have no users, we issue a wrapup call (if supported) to reverse the
+</I>&gt;<i> actions of the subtype probe and release the file descriptor (not
+</I>&gt;<i> sure about that?).
+</I>
+Not quite.  The subtype probe isn't supposed to perform any actions
+that need to be reversed.  That's the configurator method's job.
+The subtype probe is only supposed to elicit a response that tells
+us what we're actually looking at.
+
+In one case (SiRF) the subtype it flips the device into binary mode
+(because it's the only reliable probe), but this doesn't actually
+change the device's reporting in the way that (say) setting static nav
+bit or altitude hold would.  The framework code around the driver takes
+care of reverting the device to NMEA *after* the revert method has
+been called.
+
+The wrapup call is actually for reverting configurator actions that
+tweak things  like the static-nav bit, altitude holding, or the DOP
+threshold for declaring a fix invald.  Look at sirf.c::sirfbin_revert()
+for an example.
+
+&gt;<i> So far so good, but what follows next is what I see happen with my
+</I>&gt;<i> code and I am not sure if it is the correct sequence.
+</I>&gt;<i> 
+</I>&gt;<i> 5) If a client comes along, we then grab a new file descriptor (always seems 
+</I>&gt;<i> to be fd = 5 for me) and issue a new probe_detect call. This succeeds (as it 
+</I>&gt;<i> should).
+</I>&gt;<i> 
+</I>&gt;<i> 6) gpsd_activate() now triggers a subtype probe again, but this time its 
+</I>&gt;<i> arguments are such that it also triggers a configurator call. This latter is 
+</I>&gt;<i> intended to set up any reports we need.
+</I>
+Correct.  The effects of the configurator call are what revert is supposed
+to undo.
+
+(I think these names are confusing.  Maybe I should change revert to
+deconfigure.)
+
+&gt;<i> The normal gpsd stuff happens now, but eventually the client gets bored and 
+</I>&gt;<i> goes off line.
+</I>
+Still with you...
+ 
+&gt;<i> 7) We now issue a revert call (if supported) to undo the work of the 
+</I>&gt;<i> configurator call.
+</I>
+Correct.
+ 
+&gt;<i> 8) We now issue a wrapup (if supported) to undo the work of the subtype.
+</I>
+I guess that's correct, though I don't think of it that way.  The TSIP
+driver sets some serial parameters in probe_subtype that are undone in
+wrapup.  This is the place for end-of-session work that has to be performed
+whether or not the configurator was called.
+
+&gt;<i> 9) We drop the file descriptor (maybe?) and sit idle again.
+</I>
+We drop the file descriptor yes.  No point in holding onto it 
+with the device probe.
+
+&gt;<i> 10) If the session is ended, the daemon is killed and exits. If a
+</I>&gt;<i> client comes back, we go to step 5.
+</I>
+Correct.
+
+&gt;<i> I am a bit surprised that we appear to drop the fd after the initial 
+</I>&gt;<i> probe_detect or at least use a new one for the client (this is one of the 
+</I>&gt;<i> differences I saw with the -n switch), but I was more surprised to see that 
+</I>&gt;<i> the probe_detect is triggered again.
+</I>&gt;<i>
+</I>&gt;<i> I had supposed that once we had determined what device was on a port
+</I>&gt;<i> (at least for a serial port) we could assume that it will not be
+</I>&gt;<i> going away?  USB might be different, but I haven't gone into that
+</I>&gt;<i> (my device is serial port only).
+</I>
+USB is indeed different, and it's half the reason this architecture has become
+so complex.  There could be a different device on the other end of the wire
+named (say) /dev/ttyUSB0 each time we open it!
+
+The other reason we sample packets on first open is so that users can find 
+out from the daemon what kinds of devices are available.  Right now there
+are two types, GPS and RTCM.  There could be others in the future.
+
+&gt;<i> The multiple subtype and configurator calls seem reasonable as we might need 
+</I>&gt;<i> to reconfigure the device for gpsd and undoing these changes when idling the 
+</I>&gt;<i> device makes things safe.
+</I>
+Exactly.  The point of only calling the configurator optionally is to avoid
+messing with the device settings when we don't have to -- notably, when we've
+first opened it and are only trying to recognize it, not yet get data from it.
+ 
+&gt;<i> Any advice or clarification would be welcome.
+</I>
+I hope this was useful.  What you're doing in documebting the driver
+API is valuable and I want to support it.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005396.html">[Gpsd-dev] Advice on how a driver is expected to behave
+</A></li>
+	<LI>Next message: <A HREF="005402.html">[Gpsd-dev] Advice on how a driver is expected to behave
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5398">[ date ]</a>
+              <a href="thread.html#5398">[ thread ]</a>
+              <a href="subject.html#5398">[ subject ]</a>
+              <a href="author.html#5398">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,90 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] gpsmon,	monitor_sirf.c avoid segfault when receiving undocumented DGPS	status
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20gpsmon%2C%0A%09monitor_sirf.c%20avoid%20segfault%20when%20receiving%20undocumented%20DGPS%0A%09status&In-Reply-To=%3CAANLkTikHz71wP2jZyYZGIOa-jqi-BOIYJBfepEw0SeVs%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007840.html">
+   <LINK REL="Next"  HREF="007817.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] gpsmon,	monitor_sirf.c avoid segfault when receiving undocumented DGPS	status</H1>
+    <B>Ladislav Sladecek</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20gpsmon%2C%0A%09monitor_sirf.c%20avoid%20segfault%20when%20receiving%20undocumented%20DGPS%0A%09status&In-Reply-To=%3CAANLkTikHz71wP2jZyYZGIOa-jqi-BOIYJBfepEw0SeVs%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [PATCH] gpsmon,	monitor_sirf.c avoid segfault when receiving undocumented DGPS	status">ladislav.sladecek at gmail.com
+       </A><BR>
+    <I>Sat May 29 11:10:52 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007840.html">[Gpsd-dev] [gpsd-dev at lists.berlios.de] [Gpsd-commit-watch]	Project gpsd at BerliOS branch, master,	updated. release-2.94-228-g4174de6
+</A></li>
+        <LI>Next message: <A HREF="007817.html">[Gpsd-dev] [PATCH] gpsmon,	monitor_sirf.c avoid segfault when receiving undocumented DGPS	status
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7812">[ date ]</a>
+              <a href="thread.html#7812">[ thread ]</a>
+              <a href="subject.html#7812">[ subject ]</a>
+              <a href="author.html#7812">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+gpsmon crashes in binary sirf mode if it receives a DGPS status
+message (1b) with negative first byte. Although this value is not
+documented by the sirf docs, my gps sends it.
+
+strace:
+
+read(3, &quot;\240\242\0004\33\377\0\0\0\0\0\0\0\0\0\0\0\0\0\0\1\374\275\2\374\275\3\374\275\4\374\275&quot;...,
+1033) = 60
+--- SIGSEGV (Segmentation fault) @ 0 (0) ---
+++ killed by SIGSEGV ++
+
+
+The application crasehs because the values obtained from the device
+are not checked in the gpsmon code in any way.
+
+Please consider the  attached patch.
+
+Regards
+
+
+Ladislav Sl&#225;de&#269;ek
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: monitor_sirf_overflow.patch
+Type: application/octet-stream
+Size: 832 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100529/2fa5dbf2/attachment.obj">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100529/2fa5dbf2/attachment.obj</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007840.html">[Gpsd-dev] [gpsd-dev at lists.berlios.de] [Gpsd-commit-watch]	Project gpsd at BerliOS branch, master,	updated. release-2.94-228-g4174de6
+</A></li>
+	<LI>Next message: <A HREF="007817.html">[Gpsd-dev] [PATCH] gpsmon,	monitor_sirf.c avoid segfault when receiving undocumented DGPS	status
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7812">[ date ]</a>
+              <a href="thread.html#7812">[ thread ]</a>
+              <a href="subject.html#7812">[ subject ]</a>
+              <a href="author.html#7812">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

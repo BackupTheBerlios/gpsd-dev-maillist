@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-commit-watch] r2321 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r2321%20-%20trunk&In-Reply-To=%3C20050412180655.GA21914%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001334.html">
+   <LINK REL="Next"  HREF="001337.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-commit-watch] r2321 - trunk</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r2321%20-%20trunk&In-Reply-To=%3C20050412180655.GA21914%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-commit-watch] r2321 - trunk">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Apr 12 20:06:55 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001334.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2321 - trunk
+</A></li>
+        <LI>Next message: <A HREF="001337.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2321 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1336">[ date ]</a>
+              <a href="thread.html#1336">[ thread ]</a>
+              <a href="subject.html#1336">[ subject ]</a>
+              <a href="author.html#1336">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+&gt;<i> &gt; Modified:
+</I>&gt;<i> &gt;    trunk/libgps.c
+</I>&gt;<i> &gt; Log:
+</I>&gt;<i> &gt; Simpler flag-clearing on O=?.
+</I>&gt;<i> 
+</I>&gt;<i> Nope, that broke it again.   Now xgps shows speed, course EPH and EPV
+</I>&gt;<i> even with NO_FIX.  See attached screen shot.
+</I>
+Aha.  I know why. It's because xgps isn't checking the right validity flags 
+before looking at the data in the fix structure.  This is not something
+that should be kluged around by zeroing things other than the mode and status
+fields in libgps.  
+
+I've put a kluge to deal with this in the SVN head version of xgps. 
+Please test.
+
+But what this is really demanding is a definitive answer to two related 
+questions:
+
+1. When a command returns ?, does that mean &quot;leave the corresponding
+field in the gps_fix_t or gps_data_t structure unchanged&quot; or &quot;fill the
+corresponding field with a recognizable out-of-band value?
+
+So far I've opted for the first answer, leaving it entirely up to the
+client to nuke fields in these structures that it decides are stale
+(e.g.  by nuking them before each poll, or making a policy decision
+based on the fix timestamp).  I changed your last patch to libgps because it
+was only consistent with the *other* interpretation.
+
+2. What should a client look for to determine if a given field has valid data
+in it?  The alternatives are:
+
+a) The status flag in the 'valid' field.
+b) Out-of-band value in the field itself.
+c) Value of the mode field (e.g. MODE_NO_FIX means lat/lon is no good)
+d) Age based on an associated timestamp.
+
+Right now xgps mixes a, b, and c.  This is too complicated.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001334.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2321 - trunk
+</A></li>
+	<LI>Next message: <A HREF="001337.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2321 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1336">[ date ]</a>
+              <a href="thread.html#1336">[ thread ]</a>
+              <a href="subject.html#1336">[ subject ]</a>
+              <a href="author.html#1336">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

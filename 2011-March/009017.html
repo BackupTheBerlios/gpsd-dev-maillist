@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] A lightweight synchronization mechanism for shared	memory
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20A%20lightweight%20synchronization%20mechanism%20for%20shared%0A%09memory&In-Reply-To=%3CAANLkTinfzSFA4xdv0tfSqi4H_zqCdNNGNbjD4ZJfdvNh%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009015.html">
+   <LINK REL="Next"  HREF="009021.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] A lightweight synchronization mechanism for shared	memory</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20A%20lightweight%20synchronization%20mechanism%20for%20shared%0A%09memory&In-Reply-To=%3CAANLkTinfzSFA4xdv0tfSqi4H_zqCdNNGNbjD4ZJfdvNh%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] A lightweight synchronization mechanism for shared	memory">thomas at mich.com
+       </A><BR>
+    <I>Fri Mar 25 05:05:22 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009015.html">[Gpsd-dev] A lightweight synchronization mechanism for shared	memory
+</A></li>
+        <LI>Next message: <A HREF="009021.html">[Gpsd-dev] A lightweight synchronization mechanism for shared memory
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9017">[ date ]</a>
+              <a href="thread.html#9017">[ thread ]</a>
+              <a href="subject.html#9017">[ subject ]</a>
+              <a href="author.html#9017">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Haste and wastage, mostly mine
+
+Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at snark.thyrsus.com</A>&gt;:
+&gt;<i> The case I'm addressing is one reader, one or more writers.
+</I>
+I think you mean one writer, multiple readers.
+
+Also to clarify, writes always succeed, reads will run and have a
+reliable error checking mechanism whereby they retry the read until no
+error occurs.
+
+On Thu, Mar 24, 2011 at 11:34 PM, tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt; wrote:
+&gt;<i> If the sentinels were uint8s and they went in OPPOSITE directions,
+</I>&gt;<i> they might work at the same priority since the end sentinel would
+</I>&gt;<i> differ from the start until the memcpy was complete, and the read
+</I>&gt;<i> would always copy the start first.
+</I>
+If write copies the whole structure in reverse, with the last byte
+being the end sentinel, and reads copy the whole structure forward
+with the first byte being the start sentinel, then you can't have read
+get the same value for both sentinels (barring wraparound) if an
+intervening write occurs during any part of the copy.
+
+u8 is likely to be atomic in all cases.
+
+Write could technically set the end sentinel, edit the payload, then
+set the start sentinel.
+
+Read could actually save the start, pick bits from the payload, then
+compare the end.
+
+readvalid is the exclusive-Nor of the start and end.
+
+&gt;<i> So you would need forememcpy and backmemcpy with or without the
+</I>&gt;<i> previously suggested minimal inlinable function.
+</I>
+what I meant to say, is you need either your own versions guaranteed
+to go in the direction you want or one guaranteed to go opposite to
+the system memcpy for the writer, and it wouldn't matter if the
+function was interruptable or inlined.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009015.html">[Gpsd-dev] A lightweight synchronization mechanism for shared	memory
+</A></li>
+	<LI>Next message: <A HREF="009021.html">[Gpsd-dev] A lightweight synchronization mechanism for shared memory
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9017">[ date ]</a>
+              <a href="thread.html#9017">[ thread ]</a>
+              <a href="subject.html#9017">[ subject ]</a>
+              <a href="author.html#9017">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Possible bug with Trimble Thunderbolt
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Possible%20bug%20with%20Trimble%20Thunderbolt&In-Reply-To=%3C20100504022707.GA11720%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007722.html">
+   <LINK REL="Next"  HREF="007724.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Possible bug with Trimble Thunderbolt</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Possible%20bug%20with%20Trimble%20Thunderbolt&In-Reply-To=%3C20100504022707.GA11720%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Possible bug with Trimble Thunderbolt">esr at thyrsus.com
+       </A><BR>
+    <I>Tue May  4 04:27:07 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007722.html">[Gpsd-dev] Possible bug with Trimble Thunderbolt
+</A></li>
+        <LI>Next message: <A HREF="007724.html">[Gpsd-dev] Possible bug with Trimble Thunderbolt
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7723">[ date ]</a>
+              <a href="thread.html#7723">[ thread ]</a>
+              <a href="subject.html#7723">[ subject ]</a>
+              <a href="author.html#7723">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Joe Davidson &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">nugins99 at gmail.com</A>&gt;:
+&gt;<i> I tried setting up GPSD with a Trimble Thunderbolt that I have with little
+</I>&gt;<i> luck.    The basic problem is that &quot;cgps&quot; was not getting time and position
+</I>&gt;<i> messages.   I turned on gpsd debug and did a little digging and found a few
+</I>&gt;<i> possible problems within driver_tsip.c:
+</I>
+Chris Kuethe says he can't reproduce this on his Thunderbolt,. but
+TSIP's behavior is sufficiently complicated and hairy that I can
+easily imagine firmware rev making a difference.
+
+&gt;<i> 1)   The primary time message (0x84ab)  comes out right before the position
+</I>&gt;<i> message (0x8fac).   The time message does not get reported to clients.
+</I>&gt;<i> There is a REPORT_IS message was not being added to the mask for the time
+</I>&gt;<i> messages.  Is this intentional?
+</I>
+Yes.  The REPORT flag should be set only for the sentence that ends the
+device's reporting cycle.  Any time information from previous sentence 
+should be a merged part of the report.
+ 
+&gt;<i> 2) The receiver mode flag was always being reported as &quot;0&quot; whenever gpsd
+</I>&gt;<i> gets restarted.   If I power cycle the gps, the reciever mode gets forced
+</I>&gt;<i> back to &quot;4&quot; which  indicates the receiver has the full 3D position.
+</I>&gt;<i> Restarting gpsd again causes the receiver flag to zero out again.
+</I>
+I don't understand this report, sorry.  You'll need to be specific about
+whose &quot;receiver mode flag&quot; this is, and how the actual behavior differs
+from the expected behavior.
+ 
+&gt;<i> Before I dig into this any further,  I'd like to see if somebody familiar
+</I>&gt;<i> with the TSIP interface has some insight as to what is happening.
+</I>
+Poke ckuethe about this.
+ 
+&gt;<i> Below is a diff showing what I did to debug the problem and &quot;fix&quot; it.   The
+</I>&gt;<i> first change fixes the time reporting.   The second just forces the position
+</I>&gt;<i> messages to get reported if the receiver mode gets reset to zero.
+</I>
+Took the second band, didn't take the first and won't without more
+careful examination.  Is the second band alone sufficient to solve your bug?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007722.html">[Gpsd-dev] Possible bug with Trimble Thunderbolt
+</A></li>
+	<LI>Next message: <A HREF="007724.html">[Gpsd-dev] Possible bug with Trimble Thunderbolt
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7723">[ date ]</a>
+              <a href="thread.html#7723">[ thread ]</a>
+              <a href="subject.html#7723">[ subject ]</a>
+              <a href="author.html#7723">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

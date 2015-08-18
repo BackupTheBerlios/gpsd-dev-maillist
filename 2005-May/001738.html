@@ -1,0 +1,117 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] the PPS code
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20the%20PPS%20code&In-Reply-To=%3C19755.213.84.187.156.1116447193.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001736.html">
+   <LINK REL="Next"  HREF="001728.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] the PPS code</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20the%20PPS%20code&In-Reply-To=%3C19755.213.84.187.156.1116447193.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] the PPS code">gpsd at xs4all.nl
+       </A><BR>
+    <I>Wed May 18 22:13:13 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001736.html">[Gpsd-dev] the PPS code
+</A></li>
+        <LI>Next message: <A HREF="001728.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2463 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1738">[ date ]</a>
+              <a href="thread.html#1738">[ thread ]</a>
+              <a href="subject.html#1738">[ subject ]</a>
+              <a href="author.html#1738">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;&gt;<i> One could also argue that it claims another SHM segment that is lost for
+</I>&gt;&gt;<i> other purposes (like connecting 4 receivers without PPS???).
+</I>&gt;<i>
+</I>&gt;<i> Agreed, but the SHM interface is a mess that will need to be rethought
+</I>&gt;<i> anyway.
+</I>
+We are dependent on ntpd for this.  It could be increased to 16 segments
+but  it would require recompilation.  Not very practical.
+I would prefer using the time information from the first or first and
+second receiver only.
+The argument to the ntpshm functions should be changed back from context
+to session (session holds a pointer to context) so the functions could use
+this information in some way.
+
+&gt;<i> One of the things I'm thinking is that if a GPS emits PPS, the message-
+</I>&gt;<i> derived time isn't interesting.  So maybe it should just use one segment
+</I>&gt;<i> per device, and keep a state flag to tell it that if it's seen a PPS it
+</I>&gt;<i> should stop sending SHM updates on message time.  What do you think?
+</I>
+It worked this way until my last patch.  Then I changed to 2 segments.
+This has several advantages:
+
+- you can use /etc/ntp.conf fudge to configure the offset between message
+time and real time, when the magic constants in the code are not correct
+for your receiver
+
+- you can observe the offset and jitter of message time even when the
+clock is locked to PPS
+
+- you can easily see if PPS is functioning by looking at ntp status
+
+- less chance of trouble when a message arives late.  in the original code
+this would cause immediate loss of PPS lock, with the jitter ntp is
+observing jumping op from microseconds to hundreds of milliseconds.  now,
+the segment with PPS info remains stable and only the message segment
+jitters.  ntp is not looking at that one when PPS lock is in action.
+
+I think we must not try to do better than the filtering and
+frequency/phase locked loops already present in ntpd.  Just providing raw
+information without tricks is best.
+
+&gt;<i>
+</I>&gt;&gt;<i> The code is very careful to only honor CD pulsing that looks like PPS.
+</I>&gt;<i>
+</I>&gt;<i> Yes, I see it's checking that the time since last transition is around 1
+</I>&gt;<i> second.  What's the significance of the variable &quot;pa&quot;?
+</I>
+The PPS pulse normally is a short pulse with a frequency of 1 Hz, and the
+UTC second defined by the front edge.  But we don't know the polarity of
+the pulse (my two receivers output a different polarity).
+The pa variable is used to determine which way the pulse is going.
+The code assumes that the UTC second is changing when the signal has not
+been changing for at least 800ms, i.e. it assumes the duty cycle is at
+most 20%.
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001736.html">[Gpsd-dev] the PPS code
+</A></li>
+	<LI>Next message: <A HREF="001728.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2463 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1738">[ date ]</a>
+              <a href="thread.html#1738">[ thread ]</a>
+              <a href="subject.html#1738">[ subject ]</a>
+              <a href="author.html#1738">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

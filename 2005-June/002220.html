@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Fix from future?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Fix%20from%20future%3F&In-Reply-To=%3C12756.213.84.187.156.1119560069.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002219.html">
+   <LINK REL="Next"  HREF="002221.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Fix from future?</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Fix%20from%20future%3F&In-Reply-To=%3C12756.213.84.187.156.1119560069.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] Fix from future?">gpsd at xs4all.nl
+       </A><BR>
+    <I>Thu Jun 23 22:54:29 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002219.html">[Gpsd-dev] Fix from future?
+</A></li>
+        <LI>Next message: <A HREF="002221.html">[Gpsd-dev] Fix from future?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2220">[ date ]</a>
+              <a href="thread.html#2220">[ thread ]</a>
+              <a href="subject.html#2220">[ subject ]</a>
+              <a href="author.html#2220">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> But, Rob: Wojciech's problem is slightly different from yours and
+</I>&gt;<i> harder to solve.  Because TSIP identifies itself, the code could in
+</I>&gt;<i> theory know what the last packet in an update cycle is and suppress
+</I>&gt;<i> all reports prior to that, if you were willing to accept less than a
+</I>&gt;<i> second of latency in favor of getting an accumulated report.
+</I>
+Well, TSIP has some problems as well...
+Many packets are sent when the corresponding poll command is issued, or
+when the receiver feels like it.  That can be because the data changes,
+because the fix status changes (fix or no fix), etc.
+So what you receive depends on many variables.  And I have no idea at what
+priority the poll commands are processed, so it may well be that the
+responses get interwoven between packets the receiver sents in a regular
+cycle.
+My driver checks if certain packets have not been received for some time
+and issues a poll.   But I have seen (especially before tuning the
+timeouts) that the receiver sent a packet by itself and then it responded
+to the poll, sending the same packet more than once (back to back).
+
+We now have double-buffering, which is good for most data in TSIP, except
+for DOP and its derived values.  Those are not sent every cycle (unless I
+change the poll rate to force that), so what we now have is (part of) one
+cycle with valid data and n/a data the remainder of the time.
+
+
+&gt;<i> xgps is a test client.  It's intended to show developers what the
+</I>&gt;<i> daemon is doing, so it doesn't buffer old information but rather
+</I>&gt;<i> presents the contents of each O response as it comes up.
+</I>
+Well, I think many applications would prefer not to bother with buffering.
+ It would be best when gpsd somehow does this, and xgps shows stable data
+without its own buffering.
+
+While googling around for many-channel receivers this week I found a &quot;Sony
+binary protocol&quot; that sends everything it knows in one single packet!
+Before you get too excited: it uses 7 bits of each byte to send 14-bit and
+28-bit values.  Apparently they wanted to support 7-bit serial interfaces.
+Sensible design often seems a zero-sum game.
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002219.html">[Gpsd-dev] Fix from future?
+</A></li>
+	<LI>Next message: <A HREF="002221.html">[Gpsd-dev] Fix from future?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2220">[ date ]</a>
+              <a href="thread.html#2220">[ thread ]</a>
+              <a href="subject.html#2220">[ subject ]</a>
+              <a href="author.html#2220">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

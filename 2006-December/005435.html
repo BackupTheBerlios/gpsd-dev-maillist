@@ -1,0 +1,103 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] State of Diego's Navcom driver, and the regression tests.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20State%20of%20Diego%27s%20Navcom%20driver%2C%20and%20the%20regression%20tests.&In-Reply-To=%3C20061215013357.GA19099%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005433.html">
+   <LINK REL="Next"  HREF="005478.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] State of Diego's Navcom driver, and the regression tests.</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20State%20of%20Diego%27s%20Navcom%20driver%2C%20and%20the%20regression%20tests.&In-Reply-To=%3C20061215013357.GA19099%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] State of Diego's Navcom driver, and the regression tests.">esr at thyrsus.com
+       </A><BR>
+    <I>Fri Dec 15 02:33:57 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005433.html">[Gpsd-dev] gpsd is now unfrozen
+</A></li>
+        <LI>Next message: <A HREF="005478.html">[Gpsd-dev] State of Diego's Navcom driver,	and the regression tests.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5435">[ date ]</a>
+              <a href="thread.html#5435">[ thread ]</a>
+              <a href="subject.html#5435">[ subject ]</a>
+              <a href="author.html#5435">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>The good news is, it patches in and builds clean.
+
+The bad news is, it's messing up the TSIP regression tests.
+I think it's eating Trimble-shaped packets and falsely locking on to 
+Navcom protocol.  When I configure with --disable-navcom the 
+Trimble tests pass again.
+
+Diagnosing this is going to be more difficult because our regression-test
+infrastructure has problems:
+
+1) There is some race condition in gpsfake that sometime causes
+spurious failures.  The symptom is regression tests where it appears
+that the last packet, or the last few packets, didn't get shipped
+through to gpsd before the daemon terminated.  Lowering the
+serial-line speed on the pty almost entirely, but not quite,
+eliminates these.
+
+2) If I build the regression tests on a 64-bit machine, they fail 
+weirdly on 32-bit machines, and vice-versa.  Some of these divergences are
+just round-off errors in the low-order parts of trig functions.  Some
+of them are more disturbing, like fields that are NaN on 32 bits but not 64
+or vice-versa.
+
+Things are better than they were before I rewrote gpsfake to work
+without threading. But they're still bad.  We do not, at the moment,
+have regression tests that all our developers (32- and 64-bit) can run
+with sure knowledge of what a good result looks like.  And this is 
+*essential* to fix if we're going to be adding new code paths to
+the packet sniffer.
+
+Now comes the hard part.  Someone needs to take a swing at these
+problems.  Someone other than me.
+
+I've reached the point where I'm just thrashing when I try to tackle them.  
+I'm getting very stale and frustrated, and I think I'm missing things
+because I'm too close to the code.
+
+I can make ssh access available on both 32- and 64-bit machines.
+
+This is me yelling for help.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005433.html">[Gpsd-dev] gpsd is now unfrozen
+</A></li>
+	<LI>Next message: <A HREF="005478.html">[Gpsd-dev] State of Diego's Navcom driver,	and the regression tests.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5435">[ date ]</a>
+              <a href="thread.html#5435">[ thread ]</a>
+              <a href="subject.html#5435">[ subject ]</a>
+              <a href="author.html#5435">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

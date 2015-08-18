@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] /usr/bin/gpsd-config
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20/usr/bin/gpsd-config&In-Reply-To=%3Crmiabxzvbej.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005567.html">
+   <LINK REL="Next"  HREF="005598.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] /usr/bin/gpsd-config</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20/usr/bin/gpsd-config&In-Reply-To=%3Crmiabxzvbej.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] /usr/bin/gpsd-config">gdt at ir.bbn.com
+       </A><BR>
+    <I>Tue Mar 27 01:21:40 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005567.html">[Gpsd-dev]  /usr/bin/gpsd-config
+</A></li>
+        <LI>Next message: <A HREF="005598.html">[Gpsd-dev] /usr/bin/gpsd-config
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5575">[ date ]</a>
+              <a href="thread.html#5575">[ thread ]</a>
+              <a href="subject.html#5575">[ subject ]</a>
+              <a href="author.html#5575">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+&quot;Michael R. Davis&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mrdvt92 at yahoo.com</A>&gt; writes:
+
+&gt;<i> Eric,
+</I>&gt;<i> If you look at /usr/bin/*-config, all of them take --help as an
+</I>&gt;<i> argument and then valid option are --prefix, --libdir, --ccopts, etc. 
+</I>&gt;<i> I'm not sure what the standard is but Fedora sure has picked up on it. 
+</I>&gt;<i> Even qgis has one on my box.
+</I>&gt;<i> Mike
+</I>&gt;<i>
+</I>&gt;<i> $ qgis-config --help
+</I>&gt;<i> qgis_config provides information about the installed version of QGIS.
+</I>
+
+pkg-config was written to replace the hundreds of foo-config scripts,
+providing all those functions and more, but driven from a control
+file.  So a package only has to provide a short foo.pc file and then
+the rest is already there.  This is quite popular; there are 226 .pc
+files on my notebook right now.
+
+<A HREF="http://pkgconfig.freedesktop.org/wiki/">http://pkgconfig.freedesktop.org/wiki/</A>
+
+There is also an autoconf script so that other programs that want to
+use the library can check for and use the library.  So if gpsd-config
+is the approach, then also gpsd.m4 is needed.
+
+See $(prefix)/share/aclocal/pkg.m4
+
+Here's an example:
+
+&gt;<i> for i in --version --cflags-only-I --cflags-only-other --cflags --libs-only-L --libs-only-l --libs-only-other --libs --static; do echo $i; echo -n &quot;  &quot;; pkg-config $i pango; done
+</I>--version
+  0.21
+--cflags-only-I
+  -I/usr/pkg/include/pango-1.0 -I/usr/pkg/include/glib/glib-2.0 -I/usr/pkg/lib/glib-2.0/include  
+--cflags-only-other
+   
+--cflags
+  -I/usr/pkg/include/pango-1.0 -I/usr/pkg/include/glib/glib-2.0 -I/usr/pkg/lib/glib-2.0/include  
+--libs-only-L
+  -L/usr/pkg/lib  
+--libs-only-l
+  -lpango-1.0 -lm -lgobject-2.0 -lgmodule-2.0 -lglib-2.0 -lintl  
+--libs-only-other
+  -Wl,-R/usr/pkg/lib  
+--libs
+  -Wl,-R/usr/pkg/lib -L/usr/pkg/lib -lpango-1.0 -lm -lgobject-2.0 -lgmodule-2.0 -lglib-2.0 -lintl  
+--static
+
+The config file itself (/usr/pkg/lib/pkgconfig/pango.pc) is simple,
+and expressses the dependencies on other pc files.
+
+
+prefix=/usr/pkg
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+pango_module_version=1.5.0
+
+Name: Pango
+Description: Internationalized text handling
+Version: 1.14.10
+Requires: glib-2.0,gobject-2.0,gmodule-no-export-2.0
+Libs: -Wl,-R${libdir} -L${libdir} -lpango-1.0 -lm
+Cflags: -I${includedir}/pango-1.0
+
+These foo.pc files are almost always generated from foo.pc.in.
+
+Given this, I don't think it's reasonable to make a home-grown script,
+even though I agree that such scripts were best practice before pkg-config.
+
+    Greg
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 185 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20070326/f03759f2/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20070326/f03759f2/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005567.html">[Gpsd-dev]  /usr/bin/gpsd-config
+</A></li>
+	<LI>Next message: <A HREF="005598.html">[Gpsd-dev] /usr/bin/gpsd-config
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5575">[ date ]</a>
+              <a href="thread.html#5575">[ thread ]</a>
+              <a href="subject.html#5575">[ subject ]</a>
+              <a href="author.html#5575">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,271 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Availability of pkg-config
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Availability%20of%20pkg-config&In-Reply-To=%3CAANLkTikG4dLK4Fsc4KfnODvok-_TFbjMJby1Up-bG8Bc%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008670.html">
+   <LINK REL="Next"  HREF="008676.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Availability of pkg-config</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Availability%20of%20pkg-config&In-Reply-To=%3CAANLkTikG4dLK4Fsc4KfnODvok-_TFbjMJby1Up-bG8Bc%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Availability of pkg-config">thomas at mich.com
+       </A><BR>
+    <I>Thu Mar  3 21:43:06 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008670.html">[Gpsd-dev] Availability of pkg-config
+</A></li>
+        <LI>Next message: <A HREF="008676.html">[Gpsd-dev] Availability of pkg-config
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8675">[ date ]</a>
+              <a href="thread.html#8675">[ thread ]</a>
+              <a href="subject.html#8675">[ subject ]</a>
+              <a href="author.html#8675">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Thu, Mar 3, 2011 at 2:24 PM, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+</I>&gt;&gt;<i> It is a ground-up reimplementation I originally started for the
+</I>&gt;&gt;<i> Kyocera KR1 EVDO to WIFI router- sort of a very early mifi with
+</I>&gt;&gt;<i> hackable firmware. &#160;It logs data to KMZ files. &#160;This was a 100Mhz MIPS
+</I>&gt;&gt;<i> processor, and I was under 5% cpu.
+</I>&gt;<i>
+</I>&gt;<i> Is GPSD over this figure? &#160;How would I measure it?
+</I>&gt;<i>
+</I>&gt;<i> How do you get a performance advantage over GPSD stripped to handle NMEA only?
+</I>
+First, I didn't know until your message it would be possible to build
+such a version.  I might try, but I know I don't have anything to do
+libtool for MIPS.
+
+There are a bunch of options to disable things and I'm not sure which
+are features and which are protocols.  there is no --minimalist
+option, and there is nothing that I can find describing how I would
+build what you are specifically talking about.
+
+I am more efficient because I have highly optimized parser code.  The
+NMEA output is a short string of integer characters  Everything else
+has a very short path..
+
+for minigpsd, I was using shared memory, so I could just open and
+overlay the section and updates would be instantaneous - and no
+message passing or repackaging.
+
+Even in the makefile, I had CFLAGS += `pkgconfig...&quot; for gconf instead
+of the autogen stuff, and maemo uses debian packaging.
+
+&gt;<i> I think I understand about the FP issue. &#160;In an NMEA-only GPSD build I
+</I>&gt;<i> think the only FP would be in the error-modeling code and the handling
+</I>&gt;<i> of $PGRME/$GPGBS. &#160;Please consider implementing a NOFLOAT config
+</I>&gt;<i> option for GPSD that would condition all that stuff out - I'd
+</I>&gt;<i> cheerfully help with this.
+</I>
+No, right at the top of driver_nmea.c where it picks out the lat/lon:
+
+        (void)sscanf(p, &quot;%lf&quot;, &amp;lat);
+        m = 100.0 * modf(lat / 100.0, &amp;d);
+        lat = d + m / 60.0;
+        p = field[1];
+        if (*p == 'S')
+            lat = -lat;
+        out-&gt;latitude = lat;
+
+It would be intertesting to compare ncycles - I keep everyting in
+micro-degrees (could go to tenth-of if any hardware was that
+accurate).  You call sscanf using floats, use modf, and everyting is
+float.  In NMEA.
+
+mine is (note no library calls, why subs are included):
+
+static int get2(char *c)
+{
+    int i = 0;
+    if (*c)
+        i = (*c++ - '0') * 10;
+    if (*c)
+        i += *c - '0';
+    return i;
+}
+static int getminutes(char *d)
+{
+    int i;
+    i = (*d++ - '0') * 100000;
+    //Minutes with decimal
+    i += (*d++ - '0') * 10000;
+    if (*d)
+        d++;
+    if (*d)
+        i += (*d++ - '0') * 1000;
+    if (*d)
+        i += (*d++ - '0') * 100;
+    if (*d)
+        i += (*d++ - '0') * 10;
+    if (*d)
+        i += *d++ - '0';
+    return i * 5 / 3;
+}
+...
+    c = field[f++];
+    l = get2(c);
+    c += 2;
+    d = getminutes(c);
+
+    c = field[f++];
+    l *= 1000000;
+    l += d;
+    if (*c != 'N')
+        l = -l;
+...
+If you need mine back as a float, f=l;f/=1000000.0;  FPUs use more
+power even if you clean up the original
+
+If I could actually build it without going through the whole autogen
+process, I would.  If I don't want to bother with the libs, I still
+need libtool to satisfy autogen.sh, and I can't get anything to
+configure or set up the build environment without autogen.sh, unless
+I'm missing something.
+
+&gt;&gt;<i> That was the basis for the nokia tablet version that also did vehicle logging.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> My old version for the nSeries tablets (also in maemo.org's diablo repository)
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> <A HREF="https://github.com/tz1/minigpsd">https://github.com/tz1/minigpsd</A>
+</I>&gt;<i>
+</I>&gt;<i> I'm looking at both that and webgpsd now.
+</I>&gt;<i>
+</I>&gt;&gt;<i> The current work in progress - it uses HTML5 canvas to show the
+</I>&gt;&gt;<i> satellite status page and a few other things. &#160;I've been busy and
+</I>&gt;&gt;<i> waiting for the feature freeze, and need to get to work (it
+</I>&gt;&gt;<i> multiplexes multiple GPS sources as well as other data to log). &#160;I
+</I>&gt;&gt;<i> really need to do something about the security, but I need to verify
+</I>&gt;&gt;<i> the featureset first: &#160;For now the multiple GPSes come from Python
+</I>&gt;&gt;<i> scripts, e.g. the bluetooth version even does pairing, and there is a
+</I>&gt;&gt;<i> log-replay feeder.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> <A HREF="https://github.com/tz1/webgpsd">https://github.com/tz1/webgpsd</A>
+</I>&gt;<i>
+</I>&gt;<i> If you're determined to reimplement I can't prevent it, of course.
+</I>&gt;<i> But GPSD is designed to be stripped down to a very small set of
+</I>&gt;<i> running gears for NMEA-only devices; I wish you'd work with us to
+</I>&gt;<i> tighten up and slim down that build, rather than duplicating a lot of
+</I>&gt;<i> our effort.
+</I>
+Your build environment is already on the huge model.  I would have
+prefered to strip down gpsd-ng, but it is already well too complex for
+me to sort out.  All that external build bloat is there even if I
+could get the result to be similarly efficient.  ./autogen.sh to make
+takes longer than make to binary.
+
+As I've shown, you are using libraries and floats everywhere.  We're
+talking extreme liposuction.
+
+&gt;<i> Do you know about Gypsy? &#160;It too, was an attempt to ship a leaner, meaner
+</I>&gt;<i> GPSD replacement. It was a technical success at its (necessarily) more
+</I>&gt;<i> limited goals, but an uptake failure. &#160;There was pro-forma
+</I>&gt;<i> support for it put into in a couple of projects like OpenMoko from
+</I>&gt;<i> back around when Gypsy launched in 2008, but AFAIK nobody's actually
+</I>&gt;<i> using it for production. The last code commit was eleven months ago.
+</I>
+I doubt the update on minimalist NMEA-only gpsd is any higher as I'm
+on the devlist and read the docs and this is the first I've heard of
+it.  Most distros probably just use the defaults or nearso.
+
+&gt;<i> Gypsy stalled out for several reasons. &#160;One is that GPSD has a level
+</I>&gt;<i> of name recognition and a reliability track record that's tough for
+</I>&gt;<i> any new competitor to match. Another is that the application domain is
+</I>&gt;<i> so replete with hardware quirks and protocol black art that it puts a
+</I>&gt;<i> *very* heavy premium on kinds of domain experience that new projects
+</I>&gt;<i> can't readily duplicate. &#160;A third is our test infrastructure; more
+</I>&gt;<i> than half the problem is demonstrating that the code is correct and
+</I>&gt;<i> keeping it stable against the tendency to bitrot.
+</I>
+Windows and iPod have better name recognition.  In the case of the
+latter webgpsd can run on a jailbroken version with a 3rd party
+BTStack.
+
+There is a limit to how far NMEA can go with quirks and work at all.
+The other information (e.g. water depth) I consider out of scope for
+what I'm trying to do.  I don't think of myself as a competitor
+
+&gt;<i> When I look at minigpsd/webgpsd, I see the second coming of Gypsy.
+</I>&gt;<i> You clearly have some good ideas, and you've chosen a mission that a
+</I>&gt;<i> full-featured GPSD build is probably too heavyweight for. &#160;But, honestly, I
+</I>&gt;<i> think you're likely to stall out in the same way Gypsy did.
+</I>
+The mission dates from 5 years ago.  As I've noted, I'm not seeking to
+replace gpsd-ng for what it does - it is heavyweight for a reason, but
+especially on the build level.
+
+The other half is I can't use gpsd-ng since I can't (and probably will
+ never be able to) inline external data.  You will have water depth or
+whatever merged into the info stream, but I can't merge my engine rpm
+and fuel consumption data.  I have other sensors, some might get
+adopted, others not.  I need multiple redundant failover GPSes but one
+master value.
+
+And I have to be able to log all this data in a format where I can
+find the interesting portions.
+
+&gt;<i> It would be better for everyone if we co-opted each other. &#160;There's
+</I>&gt;<i> precedent; the lead dev of another GPSD competitor, ngpsd, was welcomed
+</I>&gt;<i> here and active for several years. &#160;He decided ngpsd was unnecessary,
+</I>&gt;<i> and we still have the specialized client he wrote under maintainance.
+</I>
+&gt;<i> You'd get the GPSD test infrastructure, which is no trivial thing.
+</I>&gt;<i> I'd like to have your Bluetooth-pairing and HTML5 support. &#160;More
+</I>&gt;<i> generally, I'd *love* to have a dev on the project who cares day-to-day
+</I>&gt;<i> about the low-power embedded stuff - I want to cover those devices,
+</I>&gt;<i> but I don't have the right hardware-test setup to do it.
+</I>
+I'd love to, but right now wth the build environment, it is like
+saying move to C++ from C.
+
+Also, even if I did - and I might take a look with your help and
+comments - I don't see the necessary features being in gpsd-ng, so I
+have to write my version anyway.
+
+It is GPLv3, so anyone here should feel free to study and port it, and
+I am willing to provide help and probably take steps after the startup
+after the current freeze-release cycle.
+
+&gt;<i> Gypsy was a well-intentioned waste of talent. Please, let's work together
+</I>&gt;<i> to avoid another such.
+</I>&gt;<i> --
+</I>&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+</I>&gt;<i>
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008670.html">[Gpsd-dev] Availability of pkg-config
+</A></li>
+	<LI>Next message: <A HREF="008676.html">[Gpsd-dev] Availability of pkg-config
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8675">[ date ]</a>
+              <a href="thread.html#8675">[ thread ]</a>
+              <a href="subject.html#8675">[ subject ]</a>
+              <a href="author.html#8675">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,118 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] packet.c problems
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20packet.c%20problems&In-Reply-To=%3C20061024133511.GA24636%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004624.html">
+   <LINK REL="Next"  HREF="004634.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] packet.c problems</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20packet.c%20problems&In-Reply-To=%3C20061024133511.GA24636%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] packet.c problems">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Oct 24 15:35:11 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004624.html">[Gpsd-dev] packet.c problems
+</A></li>
+        <LI>Next message: <A HREF="004634.html">[Gpsd-dev] packet.c problems
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4623">[ date ]</a>
+              <a href="thread.html#4623">[ thread ]</a>
+              <a href="subject.html#4623">[ subject ]</a>
+              <a href="author.html#4623">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+&gt;<i> Is anyone real familiar with how the packet sniffing engine in
+</I>&gt;<i> packet.c is suppsoed to work?  Working in there is a aibt scary
+</I>&gt;<i> because it looks like it could break lots of things.  Anyone here
+</I>&gt;<i> fell comfortable in there?
+</I>
+I wrote it.  I am pretty confident I understand it and can still modify it.
+ 
+&gt;<i> Here is the problem, there are a lot of similar binary protocols that
+</I>&gt;<i> are also &lt;DLE&gt; delimited.  The TSIP protocol in particular is real
+</I>&gt;<i> braindamaged.  A TSIP packet looks like this:
+</I>&gt;<i> 
+</I>&gt;<i> 	&lt;DLE&gt; [id byte] [data bytes] &lt;DLE&gt;&lt;EXT&gt;
+</I>&gt;<i> 
+</I>&gt;<i> Not checksum, no length, and the id byte can be just about anything.  To
+</I>&gt;<i> make things worse the data bytes can contain &lt;DLE&gt; too, as long as they
+</I>&gt;<i> are doubled: &lt;DLE&gt;&lt;DLE&gt;.
+</I>&gt;<i> 
+</I>&gt;<i> The problem is that Garmin uses a similar, though more robust, packet:
+</I>&gt;<i> 
+</I>&gt;<i> 	&lt;DLE&gt; [id byte] [length byte] [data bytes] [chksum] &lt;DLE&gt;&lt;EXT&gt;
+</I>&gt;<i> 
+</I>&gt;<i> Also with &lt;DLE&gt; stuffing in the data bytes and it can be quite long
+</I>&gt;<i> 
+</I>&gt;<i> So I coded packet.c to identify a TSIP packet, then I check for a
+</I>&gt;<i> proper length/checksum, then mark the packet as a Garmin Serial binary
+</I>&gt;<i> packet.
+</I>&gt;<i> 
+</I>&gt;<i> So a Garmin Serial binary could look like this:
+</I>&gt;<i> 
+</I>&gt;<i> 	&lt;DLE&gt;....&lt;DLE&gt;&lt;DLE&gt;......&lt;DLE&gt;&lt;ETX&gt;
+</I>&gt;<i> 
+</I>&gt;<i> Since the TSIP protocol is so lose it will match this part:
+</I>&gt;<i> 
+</I>&gt;<i> 	&lt;DLE&gt;....&lt;DLE&gt;&lt;DLE&gt;......&lt;DLE&gt;&lt;ETX&gt;
+</I>&gt;<i>                       ^^^^^^^^^^^^^^^^^^^^^
+</I>&gt;<i> 
+</I>&gt;<i> The fragment is clearly not a Garmin packet so it gets marked as a
+</I>&gt;<i> TSIP packet and the game is lost.
+</I>&gt;<i> 
+</I>&gt;<i> My first guess to to try to detect this pattern for TSIP/Garmin:
+</I>&gt;<i> 	&lt;DLE&gt;&lt;ETX&gt;&lt;DLE&gt;.....&lt;DLE&gt;&lt;ETX&gt;&lt;DLE&gt;
+</I>&gt;<i> 
+</I>&gt;<i> My second guess is that in so doing I might break a lot of things.
+</I>
+I doubt it.
+
+&gt;<i> So, anybody got a clue on this I can borrow?
+</I>
+Trying to sync to &lt;DLE&gt;&lt;ETX&gt;&lt;DLE&gt; as a packet header should work OK; the
+main loop for the sniffer logic won't care that the first DLE is actually
+a trailer from a previous packet.
+
+After you recognize the next header/trailer combination, though, you'll have 
+to push a copy back into the input queue.  That won't be hard.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004624.html">[Gpsd-dev] packet.c problems
+</A></li>
+	<LI>Next message: <A HREF="004634.html">[Gpsd-dev] packet.c problems
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4623">[ date ]</a>
+              <a href="thread.html#4623">[ thread ]</a>
+              <a href="subject.html#4623">[ subject ]</a>
+              <a href="author.html#4623">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

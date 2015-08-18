@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPSD Protocol Inconsistencies
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3CAANLkTimD7RavRMLH0mrRe2P9Sh5Jbad%2B6pk4BhxZ85tz%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008904.html">
+   <LINK REL="Next"  HREF="008908.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPSD Protocol Inconsistencies</H1>
+    <B>Jon Schlueter</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3CAANLkTimD7RavRMLH0mrRe2P9Sh5Jbad%2B6pk4BhxZ85tz%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] GPSD Protocol Inconsistencies">jon.schlueter at gmail.com
+       </A><BR>
+    <I>Sun Mar 20 19:09:26 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008904.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+        <LI>Next message: <A HREF="008908.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8906">[ date ]</a>
+              <a href="thread.html#8906">[ thread ]</a>
+              <a href="subject.html#8906">[ subject ]</a>
+              <a href="author.html#8906">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sun, Mar 20, 2011 at 10:57 AM, tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt; wrote:
+&gt;<i> Why is &quot;mode&quot; in TPV if it comes from GPGSA? &#160;Shouldn't it or whatever
+</I>&gt;<i> is in GPGSA be in SKY? &#160;But you can derive mode from just the TPV
+</I>&gt;<i> information.
+</I>
+Isn't the mode a reflection of the state of the Receiver? if so how would one
+go about reliably figuring out what internal state a receiver is in
+from the other
+information?  NEMA splits the information one way, but some of the other binary
+protocols provide mode with the TPV message
+
+    SiRF ships mode/nav information in MID 2 message
+    UBLOX ships mode/nav information in MID 98
+    Garmin binary ships mode/nav information in GARMIN_PKTID_PVT_DATA
+
+
+&gt;<i> Note you need either GPRMC or BOTH GPGLL AND GPZDA to get the date and
+</I>&gt;<i> then there is the midnight rollover problem (5Hz garmins if nothing
+</I>&gt;<i> else). &#160;To get altitude, you need GPGGA.
+</I>
+hmm do we have a capture of a 5Hz garmin that exibits the midnight rollover
+problem it sounds like that case should be added to our regression tests
+if we suspect an issue with our reporting/cycle detection of the nema parser.
+
+&gt;<i> The lat/lon sentences have the A/V flag which would correspond to mode
+</I>&gt;<i> 1 or &gt;1, and the number of satellites in GPGGA should give 2 or 3 for
+</I>&gt;<i> 2d or 3d fix (ignore the altitude if 2d), but I propose changing 3 to
+</I>&gt;<i> 4 if GPGGA also indicates DGPS is active. &#160;I don't see anywhere else
+</I>&gt;<i> this higher accuracy is indicated. &#160;It isn't DoP, it means whatever
+</I>&gt;<i> numbers are being reported are being corrected. &#160;It could be its own
+</I>&gt;<i> tag.
+</I>
+DGPS information is currently reported back in
+    session-&gt;gpsdata.status = STATUS_DGPS_FIX or STATUS_FIX
+
+The Fix Type (No Fix/ Fix/ DGPS Fix) and quality of fix ( No/2D/3D) seem
+to be orthogonal features to be reported seperatly
+see Garmin's Driver for what they report back and how it's reported
+back driver_garmin.c:434
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008904.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+	<LI>Next message: <A HREF="008908.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8906">[ date ]</a>
+              <a href="thread.html#8906">[ thread ]</a>
+              <a href="subject.html#8906">[ subject ]</a>
+              <a href="author.html#8906">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Possible shm problem: Structure alignment?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Possible%20shm%20problem%3A%20Structure%20alignment%3F&In-Reply-To=%3C20110326051504.GA28480%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009084.html">
+   <LINK REL="Next"  HREF="009086.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Possible shm problem: Structure alignment?</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Possible%20shm%20problem%3A%20Structure%20alignment%3F&In-Reply-To=%3C20110326051504.GA28480%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Possible shm problem: Structure alignment?">esr at thyrsus.com
+       </A><BR>
+    <I>Sat Mar 26 06:15:04 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009084.html">[Gpsd-dev] Possible shm problem: Structure alignment?
+</A></li>
+        <LI>Next message: <A HREF="009086.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9085">[ date ]</a>
+              <a href="thread.html#9085">[ thread ]</a>
+              <a href="subject.html#9085">[ subject ]</a>
+              <a href="author.html#9085">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Dave Hart &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">hart at ntp.org</A>&gt;:
+&gt;<i> 0.  Leave existing reflcock_shm.c shared memory structure definition
+</I>&gt;<i> in place for backwards compat, allow user to control which variant to
+</I>&gt;<i> use via ntp.conf.  I'm not sure what the default should be.
+</I>
+The new one.  Because the old one, as has been pointed out, is not really safe.
+
+&gt;<i> 4.  Switch to nanosecond resolution for timestamps.
+</I>
+I heartily approve.
+
+&gt;<i> 6.  Switch from sysv to POSIX named shared memory to broaden supported
+</I>&gt;<i> platforms.  Assumption here is there are no interesting systems which
+</I>&gt;<i> support sysv shared memory but not POSIX.
+</I>
+Probably correct.
+
+&gt;<i> 7.  Mark all members volatile to bar access re-ordering by the
+</I>&gt;<i> compiler.  Guard the declaration with extern &quot;C&quot; when pulled into C++
+</I>&gt;<i> code to use C volatile semantics.
+</I>
+*Applause.*
+
+&gt;<i> 8.  Come to agreement on the consistency protocol for one writer,
+</I>&gt;<i> multiple readers, including use of memory barriers where available,
+</I>&gt;<i> but do not require memory barrier support from the compiler, as (IIUC)
+</I>&gt;<i> x86/x64 do not need them for volatile atomic accesses to be coherent
+</I>&gt;<i> across processors, and the ovewhelming majority of current
+</I>&gt;<i> refclock_shm users are on x86 or x64.
+</I>
+Gary Miller has a lot of experience with this kind of design.  I have
+less, but I'm not exactly a n00b at it either.  To the extent that we
+can be helpful, we will be.  If not joggling the elbow of a lead you
+pick for the task is the most helpful thing we can do, we'll do that.
+
+I have some thoughts about your protocol choice which I'll put in a
+separate email.
+
+&gt;<i> Thanks for all the lively participation.  I think we've come a long
+</I>&gt;<i> way towards consensus.
+</I>
+Gary Miller is the logical person to lead GPSD's contribution.  I have
+100% trust in his skill and judgment everywhere near the NTP/SHM issues;
+thus, GPSD will cheerfully and rapidly execute on any consensus he is part of.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009084.html">[Gpsd-dev] Possible shm problem: Structure alignment?
+</A></li>
+	<LI>Next message: <A HREF="009086.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9085">[ date ]</a>
+              <a href="thread.html#9085">[ thread ]</a>
+              <a href="subject.html#9085">[ subject ]</a>
+              <a href="author.html#9085">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

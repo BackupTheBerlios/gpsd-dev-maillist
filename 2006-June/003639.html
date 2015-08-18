@@ -1,0 +1,180 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] sirfmon and whatever happened to my NMEA mode :)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20sirfmon%20and%20whatever%20happened%20to%20my%20NMEA%20mode%20%3A%29&In-Reply-To=%3Cp06230901c0add7b6233c%40%5B192.168.11.10%5D%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003673.html">
+   <LINK REL="Next"  HREF="003643.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] sirfmon and whatever happened to my NMEA mode :)</H1>
+    <B>Robin L Darroch</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20sirfmon%20and%20whatever%20happened%20to%20my%20NMEA%20mode%20%3A%29&In-Reply-To=%3Cp06230901c0add7b6233c%40%5B192.168.11.10%5D%3E"
+       TITLE="[Gpsd-dev] sirfmon and whatever happened to my NMEA mode :)">robin at spade-men.com
+       </A><BR>
+    <I>Thu Jun  8 16:26:04 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003673.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+        <LI>Next message: <A HREF="003643.html">[Gpsd-dev] sirfmon and whatever happened to my NMEA mode :)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3639">[ date ]</a>
+              <a href="thread.html#3639">[ thread ]</a>
+              <a href="subject.html#3639">[ subject ]</a>
+              <a href="author.html#3639">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>At 20:28 +0800 8/6/06, Robin L Darroch wrote:
+&gt;<i>my GPS unit that - up until a month or so ago - always identified 
+</I>&gt;<i>and was handled as NMEA, now identifies and is handled as a SiRF-II 
+</I>&gt;<i>binary... but
+</I>
+OK - well, this is an interesting diversion.  In early April when I 
+was doing most of the work on the hotly-debated topic of 
+Clear-at-Start-of-Cycle vs. Never-Clear, I was using a Holux GM-210 
+with a Prolific driver (that was a couple of years old) connected to 
+an iBook G4.  I'm now using the very same Holux GM-210 with the 
+latest (as of a few weeks ago, anyway) Prolific driver connected to 
+the same iBook G4.  What's interesting is: my GPS always *used* to be 
+identified by GPSd as an NMEA data source, and that's the way it 
+worked.  Now, however, it identifies quite clearly as a SiRF-II 
+binary device, and that's now the way it behaves.  Here's the -D 4 
+output at the end of the startup sequence:
+
+gpsd: Selecting SiRF-II binary driver...
+gpsd: Requesting periodic ecef reports...
+gpsd: Writing SiRF control type a6: a0 a2 00 08 a6 00 02 01 00 00 00 
+00 00 a9 b0 b3
+gpsd: Requesting periodic tracker reports...
+gpsd: Writing SiRF control type a6: a0 a2 00 08 a6 00 04 03 00 00 00 
+00 00 ad b0 b3
+gpsd: Setting DGPS control to use SBAS...
+gpsd: Writing SiRF control type 85: a0 a2 00 07 85 01 00 00 00 00 00 
+00 86 b0 b3
+gpsd: Setting SBAS to auto/integrity mode...
+gpsd: Writing SiRF control type aa: a0 a2 00 06 aa 00 01 00 00 00 00 ab b0 b3
+gpsd: Probing for firmware version...
+gpsd: Writing SiRF control type 84: a0 a2 00 02 84 00 00 84 b0 b3
+gpsd: Setting mode...
+gpsd: Writing SiRF control type 88: a0 a2 00 0e 88 00 00 00 00 00 00 
+00 00 00 00 00 00 01 00 89 b0 b3
+gpsd: unflagging descriptor 4 in open_device
+gpsd: closing GPS=/dev/tty.usbserial (4)
+
+What it used to do was select the NMEA driver... but now I can't even 
+seem to make it do that by disabling all other drivers (this is 
+probably because the Holux has now been init'd into SiRF-II binary 
+mode by gpsd, and will not just revert to NMEA without being told to 
+do so).
+
+I'd actually like to try reverting it for two reasons:
+
+1) I want to test that the -c option for which I just created a patch 
+creates the correct kind of jitter from the NMEA stream I used to 
+get, and
+2) I want to prove that I wasn't imagining that I used to get HDOP, 
+VDOP and PDOP from the GPS/GPSd, whereas I now only get HDOP.
+
+Unfortunately, my attempts to switch it back to NMEA have not met 
+with much success.  Obviously running the daemon configured without 
+the other drivers didn't do the trick, since it didn't know how to 
+talk to it in the language it's currently speaking.
+
+So I went back to the list archives - bingo!  run &quot;sirfmon 
+/dev/tty.usbserial&quot;, and issue an &quot;n&quot; command.
+
+Except... no dice.  Running &quot;sirfmon /dev/tty.usbserial&quot; just sits 
+there (i.e. on the blank line after hitting enter) - the interface 
+doesn't appear at all.  This is with gpsd not running, and occurs 
+whether I run sirfmon as root or not.  Then I discovered that if I 
+run sirfmon with no command line parameters while gpsd *is* running, 
+then it appears to connect to something and I get the monitor 
+interface... but unfortunately, all the &quot;n&quot; command does at that 
+point is cause sirfmon to exit: it's quite clear that the GPS itself 
+is still running in SiRF binary  mode.
+
+Interestingly (slightly), the &quot;sirfmon /dev/tty.usbserial&quot; command 
+does notice (returns an error &quot;Device not configured&quot; and immediately 
+quits) when I unplug the GPS unit, and it returns a &quot;No such file or 
+directory&quot; and quits if I try to start it without the unit 
+connected... but beyond that, it doesn't seem able to communicate 
+directly with the unit.
+
+So... any ideas what my options are?  Any reason why sirfmon should 
+fail to run on Mac OS X?
+
+Aside from that, I don't mind *too* much, except I would rather like 
+to see VDOP and PDOP reappear (since the unit was quite capable of 
+doing those in NMEA)... to the SiRF binary experts, is there a way to 
+ask it to send that info as well?  It would be great to see some 
+indication of vertical uncertainty again.  I see in the notes that 
+&quot;When using SiRF chips, the VDOP/TDOP/GDOP figures and associated 
+error estimates are computed by gpsd rather than reported by the 
+chip&quot;, but in my case it seems those are not even computed by gpsd - 
+I always see zeroes.
+
+It may be that the only solution will be to do what someone posted on 
+the davisnetworks Wiki when a BU-303 did the same thing: unplug it 
+for a few days and just hope it will revert, and then build GPSd 
+without SiRF-II support and hope that will prevent it sending the 
+SiRF-II initialisation commands that changed the connection mode in 
+the first place.
+
+As an aside, I'm almost certain that the only thing that has changed 
+to cause this behaviour are my Prolific drivers, since as far as I 
+can see there hasn't been a single change which affected the 
+initialisation/detection routines since back when it just played NMEA 
+... yes, I just went through a whole svn diff from revision 3279 to 
+present.
+
+Presumably they previous drivers did something bad to outgoing data, 
+so the init routines never did what they were written to do, and now 
+that the drivers work better, the init routines in GPSd can tell the 
+SiRF chipset to talk &quot;native&quot; to it.
+
+If anyone has any other ideas on what to try, or suggestions on how 
+to get sirfmon to work, that would be most welcome!
+
+Cheers,
+Robin
+-- 
+
+-------------------------------------------------------------------------
+  Robin L. Darroch - PO Box 2715, South Hedland WA 6722 - +61 421 503 966
+       <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at darroch.id.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at nyca.org.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003673.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+	<LI>Next message: <A HREF="003643.html">[Gpsd-dev] sirfmon and whatever happened to my NMEA mode :)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3639">[ date ]</a>
+              <a href="thread.html#3639">[ thread ]</a>
+              <a href="subject.html#3639">[ subject ]</a>
+              <a href="author.html#3639">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

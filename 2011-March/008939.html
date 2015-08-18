@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] volatile (was: Re: Compile warning Mac OS X 10.6.6 - Xcode 3.2.5)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20volatile%20%28was%3A%20Re%3A%20Compile%20warning%20Mac%20OS%20X%2010.6.6%20-%0A%20Xcode%203.2.5%29&In-Reply-To=%3Calpine.DEB.1.10.1103212243490.7994%40org-pc51.fy.chalmers.se%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008938.html">
+   <LINK REL="Next"  HREF="008941.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] volatile (was: Re: Compile warning Mac OS X 10.6.6 - Xcode 3.2.5)</H1>
+    <B>H&#229;kan Johansson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20volatile%20%28was%3A%20Re%3A%20Compile%20warning%20Mac%20OS%20X%2010.6.6%20-%0A%20Xcode%203.2.5%29&In-Reply-To=%3Calpine.DEB.1.10.1103212243490.7994%40org-pc51.fy.chalmers.se%3E"
+       TITLE="[Gpsd-dev] volatile (was: Re: Compile warning Mac OS X 10.6.6 - Xcode 3.2.5)">f96hajo at chalmers.se
+       </A><BR>
+    <I>Mon Mar 21 22:58:59 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008938.html">[Gpsd-dev] volatile (was: Re: Compile warning Mac OS X 10.6.6 - Xcode 3.2.5)
+</A></li>
+        <LI>Next message: <A HREF="008941.html">[Gpsd-dev] volatile (was: Re: Compile warning Mac OS X 10.6.6 - Xcode 3.2.5)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8939">[ date ]</a>
+              <a href="thread.html#8939">[ thread ]</a>
+              <a href="subject.html#8939">[ subject ]</a>
+              <a href="author.html#8939">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Just checked the generated assembler code (x86, gcc -O2), and indeed, 
+without the volatile inside ntpshm_put and ntpshm_pps it generates one 
+single add-by-2 for count and just the set-1 for valid.  I.e. gcc does 
+what it should do - optimise :-)
+
+I do not agree with the system headers (of shmget??) being wrong, shared 
+memory need not be treated with volatile.  Just inserting
+  asm volatile (&quot;&quot; : : : &quot;memory&quot;);
+where the barriers later are needed forces the compiler to not coalesce 
+the two count/valid-updates.
+
+For now, the volatile in ntpshm_put and ntpshm_pps makes things better. 
+The volatile in getShmTime has no effect so may be omitted, thus removing 
+the warning.  No need to make all session-&gt;context-&gt;shmTime volatile.
+
+Cheers,
+H&#229;kan
+
+
+On Mon, 21 Mar 2011, Gary E. Miller wrote:
+
+&gt;<i> -----BEGIN PGP SIGNED MESSAGE-----
+</I>&gt;<i> Hash: SHA1
+</I>&gt;<i>
+</I>&gt;<i> Yo Eric!
+</I>&gt;<i>
+</I>&gt;<i> On Mon, 21 Mar 2011, Eric Raymond wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Michael Ledford &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">michael at ledford.cc</A>&gt;:
+</I>&gt;&gt;&gt;<i> Hello all I found this warning on a8acb226e3d0b8132e086338e04b82bf30cad6cd.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> ntpshm.c: In function ?getShmTime?:
+</I>&gt;&gt;&gt;<i> ntpshm.c:138: warning: return discards qualifiers from pointer target type
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Sincerely,
+</I>&gt;&gt;&gt;<i> Michael
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> This appears to be a result of the volatile declaration on line 129.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I'm not quite sure what the right thing is here.  Should the prototype
+</I>&gt;&gt;<i> for that function have the volatile qualifier?  Should the turn
+</I>&gt;&gt;<i> statement have a cast in it?  I don't know what that volatile is doing.
+</I>&gt;<i>
+</I>&gt;<i> The function definition should have volatile on it.  Per the recent ntpd
+</I>&gt;<i> shm discussion on gpsd-dev.  Since the system headers are wrong in this
+</I>&gt;<i> case we just need to add a cast.
+</I>&gt;<i>
+</I>&gt;<i> The point is to prevent the C compiler from 'optimizing' out 'dead code'
+</I>&gt;<i> when in fact the RAM being written to is shared with the ntpd process.
+</I>&gt;<i>
+</I>&gt;<i> But while that is part of the solution, it is not sufficient to prevent
+</I>&gt;<i> all problems.  Closing the hole totally needs to wait until after release.
+</I>&gt;<i>
+</I>&gt;<i> RGDS
+</I>&gt;<i> GARY
+</I>&gt;<i> - ---------------------------------------------------------------------------
+</I>&gt;<i> Gary E. Miller Rellim 109 NW Wilmington Ave., Suite E, Bend, OR 97701
+</I>&gt;<i> 	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+</I>&gt;<i>
+</I>&gt;<i> -----BEGIN PGP SIGNATURE-----
+</I>&gt;<i> Version: GnuPG v1.4.3 (GNU/Linux)
+</I>&gt;<i>
+</I>&gt;<i> iD8DBQFNh8PvBmnRqz71OvMRAuF8AKC8PPvalLo2JFLzoJ1/qTSoNXXEMACcCNxm
+</I>&gt;<i> yclR7vIVg/sm7aOUgWUCsZ8=
+</I>&gt;<i> =NJD4
+</I>&gt;<i> -----END PGP SIGNATURE-----
+</I>&gt;<i>
+</I></PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008938.html">[Gpsd-dev] volatile (was: Re: Compile warning Mac OS X 10.6.6 - Xcode 3.2.5)
+</A></li>
+	<LI>Next message: <A HREF="008941.html">[Gpsd-dev] volatile (was: Re: Compile warning Mac OS X 10.6.6 - Xcode 3.2.5)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8939">[ date ]</a>
+              <a href="thread.html#8939">[ thread ]</a>
+              <a href="subject.html#8939">[ subject ]</a>
+              <a href="author.html#8939">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

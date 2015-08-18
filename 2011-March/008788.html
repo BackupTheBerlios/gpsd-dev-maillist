@@ -1,0 +1,92 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Breaking up the packet sniffer
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Breaking%20up%20the%20packet%20sniffer&In-Reply-To=%3C20110311232919.GB19302%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008762.html">
+   <LINK REL="Next"  HREF="008790.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Breaking up the packet sniffer</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Breaking%20up%20the%20packet%20sniffer&In-Reply-To=%3C20110311232919.GB19302%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Breaking up the packet sniffer">esr at thyrsus.com
+       </A><BR>
+    <I>Sat Mar 12 00:29:19 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008762.html">[Gpsd-dev] Release is imminent - last call for issues
+</A></li>
+        <LI>Next message: <A HREF="008790.html">[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-1015-g299c211
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8788">[ date ]</a>
+              <a href="thread.html#8788">[ thread ]</a>
+              <a href="subject.html#8788">[ subject ]</a>
+              <a href="author.html#8788">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>(Copied to dev; this sort of architecture discussion can and should be public.)
+
+Chris Kuethe &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">chris.kuethe at gmail.com</A>&gt;:
+&gt;<i> If nothing else [tz is] making me wonder about how to refactor all of our
+</I>&gt;<i> drivers so that everything PROTO is in driver_PROTO.c ... I don't like
+</I>&gt;<i> all the tangle that is packet.c, and I think that it would be prettier
+</I>&gt;<i> if each driver (where possible) exported a PROTO_checksum function
+</I>&gt;<i> that could be used by both the sniffer and packet writers.
+</I>
+I definitely agree that the packet sniffer is a painful knot in the 
+present architecture. I'd love to break it apart into per-driver pieces
+if that were possible, but I haven't been able to imagine a way to do that.
+
+As for breaking out the checksum function:  If you look, you'll see
+that the driver structures already have a control_send member that's a
+checksum generator.  So the write side of this is already factored as
+you suggest.  
+
+The read side (the checksum verifiers) could move to the driver
+structure, too, but I haven't seem a lot of point in that while we're
+still stuck with the rest of packet.c as a single hairball.  The
+checksum code is a fairly small increment on that.
+
+Besides, there are some subtle issues with trying. The biggest one is that
+checksum functions aren't indexed by driver type but rather by packet type.
+Packet-type-to-driver lookup is a bit messy because multiple drivers can
+share the same packet type - you'd end up with a lookup function that is
+time-quadratic in the number of drivers rather than getting that dispatch
+for free from the state machine's flow of control.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008762.html">[Gpsd-dev] Release is imminent - last call for issues
+</A></li>
+	<LI>Next message: <A HREF="008790.html">[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-1015-g299c211
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8788">[ date ]</a>
+              <a href="thread.html#8788">[ thread ]</a>
+              <a href="subject.html#8788">[ subject ]</a>
+              <a href="author.html#8788">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

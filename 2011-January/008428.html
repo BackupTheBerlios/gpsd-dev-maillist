@@ -1,0 +1,161 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Architecture/complexity issues
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Architecture/complexity%20issues&In-Reply-To=%3C20110104143614.GD27547%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008423.html">
+   <LINK REL="Next"  HREF="008426.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Architecture/complexity issues</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Architecture/complexity%20issues&In-Reply-To=%3C20110104143614.GD27547%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Architecture/complexity issues">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Jan  4 15:36:14 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008423.html">[Gpsd-dev] Almanac
+</A></li>
+        <LI>Next message: <A HREF="008426.html">[Gpsd-dev] Almanac
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8428">[ date ]</a>
+              <a href="thread.html#8428">[ thread ]</a>
+              <a href="subject.html#8428">[ subject ]</a>
+              <a href="author.html#8428">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+&gt;<i> Almanacs, agpsd, and the rest are already being talked about for inclusion.
+</I>
+Here is what we have extra beyond GPS support, and what is planned.
+In all cases, the incremental complexity is quite well confined to a
+single driver-level module and a few lines of switching/dispatch code.
+
+* AIS support:  Working, in production use, regression tests in good shape.
+
+* Subframe reporting: Work in progress, will have regression tests.
+
+* NTRIP support:  Add-on by a contributor now gone, bugs in it
+recently fixed by a production user so it's almost certainly working
+now, no regression test.
+
+* RTCM2 support: Not production tested as far as I know,  Has regression test.
+
+* RTCM3 support: Work in progress, no regression test.
+
+* Compass support: Working, with known minor bugs in unit scaling.  Has
+regression tests.
+
+* AGPS: Only speculation at this point, no code.
+
+&gt;<i> &gt; Yes. Unavoidably so, given the hardware territory it has to cover just
+</I>&gt;<i> &gt; to deliver basic GPS data. &#160;The newer stuff like AIS is only a
+</I>&gt;<i> &gt; relatively small increment of complexity over what's irreducibly
+</I>&gt;<i> &gt; required to do GPS right, given that we have a dozen vendor binary
+</I>&gt;<i> &gt; protocols to cope with.
+</I>&gt;<i> 
+</I>&gt;<i> The problem is the small increments tend to collect into a big mess.
+</I>
+Yes, they do. Which is why I am fanatical about proper vertical separation
+of layers in the architecture and proper horizontal separation of the driver
+modules.  I am not a GPS domain expert, I am a systems architect; my response
+to &quot;this could turn into a messy pile&quot; is to exercise design discipline
+*so it doesn't*. 
+
+I am a huge fan of the Unix philosophy of breaking big programs into
+flocks of smaller cooperating programs - I wrote a well-received book
+about that philosophy once.  But it can be overapplied. Breaking a
+large program up into smaller binaries doen't help when, as in this
+case, the data coupling among the binaries would necessarily be so
+intricate that the marshalling and unmarshalling code to pass data
+around exceeds the complexity of the internal interfaces in the
+one-big-binary version.
+
+&gt;<i> Suppressing something means it is still there and it really isn't
+</I>&gt;<i> isolated if something in a driver breaks the build as a whole.
+</I>
+You're quite right. This is why we have flocktest, to perform build and
+regression tests on multiple architectures.
+
+&gt;<i> I don't know that this will happen, but I already have a large number
+</I>&gt;<i> of different GPS units.  If the drivers are going to be vanilla NMEA,
+</I>&gt;<i> they are already there.  If I want to add in all the special feature
+</I>&gt;<i> support, it might start making it bigger.
+</I>
+By about 100K, yes.  This is the price we pay for autoconfiguration
+at startup time.  I don't think 100K is a large price, and for those
+who want to configure out the extras we support that.
+ 
+&gt;<i> If the GPS covered by a binary driver can do NMEA, do we want to keep
+</I>&gt;<i> the binary driver?  If so, then do we add specific drivers for
+</I>&gt;<i> everyone?
+</I>
+Depends.  We add a binary driver when that allows us to get data NMEA
+won't pass out; the most usual case is error estimates and 
+dilution-of-precision figures.
+
+&gt;<i> For that matter, lets say I have two GPS units - one is a very
+</I>&gt;<i> sensitive precise WAAS enabled unit with a resolution of 1Hz, and a
+</I>&gt;<i> second has basic data at 10Hz.  Can I get both?
+</I>
+Certainly.  Was there any reason you expected this to be a problem?
+
+&gt;<i> The other way might be a JSON merge mechanism - so I could write
+</I>&gt;<i> something to take data not supported by GPSD itself, send it into a
+</I>&gt;<i> port, (be validated and tagged,) and it would appear in the event
+</I>&gt;<i> stream.  You could even have some officially supported bits for the
+</I>&gt;<i> interesting and useful but 4-sigma cases.
+</I>
+I have a design in my head for a way to use a master gpsd instance
+to collect data from multiple slaves. This could easily be generalized
+into such a merge facility.
+
+&gt;<i> My most common application is to take vehicle performance data (OBD2
+</I>&gt;<i> type info) and sensors (compass/gyro/accel) and merge that with GPS
+</I>&gt;<i> information since it helps to know when and where something
+</I>&gt;<i> interesting in the data happened.  So I tend to think of the problems
+</I>&gt;<i> in that context.
+</I>
+One question I ask in this circumstance is whether there's a well-defined
+public standard for streaming the special data over serial links.  If there
+is, then it's at least possible we might want to put support in GPSD.
+
+One reason for this criterion is that when it's fulfilled, it's usually
+possible to build a decent regression test,
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008423.html">[Gpsd-dev] Almanac
+</A></li>
+	<LI>Next message: <A HREF="008426.html">[Gpsd-dev] Almanac
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8428">[ date ]</a>
+              <a href="thread.html#8428">[ thread ]</a>
+              <a href="subject.html#8428">[ subject ]</a>
+              <a href="author.html#8428">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

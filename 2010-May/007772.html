@@ -1,0 +1,120 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Input packets buffering bug(s)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3C201005241031.39829.remco%40rvt.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007771.html">
+   <LINK REL="Next"  HREF="007773.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Input packets buffering bug(s)</H1>
+    <B>Remco Treffkorn</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3C201005241031.39829.remco%40rvt.com%3E"
+       TITLE="[Gpsd-dev] Input packets buffering bug(s)">remco at rvt.com
+       </A><BR>
+    <I>Mon May 24 19:31:39 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007771.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+        <LI>Next message: <A HREF="007773.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7772">[ date ]</a>
+              <a href="thread.html#7772">[ thread ]</a>
+              <a href="subject.html#7772">[ subject ]</a>
+              <a href="author.html#7772">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Monday 24 May 2010, Greg Troxel wrote:
+&gt;<i> 
+</I>&gt;<i> Remco Treffkorn &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>&gt; writes:
+</I>&gt;<i> 
+</I>&gt;<i> &gt; That is because we are setting the tty to raw mode, which is good for
+</I>&gt;<i> &gt; arbitrary binary protocols. In case of NMEA we could just set the tty
+</I>&gt;<i> &gt; line mode (cooked, but with most of the processing (including echo)
+</I>&gt;<i> &gt; turned off).
+</I>&gt;<i> 
+</I>&gt;<i> I think the problem is not with real serial ports.
+</I>
+The usb dongle stuff gets still processed by the tty layer. There is no difference
+for the upper layers. Real serial ports can have the same problem, it is just less
+likely.
+
+&gt;<i> &gt; That will make the read to return only single, newline terminated strings per
+</I>&gt;<i> &gt; read. Even if another line was already received by the tty. This I tested.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; If I understand the select man page right you don't have to make special
+</I>&gt;<i> &gt; arrangements in the code, you can straight go back to select.
+</I>&gt;<i> &gt; Select will just return immediately signaling that another read is ready on
+</I>&gt;<i> &gt; this fd.
+</I>&gt;<i> 
+</I>&gt;<i> Yes, if there are more bytes.  The problem is that multiple NMEA
+</I>&gt;<i> sentences worth of bytes were ready at once, and we made one read call
+</I>&gt;<i> and got them all and put them in the buffer.  select will then return
+</I>&gt;<i> false because there are no bytes in the device, but we are sitting on
+</I>&gt;<i> bytes in our buffer.
+</I>
+In line mode a read is guaranteed to return a string in the buffer that contains
+a newline (ie cr/lf) exactly once and as the last two bytes of this string, even
+if there is more data in the tty input buffer. This means you always only get
+exactly one sentence.
+
+That means the select will return immediately, because there was more data.
+man stty. raw vs. cooked mode. We only want a subset of cooked.
+
+In raw mode you get whatever is there.
+
+&gt;<i> What we really need is
+</I>&gt;<i> 
+</I>&gt;<i>   select
+</I>&gt;<i>     if bytes available on device fd
+</I>&gt;<i>        try to read as many bytes as we can
+</I>&gt;<i>        **while* ( there is a full sentence worth of bytes available)
+</I>&gt;<i>          process that sentence
+</I>
+This is the way to handle it in raw mode.
+
+&gt;<i> I think right now the **while** is an if.
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>
+
+-- 
+Remco Treffkorn (RT445)
+HAM DC2XT
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007771.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+	<LI>Next message: <A HREF="007773.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7772">[ date ]</a>
+              <a href="thread.html#7772">[ thread ]</a>
+              <a href="subject.html#7772">[ subject ]</a>
+              <a href="author.html#7772">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,257 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: Trial reconnect support committed -- please test
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20Trial%20reconnect%20support%20committed%20--%20please%20test&In-Reply-To=%3C2flhdlicor8.fsf%40saruman.uio.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000545.html">
+   <LINK REL="Next"  HREF="000550.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: Trial reconnect support committed -- please test</H1>
+    <B>Petter Reinholdtsen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20Trial%20reconnect%20support%20committed%20--%20please%20test&In-Reply-To=%3C2flhdlicor8.fsf%40saruman.uio.no%3E"
+       TITLE="[Gpsd-dev] Re: Trial reconnect support committed -- please test">pere at hungry.com
+       </A><BR>
+    <I>Sat Jan 15 23:26:51 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000545.html">[Gpsd-dev] Re: Trial reconnect support committed -- please test
+</A></li>
+        <LI>Next message: <A HREF="000550.html">[Gpsd-dev] Re: Trial reconnect support committed -- please test
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#546">[ date ]</a>
+              <a href="thread.html#546">[ thread ]</a>
+              <a href="subject.html#546">[ subject ]</a>
+              <a href="author.html#546">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>[Petter Reinholdtsen]
+&gt;<i> But as I realised, the library need to know that the xgps client used
+</I>&gt;<i> &quot;w+x&quot; when it registered with gpsd.  It might be better to return an
+</I>&gt;<i> error from gps_poll() and gps_query(), and document the need to
+</I>&gt;<i> reconnect when this happen.  What do you say?
+</I>
+Here is a draft patch doing this.
+
+ - drop the auto-reconnect feature in libgps, and add a new
+   gps_reconnect() instead (to make sure we keep the old GPS status
+   info when reconnecting, if we don't care about this, we could use
+   gps_close() and gps_open()).
+
+ - Make sure xgps handle_input() and handle_time_out() call
+   gps_reconnect() and register the new file descriptor with Xt when
+   gps_poll() fail.
+
+ - Fix typo, sending 'app' into the timeout handler, where it was
+   unused.
+
+An alternative is to add some 'last query' variable to gps_data_t, and
+send this to the server on reconnects.
+
+Index: libgps.c
+===================================================================
+--- libgps.c	(revision 1338)
++++ libgps.c	(working copy)
+@@ -5,6 +5,7 @@
+ #include &lt;string.h&gt;
+ #include &lt;errno.h&gt;
+ #include &lt;sys/socket.h&gt;
++#include &lt;assert.h&gt;
+ 
+ #include &quot;gpsd.h&quot;
+ 
+@@ -196,17 +201,21 @@
+ 	;
+ }
+ 
+-static int try_reconnect(struct gps_data_t *gpsdata)
++int gps_reconnect(struct gps_data_t *gpsdata)
+ {
+     int newfd;
+ 
++    printf(&quot;Trying to reconnect to %s:%s - &quot;, gpsdata-&gt;host, gpsdata-&gt;port);
++
+     /* Try to connect, and replace filedescriptor if it succeeds */
+-    if ((newfd = netlib_connectsock(gpsdata-&gt;host,gpsdata-&gt;port, &quot;tcp&quot;)) &lt;= 0) 
++    if ((newfd = netlib_connectsock(gpsdata-&gt;host,gpsdata-&gt;port, &quot;tcp&quot;)) &lt;= 0){
++        printf(&quot;failed\n&quot;);
+         return -1;
+-    else {
++    } else {
++        printf(&quot;OK\n&quot;);
+         close(gpsdata-&gt;gps_fd);
+-	gpsdata-&gt;gps_fd = newfd;
+-	return 0;
++        gpsdata-&gt;gps_fd = newfd;
++        return 0;
+     }
+ }
+ 
+@@ -216,32 +225,26 @@
+     char	buf[BUFSIZE];
+     int		n;
+ 
+-    for (;;) {
+-	errno = 0;
+-	/* the daemon makes sure that every read is NUL-terminated */
+-	if ((n = read(gpsdata-&gt;gps_fd, buf, sizeof(buf)-1)) &gt; 0) {
+-	    buf[n] = '\0';
+-	    return gps_unpack(buf, gpsdata);
+-	} else if (errno == EBADF &amp;&amp; try_reconnect(gpsdata))
+-	    continue;
+-        else
+-	    return -1;
++    /* the daemon makes sure that every read is NUL-terminated */
++    if ((n = read(gpsdata-&gt;gps_fd, buf, sizeof(buf)-1)) &gt; 0) {
++        buf[n] = '\0';
++	/* Can only handle one line at the time */
++	/* XXX This do not work.  Should look for newline, not '\0'. */
++	assert(n == (int)strlen(buf));
++	return gps_unpack(buf, gpsdata);
++    } else {
++        return -1;
+     }
+ }
+ 
+ int gps_query(struct gps_data_t *gpsdata, const char *requests)
+ /* query a gpsd instance for new data */
+ {
+-    for (;;) {
+-	errno = 0;
+-	if (write(gpsdata-&gt;gps_fd, requests, sizeof(requests)) &gt; 0) {
+-	    break;
+-	} else if (errno == EBADF &amp;&amp; try_reconnect(gpsdata))
+-	    continue;
+-        else
+-	    return -1;
++    if (write(gpsdata-&gt;gps_fd, requests, sizeof(requests)) &gt; 0) {
++        return gps_poll(gpsdata);
++    } else {
++        return -1;
+     }
+-    return gps_poll(gpsdata);
+ }
+ 
+ #ifdef TESTMAIN
+Index: xgps.c
+===================================================================
+--- xgps.c	(revision 1338)
++++ xgps.c	(working copy)
+@@ -192,14 +192,6 @@
+     XmStringFree(string);
+ }
+ 
+-static void handle_time_out(XtPointer client_data UNUSED,
+-			    XtIntervalId *ignored UNUSED)
+-/* runs when there is no data for a while */
+-{
+-    XmTextFieldSetString(status, &quot;no data arriving&quot;);
+-    XmTextFieldSetString(text_7, &quot;UNKNOWN&quot;);
+-}
+-
+ /*
+  * No dependencies on the session structure above this point.
+  */
+@@ -209,13 +201,49 @@
+ static int state = 0;	/* or MODE_NO_FIX=1, MODE_2D=2, MODE_3D=3 */
+ XtAppContext app;
+ XtIntervalId timeout;
++static void register_gps(struct gps_data_t *gpsdata);
+ 
+ static void handle_input(XtPointer client_data UNUSED, int *source UNUSED,
+ 			 XtInputId *id UNUSED)
+ {
+-    gps_poll(gpsdata);
++    if (-1 == gps_poll(gpsdata)) {
++	/* Not sure why, but if we don't sleep here, the reconnect
++	   always fail. */
++        sleep(1);
++        if (0 == gps_reconnect(gpsdata) )
++	    register_gps(gpsdata);
++    }
+ }
+ 
++static void register_gps(struct gps_data_t *gpsdata)
++{
++    static XtInputId gps_input_id = 0;
++    printf(&quot;removing input, adding new %d\n&quot;, gpsdata-&gt;gps_fd);
++    if (gps_input_id != 0) {
++        XtRemoveInput(gps_input_id);
++    }
++    gps_input_id = XtAppAddInput(app, gpsdata-&gt;gps_fd,
++				 (XtPointer)XtInputReadMask, handle_input,
++				 NULL);
++    gps_query(gpsdata, &quot;w+x\n&quot;);
++}
++
++static void handle_time_out(XtPointer client_data UNUSED,
++			    XtIntervalId *ignored UNUSED)
++/* runs when there is no data for a while */
++{
++    XmTextFieldSetString(status, &quot;no data arriving&quot;);
++    XmTextFieldSetString(text_7, &quot;UNKNOWN&quot;);
++
++    /* Insert new timeout */
++    XtRemoveTimeOut(timeout);
++    timeout = XtAppAddTimeOut(app, 2000, handle_time_out, NULL);
++
++    /* Try to reconnect, as we are getting no data */
++    if (0 == gps_reconnect(gpsdata))
++        register_gps(gpsdata);
++}
++
+ static void update_panel(char *message)
+ /* runs on each sentence */
+ {
+@@ -356,14 +384,12 @@
+ 
+     build_gui(toplevel);
+ 
+-    timeout = XtAppAddTimeOut(app, 2000, handle_time_out, app);
++    timeout = XtAppAddTimeOut(app, 2000, handle_time_out, NULL);
+     timer = time(NULL);
+ 
+     gps_set_raw_hook(gpsdata, update_panel);
+-    gps_query(gpsdata, &quot;w+x\n&quot;);
+ 
+-    XtAppAddInput(app, gpsdata-&gt;gps_fd, 
+-		  (XtPointer)XtInputReadMask, handle_input, NULL);
++    register_gps(gpsdata);
+     XtAppMainLoop(app);
+ 
+     gps_close(gpsdata);
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000545.html">[Gpsd-dev] Re: Trial reconnect support committed -- please test
+</A></li>
+	<LI>Next message: <A HREF="000550.html">[Gpsd-dev] Re: Trial reconnect support committed -- please test
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#546">[ date ]</a>
+              <a href="thread.html#546">[ thread ]</a>
+              <a href="subject.html#546">[ subject ]</a>
+              <a href="author.html#546">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

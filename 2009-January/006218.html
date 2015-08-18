@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] bug with callbacks and gpsd_close
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20bug%20with%20callbacks%20and%20gpsd_close&In-Reply-To=%3Crmimye64kja.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006217.html">
+   <LINK REL="Next"  HREF="006220.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] bug with callbacks and gpsd_close</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20bug%20with%20callbacks%20and%20gpsd_close&In-Reply-To=%3Crmimye64kja.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] bug with callbacks and gpsd_close">gdt at ir.bbn.com
+       </A><BR>
+    <I>Mon Jan  5 02:19:05 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006217.html">[Gpsd-dev] bug with callbacks and gpsd_close
+</A></li>
+        <LI>Next message: <A HREF="006220.html">[Gpsd-dev] bug with callbacks and gpsd_close
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6218">[ date ]</a>
+              <a href="thread.html#6218">[ thread ]</a>
+              <a href="subject.html#6218">[ subject ]</a>
+              <a href="author.html#6218">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+&quot;Eric S. Raymond&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; writes:
+
+&gt;<i> Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;:
+</I>&gt;&gt;<i> I have a program that does gps_open and then registers a callback.  If
+</I>&gt;&gt;<i> it has not gotten a valid fix in a while it closes via gps_close and
+</I>&gt;&gt;<i> reopens.  This leaks threads.  The docmentation is ambiguous, but I
+</I>&gt;&gt;<i> interpret it to say that gps_close should clean up the state on the gpsd
+</I>&gt;&gt;<i> side.  So I think we need to either:
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i>   have gps_close do the equivalent of gps_del_callback, and explain this
+</I>&gt;&gt;<i>   in the man page.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> or
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i>   document that one must delete all callbacks before calling gps_close,
+</I>&gt;&gt;<i>   and that behavior is undefined if one hasn't been deleted.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i>   have gps_open/close count the outstanding callbacks
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i>   (probably) Call abort(3) if there are stray callbacks so people can
+</I>&gt;&gt;<i>   fix their (newly defined to be) buggy code rather than ending up with
+</I>&gt;&gt;<i>   100 threads.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> (I ran into this on Linux/arm11, where each thread is a process and it
+</I>&gt;&gt;<i> ran the machine out of slots in the process table.)
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> My preference is for the first option.
+</I>&gt;<i>
+</I>&gt;<i> I have examined the code and thought about what it would take to
+</I>&gt;<i> implement your first option.  I agree it would be elegant, but it
+</I>&gt;<i> would also raise the complexity and internal statefulness of the
+</I>&gt;<i> libgps implementation rather more than makes me happy to think
+</I>&gt;<i> about. The handler structures would have to be stored in a malloc
+</I>&gt;<i> array, iterated over and closed only if the thread isn't already
+</I>&gt;<i> dead...there are plenty of niggling edge cases to trip us up here.
+</I>
+I see your point.
+
+&gt;<i> I'd do it anyway if I thought multiple monitor threads per GPS were
+</I>&gt;<i> going to be a common use case - but I wrote the API to support that on
+</I>&gt;<i> general principles only. I can't realistically imagine an application
+</I>&gt;<i> needing more than one.
+</I>
+I was intending to have only one.  The problem happened as I repeatedly
+did open/add_callback/close when I got no fixes (indoors).
+
+&gt;<i> Because I think that's true, I don't see a lot of payoff in the
+</I>&gt;<i> second alternative for the amount of additional code it would require.
+</I>&gt;<i> I think this is one of those cases where the right thing to do is
+</I>&gt;<i> keep the API minimalist and loudly say &quot;Caveat thread-user!&quot; in the
+</I>&gt;<i> documentation.
+</I>
+Surely you are only talking about the second and third parts - the
+requirement to delete callbacks is unintuitive and really needs to be
+documented (I can send a patch if you are inclined to take it).
+
+I'm a big fan of detecting and aborting on interface contract violations
+- failure of libgps to behave according to my expectations resulted in
+several systems getting wedged.  It seems easy enough to count.
+
+&gt;<i> Note: I've merged your X-related patches, they'll be in 2.38.
+</I>
+Thanks.  I'll look at my outstanding other local changes (in a private
+svn) and probably need to send in some more.
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 193 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090104/3cc71dc5/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090104/3cc71dc5/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006217.html">[Gpsd-dev] bug with callbacks and gpsd_close
+</A></li>
+	<LI>Next message: <A HREF="006220.html">[Gpsd-dev] bug with callbacks and gpsd_close
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6218">[ date ]</a>
+              <a href="thread.html#6218">[ thread ]</a>
+              <a href="subject.html#6218">[ subject ]</a>
+              <a href="author.html#6218">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

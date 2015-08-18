@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Input packets buffering bug(s)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3CAANLkTikKrUVITberzrJJiSbf6kzRBRy0e0_uy2K8-cpi%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007798.html">
+   <LINK REL="Next"  HREF="007805.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Input packets buffering bug(s)</H1>
+    <B>Olivier Cornu</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3CAANLkTikKrUVITberzrJJiSbf6kzRBRy0e0_uy2K8-cpi%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Input packets buffering bug(s)">o.cornu at gmail.com
+       </A><BR>
+    <I>Sat May 29 00:33:20 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007798.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+        <LI>Next message: <A HREF="007805.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7804">[ date ]</a>
+              <a href="thread.html#7804">[ thread ]</a>
+              <a href="subject.html#7804">[ subject ]</a>
+              <a href="author.html#7804">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Fri, May 28, 2010 at 23:44, Remco Treffkorn &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>&gt; wrote:
+&gt;<i> On Friday, May 28, 2010, Olivier Cornu wrote:
+</I>&gt;&gt;<i> On Fri, May 28, 2010 at 22:29, Remco Treffkorn &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>&gt; wrote:
+</I>&gt;&gt;<i> &gt; You can not do that. It is not knowable for you how many bytes
+</I>&gt;&gt;<i> &gt; are in the tty buffer. All you can do is to pick a 'reasonable' read
+</I>&gt;&gt;<i> &gt; buffer size.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Sure, and that efficient size is: all the empty inbuffer space (what
+</I>&gt;&gt;<i> the current implementation does, btw).
+</I>&gt;<i>
+</I>&gt;<i> If that statement were correct, using an inbuffer size of 16 would
+</I>&gt;<i> be efficient.
+</I>
+I may have missed your point, but just in case i did not express
+myself clearly i'll rephrase: i believe the most efficient is to
+attempt to read as much as we can (iow as much as can fit in
+inbuffer), as the current implementation does.
+Spinning a main loop every 16 bytes is less (or equally, depending on
+the context) efficient.
+(I have the bad feeling there's a misunderstanding going on here :p).
+
+&gt;&gt;<i> Please note that i'm not talking in terms of &quot;reasonable&quot;, but in
+</I>&gt;&gt;<i> terms of efficiency.
+</I>&gt;<i>
+</I>&gt;<i> I don't strive for absolute efficiency, I stop when it is reasonably
+</I>&gt;<i> efficient. Yes, there is a 'good enuff'.
+</I>
+That's true. Although &quot;good enough&quot; is a rather subjective threshold,
+isn't it?  ;)
+
+&gt;&gt;<i> Here's a (admittedly quick and dirty, yet a starting) patch that does
+</I>&gt;&gt;<i> it: <A HREF="http://pastebin.com/nQ0wQ5XU">http://pastebin.com/nQ0wQ5XU</A>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> I support moving the bulk of the code out of main even if there were
+</I>&gt;<i> not another reason to do it. I like the process() function.
+</I>&gt;<i> I am scared of possible side effects, but that is what q/a is for.
+</I>
+A very reasonable scare, as far as i can tell. :)
+It works in my use-case, but i wouldn't bet much on it working in every cases.
+Actually, i believe this difficulty kind of proves my &quot;design&quot; point:
+it shouldn't be that hard to foresee the consequences of such a
+change, should it?
+This being said the ugliness of my patch shows i'm able to go for the
+good enough too (now it works and i can go back to the little project
+that brought me here in the first place). ;)
+
+&gt;<i> I don't like what it does to packet_get().
+</I>
+Me neither. I'm so scared of changing its interface that i hacked it
+as un-intrusively as i could.
+The &quot;return 1;&quot; is particularly bad. Yet i have to return at this
+point in case there is just an incomplete packet in the backlog, and
+no available tty. And if i return anything&lt;=1 /dev/rfcom0 gets closed
+by gps_poll.
+The return value of packet_get() is quite a thing in itself anyway. ;-)
+
+
+-- 
+Olivier
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007798.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+	<LI>Next message: <A HREF="007805.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7804">[ date ]</a>
+              <a href="thread.html#7804">[ thread ]</a>
+              <a href="subject.html#7804">[ subject ]</a>
+              <a href="author.html#7804">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

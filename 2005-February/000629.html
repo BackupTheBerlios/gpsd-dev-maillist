@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Dang.  Probing for SiRFness still doesn't work for me
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Dang.%20%20Probing%20for%20SiRFness%20still%20doesn%27t%20work%20for%20me&In-Reply-To=%3C200502140308.j1E386Sf013367%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000635.html">
+   <LINK REL="Next"  HREF="000632.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Dang.  Probing for SiRFness still doesn't work for me</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Dang.%20%20Probing%20for%20SiRFness%20still%20doesn%27t%20work%20for%20me&In-Reply-To=%3C200502140308.j1E386Sf013367%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Dang.  Probing for SiRFness still doesn't work for me">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Mon Feb 14 04:08:06 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000635.html">[Gpsd-dev] Success!  (was: gpsd now hunts baud rates)
+</A></li>
+        <LI>Next message: <A HREF="000632.html">[Gpsd-dev] Garmin USB driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#629">[ date ]</a>
+              <a href="thread.html#629">[ thread ]</a>
+              <a href="subject.html#629">[ subject ]</a>
+              <a href="author.html#629">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Delays don't help.  Anybody else want to try this diff and report back?
+
+Index: drivers.c
+===================================================================
+--- drivers.c	(revision 1559)
++++ drivers.c	(working copy)
+@@ -70,10 +70,44 @@
+     return write(session-&gt;gNMEAdata.gps_fd, buf, rtcmbytes);
+ }
+ 
++/**************************************************************************
++ *
++ * Generic NMEA
++ *
++ **************************************************************************/
++
++static void nmea_initializer(struct gps_session_t *session)
++{
++    sleep(1);
++    /* probe for SiRF-II */
++    nmea_send(session-&gt;gNMEAdata.gps_fd, &quot;$PSRF105,0&quot;);
++    sleep(1);
++}
++
+ struct gps_type_t nmea = {
+     'n', 		/* select explicitly with -T n */
+     &quot;Generic NMEA&quot;,	/* full name of type */
+     NULL,		/* no recognition string, it's the default */
++    nmea_initializer,		/* probe for SiRF II */
++    nmea_validate_buffer,	/* how to check that we have good data */
++    nmea_handle_input,	/* read text sentence */
++    nmea_write_rtcm,	/* write RTCM data straight */
++    NULL,		/* no wrapup */
++    0,			/* perform baud-rate hunting */
++    1,			/* 1 stop bit */
++    1,			/* updates every second */
++};
++
++/**************************************************************************
++ *
++ * SiRF-II
++ *
++ **************************************************************************/
++
++struct gps_type_t sirfII = {
++    's', 		/* select explicitly with -T s */
++    &quot;SiRF-II&quot;,		/* full name of type */
++    &quot;$Ack Input105&quot;,	/* expected response to SiRF PSRF105 */
+     NULL,		/* no initialization */
+     nmea_validate_buffer,	/* how to check that we have good data */
+     nmea_handle_input,	/* read text sentence */
+@@ -236,6 +270,7 @@
+ /* the point of this rigamarole is to not have to export a table size */
+ static struct gps_type_t *gpsd_driver_array[] = {
+     &amp;nmea, 
++    &amp;sirfII, 
+ #if FV18_ENABLE
+     &amp;fv18,
+ #endif /* FV18_ENABLE */
+
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+During waves of terror attacks, Israel's national police chief will
+call on all concealed-handgun permit holders to make sure they carry
+firearms at all times, and Israelis have many examples where
+concealed permit holders have saved lives.
+	-- John R. Lott
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000635.html">[Gpsd-dev] Success!  (was: gpsd now hunts baud rates)
+</A></li>
+	<LI>Next message: <A HREF="000632.html">[Gpsd-dev] Garmin USB driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#629">[ date ]</a>
+              <a href="thread.html#629">[ thread ]</a>
+              <a href="subject.html#629">[ subject ]</a>
+              <a href="author.html#629">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

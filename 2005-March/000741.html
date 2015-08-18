@@ -1,0 +1,146 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: SiRF-II binary has some curious holes in its capabilities.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20SiRF-II%20binary%20has%20some%20curious%20holes%20in%20its%20capabilities.&In-Reply-To=%3CPine.BSO.4.61.0502281922580.19675%40pyxis.cns.ualberta.ca%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000740.html">
+   <LINK REL="Next"  HREF="000743.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: SiRF-II binary has some curious holes in its capabilities.</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20SiRF-II%20binary%20has%20some%20curious%20holes%20in%20its%20capabilities.&In-Reply-To=%3CPine.BSO.4.61.0502281922580.19675%40pyxis.cns.ualberta.ca%3E"
+       TITLE="[Gpsd-dev] Re: SiRF-II binary has some curious holes in its capabilities.">ckuethe at ualberta.ca
+       </A><BR>
+    <I>Tue Mar  1 03:27:23 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000740.html">[Gpsd-dev] SiRF-II binary has some curious holes in its capabilities.
+</A></li>
+        <LI>Next message: <A HREF="000743.html">[Gpsd-dev] Re: SiRF-II binary has some curious holes in its capabilities.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#741">[ date ]</a>
+              <a href="thread.html#741">[ thread ]</a>
+              <a href="subject.html#741">[ subject ]</a>
+              <a href="author.html#741">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Mon, 28 Feb 2005, Eric S. Raymond wrote:
+
+&gt;<i> SVN head now includes a working driver for SiRF binary -- the packet
+</I>&gt;<i> engine will invoke it automatically when SiRF binary packets present
+</I>&gt;<i> themselves on the wire acter device open.  Here is what the header
+</I>&gt;<i> comment observes:
+</I>&gt;<i>
+</I>&gt;<i> /*
+</I>&gt;<i> * This is the gpsd driver for SiRF-II GPSes operating in binary mode.
+</I>&gt;<i> *
+</I>&gt;<i> * The advantage: Reports climb/sink rate (raw-mode clients won't see this).
+</I>&gt;<i> *
+</I>&gt;<i> * The disadvantages: Doesn't return HDOP or VDOP, just PDOP.  Reports
+</I>&gt;<i> * altititude relative to the WGS 84 reference ellipsoid, not MSL.
+</I>&gt;<i> *
+</I>&gt;<i> * Rumor has it we should be able to get UERE data out of this, but I
+</I>&gt;<i> * have not figured out how to yet.  The SiRF documentation sucks horribly!
+</I>&gt;<i> */
+</I>
+I'll have to look into the UERE thing.
+
+&gt;<i> 1. Where in the binary output is the geodetic separation?
+</I>
+Message 41 gives altitude from Ellipsoid and MSL.
+
+7# ~/cvs/local/gps/scripts/sirfdbget -last -type=41 -sensor=2
+SQL exec time: 0.124705
+Sensor #2
+1109354745.10104 Geodetic Navigation Data [41]
+           Nav Validity: Valid
+           Nav Type: 0x0204 - 4+ SV (3D) Solution, Trickle Power Off, No Altitude Hold, SiRFDrive Off, DGPS Corrections Off, Solution Validated, GPS-only solution
+           Extended Week Number 1311
+           TOW: 497166.358
+           UTC Time: 2005/02/25 18:05:53.358
+           SVs Used in Fix: 2 4 5 6 9 24 30
+           Latitude: 53.527196
+           Longitude: -113.530172
+           Altitude Above Elipsoid: 683.94m
+           Altitude Above Mean Sea Level: 703.65m
+           Datum: WGS-84 (0)
+           Speed Over Ground: 0.02m/s
+           Course Over Ground: 0.00deg
+           Magnetic Variation: 0
+           Climb Rate: 0.03m/s
+           Clock Bias: 21474836.47m/s
+           Clock Drift: 19665.90m/s
+           Vs: 7
+           HDOP: 1.2m
+           Reserved: 1
+
+----------------------------------------
+SQL exec time: 0.124705
+Decode time: 0.106155
+Packets Printed: 1
+Run Time: 0.230860
+
+
+&gt;<i> 2. Where are HDOP and VDOP?
+</I>
+HDOP is in message 2 and message 41
+
+&gt;<i> 3. There are three SiRF packet types being shipped once per second
+</I>&gt;<i>   that I can't find any documentation for: 0x1b, 0x29, and 0x32.
+</I>&gt;<i>   Do you know how to decode these?
+</I>0x1b = 27 = DGPS Status
+0x29 = 41 = Geodetic Navigation Data
+0x32 = 50 = SBAS Corrections
+
+I do indeed have documentation and decoders for these. :)
+
+&gt;<i> -- 
+</I>&gt;<i> 		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+</I>&gt;<i>
+</I>&gt;<i> Americans have the right and advantage of being armed - unlike the citizens
+</I>&gt;<i> of other countries whose governments are afraid to trust the people with arms.
+</I>&gt;<i> 	-- James Madison, The Federalist Papers
+</I>&gt;<i>
+</I>
+-- 
+Chris Kuethe, GCIA CISSP: Secure Systems Specialist - U of A CNS
+         office: 157 General Services Bldg.    +1.780.492.8135
+                 chris.kuethe@[pyxis.cns.]ualberta.ca
+
+        GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000740.html">[Gpsd-dev] SiRF-II binary has some curious holes in its capabilities.
+</A></li>
+	<LI>Next message: <A HREF="000743.html">[Gpsd-dev] Re: SiRF-II binary has some curious holes in its capabilities.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#741">[ date ]</a>
+              <a href="thread.html#741">[ thread ]</a>
+              <a href="subject.html#741">[ subject ]</a>
+              <a href="author.html#741">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

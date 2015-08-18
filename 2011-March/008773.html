@@ -1,0 +1,160 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Stripping down gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Stripping%20down%20gpsd&In-Reply-To=%3Crmiy64lam0f.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008793.html">
+   <LINK REL="Next"  HREF="008732.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Stripping down gpsd</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Stripping%20down%20gpsd&In-Reply-To=%3Crmiy64lam0f.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] Stripping down gpsd">gdt at ir.bbn.com
+       </A><BR>
+    <I>Fri Mar 11 13:18:24 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008793.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+        <LI>Next message: <A HREF="008732.html">[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch,	master, updated. release-2.95-1023-ga0e05e1
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8773">[ date ]</a>
+              <a href="thread.html#8773">[ thread ]</a>
+              <a href="subject.html#8773">[ subject ]</a>
+              <a href="author.html#8773">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt; writes:
+
+[strange non-ASCII characters removed from your reply, where they were
+inserted in my text.]
+
+&gt;<i> On Thu, Mar 10, 2011 at 9:05 PM, Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt; wrote:
+</I>&gt;&gt;<i> I think requirements are:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  build can be done native or cross, without requiring execution of
+</I>&gt;&gt;<i> any target binaries.  This mean the qemu semi-cross build is not a
+</I>&gt;&gt;<i> good enough answer - even though it's fine if people want to do it
+</I>&gt;&gt;<i> that way.
+</I>&gt;<i>
+</I>&gt;<i> To clarify, if it is going to use a huge set of hairy tools, it needs
+</I>&gt;<i> to cross compile without qemu and without special knowledge or hassle
+</I>&gt;<i> trying to duplicate the target environment.  The target environment
+</I>&gt;<i> may or may not have bluez or other bluetooth, but it should build
+</I>&gt;<i> either way without installing any target binary or library.
+</I>&gt;<i>
+</I>&gt;<i> If it uses a lightweight build environment, it can be done natively.
+</I>
+Cross compiling always requires at least a minimal unpacked target
+environment.  You need the .h files from the target, and need to ensure
+that you don't use .h files from the host.  You need the libraries
+present so the links can be tested.   And anything else for feature
+tests.
+
+The cross build is not particularly hairy - you just need a
+compiler/assembler/linker toolchain.
+
+Keep in mind that cross does not imply that the OS type and release is
+the same from host to target.  This is about far more than matching
+Linux versions; it should be possible to compile for Linux from BSD, and
+vice versa, across arbitrary CPU combinations
+
+(I realize autoconf uses build/host/target for the computer where you
+build gcc, the computer where you run gcc, and the computer where you
+run the binaries where gcc is produced, but I'm using host == the normal
+&quot;place to build' and traget == &quot;place to run&quot; for non-compiler-type
+cross builds.)
+
+&gt;&gt;<i> build works on substantially any semi-reasonable platform, similar
+</I>&gt;&gt;<i> to what it does now, and this includes things that gpsd developers
+</I>&gt;&gt;<i> have never heard of
+</I>&gt;<i>
+</I>&gt;<i> yes, but the key word is &quot;reasonable&quot;.  If you are only using some
+</I>&gt;<i> flavor of libc to build gpsd, you shouldn't have to test for the
+</I>&gt;<i> presence of each individual call, or if things are in strange places,
+</I>&gt;<i> you would have to hack up autogen.sh anyway and that defeats the
+</I>&gt;<i> purpose - it is easier to edit the top 20 lines of a makefile than to
+</I>&gt;<i> hack any of these thousand line build scripts.
+</I>
+You keep asking for the upstream distribution to accomodate you at the
+expense of others.  The design philosophy of autoconf, which I think it
+definitely got right, is to test for features, not operating systems,
+and then after a while the program under development will configure
+correctly on platforms the author never heard of.
+
+Again, one can argue that m4/sh is painful, and that there should be
+some more abstracted approach.
+
+&gt;&gt;<i> shared libraries are done in the correct way for each platform,
+</I>&gt;&gt;<i> without gpsd having to define what that means
+</I>&gt;<i>
+</I>&gt;<i> No, it produces correct shared and/or static libraries for the
+</I>&gt;<i> platform using whichever way is convenient.  For a long time SSLeay
+</I>&gt;<i> (predecessor to openssl) could be turned into a shared library by
+</I>&gt;<i> simply doing &quot;ar x ../libssl.a&quot;, then a &quot;ld -shared... *.o&quot; in a
+</I>&gt;<i> subdirectory.  No libtool needed.  Everything else compiled and linked
+</I>&gt;<i> with the libssleay[vers].so without problems.
+</I>
+Point taken that on platforms with no shared library support just
+making a static library is fine
+
+You are again failing to understand that all the world is not linux.
+There is no POSIX spec that says &quot;ld -shared *.o&quot; will work, and it
+doesn't work in many places.  libtool encapsulates the right way to
+build and create shared libraries in lots of places.  Pretending that
+complexity does not exist is naive or willfully myopic, but of course
+another tool that also deals with that complexity in a cleaner way is an
+entirely reasonable discussion.
+
+&gt;&gt;<i> Note that I&quot;m not arguing against python as a build
+</I>&gt;&gt;<i> dependency. (Although I find objecting to auto* as too heavy and
+</I>&gt;&gt;<i> then being happy about python bizarre; objecting to auto* as fragile
+</I>&gt;&gt;<i> is another matter, but it's not heavy.)
+</I>&gt;<i>
+</I>&gt;<i> ./configure as produced by ./autogen.sh is over 20000 lines.  I doubt
+</I>&gt;<i> anything in Python will be 1/10th the length or take more than 1/10th
+</I>&gt;<i> the time.
+</I>
+You left out the size of python; that was my point.
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110311/b5c42578/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110311/b5c42578/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008793.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+	<LI>Next message: <A HREF="008732.html">[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch,	master, updated. release-2.95-1023-ga0e05e1
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8773">[ date ]</a>
+              <a href="thread.html#8773">[ thread ]</a>
+              <a href="subject.html#8773">[ subject ]</a>
+              <a href="author.html#8773">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

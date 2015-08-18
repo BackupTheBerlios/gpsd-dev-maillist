@@ -1,0 +1,165 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd's direction for Mac OS X
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%27s%20direction%20for%20Mac%20OS%20X&In-Reply-To=%3C91981b3e0901111341l45668c77t88865b3eca5f2e7e%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006285.html">
+   <LINK REL="Next"  HREF="006287.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd's direction for Mac OS X</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%27s%20direction%20for%20Mac%20OS%20X&In-Reply-To=%3C91981b3e0901111341l45668c77t88865b3eca5f2e7e%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] gpsd's direction for Mac OS X">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Sun Jan 11 22:41:24 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006285.html">[Gpsd-dev] gpsd's direction for Mac OS X
+</A></li>
+        <LI>Next message: <A HREF="006287.html">[Gpsd-dev] gpsd's direction for Mac OS X
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6286">[ date ]</a>
+              <a href="thread.html#6286">[ thread ]</a>
+              <a href="subject.html#6286">[ subject ]</a>
+              <a href="author.html#6286">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sun, Jan 11, 2009 at 1:16 PM, Michael Ledford &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">michael at ledford.cc</A>&gt; wrote:
+&gt;<i> Hello all,
+</I>&gt;<i>
+</I>&gt;<i> I have recently become more interested in GPS systems and have been
+</I>&gt;<i> somewhat frustrated with the state of GPS on Mac OS X. I found GPSD
+</I>&gt;<i> and have admired the quality work that everyone has done.
+</I>
+Thanks, we try...
+
+&gt;<i> However, I
+</I>&gt;<i> could see that the current GPSD could be a barrier for many consumers
+</I>&gt;<i> or developers, such as myself, who might like to leverage GPSD to help
+</I>&gt;<i> along the state of GPS on Mac OS X. While many daemons need to be,
+</I>&gt;<i> well daemons, my naive view tells me that GPSD doesn't (always) need
+</I>&gt;<i> to be one on OS X. I could see it running as part of a framework of an
+</I>&gt;<i> application that wishes to support GPS devices, as a stand alone
+</I>&gt;<i> application launched by the user for applications that are GPSD
+</I>&gt;<i> clients, or as a launch agent (while still requiring installation it
+</I>&gt;<i> could be done in a particular user directory and session not requiring
+</I>&gt;<i> elevated privileges).
+</I>
+The only privilege gpsd really requires is the permission to read the
+tty. Write access is nice, but not necessary - I often run gpsd as an
+unprivileged user for testing. Root permissions are needed for some
+additional features, but they're not needed for gpsd's core mission as
+a gps-to-tcp multiplexer.
+
+Our view of gpsd is that it can be fire-and-forget. Start it at boot
+time and then you can assume the existence of a gpsd. Hot-plug devices
+are on our priorities list. It should be possible to attach a device
+after gpsd has started, and gpsd should cope with device removal. I
+think we see gpsd forming a critical part of this framework. Your OS's
+hotplug facilities can tell gpsd that a serial device has been
+attached/detached. GPSD then probes this device to see if it's a
+usable gps. Your user app just has to connect to localhost:2947, and
+you'll get whatever location information there is - if any.
+
+&gt;<i> As a consumer I greatly despise having to use
+</I>&gt;<i> installers for applications especially those that might install
+</I>&gt;<i> something like GPSD to make an application work. As a developer I
+</I>&gt;<i> don't mind much, it's par for the course, but I would like to
+</I>&gt;<i> hopefully see things improve.
+</I>
+As a user, I wish for my OS to provide qualified drivers without much
+effort on my part. I don't think that's too much to ask. Generally the
+BSDs and Linux get it right... one would hope that given its heritage,
+OS X should do the same.
+
+&gt;<i> While reading the hackers guide to GPSD I came across the libusb
+</I>&gt;<i> section that told me GPSD might entertain such a crazy idea as mine.
+</I>&gt;<i> It stated,
+</I>&gt;<i>
+</I>&gt;<i> &quot;There has been talk of revisiting libusb as a more reliable way to
+</I>&gt;<i> communicate with Garmin receivers. By implementing the driver in user
+</I>&gt;<i> space with libusb, we gain portability and freedom from buggy kernel
+</I>&gt;<i> modules. It may also offer us a way to better support OS X. It's not a
+</I>&gt;<i> dead issue any more.&quot;
+</I>
+The garmin protocol seems too complicated to reliably implement in the
+kernel, at least not without way more attention than it's been
+getting. I guess PPP and ipv6 are just as complicated, but they have
+more people who care. The garmin driver is under-loved. In this case a
+libusb driver might be a better way to handle it.
+
+&gt;<i> I would love to see serial driver kext's on Mac OS X go away when it
+</I>&gt;<i> comes to USB GPS receivers, but I understand that supporting devices
+</I>&gt;<i> directly would be a huge undertaking. I would probably prefer OS X
+</I>&gt;<i> support be through IOKit but could understand a reason to use
+</I>&gt;<i> something that might benefit everyone. I would still be interested in
+</I>&gt;<i> the ideas brought forth above without direct USB support and staying
+</I>&gt;<i> with serial USB and bluetooth on OS X. I look forward to your feedback
+</I>&gt;<i> and thoughts.
+</I>
+Perhaps I'm being a little bold by saying &quot;serial driver kext's will
+never go away&quot;. Every other OS has them - maybe just by a different
+name. FreeBSD has loadable device driver modules, Linux has loadable
+device driver modules, Windows has 'em... my preferred development
+(OpenBSD) doesn't, but there is still in-kernel support for usb-serial
+devices.
+
+Where is the right place for such a driver? To my way of thinking the
+answer is: wherever you can put it to present a standard interface to
+the greatest number of consumer apps.
+
+As an example of this, I think a separate app/daemon that uses libusb
+and writes to a pty would be a great way to support the garmin
+devices. The termios interface is standard, and libusb is too. A
+separate app makes it possible to debug more easily and restart the
+affected subsystem. Because it has such a narrow scope, this driver
+would work well as a userland daemon. I'd say that for more generic
+devices like simple usb-serial converters, they should go in the
+kernel since they're mostly stable... alas, OS X users trying to use
+PL2303 devices know this is not the case. Once such a generic driver
+is stable, it should be in the kernel - not all of my PL2303 devices
+are GPS receivers. I don't want to have to run a separate little glue
+app for each one.
+
+Perhaps I may have misunderstood...
+
+Regards,
+CK
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006285.html">[Gpsd-dev] gpsd's direction for Mac OS X
+</A></li>
+	<LI>Next message: <A HREF="006287.html">[Gpsd-dev] gpsd's direction for Mac OS X
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6286">[ date ]</a>
+              <a href="thread.html#6286">[ thread ]</a>
+              <a href="subject.html#6286">[ subject ]</a>
+              <a href="author.html#6286">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

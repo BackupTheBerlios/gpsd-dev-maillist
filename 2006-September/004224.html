@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-commit-watch] r3448 - in trunk: . test (fwd)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20r3448%20-%20in%20trunk%3A%20.%20test%20%28fwd%29&In-Reply-To=%3CPine.LNX.4.64.0609051144030.5039%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004223.html">
+   <LINK REL="Next"  HREF="004233.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-commit-watch] r3448 - in trunk: . test (fwd)</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20r3448%20-%20in%20trunk%3A%20.%20test%20%28fwd%29&In-Reply-To=%3CPine.LNX.4.64.0609051144030.5039%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] [Gpsd-commit-watch] r3448 - in trunk: . test (fwd)">gem at rellim.com
+       </A><BR>
+    <I>Tue Sep  5 20:47:23 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004223.html">[Gpsd-dev] cgps after gpsd shutdown
+</A></li>
+        <LI>Next message: <A HREF="004233.html">[Gpsd-dev] A gpsd release is imminent, unless...
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4224">[ date ]</a>
+              <a href="thread.html#4224">[ thread ]</a>
+              <a href="subject.html#4224">[ subject ]</a>
+              <a href="author.html#4224">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Eric!
+
+The Garmin/USB binary protocol send 0 byte packets to mark the end of
+a binary sentence.  They are not errors and irngoing them causes the
+packetizer to break.
+
+Just tested it out, and it is a fatal change.  Please revert.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+
+- ---------- Forwarded message ----------
+Date: Tue, 5 Sep 2006 13:34:33 +0200
+From: esr at BerliOS &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at mail.berlios.de</A>&gt;
+To: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-commit-watch at lists.berlios.de</A>
+Subject: [Gpsd-commit-watch] r3448 - in trunk: . test
+
+Author: esr
+Date: 2006-09-05 13:34:16 +0200 (Tue, 05 Sep 2006)
+New Revision: 3448
+
+Modified:
+   trunk/garmin.c
+   trunk/gpsd.c
+   trunk/libgpsd_core.c
+   trunk/test/eXplorist210.log.chk
+Log:
+A gallimaufry of small fixes:
+	Add a sanity check to garmin.c.
+	Fix another regression test screwed up by the GPGLL bug.
+	Add some documentation comments to gpsd.c.
+	splint cleanup in libgpsd_core.c.
+
+
+Modified: trunk/garmin.c
+===================================================================
+- --- trunk/garmin.c	2006-09-05 11:30:43 UTC (rev 3447)
++++ trunk/garmin.c	2006-09-05 11:34:16 UTC (rev 3448)
+@@ -573,6 +573,10 @@
+ 	theBytesReturned = read(session-&gt;gpsdata.gps_fd
+ 		, buf + session-&gt;driver.garmin.BufferLen
+ 		, ASYNC_DATA_SIZE);
++        if (!theBytesReturned) {
++            gpsd_report(3, &quot;GetPacket() read returned 0\n&quot;);
++            return -1;
++        }
+         if ( 0 &gt;  theBytesReturned ) {
+ 	    // read error...
+             // or EAGAIN, but O_NONBLOCK is never set
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFE/cY+8KZibdeR3qURAhllAKDUloM5nokOiYMTItLryIKI4a+BNACeIvTd
+I/2kQjnKdcLW2/WIk3Hb2dc=
+=Ea37
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004223.html">[Gpsd-dev] cgps after gpsd shutdown
+</A></li>
+	<LI>Next message: <A HREF="004233.html">[Gpsd-dev] A gpsd release is imminent, unless...
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4224">[ date ]</a>
+              <a href="thread.html#4224">[ thread ]</a>
+              <a href="subject.html#4224">[ subject ]</a>
+              <a href="author.html#4224">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

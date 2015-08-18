@@ -1,0 +1,303 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Potential problem with 1pps code during startup
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Potential%20problem%20with%201pps%20code%20during%20startup&In-Reply-To=%3C200707071756.08112.mick.durkin%40saunalahti.fi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005747.html">
+   <LINK REL="Next"  HREF="005752.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Potential problem with 1pps code during startup</H1>
+    <B>Mick Durkin</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Potential%20problem%20with%201pps%20code%20during%20startup&In-Reply-To=%3C200707071756.08112.mick.durkin%40saunalahti.fi%3E"
+       TITLE="[Gpsd-dev] Potential problem with 1pps code during startup">mick.durkin at saunalahti.fi
+       </A><BR>
+    <I>Sat Jul  7 16:56:08 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005747.html">[Gpsd-dev] gpsd wiki access
+</A></li>
+        <LI>Next message: <A HREF="005752.html">[Gpsd-dev] Potential problem with 1pps code during startup
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5748">[ date ]</a>
+              <a href="thread.html#5748">[ thread ]</a>
+              <a href="subject.html#5748">[ subject ]</a>
+              <a href="author.html#5748">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Guys,
+
+I have been able to pin down a problem with the 1pps code, but I need a bit of 
+help with it. I am not sure if it is caused by a bug, or by the way the 
+serial port works on a fundamental level. This is why I need some help to 
+clarify the situation. Unfortunately, this is a LONG mail because of the 
+nature of the problem and the investigations I had to make.
+
+I have been able to reproduce the fault on two systems under my control, both 
+running Fedora, but one is FC6 (2.6.20-1.2948.fc6) and the other is FC7 
+(2.6.21-1.3228.fc7). These are both quite close to each other in kernel 
+release (2.6.20 and 2.6.21), but I don't have any older system to test it on.
+
+I came across this problem when helping another guy, David Cottle, who is 
+acting as a tester for a new driver I am making. He reported mysterious loss 
+of detection of the 1pps data stream when the device was producing a steady 
+stream. I eventually reproduced the fault here, so it is not a chance fault 
+or bad hardware.
+
+
+1. Initial conditions
+=====================
+
+When gpsd fires up from a command like &quot;gpsd /dev/ttyS0&quot;, it scans the 
+nominated serial port and tries to recognise the incoming stream of data and 
+select the right decoder.
+
+If it cannot match at the initial settings (basically, the settings of the 
+port as defined externally to gpsd), it will go through a variety of other 
+settings in a fixed order and either find a match somewhere along the way, or 
+give up if no rate matches.
+
+As part of the process, before scanning the port, it offers any compiled-in 
+drivers who can probe a device, the option to do so. If one of these is 
+successful, it gets control. If none are capable of probing or none detect a 
+device, the default driver will be used.
+
+In either case, the function gpsd_activate() in libgpsd_core.c will issue a 
+message like:-
+
+gpsd: gpsd_activate(1): opened GPS (4)
+
+and then launch a separate thread to monitor the 1pps line with:-
+
+(void)pthread_create(&amp;pt,NULL,gpsd_ppsmonitor,(void *)session);
+
+This new thread will autonomously observe the DCD line and process the 
+transitions.
+
+The effect is that on startup, if there are no devices/drivers which are found 
+by probing, the gpsd daemon will observe the nominated port initially at the 
+preset rate and in parallel monitor the 1pps line.
+
+
+2. Observed effects first test scenario
+=======================================
+
+What follows now depends on:-
+
+a) the externally defined port parameters
+b) the data rate of the gps device connected.
+
+To illustrate the problem clearly, I attached a gps device which was 
+generating a 19200bps 8N1 stream of Rockwell/Navman data that can be decoded 
+by the in-built Zodiac driver. This driver is not a probing driver, so it 
+relies on the packet detection state machine in the normal driver to detect 
+the packets and invoke the Zodiac driver. My gps was also generating a 
+continuous 1pps stream on the DCD line (dependant on it having a valid fix).
+
+I initially set the port using stty to &quot;4800 sane&quot; which equates to 4800 at 
+8N1 but with text terminal attributes. This was not an issue, as even though 
+gpsd used the default baud rate, it automatically saved the settings, forced 
+8N1 and set it to expect a non-text data stream. This was done by a call:-
+
+gpsd_set_speed(session, gpsd_get_speed(&amp;session-&gt;ttyset_old), 'N', 1);
+
+I also added much instrumentation to the code to observe interesting things, 
+especially the serial data setting events. However, I did not disturb the 
+logic of the basic code. I also modified the reporting level of a few inbuilt 
+reports.
+
+On starting the daemon with &quot;gpsd -nND4&quot;, there were no probe results, so it 
+settled into the default driver and launched the 1pps monitoring thread. Note 
+that this thread launch took place AFTER an initial call:-
+
+gpsd_set_speed(session, gpsd_get_speed(&amp;session-&gt;ttyset_old), 'N', 1);
+
+It will be seen later that the relative timing of these two events (the 
+gpsd_set_speed call and the 1pps thread launch) was critical.
+
+It then tried to read the serial stream at the default settings, which was  
+unsuccessful. It then started to scan through the table of baud rates that 
+gpsd expects to encounter.
+
+The first of these happens to be 4800, so a critical test early in the 
+gpsd_set_speed function in serial.c failed (all the parameters matched, so 
+the actual hardware parameter update was skipped). This meant that a scan 
+then occurred at the same rate as had just been done but WITHOUT a hardware 
+parameters update occurring.
+
+This in itself was a bit inefficient, scanning at the same rate as before, but 
+it served to illustrate the point that the actual hardware update omission 
+was critical.
+
+Throughout the above two scan loops, the 1pps produced a continuous stream of 
+asynchronous output, mixed in with the other reports.
+
+Eventually, the scanner timed out again and stepped to the next rate, 9600bps 
+and issued a call:-
+
+gpsd_set_speed(session, gpsd_get_speed(&amp;session-&gt;ttyset_old), 'N', 1);
+
+This immediately appeared to terminate the 1pps thread output. At least, there 
+was no further data seen from it. I suspect the thread itself did not 
+terminate, as I would have expected it to deliver a signoff message (which I 
+had added to the code). However, I am not experienced enough with threads to 
+be sure of this. Of course, this time the parameters had not matched, so the 
+new data was written to the hardware.
+
+The scanner continued to march along and eventually tripped to 19200, where 
+the data stream was successfully identified as Zodiac and navigation messages 
+were then seen. No 1pps was seen, even though my h/w monitoring LED was still 
+flashing away.
+
+
+3. Observed effects second test scenario
+========================================
+
+I then modified the port with stty to be at 2400 bps and repeated the startup 
+again. This time, the beginning was the same and the port was set to 2400 8N1 
+binary mode and the 1pps thread launched. I saw regular 1pps reports and no 
+data match. However, when the baud table was scanned, the first entry (4800) 
+now no longer matched, so a call was made:-
+
+gpsd_set_speed(session, gpsd_get_speed(&amp;session-&gt;ttyset_old), 'N', 1);
+
+This now terminated the 1pps output.
+
+The scan continued as before until at 19200, navigation messages were detected 
+but no 1pps.
+
+
+4. Conclusions
+==============
+
+It looks as though the actual speed switching event is the cause of the 
+disappearance of the 1pps, of which the active code in terms of the port 
+itself appear to be these lines in serial.c:-
+
+	if (tcsetattr(session-&gt;gpsdata.gps_fd, TCSANOW, &amp;session-&gt;ttyset) != 0)
+	    return;
+	(void)tcflush(session-&gt;gpsdata.gps_fd, TCIOFLUSH);
+	(void)usleep(200000);
+	(void)tcflush(session-&gt;gpsdata.gps_fd, TCIOFLUSH);
+
+Note that I have removed a block of comment from the original source here.
+
+So, either tcsetattr or tcflush are the suspects in my book. The MAN entry has 
+these remarks to offer:-
+
+&quot;
+tcsetattr()	sets  the  parameters  associated with the terminal (unless
+		support is required from the underlying hardware that is not available)
+		from the termios structure referred to by termios_p.  optional_actions
+		specifies when the changes take effect:
+
+TCSANOW		the change occurs immediately.
+&quot;
+
+
+&quot;
+tcflush()  	discards  data  written  to  the  object  referred  to  by  fd
+		but  not transmitted, or data received but not read, depending on the value
+		of queue_selector:
+
+TCIFLUSH	flushes data received but not read.
+
+TCOFLUSH	flushes data written but not transmitted.
+
+TCIOFLUSH	flushes both data received but not read, and data written but not
+		transmitted.
+&quot;
+
+Of these, I reckon tcsetattr() is the more likely cause.
+
+
+5. Possible workaround or solution
+==================================
+
+As a workaround until I could resolve the cause, I extracted the 1pps thread 
+launching code in gpsd_activate (in libgpsd_core.c) into a separate function. 
+I then arranged to call this new function from inside gpsd_assert_sych in 
+serial.c. My thinking was that the gpsd_assert_synch function is not called 
+until a valid gps device is detected and, until that time, 1pps signals are 
+of limited value.
+
+If the problem I encountered is insurmountable or is actually how the serial 
+port should work, my workaround is one possible way to modify gpsd.
+
+
+6. Advice and support needed
+============================
+
+As I said earlier, I am not a serial port or kernel guru, so I would 
+appreciate some more-experienced developers' opinions on my work. I attach 
+the logs I generated using my instrumented code. I have shortened the prints 
+where the 1pps is generating log streams of data while the port is being 
+scanned for a match at each serial rate.
+
+
+The lines containing data like:-
+
+00000000:00000004:00000cbb:00008a38:03:1c:7f:15:04:00:01:00:11:13:1a:00:12:0f:17:16
+
+are hex dumps of the termios structure fields c_iflag, c_oflag, c_cflag, 
+c_lflag and c_cc[0] to c_cc[15] which contain the interesting serial port 
+data at different points in the process.
+
+The remaining output relates to other important locations passed through by 
+the code, mostly already reporting points in the original code.
+
+I ran the same two tests with much higher debug levels, but the only extra 
+data I saw were meaningless bytes being read and discarded at each serial 
+speed.
+
+
+BR
+
+Mick Durkin
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: fail_2400.log
+Type: text/x-log
+Size: 6665 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20070707/4a4fe475/attachment.bin">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20070707/4a4fe475/attachment.bin</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: fail_4800.log
+Type: text/x-log
+Size: 6959 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20070707/4a4fe475/attachment-0001.bin">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20070707/4a4fe475/attachment-0001.bin</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005747.html">[Gpsd-dev] gpsd wiki access
+</A></li>
+	<LI>Next message: <A HREF="005752.html">[Gpsd-dev] Potential problem with 1pps code during startup
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5748">[ date ]</a>
+              <a href="thread.html#5748">[ thread ]</a>
+              <a href="subject.html#5748">[ subject ]</a>
+              <a href="author.html#5748">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,541 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] curses xgps
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20curses%20xgps&In-Reply-To=%3C20050816204459.GA3513%40www%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002885.html">
+   <LINK REL="Next"  HREF="002887.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] curses xgps</H1>
+    <B>Jeff Francis</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20curses%20xgps&In-Reply-To=%3C20050816204459.GA3513%40www%3E"
+       TITLE="[Gpsd-dev] curses xgps">jeff at gritch.org
+       </A><BR>
+    <I>Tue Aug 16 22:44:59 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002885.html">[Gpsd-dev] Assorted issues from while I was off learning to swordfight
+</A></li>
+        <LI>Next message: <A HREF="002887.html">[Gpsd-dev] curses xgps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2886">[ date ]</a>
+              <a href="thread.html#2886">[ thread ]</a>
+              <a href="subject.html#2886">[ subject ]</a>
+              <a href="author.html#2886">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>  I don't generally run X on the car (truck) computer, so I threw
+together a quick, dirty, and nasty little C/curses program that does
+basically the same thing as xgps, minus the &quot;x&quot; part.  I unashamedly
+pillaged xgps.c for some of the code, and unashamedly hard-coded it
+for English units (mph and ft).  It's probably not perfect, nor is it
+totally bug-free (for example, ^C doesn't work - got that wrong
+somewhere).  I don't feel it's up to snuff yet for include/, but I
+thought I'd offer it up for use and abuse for anyone who needs a
+text-only display.  I'll clean it up as I go (for example, remove the
+zillion #ifdefs for curses/non-curses).  Compile with:
+
+gcc -g gpsdspewcurses.c -o gpsdspewcurses -lgps -lncurses
+
+  Builds/runs fine on Fedora Core 3 and 4, as well as OSX 10.4.2.
+*Should* work on *BSD, as well.
+
+-- 
++--------------------------+
+|<i>   Jeff Francis - N0GQ    |
+</I>|<i> Snohomish, WA USA, Earth |
+</I>|<i>     <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>      |
+</I>|<i>  <A HREF="http://www.gritch.org">http://www.gritch.org</A>   |
+</I>+--------------------------+
+-------------- next part --------------
+/*
+  Jeff Francis
+  <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>
+  $Id: gpsdspewcurses.c,v 1.11 2005/08/16 20:32:27 jfrancis Exp $
+
+  Kind of a curses version of xgps for use with gpsd.
+*/
+
+/* Do ya want curses, or just straight text? */
+#define WITH_CURSES yep
+/* #undef WITH_CURSES */
+
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;ctype.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;math.h&gt;
+#include &lt;errno.h&gt;
+
+#ifdef WITH_CURSES
+#include &lt;ncurses.h&gt;                                                         
+#include &lt;signal.h&gt;
+#endif
+
+#include &quot;gps.h&quot;
+
+/* Macro for declaring function arguments unused. */
+#if defined(__GNUC__)
+#  define UNUSED __attribute__((unused)) /* Flag variable as unused */
+#else /* not __GNUC__ */
+#  define UNUSED
+#endif
+
+static struct gps_data_t *gpsdata;
+static time_t timer;	/* time of last state change */
+static int state = 0;	/* or MODE_NO_FIX=1, MODE_2D=2, MODE_3D=3 */
+
+#ifdef WITH_CURSES
+/* Function to call when we're all done.  Does a bit of clean-up. */
+static void die() {
+
+  /* Ignore signals. */
+  signal(SIGINT,SIG_IGN);
+
+  /* Move the cursor to the bottom left corner. */
+  mvcur(0,COLS-1,LINES-1,0);
+
+  /* Put input attributes back the way they were. */
+  echo();
+  noraw();
+
+  /* Done with curses. */
+  endwin();
+
+  /* We're done talking to gpsd. */
+  (void)gps_close(gpsdata);
+
+  /* Bye! */
+  exit(0);
+}
+#endif
+
+/* This gets called once for each new sentence. */
+static void update_panel(struct gps_data_t *gpsdata, 
+			 char *message,
+			 size_t len UNUSED, 
+			 int level UNUSED)
+{
+  unsigned int i;
+  int newstate;
+  char s[128];
+
+  float altunits=METERS_TO_FEET;
+  float speedunits=MPS_TO_MPH;
+
+#ifdef WITH_CURSES
+  /* Do the initial field label setup. */
+  move(0,5);
+  printw(&quot;Time:&quot;);
+  move(1,5);
+  printw(&quot;Latitude:&quot;);
+  move(2,5);
+  printw(&quot;Longitude:&quot;);
+  move(3,5);
+  printw(&quot;Altitude:&quot;);
+  move(4,5);
+  printw(&quot;Speed:&quot;);
+  move(5,5);
+  printw(&quot;Heading:&quot;);
+  move(6,5);
+  printw(&quot;HPE:&quot;);
+  move(7,5);
+  printw(&quot;VPE:&quot;);
+  move(8,5);
+  printw(&quot;Climb:&quot;);
+  move(9,5);
+  printw(&quot;Status:&quot;);
+  move(10,5);
+  printw(&quot;Change:&quot;);
+  move(0,45);
+  printw(&quot;PRN:   Elev:  Azim:  SNR:  Used:&quot;);
+#endif
+
+#ifndef WITH_CURSES
+  printf(&quot;PRN:   Elev:  Azim:  SNR:  Used:\n&quot;);
+#endif
+
+  /* This is for the satellite status display.  Lifted almost verbatim
+     from xgps.c. */
+  if (gpsdata-&gt;satellites) {
+    for (i = 0; i &lt; MAXCHANNELS; i++) {
+      if (i &lt; (unsigned int)gpsdata-&gt;satellites) {
+#ifdef WITH_CURSES
+	move(i+1,45);
+	printw(&quot; %3d    %02d    %03d    %02d      %c    &quot;,
+	       gpsdata-&gt;PRN[i],
+	       gpsdata-&gt;elevation[i], gpsdata-&gt;azimuth[i], 
+	       gpsdata-&gt;ss[i],	gpsdata-&gt;used[i] ? 'Y' : 'N');
+#else
+	printf(&quot; %3d    %02d    %03d    %02d      %c\n&quot;,
+	       gpsdata-&gt;PRN[i],
+	       gpsdata-&gt;elevation[i], gpsdata-&gt;azimuth[i], 
+	       gpsdata-&gt;ss[i],	gpsdata-&gt;used[i] ? 'Y' : 'N');
+#endif
+      } else {
+#ifdef WITH_CURSES
+	move(i+1,45);
+	printw(&quot;                                          &quot;);
+#else
+	printf(&quot;                  \n&quot;);
+#endif
+      }
+    }
+  }
+  
+/* TODO: Make this work. */
+  if (isnan(gpsdata-&gt;fix.time)==0) {
+#ifdef WITH_CURSES
+    move(0,17);
+    printw(&quot;%s&quot;,unix_to_iso8601(gpsdata-&gt;fix.time, s, (int)sizeof(s)));
+#else
+    printf(&quot;%s\n&quot;,unix_to_iso8601(gpsdata-&gt;fix.time, s, (int)sizeof(s)));
+#endif
+  } else {
+#ifdef WITH_CURSES
+    move(0,17);
+    printw(&quot;n/a         &quot;);
+#else
+    printf(&quot;n/a\n&quot;);
+#endif
+  }
+
+  /* Fill in the latitude. */
+  if (gpsdata-&gt;fix.mode &gt;= MODE_2D) {
+#ifdef WITH_CURSES
+    move(1,17);
+    printw(&quot;%lf %c     &quot;, fabs(gpsdata-&gt;fix.latitude), (gpsdata-&gt;fix.latitude &lt; 0) ? 'S' : 'N');
+#else
+    printf(&quot;lat:  %lf %c\n&quot;, fabs(gpsdata-&gt;fix.latitude), (gpsdata-&gt;fix.latitude &lt; 0) ? 'S' : 'N');
+#endif
+  } else {
+#ifdef WITH_CURSES
+    move(1,17);
+    printw(&quot;n/a         &quot;);
+#else
+    printf(&quot;n/a\n&quot;);
+#endif
+  }
+
+  /* Fill in the longitude. */
+  if (gpsdata-&gt;fix.mode &gt;= MODE_2D) {
+#ifdef WITH_CURSES
+    move(2,17);
+    printw(&quot;%lf %c     &quot;, fabs(gpsdata-&gt;fix.longitude), (gpsdata-&gt;fix.longitude &lt; 0) ? 'W' : 'E');
+#else
+    printf(&quot;lon:  %lf %c\n&quot;, fabs(gpsdata-&gt;fix.longitude), (gpsdata-&gt;fix.longitude &lt; 0) ? 'W' : 'E');
+#endif
+  } else {
+#ifdef WITH_CURSES
+    move(2,17);
+    printw(&quot;n/a         &quot;);
+#else
+    printf(&quot;n/a\n&quot;);
+#endif
+  }
+
+  /* Fill in the altitude. */
+  if (gpsdata-&gt;fix.mode == MODE_3D) {
+#ifdef WITH_CURSES
+    move(3,17);
+    printw(&quot;%.1f ft     &quot;,gpsdata-&gt;fix.altitude*altunits);
+#else
+    printf(&quot;alt:  %f ft\n&quot;,gpsdata-&gt;fix.altitude*altunits);
+#endif
+  } else {
+#ifdef WITH_CURSES
+    move(3,17);
+    printw(&quot;n/a         &quot;);
+#else
+    printf(&quot;n/a\n&quot;);
+#endif
+  }
+
+  /* Fill in the speed */
+  if (gpsdata-&gt;fix.mode &gt;= MODE_2D &amp;&amp; isnan(gpsdata-&gt;fix.track)==0) {
+#ifdef WITH_CURSES
+    move(4,17);
+    printw(&quot;%.1f mph     &quot;, gpsdata-&gt;fix.speed*speedunits);
+#else
+    printf(&quot;spd:  %f mph\n&quot;, gpsdata-&gt;fix.speed*speedunits);
+#endif
+  } else {
+#ifdef WITH_CURSES
+    move(4,17);
+    printw(&quot;n/a         &quot;);
+#else
+    printf(&quot;n/a\n&quot;);
+#endif
+  }
+
+  /* Fill in the heading. */
+  if (gpsdata-&gt;fix.mode &gt;= MODE_2D &amp;&amp; isnan(gpsdata-&gt;fix.track)==0) {
+#ifdef WITH_CURSES
+    move(5,17);
+    printw(&quot;%.1f degrees     \n&quot;, gpsdata-&gt;fix.track);
+#else
+    printf(&quot;crs:  %f degrees\n&quot;, gpsdata-&gt;fix.track);
+#endif
+  } else {
+#ifdef WITH_CURSES
+    move(5,17);
+    printw(&quot;n/a         &quot;);
+#else
+    printf(&quot;n/a\n&quot;);
+#endif
+  }
+
+  /* Fill in the estimated horizontal position error. */
+  if (isnan(gpsdata-&gt;fix.eph)==0) {
+#ifdef WITH_CURSES
+    move(6,17);
+    printw(&quot;%d ft     &quot;, (int) (gpsdata-&gt;fix.eph * altunits));
+#else
+    printf(&quot;alterr:  %f\n&quot;, gpsdata-&gt;fix.eph * altunits);
+#endif
+  } else {
+#ifdef WITH_CURSES
+    move(6,17);
+    printw(&quot;n/a         &quot;);
+#else
+    printf(&quot;n/a\n&quot;);
+#endif
+  }
+
+  /* Fill in the estimated vertical position error. */
+  if (isnan(gpsdata-&gt;fix.epv)==0) {
+#ifdef WITH_CURSES
+    move(7,17);
+    printw(&quot;%d ft     &quot;, (int)(gpsdata-&gt;fix.epv * altunits));
+#else
+    printf(&quot;poserr:  %f\n&quot;, gpsdata-&gt;fix.epv * altunits);
+#endif
+  } else {
+#ifdef WITH_CURSES
+    move(7,17);
+    printw(&quot;n/a         &quot;);
+#else
+    printf(&quot;n/a\n&quot;);
+#endif
+  }
+
+  /* Fill in the rate of climb. */
+  /* TODO: Units are probably wrong. */
+  if (gpsdata-&gt;fix.mode == MODE_3D &amp;&amp; isnan(gpsdata-&gt;fix.climb)==0) {
+#ifdef WITH_CURSES
+    move(8,17);
+    printw(&quot;%.1f ft/min     &quot;, gpsdata-&gt;fix.climb * METERS_TO_FEET * 60);
+#else
+    printf(&quot;cli:  %f ft/min\n&quot;, gpsdata-&gt;fix.climb * METERS_TO_FEET * 60);
+#endif
+  } else {
+#ifdef WITH_CURSES
+    move(8,17);
+    printw(&quot;n/a         &quot;);
+#else
+    printf(&quot;n/a\n&quot;);
+#endif
+  }
+  
+  /* Fill in the GPS status */
+  if (gpsdata-&gt;online == 0) {
+    newstate = 0;
+#ifdef WITH_CURSES
+    move(9,17);
+    printw(&quot;OFFLINE          &quot;);
+#else
+    printf(&quot;OFFLINE\n&quot;);
+#endif
+  } else {
+    newstate = gpsdata-&gt;fix.mode;
+    switch (gpsdata-&gt;fix.mode) {
+    case MODE_2D:
+#ifdef WITH_CURSES
+      move(9,17);
+      printw(&quot;2D %sFIX     &quot;,(gpsdata-&gt;status==STATUS_DGPS_FIX)?&quot;DIFF &quot;:&quot;&quot;);
+#else
+      printf(&quot;2D %sFIX\n&quot;,(gpsdata-&gt;status==STATUS_DGPS_FIX)?&quot;DIFF &quot;:&quot;&quot;);
+#endif
+      break;
+    case MODE_3D:
+#ifdef WITH_CURSES
+      move(9,17);
+      printw(&quot;3D %sFIX     &quot;,(gpsdata-&gt;status==STATUS_DGPS_FIX)?&quot;DIFF &quot;:&quot;&quot;);
+#else
+      printf(&quot;3D %sFIX\n&quot;,(gpsdata-&gt;status==STATUS_DGPS_FIX)?&quot;DIFF &quot;:&quot;&quot;);
+#endif
+      break;
+    default:
+#ifdef WITH_CURSES
+      move(9,17);
+      printw(&quot;NO FIX               &quot;);
+#else
+      printf(&quot;NO FIX\n&quot;);
+#endif
+      break;
+    }
+  }
+
+  /* Fill in the time since the last state change. */
+  if (newstate != state) {
+    timer = time(NULL);
+    state = newstate;
+  }
+#ifdef WITH_CURSES
+  move(10,17);
+  printw(&quot;(%d secs)          &quot;, (int) (time(NULL) - timer));
+#else
+  printf(&quot;(%d secs)\n&quot;, (int) (time(NULL) - timer));
+#endif
+
+  /* Update the screen. */
+#ifdef WITH_CURSES
+  refresh();
+#else
+  printf(&quot;\n&quot;);
+#endif
+}
+
+int main(int argc, char *argv[])
+{
+  int option;
+  char *arg = NULL, *colon1, *colon2, *device = NULL, *server = NULL, *port = DEFAULT_GPSD_PORT;
+  char *err_str = NULL;
+
+  /* Process the options.  Print help or version, if requested. */
+  while ((option = getopt(argc, argv, &quot;hv&quot;)) != -1) {
+    switch (option) {
+    case 'v':
+      (void)printf(&quot;thing $Id: gpsdspewcurses.c,v 1.11 2005/08/16 20:32:27 jfrancis Exp $\n&quot;);
+      exit(0);
+    case 'h': default:
+      (void)fputs(&quot;usage:  thing [-hv] [server[:port:[device]]]\n&quot;, stderr);
+      exit(1);
+    }
+  }
+
+  /* Grok the server, port, and device. */
+  if (optind &lt; argc) {
+    arg = strdup(argv[optind]);
+    colon1 = strchr(arg, ':');
+    server = arg;
+    if (colon1 != NULL) {
+      if (colon1 == arg)
+	server = NULL;
+      else
+	*colon1 = '\0';
+      port = colon1 + 1;
+      colon2 = strchr(port, ':');
+      if (colon2 != NULL) {
+	if (colon2 == port)
+	  port = NULL;
+	else
+	  *colon2 = '\0';
+	device = colon2 + 1;
+      }
+    }
+    colon1 = colon2 = NULL;
+  }
+
+  /* Open the stream to gpsd. */
+  gpsdata = gps_open(server, port);
+  if (!gpsdata) {
+    switch ( errno ) {
+    case NL_NOSERVICE: 	err_str = &quot;can't get service entry&quot;; break;
+    case NL_NOHOST: 	err_str = &quot;can't get host entry&quot;; break;
+    case NL_NOPROTO: 	err_str = &quot;can't get protocol entry&quot;; break;
+    case NL_NOSOCK: 	err_str = &quot;can't create socket&quot;; break;
+    case NL_NOSOCKOPT: 	err_str = &quot;error SETSOCKOPT SO_REUSEADDR&quot;; break;
+    case NL_NOCONNECT: 	err_str = &quot;can't connect to host&quot;; break;
+    default:             	err_str = &quot;Unknown&quot;; break;
+    }
+    (void)fprintf( stderr, 
+		   &quot;xgps: no gpsd running or network error: %d, %s\n&quot;, 
+		   errno, err_str);
+    exit(2);
+  }
+
+  /* Update the timestamp (used to keep track of time since last state
+     change). */
+  timer = time(NULL);
+
+  /* Set up the curses screen (if using curses). */
+#ifdef WITH_CURSES
+  initscr();
+  raw();
+  noecho();
+  /* signal(SIGINT,die); */
+#endif
+
+  /* Here's where updates go. */
+  gps_set_raw_hook(gpsdata, update_panel);
+
+  /* If the user requested a specific device, try to change to it. */
+  if (device) {
+    char *channelcmd = (char *)malloc(strlen(device)+3);
+
+    if (channelcmd) {
+      (void)strcpy(channelcmd, &quot;F=&quot;);
+      (void)strcpy(channelcmd+2, device);
+      (void)gps_query(gpsdata, channelcmd);
+      (void)free(channelcmd);
+    }
+  }
+
+  /* Request &quot;w+x&quot; data from gpsd. */
+  (void)gps_query(gpsdata, &quot;w+x\n&quot;);
+
+  /* Loop and poll once per second (this could be less than optimal
+     for a receiver that updates &gt; 1hz, or for a user using a *really*
+     slow ancient serial terminal). */
+  while(1) {
+    gps_poll(gpsdata);
+    sleep(1);
+  }
+
+#ifdef WITH_CURSES
+  die();
+#else
+  /* We're done talking to gpsd. */
+  (void)gps_close(gpsdata);
+  if (arg != NULL)
+    (void)free(arg);
+
+  return 0;
+#endif
+}
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002885.html">[Gpsd-dev] Assorted issues from while I was off learning to swordfight
+</A></li>
+	<LI>Next message: <A HREF="002887.html">[Gpsd-dev] curses xgps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2886">[ date ]</a>
+              <a href="thread.html#2886">[ thread ]</a>
+              <a href="subject.html#2886">[ subject ]</a>
+              <a href="author.html#2886">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

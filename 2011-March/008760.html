@@ -1,0 +1,158 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Stripping down gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Stripping%20down%20gpsd&In-Reply-To=%3CAANLkTik3DPV5iKZAH44vF_VKC_mZqOJ6_nWDEun3WDrb%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008755.html">
+   <LINK REL="Next"  HREF="008763.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Stripping down gpsd</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Stripping%20down%20gpsd&In-Reply-To=%3CAANLkTik3DPV5iKZAH44vF_VKC_mZqOJ6_nWDEun3WDrb%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Stripping down gpsd">thomas at mich.com
+       </A><BR>
+    <I>Fri Mar 11 04:27:22 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008755.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+        <LI>Next message: <A HREF="008763.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8760">[ date ]</a>
+              <a href="thread.html#8760">[ thread ]</a>
+              <a href="subject.html#8760">[ subject ]</a>
+              <a href="author.html#8760">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Thu, Mar 10, 2011 at 9:05 PM, Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt; wrote:
+&gt;<i> I find it hard to believe there's a world where python is easy and auto* is really hard, and for which it's important/rational to do native builds instead of cross. &#160; Details of what it is would help.
+</I>
+OK, technically I can build gpsd on my chumby hacker board.  What it requires:
+You need to completely reformat and partition drives so you can get
+fedora core 12 for ARM (there may be others like debian but that is
+what I used). as a chroot environment.  Once the structure is
+bootstrapped, you then have to do yum install (apt-get) for all the
+packages, which need to be downloaded and unpacked.  Oh, you need an
+8g or 16g micro SD and you need to create a swap file or partition
+since anything beyond a trivial build will require swapping since
+there is only a 64M chip and the processor doesn't support more.  This
+will take over 8 hours.  Maybe longer.  You will need to have included
+all the autotools and whatever other parts.  Then you can grab the
+gpsd-ng repository.  Run autogen.sh, which runs ./configure.  This
+will take a good portion of an hour, and if you want bluetooth you
+need to watch and break the process or you will have to restart it.
+Finally you have a make file, and can type &quot;make&quot;.  That will also
+take about 15 minutes.  So on that board, it would take about a full
+day to generate the first gpsd-ng binary.  Assuming you don't make a
+mistake.  Getting fc12 up was a big effort, but I wanted bluetooth and
+avahi and they weren't in the native build and have similar issues
+with the autotools.  I haven't actually built any, I've just used fc12
+to check feasability.
+
+There is an unpackable gcc environment with make and enough to build
+the linux kernel and most of the rest of the things.  It takes about 5
+minutes to unpack.  I still need the swapfile but not for the install.
+
+I would almost bet that a simple ordinary plain makefile with just the
+gpsd executable, the component objects, and a few configuration lines
+for paths and such would work out of the box on most of the other
+systems mentioned - solaris, bsd, etc.  Anything with a reasonable
+libc.  What are you doing that is so weird that it REQUIRES going
+through autogen?  I don't see much outside of libc (the only things
+are optional pthread mutexes, bluez, and dbus).
+
+To go backwards for a moment, I implemented my own zipper to convert
+the KML files to KMZ, and I would spawn gzip.  Why?  Because libz was
+NOT on the target system (in this case MIPS), but gzip was in the
+statically linked busybox.  In fact, this was one of the major
+headaches on the nokia tablets - it used embedded versions of a lot of
+programs and although there were debs for the everything, they would
+not easily fit - which is why everything was done under scratchbox
+with the full versions of all the utilities.  So for this MIPs system,
+I would spawn and filter the file through gzip, and swap headers and
+append the central directory.  And yes, I was that hard up for memory.
+ The flash had a fixed size and was nearly full, so I couldn't waste
+anything.
+
+&gt;<i> I think requirements are:
+</I>&gt;<i>
+</I>&gt;<i> &#160; build can be done native or cross, without requiring execution of any target binaries. &#160; This mean the qemu semi-cross build is not a good enough answer - even though it's fine if people want to do it that way.
+</I>
+To clarify, if it is going to use a huge set of hairy tools, it needs
+to cross compile without qemu and without special knowledge or hassle
+trying to duplicate the target environment.  The target environment
+may or may not have bluez or other bluetooth, but it should build
+either way without installing any target binary or library.
+
+If it uses a lightweight build environment, it can be done natively.
+
+&gt;<i> &#160;build works on substantially any semi-reasonable platform, similar to what it does now, and this includes things that gpsd developers have never heard of
+</I>
+yes, but the key word is &quot;reasonable&quot;.  If you are only using some
+flavor of libc to build gpsd, you shouldn't have to test for the
+presence of each individual call, or if things are in strange places,
+you would have to hack up autogen.sh anyway and that defeats the
+purpose - it is easier to edit the top 20 lines of a makefile than to
+hack any of these thousand line build scripts.
+
+&gt;<i> &#160;shared libraries are done in the correct way for each platform, without gpsd having to define what that means
+</I>
+No, it produces correct shared and/or static libraries for the
+platform using whichever way is convenient.  For a long time SSLeay
+(predecessor to openssl) could be turned into a shared library by
+simply doing &quot;ar x ../libssl.a&quot;, then a &quot;ld -shared... *.o&quot; in a
+subdirectory.  No libtool needed.  Everything else compiled and linked
+with the libssleay[vers].so without problems.
+
+&gt;<i> &#160;basic platform adaptation mechanisms are in place, as they are now
+</I>&gt;<i>
+</I>&gt;<i> &#160;there is no assumption that the python interpreter, in either host or target, is called python. &#160;E.g., python2.6 should be fine.
+</I>&gt;<i>
+</I>&gt;<i> and what we don't have:
+</I>&gt;<i>
+</I>&gt;<i> &#160;one can give switches to build without python *on the target* (ok, maybe we can do that)
+</I>&gt;<i>
+</I>&gt;<i> &#160;one can give switches so that the only programs which depend on python are installed, to ease making a split package of the python dependencies.
+</I>&gt;<i>
+</I>&gt;<i> Note that I&quot;m not arguing against python as a build dependency. &#160;(Although I find objecting to auto* as too heavy and then being happy about python bizarre; objecting to auto* as fragile is another matter, but it's not heavy.)
+</I>
+./configure as produced by ./autogen.sh is over 20000 lines.  I doubt
+anything in Python will be 1/10th the length or take more than 1/10th
+the time.
+
+They are fragile too.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008755.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+	<LI>Next message: <A HREF="008763.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8760">[ date ]</a>
+              <a href="thread.html#8760">[ thread ]</a>
+              <a href="subject.html#8760">[ subject ]</a>
+              <a href="author.html#8760">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

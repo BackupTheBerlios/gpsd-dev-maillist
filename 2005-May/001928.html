@@ -1,0 +1,104 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Applying splint to improve code quality
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Applying%20splint%20to%20improve%20code%20quality&In-Reply-To=%3C7764.213.84.187.156.1117135180.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001937.html">
+   <LINK REL="Next"  HREF="001931.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Applying splint to improve code quality</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Applying%20splint%20to%20improve%20code%20quality&In-Reply-To=%3C7764.213.84.187.156.1117135180.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] Applying splint to improve code quality">gpsd at xs4all.nl
+       </A><BR>
+    <I>Thu May 26 21:19:40 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001937.html">[Gpsd-dev] Applying splint to improve code quality
+</A></li>
+        <LI>Next message: <A HREF="001931.html">[Gpsd-dev] Applying splint to improve code quality
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1928">[ date ]</a>
+              <a href="thread.html#1928">[ thread ]</a>
+              <a href="subject.html#1928">[ subject ]</a>
+              <a href="author.html#1928">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> To improve the quality of the code and detect problems such as
+</I>&gt;<i> potential memory leaks, null references, and iffy float comparisons, I
+</I>&gt;<i> think we should adopt the goal of getting this code to splint clean.
+</I>
+&gt;<i> There are presently 1782 code warnings, down from about 2500 when I
+</I>&gt;<i> first got splint to run to completion.  I will be continuing to work
+</I>&gt;<i> on reducing that number.  You should probably svn up, as my
+</I>&gt;<i> cleanup made a large number of small and widely dispersed changes.
+</I>
+I have done a diff, and I have mixed feelings.
+
+Making sure that types match, for example changing ints or longs into
+things like size_t or changing %d formats for unsigned values into %u is
+definately a good thing.
+
+However, putting (void) in front of every function that returns a useless
+value, like:
+
+(void)XFillRectangle(XtDisplay(draww), pixmap, drawGC, 0,0, width,height);
+
+or:
+
+(void)fputs(buf, stderr);
+
+is not going to bring much value, IMHO.
+
+Also, changes like this:
+
+&lt;       if (st &amp; TIME_SET)
+---
+&gt;<i>       if ((st &amp; TIME_SET) != 0)
+</I>
+are more a matter of personal taste than an improvement in quality.
+
+
+In my experience, tools like this can really do good work in that they
+point out things that one misses by eye, but you should be careful not to
+overshoot and sacrifice readability for a false sense of better quality.
+
+Maybe the config has to be tweaked a little so that you can pick out the
+really useful warnings between the useless pedantics...
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001937.html">[Gpsd-dev] Applying splint to improve code quality
+</A></li>
+	<LI>Next message: <A HREF="001931.html">[Gpsd-dev] Applying splint to improve code quality
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1928">[ date ]</a>
+              <a href="thread.html#1928">[ thread ]</a>
+              <a href="subject.html#1928">[ subject ]</a>
+              <a href="author.html#1928">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

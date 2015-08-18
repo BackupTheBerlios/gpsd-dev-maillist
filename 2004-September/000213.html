@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] em.c code
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20em.c%20code&In-Reply-To=%3C004701c49701%246c2b3930%240500a8c0%40jedi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000212.html">
+   <LINK REL="Next"  HREF="000214.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] em.c code</H1>
+    <B>Lonnie Mendez</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20em.c%20code&In-Reply-To=%3C004701c49701%246c2b3930%240500a8c0%40jedi%3E"
+       TITLE="[Gpsd-dev] em.c code">lmendez19 at austin.rr.com
+       </A><BR>
+    <I>Fri Sep 10 08:43:03 CEST 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000212.html">[Gpsd-dev] em.c code
+</A></li>
+        <LI>Next message: <A HREF="000214.html">[Gpsd-dev] em.c code
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#213">[ date ]</a>
+              <a href="thread.html#213">[ thread ]</a>
+              <a href="subject.html#213">[ subject ]</a>
+              <a href="author.html#213">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> Bletch.  Well, then, let's try a different approach,  The part of that 
+</I>&gt;<i> code
+</I>&gt;<i> that really interests me is the device scanning.  Once I've got a udev, is
+</I>&gt;<i> there any way to get a pathname or conventional read/write file descriptor
+</I>&gt;<i> from that?
+</I>
+    Looking in usb.h yields a function named usb_get_driver_np, which 
+returns the name of
+the kernel driver currently associated (claiming) the device, if any.  I 
+could not find anything which could return a file
+descriptor or even an node path for the device which registered with the 
+associated kernel driver.
+
+    Another way of doing this could involve parsing some information given 
+by procfs, sysfs, etc to
+resolve the appropriate node path and obtain a file descriptor.
+
+    procfs provides /proc/tty/driver/usbserial, which contains 
+Vendor/Product IDs and most importantly the
+minor number listing for each device which can be used to form the node path 
+to try and open.  A sample
+listing from my vaio:
+
+usbserinfo:1.0 driver:v2.0
+0: module:cypress_m8 name:&quot;DeLorme Earthmate USB&quot; vendor:1163 product:0100 
+num_ports:1 port:1 path:usb-0000:00:1d.1-1
+1: module:pl2303 name:&quot;PL-2303&quot; vendor:067b product:2303 num_ports:1 port:1 
+path:usb-0000:00:1d.0-1
+
+This means the earthmate is either at /dev/ttyUSB0 for udev or with manual 
+mknod... or at /dev/usb/tts/0 for devfs.  Some people have
+special rules in their udev / devfsd config, or bind the node to whatever 
+they want manually... not a handled case for this).
+
+An algorithm to formulate a device node path based on the parsed vid/pid and 
+minor could be used.  This sounds like the best way, as both
+kernels 2.4 - 2.6 have this... I think, and could be used within the bus 
+scanning code via libusb.  For the Earthmate, it could break to the libusb
+handler since a driver is not available in the mainline kernels (yet).
+
+    sysfs, which I'm sure you know is something new to 2.6, provides 
+/sys/bus/usb-serial/drivers, which contains folders labeled by driver with
+the actual name of the node path the device has been assigned to inside, 
+although that does not guarantee the path exists.
+
+   I'm not sure how this is all going to come together in regards to 
+tracking the devices as they are being plugged/unplugged.  I know you want 
+to track
+certain things from within the daemon, etc.  That is all I can think off at 
+the moment... maybe there are some libraries out there for determining this
+kind of information already, albeit adding another dependency.
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000212.html">[Gpsd-dev] em.c code
+</A></li>
+	<LI>Next message: <A HREF="000214.html">[Gpsd-dev] em.c code
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#213">[ date ]</a>
+              <a href="thread.html#213">[ thread ]</a>
+              <a href="subject.html#213">[ subject ]</a>
+              <a href="author.html#213">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

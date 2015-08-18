@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Setting the timezone
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Setting%20the%20timezone&In-Reply-To=%3C20050608122118.GE3020%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002032.html">
+   <LINK REL="Next"  HREF="002044.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Setting the timezone</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Setting%20the%20timezone&In-Reply-To=%3C20050608122118.GE3020%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Setting the timezone">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Jun  8 14:21:18 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002032.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2585 - trunk
+</A></li>
+        <LI>Next message: <A HREF="002044.html">[Gpsd-dev] Re: Setting the timezone
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2039">[ date ]</a>
+              <a href="thread.html#2039">[ thread ]</a>
+              <a href="subject.html#2039">[ subject ]</a>
+              <a href="author.html#2039">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+&gt;<i>                               Plus in UNIX, the TZ is user dependent
+</I>&gt;<i> so you have to do something like edit the system login scripts to get
+</I>&gt;<i> it for each user.
+</I>
+I think we may be able to end-run this, on Linux at least.  TZ isn't
+set under Linux.  Instead, I have a vague recollection that when tzset()
+is called the C library chases a hardlink...ah, yes, Google found me
+a description at &lt;<A HREF="http://www.linuxsa.org.au/tips/time.html">http://www.linuxsa.org.au/tips/time.html</A>&gt;:
+
+    Setting your timezone
+
+    The timezone under Linux is set by a symbolic link from
+    /etc/localtime[1] to a file in the /usr/share/zoneinfo[2] directory
+    that corresponds with what timezone you are in. For example, since I'm
+    in South Australia, /etc/localtime is a symlink to
+    /usr/share/zoneinfo/Australia/South. To set this link, type:
+
+    ln -sf ../usr/share/zoneinfo/your/zone /etc/localtime
+
+    Replace your/zone with something like Australia/NSW or
+    Australia/Perth. Have a look in the directories under
+    /usr/share/zoneinfo to see what timezones are available.
+
+    [1] This assumes that /usr/share/zoneinfo is linked to /etc/localtime as it is under Red Hat Linux.
+
+    [2] On older systems, you'll find that /usr/lib/zoneinfo is used
+    instead of /usr/share/zoneinfo.
+
+Changing the hardlink will, of course, update the system timezone for
+all users.  If I were designing this feature, I'd ensure that the
+system timezone can be overridden by a user-set TZ, but I don't know
+if it actually works that way.
+
+If I'm reading the tea leaves correctly, this functionality is actually
+embedded in the GCC library version of tzset(), so the same method will
+work on any system that uses that.
+
+So if we can get the mapping info, this *is* doable.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002032.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2585 - trunk
+</A></li>
+	<LI>Next message: <A HREF="002044.html">[Gpsd-dev] Re: Setting the timezone
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2039">[ date ]</a>
+              <a href="thread.html#2039">[ thread ]</a>
+              <a href="subject.html#2039">[ subject ]</a>
+              <a href="author.html#2039">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

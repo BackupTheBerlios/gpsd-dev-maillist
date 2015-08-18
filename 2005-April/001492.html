@@ -1,0 +1,90 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Time for a fast release?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Time%20for%20a%20fast%20release%3F&In-Reply-To=%3C11379.213.84.187.156.1114851875.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001490.html">
+   <LINK REL="Next"  HREF="001473.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Time for a fast release?</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Time%20for%20a%20fast%20release%3F&In-Reply-To=%3C11379.213.84.187.156.1114851875.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] Time for a fast release?">gpsd at xs4all.nl
+       </A><BR>
+    <I>Sat Apr 30 11:04:35 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001490.html">[Gpsd-dev] Time for a fast release?
+</A></li>
+        <LI>Next message: <A HREF="001473.html">[Gpsd-dev] Time for a fast release?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1492">[ date ]</a>
+              <a href="thread.html#1492">[ thread ]</a>
+              <a href="subject.html#1492">[ subject ]</a>
+              <a href="author.html#1492">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> # ipcs
+</I>&gt;<i>
+</I>&gt;<i> - ------ Shared Memory Segments --------
+</I>&gt;<i> key        shmid      owner      perms      bytes      nattch     status
+</I>&gt;<i> 0x4e545030 0          root      700        80         1
+</I>&gt;<i>
+</I>&gt;<i> The shmget in ntpshm.c can open sthat segment fine either before or
+</I>&gt;<i> after dropping root perms.  The problem is a seg fault when it
+</I>&gt;<i> writes to the shared memory as nobody.
+</I>
+I have now retrieved the version from svn and I think something completely
+different is happening.
+The interface to ntpshm_put has been changed and garmin.c has not yet been
+modified to reflect that.
+The compiler issues a warning:
+
+garmin.c:273: warning: passing arg 1 of `ntpshm_put' from incompatible
+pointer type
+
+So I think it will not be writing to the shared memory but to a completely
+different address, causing the fault.
+
+Right now, garmin.c and zodiac.c do not even compile because the change I
+proposed for the separation value have not been incorporated yet.  But
+those are of course easy to fix (change session-&gt;separation to
+session-&gt;gpsdata.fix.separation)
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001490.html">[Gpsd-dev] Time for a fast release?
+</A></li>
+	<LI>Next message: <A HREF="001473.html">[Gpsd-dev] Time for a fast release?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1492">[ date ]</a>
+              <a href="thread.html#1492">[ thread ]</a>
+              <a href="subject.html#1492">[ subject ]</a>
+              <a href="author.html#1492">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

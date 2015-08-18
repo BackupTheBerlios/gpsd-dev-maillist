@@ -1,0 +1,103 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPS reconnect problem
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPS%20reconnect%20problem&In-Reply-To=%3C20071205092107.GD16881%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="005791.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPS reconnect problem</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPS%20reconnect%20problem&In-Reply-To=%3C20071205092107.GD16881%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] GPS reconnect problem">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Dec  5 10:21:07 CET 2007</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="005791.html">[Gpsd-dev] GPS reconnect problem
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5790">[ date ]</a>
+              <a href="thread.html#5790">[ thread ]</a>
+              <a href="subject.html#5790">[ subject ]</a>
+              <a href="author.html#5790">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Petr Slansky &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">slansky at usa.net</A>&gt;:
+&gt;<i> maybe you know what happens when you unplug and re-plug your serial mouse in
+</I>&gt;<i> X-windows under Linux. Mouse doesn't work any more, you have to restart whole
+</I>&gt;<i> X-windows to initialise mouse. OK, this was solved recently, you don't need to
+</I>&gt;<i> restart X-windows on the latest Linux distributions anymore in 2007 but it was
+</I>&gt;<i> needed one or two years ago. (I think mouse sends some signal that it was
+</I>&gt;<i> connected and needs initialization but this query was ignored by mouse driver
+</I>&gt;<i> for long time).
+</I>
+I know this works for USB and PS/2 mice now, but I'm doubtful it works for 
+real old-fashioned RS-232 mice.  Serial ports are *very* stupid -- an inactive
+one isn't readily distinguishable from a disconnected one without keepalive
+signalling that most serial devices (especially cheap low-end ones like mice) 
+don't supply. 
+
+And serial devices that *do* supply it may do it an one of two or
+three different ways -- autoconfiguration is a nightmare.  There are several
+reasons USB has just about driven RS232C to extinction  but inability
+to supply reliable hotplug signalling may in fact be the biggest.
+
+Nevertheless your point is valid.  In the presence of more modern interfaces
+like USB, it is a main goal of gpsd to cope with disconnect/reconnect 
+gracefully.  If we're not doing that, something is broken.
+ 
+&gt;<i> gpsd has similar problems with some GPSs, you start gpsd, GPS is detected,
+</I>&gt;<i> initialized, it works for some time. You reboot GPS (remove power plug, change
+</I>&gt;<i> battery, etc), GPS is initialized, maybe it has possition but it doesn't pass
+</I>&gt;<i> information to gpsd, it is invisible for gpsd. You have to restart gpsd to
+</I>&gt;<i> start detection process. When you restart gpsd, all connected clients are
+</I>&gt;<i> disconnected.
+</I>&gt;<i> 
+</I>&gt;<i> Garmin eTrex in binary mode is an example of GPS that can be detected during
+</I>&gt;<i> gpsd start but cannot be reactivated when you &quot;reset&quot; GPS because GPS is
+</I>&gt;<i> silent after reset, it needs &quot;wakeup&quot; commands. I think this is missing
+</I>&gt;<i> feature in gpsd design. What to do when no data are received for some time
+</I>&gt;<i> (timeout). When to start new search for GPS.
+</I>
+For the reasons outlined above, I plain don't think we can do this for
+serial-port mice.  We already do it for USB mice by watching for hotplug
+notifications shipped to the gpsd control port.  
+
+Which is the eTrex?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="005791.html">[Gpsd-dev] GPS reconnect problem
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5790">[ date ]</a>
+              <a href="thread.html#5790">[ thread ]</a>
+              <a href="subject.html#5790">[ subject ]</a>
+              <a href="author.html#5790">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

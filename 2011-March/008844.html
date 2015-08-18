@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] time presence and precision, tags, class member queries.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20time%20presence%20and%20precision%2C%20tags%2C%0A%20class%20member%20queries.&In-Reply-To=%3C20110316224934.GA22274%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008841.html">
+   <LINK REL="Next"  HREF="008846.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] time presence and precision, tags, class member queries.</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20time%20presence%20and%20precision%2C%20tags%2C%0A%20class%20member%20queries.&In-Reply-To=%3C20110316224934.GA22274%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] time presence and precision, tags, class member queries.">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Mar 16 23:49:34 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008841.html">[Gpsd-dev] time presence and precision, tags,	class member queries.
+</A></li>
+        <LI>Next message: <A HREF="008846.html">[Gpsd-dev] time presence and precision, tags, class member queries.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8844">[ date ]</a>
+              <a href="thread.html#8844">[ thread ]</a>
+              <a href="subject.html#8844">[ subject ]</a>
+              <a href="author.html#8844">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Diego Berge &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at navlost.eu</A>&gt;:
+&gt;<i>    Not necessarily. When using GPS for timing applications, accuracy in
+</I>&gt;<i> the order of 100 nanoseconds (100*10-7) are entirely achievable.
+</I>
+PPS triggering cuing a clock crystal in a specialized device may be that 
+accurate, but it would be *highly* misleading to claim that much accuracy 
+for consumer or even survey-grade devices reporting over a serial link.
+
+&gt;<i>    Where does the 3.4*10^-7 figure come from btw? It does not
+</I>&gt;<i> particularly ring a bell with me.
+</I>
+I got that from a quote out of one of the ISGPS specs, I think.  A
+little Googling suggests that the ISGPS spec was being somewhat
+economical with the truth; it was the correct figure, but only under
+Selective Availability :-).
+
+&quot;HP Application Note 1289&quot; on precision chronometry is cited by the
+Wikipedia article on GPS as saying that without SA the intrinsic
+accuracy of the system is about 14ns. I've read that note to verify
+the figure, and will change that sentence to cite &quot;14 nanoseconds&quot;.
+
+&gt;<i>    Incidentally, the rest of the quotation from the man page needs to be
+</I>&gt;<i> revised--from a quick look and being rather tired, I can spot the
+</I>&gt;<i> following problems:
+</I>
+I'm not sure where I got the 0.01 sec resolution. It was probably from some
+device vendor's documentation.  I can tell you this for sure: most 
+devices only report in hundredths of a second.  This is notably true
+of SiRFs, which are about 80% of the consumer-grade market.
+
+Since I don't remember what my sources were and there are mptre restrictive
+accuracy limits in the chain, I've revised to say this:
+
+    The time reporting of the GPS system itself has an intrinsic
+    accuracy limit of 14 nanoseconds, but this can only be approximated by
+    specialized receivers using that send the high-accuracy PPS
+    (Pulse-Per-Second) over RS232 to cue a clock crystal.  Most GPS
+    receivers only report time to a precision of 0.01s or 0.001s,
+    and with no accuracy guarantees below 1sec.
+ 
+&gt;<i>    As tz said, accuracy is not the same as precision, and in turn that
+</I>&gt;<i> is not the same as your reporting resolution, which has to be at least
+</I>&gt;<i> as high as can be found on any supported receivers.  That would mean
+</I>&gt;<i> milliseconds for 8Hz capable receivers, as noted above.
+</I>
+There's no coding problem with changing the reporting resolution to
+milliseconds, but I'm not going to do it this close before release. 
+
+I do have something of an issue with using a reporting format that claims 
+more precision than most devices actually deliver.
+
+&gt;<i> &gt; Doesn't this introduce a second of latency if the update rate is 1Hz?
+</I>&gt;<i> 
+</I>&gt;<i>    I believe so.
+</I>
+No.  I've already explained this; gpsd detects the end of the NMEA reporting
+cycle and thereafter reports on it, avoiding the additional second of latency.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 190 bytes
+Desc: Digital signature
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110316/4ad23521/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110316/4ad23521/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008841.html">[Gpsd-dev] time presence and precision, tags,	class member queries.
+</A></li>
+	<LI>Next message: <A HREF="008846.html">[Gpsd-dev] time presence and precision, tags, class member queries.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8844">[ date ]</a>
+              <a href="thread.html#8844">[ thread ]</a>
+              <a href="subject.html#8844">[ subject ]</a>
+              <a href="author.html#8844">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

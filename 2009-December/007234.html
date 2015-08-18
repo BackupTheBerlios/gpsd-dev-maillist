@@ -1,0 +1,138 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] sin/cos issues
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20sin/cos%20issues&In-Reply-To=%3Crmibpie3jp0.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007231.html">
+   <LINK REL="Next"  HREF="007235.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] sin/cos issues</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20sin/cos%20issues&In-Reply-To=%3Crmibpie3jp0.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] sin/cos issues">gdt at ir.bbn.com
+       </A><BR>
+    <I>Fri Dec  4 15:19:55 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007231.html">[Gpsd-dev] regression failures
+</A></li>
+        <LI>Next message: <A HREF="007235.html">[Gpsd-dev] sin/cos issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7234">[ date ]</a>
+              <a href="thread.html#7234">[ thread ]</a>
+              <a href="subject.html#7234">[ subject ]</a>
+              <a href="author.html#7234">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+OK to commit this?  It makes test_float be more verbose, but also print
+out some trig that we could compare to expected.
+
+I ran this on netbsd-5 i386 and sparc64, and got the same results,
+available at:
+
+  <A HREF="http://www.lexort.com/gpsd/">http://www.lexort.com/gpsd/</A>
+
+
+Index: test_float.c
+===================================================================
+--- test_float.c	(revision 6694)
++++ test_float.c	(working copy)
+@@ -30,9 +30,10 @@
+ int main( void );
+ int test_single( void );
+ int test_double( void );
++int test_trig( void );
+ 
+ int main() {
+-	int i, j;
++	int i, j, k;
+ 
+ 	if ((i = test_single()))
+ 		printf(&quot;WARNING: Single-precision &quot;
+@@ -42,7 +43,12 @@
+ 		printf(&quot;WARNING: Double-precision &quot;
+ 			&quot;floating point math might be broken\n&quot;);
+ 
++	if ((k = test_trig()))
++		printf(&quot;WARNING: trig &quot;
++			&quot;floating point math might be broken\n&quot;);
++
+ 	i += j;
++	i += k;
+ 	if (i == 0)
+ 		printf(&quot;floating point math appears to work\n&quot;);
+ 	return i;
+@@ -254,3 +260,30 @@
+ 	}
+ 	return 0;
+ }
++
++#include &lt;math.h&gt;
++
++#define Deg2Rad(x) ((x) * (2 * M_PI / 360.0))
++
++int test_trig() {
++	int i;
++	double arg;
++	double res;
++
++	for (i = 0; i &lt;= 360; i++) {
++		arg = Deg2Rad(i);
++		res = sin(arg);
++		printf(&quot;sin(%.14f) = %.14f\n&quot;, arg, res);
++	}
++
++	for (i = 0; i &lt;= 360; i++) {
++		arg = Deg2Rad(i);
++		res = cos(arg);
++		printf(&quot;cos(%.14f) = %.14f\n&quot;, arg, res);
++	}
++
++	/* Always claim success. */
++	return 0;
++}
++
++
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091204/15af2128/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091204/15af2128/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007231.html">[Gpsd-dev] regression failures
+</A></li>
+	<LI>Next message: <A HREF="007235.html">[Gpsd-dev] sin/cos issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7234">[ date ]</a>
+              <a href="thread.html#7234">[ thread ]</a>
+              <a href="subject.html#7234">[ subject ]</a>
+              <a href="author.html#7234">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

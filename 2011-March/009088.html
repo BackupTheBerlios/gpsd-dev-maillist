@@ -1,0 +1,78 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Single-writer/many-reader consistency
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3CAANLkTi%3DDpZCA7jxFGVVeD6yrRdra7uJ8%3D%2BBpjVCWX%2BzR%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009086.html">
+   <LINK REL="Next"  HREF="009089.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Single-writer/many-reader consistency</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3CAANLkTi%3DDpZCA7jxFGVVeD6yrRdra7uJ8%3D%2BBpjVCWX%2BzR%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Single-writer/many-reader consistency">thomas at mich.com
+       </A><BR>
+    <I>Sat Mar 26 13:12:44 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009086.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+        <LI>Next message: <A HREF="009089.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9088">[ date ]</a>
+              <a href="thread.html#9088">[ thread ]</a>
+              <a href="subject.html#9088">[ subject ]</a>
+              <a href="author.html#9088">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sat, Mar 26, 2011 at 1:34 AM, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at snark.thyrsus.com</A>&gt; wrote:
+
+&gt;<i> Only one process (the single writer) would ever change the semaphore
+</I>&gt;<i> state; the readers would just block or spin until it goes to zero. &#160;In
+</I>&gt;<i> GPSD writes are infrequent, now normally 1 per second and highly
+</I>&gt;<i> unlikely to exceed 100 per second even with survey-grade GPSes we
+</I>&gt;<i> don't support yet. &#160;Writes are also small, less than 8K.
+</I>
+If the readers don''t block on the semaphore, there is no guarantee
+that mid-read the writer will reaquire the semaphore and alter things
+- defeating the purpose.
+
+However for multiple readers, a simple CRC might work as the validity
+mechanism.  The writer would just alter whatever, whenever it wants
+but at the end fix a CRC (make everything 32 bit - I think CRCs won't
+have collisions, maybe there is a better simple hash algorithm).  The
+readers read the whole block and check the CRC.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009086.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+	<LI>Next message: <A HREF="009089.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9088">[ date ]</a>
+              <a href="thread.html#9088">[ thread ]</a>
+              <a href="subject.html#9088">[ subject ]</a>
+              <a href="author.html#9088">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

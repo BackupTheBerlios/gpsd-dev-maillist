@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] A lightweight synchronization mechanism for shared memory
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20A%20lightweight%20synchronization%20mechanism%20for%20shared%20memory&In-Reply-To=%3C20110325025502.631AA20C25E%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009008.html">
+   <LINK REL="Next"  HREF="009011.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] A lightweight synchronization mechanism for shared memory</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20A%20lightweight%20synchronization%20mechanism%20for%20shared%20memory&In-Reply-To=%3C20110325025502.631AA20C25E%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] A lightweight synchronization mechanism for shared memory">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Fri Mar 25 03:55:02 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009008.html">[Gpsd-dev] Perl NET::GPSD3
+</A></li>
+        <LI>Next message: <A HREF="009011.html">[Gpsd-dev] A lightweight synchronization mechanism for shared	memory
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9010">[ date ]</a>
+              <a href="thread.html#9010">[ thread ]</a>
+              <a href="subject.html#9010">[ subject ]</a>
+              <a href="author.html#9010">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Between the ntp-hackers discussion of synchronization and my own growing 
+interest in writing a shared-memory exporter for gpsd, I've had good reason
+to think recently about lightweight synchronization mechanism for shared
+memory. 
+
+The case I'm addressing is one reader, one or more writers.  
+The problem is that partial writes and partial reads may be mixed in
+any order, and the goal is for the reader to be have certainty when
+it has read the result of a complete write.
+
+I think I have invented a mechanism that avoids contention due to
+blocking semaphores and is guaranteed correct under relatively weak
+assumptions.  I present it for review and criticism.
+
+Let's say we have a given struct payload_t we want to ship safely.  On
+each update, we actually write a wrapper structure that looks like
+this:
+
+struct wrapper_t 
+{
+    int startguard;
+    struct payload_t payload;
+    int endguard;
+};
+
+The sentinels startguard and endguard are initially zero. Before each write,
+they are incremented.
+
+The reader's algorithm is simple: memcpy from the shared segment.  If both
+sentinels are correct, the read is good.
+
+I believe all that is required for guaranteed correctness is that the
+writer updates the storage bytes in the shared-memory segment in an
+order that is either monotonic-increasing or monotonic-decreasing, and
+the reader likewise reads bytes in a monotonic order.
+
+Part of the reason I think this is an interesting technique is that I
+believe the following: on essentially all modern processors, memcpy(3)
+is optimized to a single-instruction bitblt that reads and updates
+memory in a monotonic order (certainly this is true of naive C
+implementations of memcpy()). Thus, it should be sufficient for the
+writer to memcpy() into the struct and the reader to memcpy() out of
+it.  It doesn't matter whether or not memcpy() is interruptible.
+
+I am ignoring cache-coherency issues, which are orthogonal to those this
+technique addresses.  Yes, read and write may need surrounding memory 
+barriers.
+
+That's it.  Please discuss and criticize.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+I have never made but one prayer to God, a very short one: &quot;O Lord,
+make my enemies ridiculous.&quot; And God granted it.
+	--Voltaire 
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009008.html">[Gpsd-dev] Perl NET::GPSD3
+</A></li>
+	<LI>Next message: <A HREF="009011.html">[Gpsd-dev] A lightweight synchronization mechanism for shared	memory
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9010">[ date ]</a>
+              <a href="thread.html#9010">[ thread ]</a>
+              <a href="subject.html#9010">[ subject ]</a>
+              <a href="author.html#9010">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

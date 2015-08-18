@@ -1,0 +1,96 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] I think it's time for a checkpoint release
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20I%20think%20it%27s%20time%20for%20a%20checkpoint%20release&In-Reply-To=%3C16401.213.84.187.156.1116245252.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001678.html">
+   <LINK REL="Next"  HREF="001698.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] I think it's time for a checkpoint release</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20I%20think%20it%27s%20time%20for%20a%20checkpoint%20release&In-Reply-To=%3C16401.213.84.187.156.1116245252.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] I think it's time for a checkpoint release">gpsd at xs4all.nl
+       </A><BR>
+    <I>Mon May 16 14:07:32 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001678.html">[Gpsd-dev] I think it's time for a checkpoint release
+</A></li>
+        <LI>Next message: <A HREF="001698.html">[Gpsd-dev] gpsprof bug?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1683">[ date ]</a>
+              <a href="thread.html#1683">[ thread ]</a>
+              <a href="subject.html#1683">[ subject ]</a>
+              <a href="author.html#1683">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> Remco and Rob Janssen are still trying to figure out why gpsd is
+</I>&gt;<i> reporting times to Remco (but not to Rob or me) that are ten seconds
+</I>&gt;<i> off.  Otherwise Remco's flurry of bug reports has been dealt with,
+</I>&gt;<i> fixes are in SVN head.
+</I>
+I have fixed a lot of uncertainties w.r.t. timekeeping, patch is included.
+Also fixes a &quot;used satellites&quot; problem.
+
+However, I did not find a problem that could cause the 10-second offset.
+I have added some more debugging output so maybe I catch it next time a
+debug log is sent.
+I have tested with a SiRF receiver (uBlox) and with a Rockwell Jupiter
+(zodiac protocol) and both message-based and PPS-based timing is OK here
+on both receivers.
+
+For PPS mode (--enable-pps on configure) I have now split the NTP SHM in
+two separate ones: the first is used for message-decoded time and the
+second for PPS time.  This lets ntpd make the decision between them, and
+allows the use of fudge time1 to correct a systematic error for message
+time.
+
+NTP configuration with PPS would be like:
+
+server 127.127.28.0 minpoll 4 maxpoll 4
+fudge 127.127.28.0 refid GPS0
+
+server 127.127.28.1 minpoll 4 maxpoll 4 prefer
+fudge 127.127.28.1 refid GPS1
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: patch.gz
+Type: application/x-gzip
+Size: 5018 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20050516/ecf1414f/attachment.bin">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20050516/ecf1414f/attachment.bin</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001678.html">[Gpsd-dev] I think it's time for a checkpoint release
+</A></li>
+	<LI>Next message: <A HREF="001698.html">[Gpsd-dev] gpsprof bug?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1683">[ date ]</a>
+              <a href="thread.html#1683">[ thread ]</a>
+              <a href="subject.html#1683">[ subject ]</a>
+              <a href="author.html#1683">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

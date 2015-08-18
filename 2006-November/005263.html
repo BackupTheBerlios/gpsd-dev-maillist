@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] revert call
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20revert%20call&In-Reply-To=%3C560kkowAT2184S01.1163629639%40cmsweb01.cms.usa.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005262.html">
+   <LINK REL="Next"  HREF="005264.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] revert call</H1>
+    <B>Petr Slansky</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20revert%20call&In-Reply-To=%3C560kkowAT2184S01.1163629639%40cmsweb01.cms.usa.net%3E"
+       TITLE="[Gpsd-dev] revert call">slansky at usa.net
+       </A><BR>
+    <I>Wed Nov 15 23:27:19 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005262.html">[Gpsd-dev] revert call
+</A></li>
+        <LI>Next message: <A HREF="005264.html">[Gpsd-dev] Heisenbug in gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5263">[ date ]</a>
+              <a href="thread.html#5263">[ thread ]</a>
+              <a href="subject.html#5263">[ subject ]</a>
+              <a href="author.html#5263">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>------ Original Message ------
+Received: Wed, 15 Nov 2006 10:09:59 PM CET
+From: &quot;Eric S. Raymond&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt;
+
+&gt;<i> Petr Slansky &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">slansky at usa.net</A>&gt;:
+</I>&gt;<i> &gt; gpsd: GPGSV field 3 value of 8 != actual count 4
+</I>&gt;<i> &gt; gpsd: Satellite data OK.
+</I>&gt;<i> &gt; gpsd: unflagging descriptor 4
+</I>&gt;<i> &gt; gpsd: closing GPS=/dev/gps (4)
+</I>&gt;<i> &gt; gpsd: closing GPS=/dev/gps (-1)
+</I>&gt;<i> &gt; gpsd: Received terminating signal 2. Exiting...
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; In both cases gpsd tries to close closed /dev/gps port. This is not
+</I>revert
+&gt;<i> &gt; call problem but some related issue in gpsd. I think problem is located at
+</I> 
+&gt;<i> &gt; gpsd_deactivate function.
+</I>&gt;<i> 
+</I>&gt;<i> You're right, this is confusing.  The problem is that there is a 
+</I>&gt;<i> gps_deactivate() call in gps_wrap() that isn't guarded by a check to
+</I>&gt;<i> see if theession file descriptor is -1.  I'll fix that.
+</I>
+Fix works, but the result is still confusing as &quot;closing GPS=/dev/gps&quot; is
+printed in the sequence before revert call:
+
+gpsd: checking client(0)
+gpsd: detaching 0 in detach_client
+gpsd: unflagging descriptor 5
+gpsd: closing GPS=/dev/gps (5)
+gpsd: evermore_n_revert
+gpsd: =&gt; GPS: 1002128eff0101000101010000000000000000921003
+gpsd: Received terminating signal 2. Exiting...
+
+Petr
+
+
+---------------------------------
+  Petr Slansky, <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">slansky at usa.net</A>
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005262.html">[Gpsd-dev] revert call
+</A></li>
+	<LI>Next message: <A HREF="005264.html">[Gpsd-dev] Heisenbug in gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5263">[ date ]</a>
+              <a href="thread.html#5263">[ thread ]</a>
+              <a href="subject.html#5263">[ subject ]</a>
+              <a href="author.html#5263">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

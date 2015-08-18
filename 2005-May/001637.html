@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] endless loop, 100% cpu
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20endless%20loop%2C%20100%25%20cpu&In-Reply-To=%3C4690.213.84.187.156.1115848998.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001636.html">
+   <LINK REL="Next"  HREF="001614.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] endless loop, 100% cpu</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20endless%20loop%2C%20100%25%20cpu&In-Reply-To=%3C4690.213.84.187.156.1115848998.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] endless loop, 100% cpu">gpsd at xs4all.nl
+       </A><BR>
+    <I>Thu May 12 00:03:18 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001636.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+        <LI>Next message: <A HREF="001614.html">[Gpsd-dev] Text based output
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1637">[ date ]</a>
+              <a href="thread.html#1637">[ thread ]</a>
+              <a href="subject.html#1637">[ subject ]</a>
+              <a href="author.html#1637">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> When that happens, I print out the buffer.
+</I>&gt;<i> The first thing in the buffer is always (from memory) $Ack... message.
+</I>&gt;<i> Please check my earlier mail for the complete contents.
+</I>&gt;<i>
+</I>&gt;<i> I can do this as often as I want, the buffer has always the same message
+</I>&gt;<i> at
+</I>&gt;<i> its head.
+</I>&gt;<i>
+</I>&gt;<i> Rob, does that sound like it could be related to the problem you ran into?
+</I>
+I had such a problem with the zodiac driver.
+Once it had encountered a packet with bad header checksum it would not
+recover.
+It would read more and more data from the serial port, but the packet it
+was handling was the same every time, and the error as well.  This looks
+like what you are describing.
+
+After some changes and a temporary fix I found that the packet_get code
+deletes the wrong character when the state machine detects an incorrect
+packet.  It should have deleted the first character from the buffer and
+then retry starting from what was left, but instead it deleted the
+character before the point where it detected an error, and so it actually
+corrupted the data in the buffer and re-scanned that.
+
+In cases like the zodiac, where an error could be found after having
+scanned 10 bytes into the buffer, this was clearly the wrong thing.  I am
+not sure if it could happen with NMEA, because it has a simpler structure.
+
+But it has been fixed in the current svn head, so if you still have this
+problem it must have a different cause.
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001636.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+	<LI>Next message: <A HREF="001614.html">[Gpsd-dev] Text based output
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1637">[ date ]</a>
+              <a href="thread.html#1637">[ thread ]</a>
+              <a href="subject.html#1637">[ subject ]</a>
+              <a href="author.html#1637">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

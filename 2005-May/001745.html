@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] odd bug with gps_device string being lost/overwritten
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20odd%20bug%20with%20gps_device%20string%20being%20lost/overwritten&In-Reply-To=%3C200505181722.24838.lmendez19%40austin.rr.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001743.html">
+   <LINK REL="Next"  HREF="001747.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] odd bug with gps_device string being lost/overwritten</H1>
+    <B>Lonnie Mendez</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20odd%20bug%20with%20gps_device%20string%20being%20lost/overwritten&In-Reply-To=%3C200505181722.24838.lmendez19%40austin.rr.com%3E"
+       TITLE="[Gpsd-dev] odd bug with gps_device string being lost/overwritten">lmendez19 at austin.rr.com
+       </A><BR>
+    <I>Thu May 19 00:22:24 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001743.html">[Gpsd-dev] odd bug with gps_device string being lost/overwritten
+</A></li>
+        <LI>Next message: <A HREF="001747.html">[Gpsd-dev] odd bug with gps_device string being lost/overwritten
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1745">[ date ]</a>
+              <a href="thread.html#1745">[ thread ]</a>
+              <a href="subject.html#1745">[ subject ]</a>
+              <a href="author.html#1745">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Wednesday 18 May 2005 04:49 pm, Eric S. Raymond wrote:
+&gt;<i> 
+</I>&gt;<i> I am, alas, not so fortunate.  I'm unable to reproduce this on my BU-303.
+</I>&gt;<i> I just went through about a dozen iterations of your r-and-disconnect
+</I>&gt;<i> procedure.
+</I>&gt;<i> 
+</I>&gt;<i> Do you know about the gdb 'watch' command?  Seems to me like the right
+</I>&gt;<i> thing might be to put a watch on session-&gt;gpsdata_gps_device, so gdb
+</I>&gt;<i> will stop when it gets stomped.
+</I>
+ Interesting.  Here is another run using the same method explained before,
+except this time a watch point is set for device-&gt;gpsdata.gps_device != 0:
+
+gpsd: closing GPS=/dev/tts/USB0
+gpsd: opening GPS data source at '/dev/tts/USB0'
+gpsd: no probe matched...
+gpsd: hunting at speed 4800, 8N1
+gpsd: gpsd_activate: opened GPS (8)
+gpsd: Selecting Generic NMEA driver...
+gpsd: =&gt; GPS: $PFEC,GPint,GSA01,DTM00,ZDA01,RMC01,GLL00,VTG00,GSV05*3B
+
+gpsd: =&gt; GPS: $PMOTG,ZDA,1*2F
+
+gpsd: =&gt; GPS: $PGRM0,GSA,1*5C
+
+gpsd: =&gt; GPS: $PSRF105,1*3E
+
+gpsd: 7 turned on raw mode
+gpsd: =&gt; client(7): GPSD,R=1
+gpsd: &lt;= GPS: $GPGSV,3,2,09,10,30,142,00,15,22,170,00,18,19,114,00,08,17,315,*7A
+gpsd: Partial satellite data (0 of 3).
+gpsd: =&gt; client(7): $GPGSV,3,2,09,10,30,142,00,15,22,170,00,18,19,114,00,08,17,315,*7A
+gpsd: &lt;= GPS: $GPGSV,3,2,09,10,30,142,00,15,22,170,00,18,19,114,00,08,17,315,*7A
+Hardware watchpoint 3: device-&gt;gpsdata.gps_device != 0
+
+Old value = 1
+New value = 0
+processGPGSV (count=20, field=0xbfff6be0, out=0x8056db8) at nmea_parse.c:363
+363             if (out-&gt;PRN[out-&gt;satellites])
+(gdb) bt
+#0  processGPGSV (count=20, field=0xbfff6be0, out=0x8056db8) at nmea_parse.c:363
+#1  0x4003b289 in nmea_parse (
+    sentence=0x8057234 &quot;$GPGSV,3,2,09,10,30,142,00,15,22,170,00,18,19,114,00,08,17,315,*7A\r\n&quot;, outdata=0x8056db8) at nmea_parse.c:525
+#2  0x4003ba38 in nmea_parse_input (session=0x8056db8) at drivers.c:27
+#3  0x4003e385 in handle_packet (session=0x8056db8) at libgpsd_core.c:146
+#4  0x4003e75d in gpsd_poll (session=0x8056db8) at libgpsd_core.c:287
+#5  0x0804bea5 in main (argc=134573496, argv=0x400) at gpsd.c:1061
+(gdb)
+
+ I'll have the gdb session open still, so let me know if you need anything else.  Also, if you want, I can set up an ssh account
+on the machine exhibiting this bug.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001743.html">[Gpsd-dev] odd bug with gps_device string being lost/overwritten
+</A></li>
+	<LI>Next message: <A HREF="001747.html">[Gpsd-dev] odd bug with gps_device string being lost/overwritten
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1745">[ date ]</a>
+              <a href="thread.html#1745">[ thread ]</a>
+              <a href="subject.html#1745">[ subject ]</a>
+              <a href="author.html#1745">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

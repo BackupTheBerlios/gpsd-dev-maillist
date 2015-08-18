@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH 8/8] Displaying GPGST data in xgps
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%208/8%5D%20Displaying%20GPGST%20data%20in%20xgps&In-Reply-To=%3C1295907224.2029.178.camel%40adelie%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008526.html">
+   <LINK REL="Next"  HREF="008532.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH 8/8] Displaying GPGST data in xgps</H1>
+    <B>Thomas Sprinkmeier</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%208/8%5D%20Displaying%20GPGST%20data%20in%20xgps&In-Reply-To=%3C1295907224.2029.178.camel%40adelie%3E"
+       TITLE="[Gpsd-dev] [PATCH 8/8] Displaying GPGST data in xgps">thomas.sprinkmeier at cohdawireless.com
+       </A><BR>
+    <I>Mon Jan 24 23:13:44 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008526.html">[Gpsd-dev] [PATCH 8/8] Displaying GPGST data in xgps
+</A></li>
+        <LI>Next message: <A HREF="008532.html">[Gpsd-dev] [PATCH 8/8] Displaying GPGST data in xgps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8527">[ date ]</a>
+              <a href="thread.html#8527">[ thread ]</a>
+              <a href="subject.html#8527">[ subject ]</a>
+              <a href="author.html#8527">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Mon, 2011-01-24 at 16:50 -0500, Eric Raymond wrote:
+&gt;<i> Thomas Sprinkmeier &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas.sprinkmeier at cohdawireless.com</A>&gt;:
+</I>&gt;<i> &gt; Having run out of bits in a 32-bit mask I don't know how else to signal
+</I>&gt;<i> &gt; availability of GST data. 
+</I>&gt;<i> 
+</I>&gt;<i> Set the AUXDATA flag.  This is supposed to tell the code to interpret the
+</I>&gt;<i> contents of auxmask (presently unused) which is an auxiliary flag mask.to
+</I>&gt;<i> be used to enable one member of the union at the end of the struct.
+</I>&gt;<i>
+</I>&gt;<i> However, I see you've put your struct outside that union.  This is
+</I>&gt;<i> a problem; it means we either have to break ABI compatibility or 
+</I>&gt;<i> mover that structure into the union so the struct layout doesn't change.
+</I>
+I'll move the GST data into the union (I should have had it there all
+along!)
+
+I'll start using bits in 
+	gps_mask_t auxmask;	/* for future expansion */
+something like 
+	#define GST_SET_AUX 0x00000001
+
+I'll have to add
+	AUXDATA_SET
+to
+	#define UNION_SET	(RTCM2_SET|...._SET)
+
+I guess it's safe to assume only one bit in auxmask will ever be set
+(i.e. each bit represents a different view of the union).
+
+(excuse the rambling, just thinking aloud...)
+
+&gt;<i> &gt; I'm searching for the least bad solution. I'm tempted to say it's
+</I>&gt;<i> &gt; &quot;uint64_t&quot; but I don't know how many clients would be affected.
+</I>&gt;<i> 
+</I>&gt;<i> Yeah, I'd go for that too (and abolish auxmask) if I knew it would 
+</I>&gt;<i> work on 32-bit machines.
+</I>
+Thomas
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008526.html">[Gpsd-dev] [PATCH 8/8] Displaying GPGST data in xgps
+</A></li>
+	<LI>Next message: <A HREF="008532.html">[Gpsd-dev] [PATCH 8/8] Displaying GPGST data in xgps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8527">[ date ]</a>
+              <a href="thread.html#8527">[ thread ]</a>
+              <a href="subject.html#8527">[ subject ]</a>
+              <a href="author.html#8527">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

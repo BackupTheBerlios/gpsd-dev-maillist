@@ -1,0 +1,140 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Availability of pkg-config
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Availability%20of%20pkg-config&In-Reply-To=%3CAANLkTi%3D4UKg2cUvBy1%3DuMhvUe_vMCe1qJRHNSeUe_2XV%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008653.html">
+   <LINK REL="Next"  HREF="008663.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Availability of pkg-config</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Availability%20of%20pkg-config&In-Reply-To=%3CAANLkTi%3D4UKg2cUvBy1%3DuMhvUe_vMCe1qJRHNSeUe_2XV%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Availability of pkg-config">thomas at mich.com
+       </A><BR>
+    <I>Thu Mar  3 18:12:22 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008653.html">[Gpsd-dev] Availability of pkg-config
+</A></li>
+        <LI>Next message: <A HREF="008663.html">[Gpsd-dev] Availability of pkg-config
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8662">[ date ]</a>
+              <a href="thread.html#8662">[ thread ]</a>
+              <a href="subject.html#8662">[ subject ]</a>
+              <a href="author.html#8662">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Thu, Mar 3, 2011 at 4:29 AM, Bernd Zeimetz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">bernd at bzed.de</A>&gt; wrote:
+
+&gt;<i> At least for Debian I can say that pkg-config is available on all
+</I>&gt;<i> supported architectures of course. I'd imagine that all &quot;free&quot; Linux
+</I>&gt;<i> based systems have pkg-config available. No idea about the more
+</I>&gt;<i> commercial Systems like Wind River. but as we have some pkg-config calls
+</I>&gt;<i> in configure.ac already, I'd guess it should be save to use it.
+</I>
+Debian's package based system almost forces pkg-config to be
+available, but it will build and install the necessary pkg-config
+entries when building those from source.
+
+E.g. for ARM on the Nokia nSeries tablets and maemo, they use
+scratchbox and qemu to feign being on a real ARM system.
+
+Other systems can be problematic.  I don't have something equally good
+for Fedora, and trying to build anything on my chumby hacker board
+(ARM) is painful.
+
+I find the whole autoconfig, libtool, and the rest to be a horrible
+hack that should have been eliminated a decade ago, or at least cached
+so that every freaking package - when it knows it has a very recent
+glibc - doesn't try to figure out if it has memset or bzero - and
+repeat the test every time ./configure fails, usually after several
+minutes so each hiccup in the environment takes that long to retry.
+Cross-compiles usually are broken even if you do all the ARCH= PREFIX=
+stuff.
+
+On my fairly vanilla recent linux distro that has to have gcc and
+glibc, ./configure asks
+
+checking for sys/types.h... yes
+checking for sys/stat.h... yes
+checking for stdlib.h... yes
+checking for string.h... yes
+checking for memory.h... yes
+checking for strings.h... yes
+checking for inttypes.h... yes
+checking for stdint.h... yes
+checking for unistd.h... yes
+
+Somehow it might have strings.h and not unistd.h?  Single threaded, so
+more cores won't speed it up.  And yes, I know every package does it,
+which is why it takes days to rebuild source into binary for ARM if
+you aren't cross compiling.  Every package has to test for itself if
+on the glibc/linux system if it has string.h.
+
+It is ugly, and probably won't work for ancient versions of obscure
+operating systems, but maybe someone has an old Sparc 1 box...
+
+The above is directly from ./autogen.sh.  I have bluez and bluetooth
+GPSes but it decided to run ./configure anyway so I needed to go
+through it again
+
+At least it seems to cross-compile correctly in the base case, but it
+doesn't do bluetooth.
+
+But why this long rant?  Because this complex bloat isn't gong to be
+present on most smaller, embedded systems.  Intentionally or not, the
+build is already well past any possibility of standing alone.  It
+won't build unless all these tools are there and I know of no plans to
+split it into a simple daemon with interface that a simple and obvious
+GCC command line will compile, and the big system stuff that needs
+this.
+
+So it is silly to talk as if this could ever be built on anything
+small - i.e. somewhere that won't have libtool.  That has been
+conceded.
+
+I would also note the Linux kernel uses none of this, and manages to
+build across a wider range of targets with a larger number of options.
+
+I'm working on an a version of just gpsd targeted at embedded (and
+plain NMEA only) and I don't even use floating point.  It can tell
+firefox where it is and do a number of other things.  And it has a
+Makefile.  So far it works on all the Posix/GCC systems I've tried,
+and all the ARM processors - Don't forget that these are also battery
+powered, and have limited space, so it isn't just building.  If
+gpsd-ng as is uses 5% cpu, it will drain the battery quickly.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008653.html">[Gpsd-dev] Availability of pkg-config
+</A></li>
+	<LI>Next message: <A HREF="008663.html">[Gpsd-dev] Availability of pkg-config
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8662">[ date ]</a>
+              <a href="thread.html#8662">[ thread ]</a>
+              <a href="subject.html#8662">[ subject ]</a>
+              <a href="author.html#8662">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

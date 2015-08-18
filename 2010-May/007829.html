@@ -1,0 +1,139 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Input packets buffering bug(s)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3CAANLkTimuW-L_DhxsmbetGge4xF7Lq3DCYg2JBmYoM2X1%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007825.html">
+   <LINK REL="Next"  HREF="007835.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Input packets buffering bug(s)</H1>
+    <B>Olivier Cornu</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3CAANLkTimuW-L_DhxsmbetGge4xF7Lq3DCYg2JBmYoM2X1%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Input packets buffering bug(s)">o.cornu at gmail.com
+       </A><BR>
+    <I>Mon May 31 02:32:06 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007825.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+        <LI>Next message: <A HREF="007835.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7829">[ date ]</a>
+              <a href="thread.html#7829">[ thread ]</a>
+              <a href="subject.html#7829">[ subject ]</a>
+              <a href="author.html#7829">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sun, May 30, 2010 at 20:31, Remco Treffkorn &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>&gt; wrote:
+&gt;<i>
+</I>&gt;<i> May I remind you that you yourself pointed out that although the measured
+</I>&gt;<i> numbers are a factor of ten worse for the bad fix, you also pointed out that
+</I>&gt;<i> in the big picture even the bad case does not make a dent in cpu load.
+</I>
+I indeed tried to present fairly both sides of the argument. I'm
+afraid &quot;does not make a dent&quot; slightly slips into partisanship
+though... :-)
+
+Perhaps i should have underlined in a bolder manner that the above
+tests showcased one of the best plausible cases for the current
+design.
+That is: a buffered (BT in that case) serial port that insures 16
+bytes will be there to read at all times (but bi-packet ends). In
+fact, it would be slightly slower if it received packets one-at-a-time
+-- i can measure it if needed.
+But as you mentioned, the standard use-case (hardware serial port)
+probably is close to one main() loop per char. How much slower is
+that?
+
+Easy enough: let's re-run the 16-bytes test with a max read length of
+1 byte. Average CPU times consumed:  37400ms.
+Around 163 times slower than the &quot;fast patch&quot;. If we stay on the 10k
+packets per 2 hours rate, we're talking about ~1.5% of available CPU
+time wasted on my setup -- that would be noticeable with top.
+
+If you take into account that a threaded implementation would do much
+better than the &quot;fast patch&quot;, we're talking about an architecture that
+is probably 200+ times slower than another. And that is still assuming
+two unfair bias in favor of the slow design:
+ - there is a single GPS and no clients (the more asynchronous streams
+there are, the more the mono-threaded implementation will paddle in
+the jelly)
+ - you're running gpsd on a single core
+
+Even if we nicely cut the number to 100 times slower, that would still
+pretty much mean 99% of the CPU cycles used by gpsd in the claimed
+standard use-case is junk. Somehow that gotta hurt.
+
+I suppose there are legitimate rational reasons to willingly go that
+much slower. For example: development costs, stability, need to
+support this particular thread-less architecture, etc.
+In the interest of the discussion, i'd love to hear them clarified --
+further than &quot;it does not bother me&quot;. :-)
+
+
+&gt;<i> Your 'cpu tax' issue is well understood. That is the price you pay in select
+</I>&gt;<i> loops like this.
+</I>
+That's indeed my point: it's the price of &quot;single-threadness&quot;.
+
+&gt;<i> Please also note: the less cpu speed you have, the smaller
+</I>&gt;<i> the penalty becomes.
+</I>
+I'm sorry, this is not a &quot;half-full/half-empty&quot; kind of argument. It's
+not a bug you can so easily spin into a feature: as the slow design is
+orders of magnitude slower in all cases, the fact that it's a bit less
+slower on old hardware is no argument. :-)
+
+But my point here was: not only is it statically sub-efficient, but
+also dynamically (in terms of CPU speed and CPU cores). This
+suspicious scalability-averse behavior may ring more than a mere
+code-aesthetic alarm.
+
+&gt;<i> Last: if you increase the cpu clock your 'tax'
+</I>&gt;<i> goes up, but it can go only to the worst case: single byte reads, and you
+</I>&gt;<i> still have a net gain.
+</I>
+Can you develop a bit on what is the basis of this claim?
+Somehow, the above numbers push me as far as to suspect gpsd might
+actually (and to a certain point) run slower on faster machines...
+
+
+Cheers,
+
+-- 
+Olivier
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007825.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+	<LI>Next message: <A HREF="007835.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7829">[ date ]</a>
+              <a href="thread.html#7829">[ thread ]</a>
+              <a href="subject.html#7829">[ subject ]</a>
+              <a href="author.html#7829">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

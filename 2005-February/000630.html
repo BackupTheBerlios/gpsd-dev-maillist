@@ -1,0 +1,143 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Success!  (was: gpsd now hunts baud rates)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Success%21%20%20%28was%3A%20gpsd%20now%20hunts%20baud%20rates%29&In-Reply-To=%3CPine.BSO.4.61.0502132152560.19675%40pyxis.cns.ualberta.ca%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000628.html">
+   <LINK REL="Next"  HREF="000634.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Success!  (was: gpsd now hunts baud rates)</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Success%21%20%20%28was%3A%20gpsd%20now%20hunts%20baud%20rates%29&In-Reply-To=%3CPine.BSO.4.61.0502132152560.19675%40pyxis.cns.ualberta.ca%3E"
+       TITLE="[Gpsd-dev] Success!  (was: gpsd now hunts baud rates)">ckuethe at ualberta.ca
+       </A><BR>
+    <I>Mon Feb 14 07:18:43 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000628.html">[Gpsd-dev] Success!  (was: gpsd now hunts baud rates)
+</A></li>
+        <LI>Next message: <A HREF="000634.html">[Gpsd-dev] Success!  (was: gpsd now hunts baud rates)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#630">[ date ]</a>
+              <a href="thread.html#630">[ thread ]</a>
+              <a href="subject.html#630">[ subject ]</a>
+              <a href="author.html#630">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sun, 13 Feb 2005, Eric S. Raymond wrote:
+
+&gt;<i> Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt;:
+</I>&gt;&gt;<i> But I just solved that one!  Turns out what's needed is some settle time
+</I>&gt;&gt;<i> after the $PSRF is shipped but before you change the link speed.  One
+</I>&gt;&gt;<i> second does it; I'm going to do the obvious binary search and see if I
+</I>&gt;&gt;<i> can shave something off that.
+</I>&gt;<i>
+</I>&gt;<i> OK, so the magic number is somewhere between 40 and 50 milliseconds.
+</I>&gt;<i> You have to idle that long after $PSRF100 before doing the baud rate
+</I>&gt;<i> change, or it gets silently ignored by the GPS.
+</I>
+I go for 50ms. It's a nice round number and it seems to work for all the
+various hardware I have:
+
+Pharos iGPS360 + GSW 2.3.1ES + prolific 
+Rayming TN-200 + GSW 2.3.1 + ftdi
+Rayming TN-200 + GSW 2.3.2 + ftdi
+
+&gt;<i> I'd bet you and Chris Kuethe a good steak dinner that number either
+</I>&gt;<i> (a) comes out of the guts of the UART on the *GPS* side somewhere,
+</I>&gt;<i> like the 1.25 seconds of settle time it needs after a baud change, or
+</I>&gt;<i> (b) has something to do with processing latencies in the GPS chipset
+</I>&gt;<i> itelf.
+</I>
+Cool. This is the second time today I've had the opportunity of STFU and
+RTFM. This time, I took it. :)
+
+As far ask I can tell, the input messages return an &quot;Ack InputXXX.&quot; string,
+so if you're quick enough about it, you should be able to see &quot;Ack Input100.&quot;
+coming back at you before the baud change.
+
+I bet there's a delay time related to the speed. I run my receivers at 57600
+when possible, and 50ms works for me. The SiRFstarII has an embedded ARM7TDMI
+core...
+
+<A HREF="http://www.samsung.com/Products/Semiconductor/SystemLSI/Networks/PersonalNTASSP/CommunicationProcessor/S3C4510B/um_s3c4510b_rev1.pdf">http://www.samsung.com/Products/Semiconductor/SystemLSI/Networks/PersonalNTASSP/CommunicationProcessor/S3C4510B/um_s3c4510b_rev1.pdf</A>
+It's not exactly the same ARM7 that SiRF uses, but it talks a lot about the
+peripherals. Look for &quot;HDLC BRG Time Constant Register&quot;
+
+&quot;The HDLC BRG time constant register value can be changed at any time, but
+the new value does not take effect until the next time the constant is loaded
+into the down counter. No attempt is made to synchronize the loading of the
+time constant into HBRGTC while the clock is driving the down counter. For
+this reason, you should first disable the baud rate generator before loading
+the new time constant into the HBRGTC register.&quot;
+
+&gt;<i> I feel better now.  This has been bugging me for three days.  Have I
+</I>&gt;<i> mentioned that I hate serial-device programming?
+</I>
+This is why I did it in perl and why I offloaded it to a module that
+WorksForMe(tm). I just couldn't stomach the thought of doing all this
+bitbanging myself.
+
+&gt;<i> Backstory, for those as haven't seen it: I wanted to be able to change
+</I>&gt;<i> the baud rate of the link so I could profile for latency at different
+</I>&gt;<i> baud rates and see if line speed really matters.
+</I>
+Off the cuff I'd say it does matter: some messages are variable length
+(Like GPGSA and GPGSV) and the faster we can transmit those bloated piggy
+messages, the better.
+
+&gt;<i> Now to see if I can figure out how to probe for a SiRF device
+</I>&gt;<i> with $PSRF105,1*3E\r\n and looking for an $Ack response.  I couldn't
+</I>&gt;<i> make this work before, but the obvious next thing to try is to put
+</I>&gt;<i> a sleep(1) after the send...
+</I>
+Or a $Nak if you want to avoid changing anything. :)
+
+&gt;<i> Hey Chris, want me to put you on the dev list?
+</I>
+Already done.
+&gt;<i> 		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+</I>&gt;<i>
+</I>
+-- 
+Chris Kuethe, GCIA CISSP: Secure Systems Specialist - U of A CNS
+       office: 157 General Services Bldg.    +1.780.492.8135
+               chris.kuethe@[pyxis.cns.]ualberta.ca
+
+      GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000628.html">[Gpsd-dev] Success!  (was: gpsd now hunts baud rates)
+</A></li>
+	<LI>Next message: <A HREF="000634.html">[Gpsd-dev] Success!  (was: gpsd now hunts baud rates)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#630">[ date ]</a>
+              <a href="thread.html#630">[ thread ]</a>
+              <a href="subject.html#630">[ subject ]</a>
+              <a href="author.html#630">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

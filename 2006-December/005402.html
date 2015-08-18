@@ -1,0 +1,144 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Advice on how a driver is expected to behave
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Advice%20on%20how%20a%20driver%20is%20expected%20to%20behave&In-Reply-To=%3C200612072033.18735.mick.durkin%40saunalahti.fi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005398.html">
+   <LINK REL="Next"  HREF="005403.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Advice on how a driver is expected to behave</H1>
+    <B>Mick Durkin</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Advice%20on%20how%20a%20driver%20is%20expected%20to%20behave&In-Reply-To=%3C200612072033.18735.mick.durkin%40saunalahti.fi%3E"
+       TITLE="[Gpsd-dev] Advice on how a driver is expected to behave">mick.durkin at saunalahti.fi
+       </A><BR>
+    <I>Thu Dec  7 19:33:18 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005398.html">[Gpsd-dev] Advice on how a driver is expected to behave
+</A></li>
+        <LI>Next message: <A HREF="005403.html">[Gpsd-dev] Advice on how a driver is expected to behave
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5402">[ date ]</a>
+              <a href="thread.html#5402">[ thread ]</a>
+              <a href="subject.html#5402">[ subject ]</a>
+              <a href="author.html#5402">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Eric,
+
+Ok, your comments absorbed and implemented.
+
+Now the story goes like this:-
+
+1) Fire up with &quot;gpsd -N -D1 /dev/ttyS0&quot; as before.
+
+2) Probe is found in the capability table for my driver, so a probe call is 
+issued. My probe routine finds my device and reports this to the daemon. 
+While doing this, it fiddles with the serial port, so it saves the original 
+port data for restoration in step 5).
+
+3) Subtype probe is found in the capability table for my driver, so a subtype 
+probe call is issued. This sends a Device ID command which returns a block of 
+data, including the software type. This is not actually trapped here, but I 
+take advantage of the fact that we will now run the normal parser until we 
+get a good packet.
+
+4) We wait for a good packet, which will be provided by the Device ID command 
+just issued. My driver checks to see if we have stored the Software info in 
+the gps_device_t private data union and at this point we haven't, so it 
+stores it and sets the DEVICE_ID flag. If this same command comes along 
+later, we don't repeat this action.
+
+5) Now we are done, since there is no client waiting for us, so we issue a 
+wrapup. This restores any changes we may have done to the device (none in my 
+case, since we haven't issued a configurator call) and restores the serial 
+port settings from step 2) above.
+
+6) If the daemon is terminated here, there is nothing to do relating to my 
+driver, so only general housekeeping takes place.
+
+=====================================================
+
+7) If a client came along after step 5), we repeat steps 2) and 3), but extend 
+step 3) to include a configurator call. This does two things in my driver; it 
+checks some stuff like Position Hold mode and stores the present values in 
+the gps_device_t private data union . It then programs the device with values 
+that are appropriate to this (gpsd) use. These changes are guarded by flags 
+in the gps_device_t private data union so that changes are remembered and 
+once-only. These will be restored when we issue a wrapup call. We also 
+activate the reports gpsd needs. These are cancelled when we issue a revert 
+call.
+
+8) When the client goes away, we issue a revert call, which switches off the 
+reports.
+
+9) We then issue a wrapup call. This inspects the flags and restores any 
+parameters we have messed with. Finally, we restore the port parameters to 
+the values saved in step 2).
+
+10) Either a client comes back and we restart at step 7) or we kill the daemon 
+off.
+
+==========================================================
+
+Apart from deferring the software version store operation from the subtype 
+probe proper (which would involve writing some &quot;local&quot; parsing code) until we 
+parse the reply normally, I think the above follows what you expect a probing 
+driver to do.
+
+If this is ok, then it will form the basis if the story I will be putting in 
+one of the documents I am preparing that describe the various parts of the 
+codebase.
+
+=============================================================
+
+When I have the above clarified, I will come back with what I get 
+in &quot;gpsd -n -N -D1 /dev/ttyS0&quot; mode. This is different and I am not sure if 
+it is doing what it should, but one step at a time.
+
+I am also still not clear why we grab a new fd when the client comes alive. If 
+we have released the original fd (used in the actual probe attempt), why 
+don't we re-seize it? If we drop and reactivate the client several times, we 
+always get the same fd. My expectation is that we should always grab the 
+first free fd; especially since it appears from the client behaviour that we 
+are not sequencing through the fds. Does this imply we are not really 
+releasing the first fd properly or is something (unseen?) grabbing it?
+
+Best Regards
+
+Mick
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005398.html">[Gpsd-dev] Advice on how a driver is expected to behave
+</A></li>
+	<LI>Next message: <A HREF="005403.html">[Gpsd-dev] Advice on how a driver is expected to behave
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5402">[ date ]</a>
+              <a href="thread.html#5402">[ thread ]</a>
+              <a href="subject.html#5402">[ subject ]</a>
+              <a href="author.html#5402">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

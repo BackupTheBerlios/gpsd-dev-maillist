@@ -1,0 +1,172 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Wait versus nowait
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Wait%20versus%20nowait&In-Reply-To=%3C20090319195907.A4EAE830235%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006650.html">
+   <LINK REL="Next"  HREF="006606.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Wait versus nowait</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Wait%20versus%20nowait&In-Reply-To=%3C20090319195907.A4EAE830235%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Wait versus nowait">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Thu Mar 19 20:59:07 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006650.html">[Gpsd-dev] Other protocol requirements
+</A></li>
+        <LI>Next message: <A HREF="006606.html">[Gpsd-dev] Wait versus nowait
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6603">[ date ]</a>
+              <a href="thread.html#6603">[ thread ]</a>
+              <a href="subject.html#6603">[ subject ]</a>
+              <a href="author.html#6603">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>The normal behavior of gpsd used to be that it it did not open a GPS
+device immediately on being informed of its existence.  Instead it
+would wait until a client session requested fixes, at which point it
+would pick a GPS from the available set and open it.
+
+The reason for the &quot;wait&quot; behavior was battery-powered devices.  In
+pre-USB days many RS232 GPSes required on-board batteries, and would
+enter a low-power sleep mode unless some control signal was asserted
+by device open.  It was therefore a good idea to delay device open
+as long as possible, and close the device when it had no clients.
+
+Two releases ago, ckuethe changed this behavior.  Initially he
+inverted the sense of the -n flag, so the default became no-wait
+with -n meaning wait.  I slapped him upside the head for this,
+pointing out that it is wrong to invert the sense of a flag people
+might well be using in script invocations; he swiftly perceived the
+error of his ways (his change comment reads &quot;Bad hacker, no biscuit&quot;) 
+but only half-reverted the change. He just *disabled* the -n option, 
+leaving no-wait as the only mode.
+
+I thought this was a mistake forreasins I'll make clear below, but in
+the absence of any complaints from real users it was not one I was
+prepared to tussle with ckuethe about.  I don't use a battery-powered
+GPS myself, and ckuethe claimed that nowait was only solving a
+pseudoproblem because powered-up GPSes only draw trivial amounts of
+power anyway.
+
+Now, however, were have a complaint from a real user.  He noticed that
+the no-wait behavior is gone and doesn't like it.
+
+Lukasz Stelmach &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">stlman at poczta.fm</A>&gt;:
+&gt;<i> This is still very usefull with my (and I think most) bluetooth
+</I>&gt;<i> GPS units which go standby (saving a lot of power) when not used.
+</I>&gt;<i> Gpsd can be started and ready to accept connections but the receiver
+</I>&gt;<i> is not used until I actually want some data.
+</I>&gt;<i> 
+</I>&gt;<i> IMHO gpsd could refrain from opening the device at startup until
+</I>&gt;<i> the first client connects. With such arrangement it would be possible
+</I>&gt;<i> to start gpsd with a BT GPS unit turned off until I actually
+</I>&gt;<i> want to use it.
+</I>
+This means I can no longer avoid the question of whether I need to
+reverse ckuethe on this.  We have three options.
+
+1. Decide this is a non-problem and tell Lukaz &quot;won't fix&quot;
+
+I think this response is justified only if the power savings from
+leaving a GPS device closed are in fact trivial.  This leads me to
+question A:
+
+A. Does anyone have actual data on the degree to which having a GPS
+open shortens battery dwell time?  Is there a principled reason to
+believe this effect is significant?
+
+2. Restore the old behavior, defaulting to wait
+
+-n still works to set nowait; the option logic was never removed.  I
+lean towards this solution, if only for backward compatibility with
+old scripts.
+
+3. Leave the default at no-wait and create a new option to enable waiting.
+
+This is what ckuethe wants to do.  He *hates* wait mode - he gets more
+upset about this issue on IRC than I've ever seen him be about
+anything else - but for reasons he has never managed to explain to me
+very clearly; he just says it's &quot;confusing&quot;.  He wants no-wait to remain
+the default.
+
+This leads us to question B:
+
+B. Ignoring history for the moment and in purely functional terms,
+should gpsd default to wait or no-wait behavior?
+
+My view is that the alternative that can silently drain a user's
+device batteries to no purpose starts out with a functional strike
+against it, compared to the alternative that doesn't.  (Which is why I
+want better data on whether or not this is really an issue.)
+
+My view is also that history should win if these alternatives are of
+roughly equal utility.  That is, unless there is a compelling
+argument for defaulting to no-wait, we should restore the old
+behavior.
+
+It seems to me that this question pits groups of gpsd users
+against each other according to which use cases dominate for them. 
+
+Group A: Users of battery-powered GPSes (which these days mostly means
+Bluetooth).  They want the default that drains the battery least.
+
+Group B: 1PPS users who run gpsd in clientless mode to assist a 
+time service.  They don't want gpsd to wait on a client to connect
+because there aren't going to be any clients.  For them, having to
+type -n is just overhead.  ckuethe seems to be in this group.
+
+Group C: People who run gpsd from custom scripts or launch it from
+other programs. What *they* want is for default behaviors and the
+meaning of command-line switches not to change.  We did them a 
+real disservice, and they'll want it fixed if they notice.
+
+I'd like some discussion from users and devs on this.  Whose use cases
+should we give priority to, and why?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+...Virtually never are murderers the ordinary, law-abiding people
+against whom gun bans are aimed.  Almost without exception, murderers
+are extreme aberrants with lifelong histories of crime, substance
+abuse, psychopathology, mental retardation and/or irrational violence
+against those around them, as well as other hazardous behavior, e.g.,
+automobile and gun accidents.&quot;
+        -- Don B. Kates, writing on statistical patterns in gun crime
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006650.html">[Gpsd-dev] Other protocol requirements
+</A></li>
+	<LI>Next message: <A HREF="006606.html">[Gpsd-dev] Wait versus nowait
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6603">[ date ]</a>
+              <a href="thread.html#6603">[ thread ]</a>
+              <a href="subject.html#6603">[ subject ]</a>
+              <a href="author.html#6603">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

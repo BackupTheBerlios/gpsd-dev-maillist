@@ -1,0 +1,118 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Altitude%20not%20always%20being%20reported&In-Reply-To=%3C3C77E857-6E99-4F86-A7D8-BD1D89C970F8%40qwest.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003546.html">
+   <LINK REL="Next"  HREF="003548.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported</H1>
+    <B>Dan Oetting</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Altitude%20not%20always%20being%20reported&In-Reply-To=%3C3C77E857-6E99-4F86-A7D8-BD1D89C970F8%40qwest.net%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported">dan_oetting at qwest.net
+       </A><BR>
+    <I>Thu May 25 10:42:13 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003546.html">[Gpsd-dev] Re: gpsmm_test.cpp doesn't compile
+</A></li>
+        <LI>Next message: <A HREF="003548.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3547">[ date ]</a>
+              <a href="thread.html#3547">[ thread ]</a>
+              <a href="subject.html#3547">[ subject ]</a>
+              <a href="author.html#3547">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On May 23, 2006, at 6:44 PM, Robin L Darroch wrote:
+
+&gt;&gt;<i> You might say that the client should interpolate the data itself.  
+</I>&gt;&gt;<i> But can it? In order for the client to interpolate the data it  
+</I>&gt;&gt;<i> needs to know the offset between it's time reference and the GPS  
+</I>&gt;&gt;<i> time. If all of it's queries are buffered there is always a 1  
+</I>&gt;&gt;<i> second jitter in the time.
+</I>&gt;<i>
+</I>&gt;<i> In fact, it just needs that information implicitly, not in any  
+</I>&gt;<i> explicitly calculated way.  If there is a substantial delay between  
+</I>&gt;<i> when the GPS calculates a fix and when it sends the data to the  
+</I>&gt;<i> computer, there's not really much we can do about that.  Here's an  
+</I>&gt;<i> example of how to make a client which does its own extrapolation:
+</I>&gt;<i>
+</I>&gt;<i> Thread 1: GPS handler.  Sets watcher mode.  Each time a report is  
+</I>&gt;<i> received, it stores that data along with the result of a call to  
+</I>&gt;<i> gettimeofday() (so that we have microsecond precision, rather than  
+</I>&gt;<i> just seconds from time()).  No need to &quot;double-buffer&quot; - just the  
+</I>&gt;<i> latest complete O report is sufficient.  When it receives a query  
+</I>&gt;<i> from thread 2, it applies a differential correction to the last  
+</I>&gt;<i> reported position, based on the last reported velocity and the  
+</I>&gt;<i> difference between the stored gettimeofday() time and a new  
+</I>&gt;<i> gettimeofday() call.
+</I>&gt;<i>
+</I>&gt;<i> Thread 2: main application.  Driven by whatever events you want it  
+</I>&gt;<i> to be.  Queries thread 1 whenever it needs an accurate GPS position  
+</I>&gt;<i> NOW.
+</I>&gt;<i>
+</I>&gt;<i> The accuracy of that arrangement (which would typically be no more  
+</I>&gt;<i> than a couple of hundredths of a second worth of processing time  
+</I>&gt;<i> variation at the outside) is going to be far better than the  
+</I>&gt;<i> inherent accuracy of GPS, so we can't do better than that... and  
+</I>&gt;<i> that's all on the client side.
+</I>
+t=-?: GPS computes the fix for the top of the next second
+t=0.0: GPS begins to transmit data
+t=0.a: GPSd receives all data for current cycle
+		and sends current fix to client, client records system time of fix
+t=x: Client receives event and records system time of event
+		client computes delta (x - 0.a) to apply to fix from t=0.
+
+This still leaves the uncorrected offset (0.a - 0.0) (which can be a  
+significant fraction of a second). The only current way for the  
+client to correct for this error is to know that NTPd is running and  
+has synchronized the system clock to the GPS time. If the system  
+clock is not synchronized, attempts by the client to correct the fix  
+could lead to gross errors.
+
+Since GPSd is already capable of computing the time of the start of  
+cycle to pass to NTPd it would be almost trivial to offset query mode  
+results to the time of the query. This isn't a significant  
+modification of the results since it is exactly what the GPS did when  
+it computed the fix for the future cycle. GPSd was already thoughtful  
+enough to include the fractional second in the time results.
+
+-- Dan Oetting
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003546.html">[Gpsd-dev] Re: gpsmm_test.cpp doesn't compile
+</A></li>
+	<LI>Next message: <A HREF="003548.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3547">[ date ]</a>
+              <a href="thread.html#3547">[ thread ]</a>
+              <a href="subject.html#3547">[ subject ]</a>
+              <a href="author.html#3547">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

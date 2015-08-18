@@ -1,0 +1,159 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] How to log GPS(d) positions?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20How%20to%20log%20GPS%28d%29%20positions%3F&In-Reply-To=%3C554005.50697.qm%40web32502.mail.mud.yahoo.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005592.html">
+   <LINK REL="Next"  HREF="005597.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] How to log GPS(d) positions?</H1>
+    <B>Michael R. Davis</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20How%20to%20log%20GPS%28d%29%20positions%3F&In-Reply-To=%3C554005.50697.qm%40web32502.mail.mud.yahoo.com%3E"
+       TITLE="[Gpsd-dev] How to log GPS(d) positions?">mrdvt92 at yahoo.com
+       </A><BR>
+    <I>Tue Mar 27 17:06:13 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005592.html">[Gpsd-dev] How to log GPS(d) positions?
+</A></li>
+        <LI>Next message: <A HREF="005597.html">[Gpsd-dev] Setting the listener address, and future design direction
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5595">[ date ]</a>
+              <a href="thread.html#5595">[ thread ]</a>
+              <a href="subject.html#5595">[ subject ]</a>
+              <a href="author.html#5595">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Lauri,
+&gt;<i> &gt; Thanks to both of you for your answers. In fact, I would be more
+</I>&gt;<i> &gt; interested in the number of satellites used in the fix than the
+</I>&gt;<i> total
+</I>&gt;<i> &gt; amount of satellites visible in the sky. Can that be extracted from
+</I>&gt;<i> the gpspipe output?
+</I>
+Yes indeed!
+Try this...
+
+
+gpspipe -w gpsd.mainframe.cx | perl -e '
+use strict;
+my ($satused, $sat, $lat, $lon)=(0,0,0);
+
+while(&lt;&gt;) {
+  chomp;
+  if (m/GPSD,Y=(.*)/) { #satelites in view line
+    my @a=map {[split(/\s+/, $_)]} split(/:/, $1);
+    $sat=$a[0][2]; #sats in view
+    $satused=0;
+    $satused+=$a[$_][4] foreach (1..$#a); #sats used
+     print &quot;$_\n&quot;;
+  } elsif (m/GPSD,O=(.*)/) { #PVT line
+    my @a=split(&quot; &quot;, $1);
+    ($lat, $lon)=($a[3], $a[4]);
+    print join(&quot;|&quot;, $satused,$lat,$lon), &quot;\n&quot;;
+    print &quot;$_\n&quot;;
+  }}'
+
+
+
+--- Chris Kuethe &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">chris.kuethe at gmail.com</A>&gt; wrote:
+
+&gt;<i> On 3/27/07, Lauri Kolehmainen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">lauri at roju.org</A>&gt; wrote:
+</I>&gt;<i> &gt; Hi,
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Thanks to both of you for your answers. In fact, I would be more
+</I>&gt;<i> &gt; interested in the number of satellites used in the fix than the
+</I>&gt;<i> total
+</I>&gt;<i> &gt; amount of satellites visible in the sky. Can that be extracted from
+</I>&gt;<i> the
+</I>&gt;<i> &gt; gpspipe output? If so, what changes do I have to make to the code?
+</I>&gt;<i> 
+</I>&gt;<i> With all the love in my heart: RTFM.
+</I>&gt;<i> 
+</I>&gt;<i> Depending on what you're doing, you may wish to write your own
+</I>&gt;<i> polling
+</I>&gt;<i> engine ... any scripting language with do ... and send a query to get
+</I>&gt;<i> what you're after. the &quot;Q&quot; message which is not sent in watcher mode
+</I>&gt;<i> will give you number of PRNs used, and DOP figures. This is the
+</I>&gt;<i> reason
+</I>&gt;<i> why my script that generates the monitor page uses &quot;SPAMQY&quot; as a
+</I>&gt;<i> query.
+</I>&gt;<i> 
+</I>&gt;<i> Failing that, the Y message (which is sent by watcher mode) does tell
+</I>&gt;<i> you which ones were used in the last navigation solution. This is
+</I>&gt;<i> documented in the manpage: &quot;... quintuples  of  satellite  PRNs,
+</I>&gt;<i> elevation/azimuth pairs (elevation an  integer  formatted  as  %d  in
+</I>&gt;<i> range  0-90,  azimuth an integer formatted as %d in range 0-359),
+</I>&gt;<i> signal strengths in decibels,  and  1 or 0 according as the satellite
+</I>&gt;<i> was or was not used in the last fix.&quot; From there, you just have to
+</I>&gt;<i> parse the message and count the number of PRNs marked as used.
+</I>&gt;<i> 
+</I>&gt;<i> Also you could just log the raw output of my receiver with gpspipe -R
+</I>&gt;<i> &gt; file, and re-process it later.
+</I>&gt;<i> 
+</I>&gt;<i> &gt; And don't worry, I will be using my own gpsd server while I get
+</I>&gt;<i> things
+</I>&gt;<i> &gt; up and running :) Unfortunately the server in question isn't
+</I>&gt;<i> visible to
+</I>&gt;<i> &gt; the internet, otherwise I'd be more than glad to set up a web
+</I>&gt;<i> service
+</I>&gt;<i> &gt; like the one at gpsd.mainframe.cx.
+</I>&gt;<i> 
+</I>&gt;<i> If I really had a problem with people knowing where the top of an
+</I>&gt;<i> office building is, I'd a) packet filter my gpsd, and b) ask google
+</I>&gt;<i> to
+</I>&gt;<i> delete the imagery. If you ever do get around to making your gpsd
+</I>&gt;<i> publicly visible, that'd be great.
+</I>&gt;<i> 
+</I>&gt;<i> CK
+</I>&gt;<i> 
+</I>&gt;<i> -- 
+</I>&gt;<i> GDB has a 'break' feature; why doesn't it have 'fix' too?
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i> 
+</I>
+
+
+ 
+____________________________________________________________________________________
+Bored stiff? Loosen up... 
+Download and play hundreds of games for free on Yahoo! Games.
+<A HREF="http://games.yahoo.com/games/front">http://games.yahoo.com/games/front</A>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005592.html">[Gpsd-dev] How to log GPS(d) positions?
+</A></li>
+	<LI>Next message: <A HREF="005597.html">[Gpsd-dev] Setting the listener address, and future design direction
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5595">[ date ]</a>
+              <a href="thread.html#5595">[ thread ]</a>
+              <a href="subject.html#5595">[ subject ]</a>
+              <a href="author.html#5595">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

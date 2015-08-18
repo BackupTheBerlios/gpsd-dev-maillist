@@ -1,0 +1,138 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] RFC: GPS parameters &amp; A-GPS
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20RFC%3A%20GPS%20parameters%20%26%20A-GPS&In-Reply-To=%3C20091015130254.GA31606%40ev-en.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006963.html">
+   <LINK REL="Next"  HREF="006962.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] RFC: GPS parameters &amp; A-GPS</H1>
+    <B>Baruch Even</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20RFC%3A%20GPS%20parameters%20%26%20A-GPS&In-Reply-To=%3C20091015130254.GA31606%40ev-en.org%3E"
+       TITLE="[Gpsd-dev] RFC: GPS parameters &amp; A-GPS">baruch at ev-en.org
+       </A><BR>
+    <I>Thu Oct 15 15:02:54 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006963.html">[Gpsd-dev] SVN 6397 issues JSON warnings and RPM catch 22
+</A></li>
+        <LI>Next message: <A HREF="006962.html">[Gpsd-dev] RFC: GPS parameters &amp; A-GPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6955">[ date ]</a>
+              <a href="thread.html#6955">[ thread ]</a>
+              <a href="subject.html#6955">[ subject ]</a>
+              <a href="author.html#6955">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+I'd like to add some new features to gpsd and would like to discuss them
+before I spend time to implement them, I'd like to see if it will be
+accepted in gpsd.
+
+My knowledge is about the u-blox 4 GPS which is available in the Neo
+Freerunner phone, I didn't yet take a look at other GPSs, maybe others
+can chime in how such features are relevant to other models.
+
+The features I'd like to support in the u-blox 4 are:
+* Navigation parameters (CFG-NAV2, CFG-SBAS)
+* Ephemeris &amp; Almanac download/upload
+* A-GPS support
+
+Navigation Parameters
+---------------------
+
+The navigation parameters include two key params: Mode &amp; Static
+threshold. Mode can be Stationary, Pedestrian, Car, Marine and three
+levels of Flight (&lt;1g, &lt;2g &amp; &lt;4g). Static threshold is a value in cm/s
+below which the GPS doesn't consider it a movement. The Static threshold
+helps to get a cleaner signal when the car is stopped at a red-light
+f.ex.
+
+There may be additional parameters but these two are the key, the rest
+can be supported as well.
+
+My thinking for the parameters is to have a GPSD api to get all
+parameters, this will give us the name and the value and to be able to
+set them. We can try to map the parameters appropriate to different GPSs
+so that we will have as much in common between them all.
+
+
+Ephemeris &amp; Almanac download/upload
+-----------------------------------
+
+The u-blox 4 allows the user to get periodically the ephemeris &amp; almanac
+and to upload it at startup so that if the user restarts the GPS not too
+long after he turned it off the GPS can get a hot-start and get a fix
+very quickly. This is currently employed in the Freerunner FSO framework
+to great success. The logic is simple, get the ephemeris, keep it in
+memory, when the gps is turned off save it to disk, when the gps is
+started load it back up. Saving it to disk is debatable.
+
+This can be extended to download the data from the u-blox assist online
+website just before the user leaves his network connection. This needs
+to be triggered from outside.
+
+I've seen a few discussions in the past regarding ephemeris download and
+upload but that was in relation to a TCP/IP server, here I'm interested
+in the local saving of the data, once we have that it should also be
+possible to create an open service that collects such information and
+distributes it.
+
+A-GPS
+-----
+
+The idea here is part of the one above, A-GPS in this context is to
+provide the GPS with a good time and location estimates to start with.
+The time can be taken from the system, maybe with an offset if the
+system time is found to be wrong.
+
+The location can be estimated externally by different means, in my case
+I already implemented a crude service to estimate the location based on
+GSM cell data, so that you can get not-too-bad estimate in a second and
+feed it to the gps so it will have a chance to get a faster fix. The
+accuracy of the GSM location is at worst about 30Km (give or take),
+which should be sufficient for the GPS.
+
+In this case we need a way to register an A-GPS provider with gpsd so
+that we can register multiple providers (maybe wifi hot-spot based) and
+let gpsd use it as needed.
+
+
+Cheers,
+Baruch
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006963.html">[Gpsd-dev] SVN 6397 issues JSON warnings and RPM catch 22
+</A></li>
+	<LI>Next message: <A HREF="006962.html">[Gpsd-dev] RFC: GPS parameters &amp; A-GPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6955">[ date ]</a>
+              <a href="thread.html#6955">[ thread ]</a>
+              <a href="subject.html#6955">[ subject ]</a>
+              <a href="author.html#6955">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

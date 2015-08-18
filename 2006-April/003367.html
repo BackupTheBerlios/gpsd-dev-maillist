@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Altitude%20not%20always%20being%20reported&In-Reply-To=%3C5508.213.84.187.156.1144093082.squirrel%40webmail.xs4all.nl%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003365.html">
+   <LINK REL="Next"  HREF="003368.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Altitude%20not%20always%20being%20reported&In-Reply-To=%3C5508.213.84.187.156.1144093082.squirrel%40webmail.xs4all.nl%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported">gpsd at xs4all.nl
+       </A><BR>
+    <I>Mon Apr  3 21:38:02 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003365.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+        <LI>Next message: <A HREF="003368.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3367">[ date ]</a>
+              <a href="thread.html#3367">[ thread ]</a>
+              <a href="subject.html#3367">[ subject ]</a>
+              <a href="author.html#3367">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> Now, here's my question to the dev-list: is there actually a reason
+</I>&gt;<i> to cause GPSD to discard the last frame's data at the beginning of a
+</I>&gt;<i> new frame?  We already have logic which prevents returning old data
+</I>&gt;<i> to those queries if the device has lost its fix - otherwise, the most
+</I>&gt;<i> correct answer (in the instant between a GGA and an RMC sentence) to
+</I>&gt;<i> &quot;where am I going&quot; is that information received from the *last* RMC
+</I>&gt;<i> sentence, not &quot;I can't tell you&quot;.
+</I>&gt;<i>
+</I>&gt;<i> In turn, the question arises: is there a reason to clear all data at
+</I>&gt;<i> &quot;CYCLE_START_SET&quot; at all... and if there still is for other
+</I>&gt;<i> protocols, should we update the NMEA handler to omit setting that
+</I>&gt;<i> flag?
+</I>
+This has been discussed before, and I agree with you that the situation is
+not optimal.
+I suggested before that the entire dataset should be double-buffered, i.e.
+a complete set of valid data should be kept to be returned in response to
+queries, and a new set be prepared while decoding the messages and
+transferred to the buffered set once it is complete.
+
+One problem is that it is not really clear at what time the dataset is
+complete.  This ony becomes obvious when new data appears that belongs to
+a next set, and waiting for that would delay all fixes for one additional
+cycletime (often one second).  This was deemed unacceptable by some
+people.
+
+Also, some receivers seem to send a new timestamp for each NMEA message,
+and it would be difficult to find the set of messages that form a single
+set without additional configuration.
+
+The buffering that is in place now (the newdata struct, the update flags,
+and the gps_merge_fix function) solved one particular problem, but they
+clearly do not solve it in the general case.  It would be best when GPS
+receivers returned all their fix data in a single message, but most of
+them don't.  For example, the Trimble TSIP protocol uses even more
+separate messages, and this causes even more trouble (which you seldomly
+see reported because most users use NMEA or SIRF Binary).
+
+Putting some thought into a general mechanism that makes sure that no
+&quot;unknown&quot; (NAN) values are returned for data that IS available but not at
+the current moment in the message cycle, while at the same time making
+sure that stale data is never returned, could really help the project.
+
+Rob
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003365.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+	<LI>Next message: <A HREF="003368.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3367">[ date ]</a>
+              <a href="thread.html#3367">[ thread ]</a>
+              <a href="subject.html#3367">[ subject ]</a>
+              <a href="author.html#3367">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

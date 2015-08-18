@@ -1,0 +1,103 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] PPS
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS&In-Reply-To=%3Calpine.DEB.1.10.0911112349120.20851%40org-pc51.fy.chalmers.se%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007038.html">
+   <LINK REL="Next"  HREF="007040.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] PPS</H1>
+    <B>H&#229;kan Johansson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS&In-Reply-To=%3Calpine.DEB.1.10.0911112349120.20851%40org-pc51.fy.chalmers.se%3E"
+       TITLE="[Gpsd-dev] PPS">f96hajo at chalmers.se
+       </A><BR>
+    <I>Thu Nov 12 00:03:31 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007038.html">[Gpsd-dev] PPS
+</A></li>
+        <LI>Next message: <A HREF="007040.html">[Gpsd-dev] PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7039">[ date ]</a>
+              <a href="thread.html#7039">[ thread ]</a>
+              <a href="subject.html#7039">[ subject ]</a>
+              <a href="author.html#7039">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Hi Gary,
+
+&gt;&gt;<i> I'm a bit worried about latency jitter triggering the pps monitor termination?
+</I>&gt;<i>
+</I>&gt;<i> Not seen it yet.  Do not ever expect to see it.  I am tempted to rip out
+</I>&gt;<i> the termination code.  I hate to have to restart gpsd just because I
+</I>&gt;<i> jiggled the PPS pin for 10 seconds.  Not pass the bad data to ntpd sure,
+</I>&gt;<i> but keep trying to get a good lock.
+</I>
+I've actually seen it happen now, or the effects at least.  Left my 
+computer for an hour.  Before it was sending data with ntpshm_pps, but 
+with some seconds already occasionally missing.  Afterwards only 
+ntpshm_put was still delivering.
+
+&gt;<i> There has also been chatter that some GPS may allow a valid PPS without
+</I>&gt;<i> a valid 2D fix.  Always checking and logging the PPS data will allow us
+</I>&gt;<i> to see if that is possible.
+</I>
+Yes, I have to Oncores which can do that with position hold.  When in that 
+mode, the modules do not set the bits in the serial data marking a valid 
+position fix.  Which is reasonable and fair enough.  (They do however tell 
+where they have been told that they are.)  Currently the message decoding 
+for the oncores will then not mark a valid position fix, with the 
+side-effect of preventing the PPS to work.  I think that either I have to 
+change the decoder to claim position fix when in position hold mode, or 
+some sort of marker that the timing is good is needed.
+
+&gt;&gt;<i> Would it not be beneficial to increase the allowed range of the period lock
+</I>&gt;&gt;<i> (now just +/- 100 us) to allow the pps signal to help drive the system clock
+</I>&gt;&gt;<i> earlier?  The other code at least allows one part in thousand error.
+</I>&gt;<i>
+</I>&gt;<i> Not sure what line of code you are referring to.
+</I>
+Oh, I meant the new
+
+if ( 999900 &lt; cycle &amp;&amp; 1000100 &gt; cycle ) {
+
+which is even stricter than the other check:
+
+} else if (cycle &gt; 999000 &amp;&amp; cycle &lt; 1001000 ) {
+
+// H&#229;kan
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007038.html">[Gpsd-dev] PPS
+</A></li>
+	<LI>Next message: <A HREF="007040.html">[Gpsd-dev] PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7039">[ date ]</a>
+              <a href="thread.html#7039">[ thread ]</a>
+              <a href="subject.html#7039">[ subject ]</a>
+              <a href="author.html#7039">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

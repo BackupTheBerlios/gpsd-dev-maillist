@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] State of Diego's Navcom driver,	and the regression tests.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20State%20of%20Diego%27s%20Navcom%20driver%2C%0A%09and%20the%20regression%20tests.&In-Reply-To=%3C91981b3e0701171820y21ee50ccvd111ecdf975ec441%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005506.html">
+   <LINK REL="Next"  HREF="005511.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] State of Diego's Navcom driver,	and the regression tests.</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20State%20of%20Diego%27s%20Navcom%20driver%2C%0A%09and%20the%20regression%20tests.&In-Reply-To=%3C91981b3e0701171820y21ee50ccvd111ecdf975ec441%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] State of Diego's Navcom driver,	and the regression tests.">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Thu Jan 18 03:20:19 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005506.html">[Gpsd-dev] minor auto* bugs, with patches
+</A></li>
+        <LI>Next message: <A HREF="005511.html">[Gpsd-dev] atan2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5510">[ date ]</a>
+              <a href="thread.html#5510">[ thread ]</a>
+              <a href="subject.html#5510">[ subject ]</a>
+              <a href="author.html#5510">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 12/14/06, Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> 2) If I build the regression tests on a 64-bit machine, they fail
+</I>&gt;<i> weirdly on 32-bit machines, and vice-versa.  Some of these divergences are
+</I>&gt;<i> just round-off errors in the low-order parts of trig functions.  Some
+</I>&gt;<i> of them are more disturbing, like fields that are NaN on 32 bits but not 64
+</I>&gt;<i> or vice-versa.
+</I>
+This is truly horrible.
+
+Some machines are better at behaving like 0 === +0 === -0. Zero is
+zero, it should have no sign, or sign should be irrelevant.
+
+This really bites us when atan2() is called. The attached program
+should should output all zeros, but it doesn't, at least not on Eric's
+Linux machines, nor on the OSX box I have access to.
+
+I guess this means I need to find a way to detect negative zero and
+turn it into... non-negative zero.
+
+/* ***************************************************************************
+*/
+#include &lt;sys/types.h&gt;
+#include &lt;math.h&gt;
+#include &lt;stdio.h&gt;
+main()
+{
+	volatile double a, b, c, d, minus_zero, plus_zero;
+
+	minus_zero = plus_zero = 0;
+	minus_zero *= -1.0;
+	plus_zero *= 1.0;
+
+	a = atan2(plus_zero, plus_zero);
+	b = atan2(minus_zero, minus_zero);
+	c = atan2(minus_zero, plus_zero);
+	d = atan2(plus_zero, minus_zero);
+
+	printf(&quot;%f %f %f %f %f %f\n&quot;, a, b, c, d, plus_zero, minus_zero);
+	printf(&quot;%g %g %g %g %g %g\n&quot;, a, b, c, d, plus_zero, minus_zero);
+}
+/* ***************************************************************************
+*/
+
+
+
+CK
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005506.html">[Gpsd-dev] minor auto* bugs, with patches
+</A></li>
+	<LI>Next message: <A HREF="005511.html">[Gpsd-dev] atan2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5510">[ date ]</a>
+              <a href="thread.html#5510">[ thread ]</a>
+              <a href="subject.html#5510">[ subject ]</a>
+              <a href="author.html#5510">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

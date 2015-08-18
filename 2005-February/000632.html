@@ -1,0 +1,870 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Garmin USB driver
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Garmin%20USB%20driver&In-Reply-To=%3CPine.LNX.4.62.0502140017440.10733%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000629.html">
+   <LINK REL="Next"  HREF="000633.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Garmin USB driver</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Garmin%20USB%20driver&In-Reply-To=%3CPine.LNX.4.62.0502140017440.10733%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] Garmin USB driver">gem at rellim.com
+       </A><BR>
+    <I>Mon Feb 14 09:42:58 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000629.html">[Gpsd-dev] Dang.  Probing for SiRFness still doesn't work for me
+</A></li>
+        <LI>Next message: <A HREF="000633.html">[Gpsd-dev] Garmin USB driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#632">[ date ]</a>
+              <a href="thread.html#632">[ thread ]</a>
+              <a href="subject.html#632">[ subject ]</a>
+              <a href="author.html#632">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo All!
+
+Here is my first cut at a native Garmin USB driver for gpsd.
+
+It is developed completely from the Garmin doc and the garmin_usb Linux
+driver.  I give it free and clear to the gpsd project to re-release
+under whatever license they choose to use.
+
+For my development I use the following contents to replace the file
+zodiac.c in the release tree.  Obviously this is not the ultimate way to
+go, but not being an autoconf wiz I hope someone else can do that part.
+
+This code initializes my GPS 18 and gathers good data, including: UTC,
+lat, lon, altitude, speed, track, satellite info, etc.  Most of it even
+makes it in to xgps for your viewing pleasure.
+
+This driver takes the binary data from the garmin_usb driver and fills
+in the &quot;struct session&quot; with good data.  Then uses scrounged parts from
+the zodiac driver to create NMEA sentences on the fly.  Since this is
+unlikely to be the last binary driver it would be good to take this
+duplicated code and make it a core routtine.
+
+This has no chance of working on anything but Linux, with the garmin_usb
+driver, with an Intel byte order.  The endian part can be fixed, not
+sure about garmin_usb drivers on non-Linux.
+
+The style is not exactly consistent, indenting is lousy, and I am sure
+it is full of bugs, but it sort of works and is a good start.
+
+Sort of because:
+	Satellties over 32 are being reported.
+	xgps says &quot;NO FIX&quot; and refuses to show the speed and track.
+	uses the #define ZODIAC_ENABLE instead of a proper one.
+        hangs in the fread loop instead of keeping state and returning.
+	surely lot's of undiscovered bugs.
+
+I put it out into the ether now because it is late and I have reached
+the state of exhaustion where only negative work is happening.  Hopefully
+some new eyes can carry this forward a bit before I can get back to it
+again.
+
+I welcome any and all comments, suggestions, flames, etc. in the hope of
+getting this thing in the gpsd code base so I can sit back and use my
+GPS 18.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+
+
+/*
+ * Handle the Garmin binary packet format supported by the USB Garmins
+ * tested with the Garmin 18
+ *
+ * This code is partly from the Garmin IOSDK and partly from the
+ * sample code in the Linux garmin_gps driver.
+ *
+ * Protocol info from the:
+ *	 GPS18_TechnicalSpecification.pdf
+ *	 iop_spec.pdf
+ * <A HREF="http://www.garmin.com/support/commProtocol.html">http://www.garmin.com/support/commProtocol.html</A>
+ *
+ * bad code by: Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;
+ *
+ * -D 3 = packet trace
+ * -D 4 = packet details
+ * -D 5 = more packet details
+ *
+ * limitations:
+ * do not really have from garmin:
+ *      pdop, so use epe instead
+ *      hdop, so use eph instead
+ *      vdop, so use epv instead
+ * do not have:
+ *	magnetic variation
+ *
+ */
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#define __USE_ISOC99
+#define __USE_GNU
+#include &lt;math.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+
+#include &quot;config.h&quot;
+#include &quot;gpsd.h&quot;
+
+#ifdef ZODIAC_ENABLE
+
+#define GARMIN_LAYERID_TRANSPORT  0
+#define GARMIN_LAYERID_APPL      20
+// Linux Garmin Usb driver layer-id to use for some control mechanisms
+#define GARMIN_LAYERID_PRIVATE  0x01106E4B
+
+// packet ids used in private layer
+#define PRIV_PKTID_SET_DEBUG    1
+#define PRIV_PKTID_SET_MODE     2
+#define PRIV_PKTID_INFO_REQ     3
+#define PRIV_PKTID_INFO_RESP    4
+#define PRIV_PKTID_RESET_REQ    5
+#define PRIV_PKTID_SET_DEF_MODE 6
+
+#define MODE_NATIVE          0
+#define MODE_GARMIN_SERIAL   1
+
+#define GARMIN_PKTID_TRANSPORT_START_SESSION_REQ 5
+#define GARMIN_PKTID_TRANSPORT_START_SESSION_RESP 6
+
+#define GARMIN_PKTID_PROTOCOL_ARRAY     253
+#define GARMIN_PKTID_PRODUCT_RQST       254
+#define GARMIN_PKTID_PRODUCT_DATA       255
+#define GARMIN_PKTID_PVT_DATA           51
+#define GARMIN_PKTID_SAT_DATA           114
+
+#define GARMIN_PKTID_L001_XFER_CMPLT     12
+#define GARMIN_PKTID_L001_COMMAND_DATA   10
+#define GARMIN_PKTID_L001_DATE_TIME_DATA 14
+#define GARMIN_PKTID_L001_RECORDS        27
+#define GARMIN_PKTID_L001_WPT_DATA       35
+
+#define MAX_BUFFER_SIZE 4096
+#define GARMIN_MAXCHANNELS 12
+
+// something magic about 64, garmin driver will not return more than
+// 64 at a time.  If you read less than 64 bytes the next read will
+// just get the last of the 64 byte buffer.
+#define ASYNC_DATA_SIZE 64
+
+
+#pragma pack(1)
+typedef struct {
+    unsigned char  mPacketType;
+    unsigned char  mReserved1;
+    unsigned short mReserved2;
+    unsigned short mPacketId;
+    unsigned short mReserved3;
+    unsigned long  mDataSize;
+    char  mData[MAX_BUFFER_SIZE];
+} Packet_t;
+
+typedef struct {
+	unsigned char  svid;
+	unsigned short snr; // 0 - 0xffff
+	unsigned char  elev;
+	unsigned short azmth;
+	unsigned char  status; // bit 0, has ephemeris, 1, has diff correction
+                               // bit 2 used in solution
+			       // bit 3??
+} cpo_sat_data;
+
+/* Garmin D800_Pvt_Date_Type */
+typedef struct {
+	float alt;  /* altitude above WGS 84 */
+	float epe;  /* estimated position error, 2 sigma (meters)  */
+	float eph;  /* epe, but horizontal only (meters) */
+	float epv;  /* epe but vertical only (meters ) */
+	short	fix; /* 0 - failed integrity check
+                      * 1 - invalid or unavailable fix
+                      * 2 - 2D
+                      * 3 - 3D
+		      * 4 - 2D Diff
+                      * 5 - 3D Diff
+                      */
+	double	gps_tow; /* gps time  os week (seconds) */
+	double	lat;     /* latitude (radians) */
+	double	lon;     /* longitude (radians) */
+	float	lon_vel; /* velovity east (meters/second) */
+	float	lat_vel; /* velovity north (meters/second) */
+	float	alt_vel; /* velovity up (meters/sec) */
+	float	msl_hght; /* height of WGS 84 above MSL */
+	short	leap_sec; /* diff between GPS and UTC (seconds) */
+	long	grmn_days;
+} cpo_pvt_data;
+
+typedef struct {
+	unsigned long cycles;
+	double	 pr;
+	unsigned short phase;
+	char slp_dtct;
+	unsigned char snr_dbhz;
+	char  svid;
+	char valid;
+} cpo_rcv_sv_data;
+
+typedef struct {
+	double rcvr_tow;
+	short	rcvr_wn;
+	cpo_rcv_sv_data sv[GARMIN_MAXCHANNELS];
+} cpo_rcv_data;
+
+
+// useful funcs to read/write ints, only tested on Intel byte order
+//  floats and doubles are Intel order only...
+static inline void set_int(unsigned char *buf, int value)
+{
+        buf[0] = 0xFF &amp; value;
+        buf[1] = 0xFF &amp; (value &gt;&gt; 8);
+        buf[2] = 0xFF &amp; (value &gt;&gt; 16);
+        buf[3] = 0xFF &amp; (value &gt;&gt; 24);
+}
+static inline int get_int(const unsigned char *buf)
+{
+        return  (0xFF &amp; buf[0]) | ((0xFF &amp; buf[1]) &lt;&lt; 8) | ((0xFF &amp; buf[2]) &lt;&lt; 16) | ((0xFF &amp; buf[3]) &lt;&lt; 24);
+}
+
+// convert radians to degrees
+static inline double  radtodeg( double rad) {
+	return ( rad * 180.0 *  M_1_PIl);
+}
+
+
+static double degtodm(double a)
+{
+    double m, t;
+    m = modf(a, &amp;t);
+    t = floor(a) * 100 + m * 60;
+    return t;
+}
+
+static void PrintPacket(struct gps_session_t *session, Packet_t *pkt );
+void SendPacket (struct gps_session_t *session, Packet_t *aPacket );
+Packet_t* GetPacket (struct gps_session_t *session );
+
+// For debugging, decodes and prints some known packets.
+static void PrintPacket(struct gps_session_t *session, Packet_t *pkt ) {
+    int maj_ver;
+    int min_ver;
+    int mode;
+    int prod_id;
+    int ver;
+    time_t time_l = 0;
+    unsigned int serial;
+    cpo_sat_data *sats = NULL;
+    cpo_pvt_data *pvt = NULL;
+    struct tm *tm = NULL;
+    char buf[BUFSIZE], *bufp = buf, *bufp2 = buf;
+    int i = 0, j = 0;
+    double track;
+
+    gpsd_report(3, &quot;PrintPacket() &quot;);
+
+    switch ( pkt-&gt;mPacketType ) {
+    case GARMIN_LAYERID_TRANSPORT:
+	gpsd_report(3, &quot;Transport &quot;);
+	switch( pkt-&gt;mPacketId ) {
+	case GARMIN_PKTID_TRANSPORT_START_SESSION_REQ:
+		gpsd_report(3, &quot;Start Session req\n&quot;);
+		break;
+	case GARMIN_PKTID_TRANSPORT_START_SESSION_RESP:
+		gpsd_report(3, &quot;Start Session resp\n&quot;);
+		break;
+	default:
+		gpsd_report(3, &quot;Packet: Type %d %d %d, ID: %d, Sz: %d\n&quot;
+			, pkt-&gt;mPacketType
+			, pkt-&gt;mReserved1
+			, pkt-&gt;mReserved2
+			, pkt-&gt;mPacketId
+			, pkt-&gt;mDataSize);
+		break;
+	    }
+	    break;
+    case GARMIN_LAYERID_APPL:
+	gpsd_report(3, &quot;Appl &quot;);
+	switch( pkt-&gt;mPacketId ) {
+	case GARMIN_PKTID_PRODUCT_RQST:
+		gpsd_report(3, &quot;Product Data req\n&quot;);
+		break;
+	case GARMIN_PKTID_PRODUCT_DATA:
+		prod_id = get_int(&amp;pkt-&gt;mData[0]);
+		ver = get_int(&amp;pkt-&gt;mData[4]);
+		gpsd_report(3, &quot;Product Data, sz: %d, ProdID: %d, SoftVer: %d, Desc: %s\n&quot;
+			, pkt-&gt;mDataSize
+			, prod_id, ver, &amp;pkt-&gt;mData[8]);
+		break;
+	case GARMIN_PKTID_PVT_DATA:
+
+		gpsd_report(3, &quot;PVT Data Sz: %d\n&quot;, pkt-&gt;mDataSize);
+
+		pvt = (cpo_pvt_data*)pkt-&gt;mData;
+
+		// 631065600, unix seconds for 31 Dec 1989
+		time_l = 631065600 + (pvt-&gt;grmn_days * 86400);
+		time_l -= pvt-&gt;leap_sec;
+		// gps_tow is always like x.999 or x.998 so just round it
+		//time_l += (long)nearbyint(pvt-&gt;gps_tow);
+		time_l += lrint(pvt-&gt;gps_tow);
+		//time_l += pvt-&gt;gps_tow;
+
+		gpsd_report(5, &quot;time_l: %ld\n&quot;, time_l);
+		tm = gmtime(&amp;time_l);
+		session-&gt;hours   = tm-&gt;tm_hour;
+		session-&gt;minutes = tm-&gt;tm_min;
+		session-&gt;seconds = tm-&gt;tm_sec;
+		session-&gt;day     = tm-&gt;tm_mday;
+		session-&gt;month   = tm-&gt;tm_mon + 1;
+		session-&gt;year    = tm-&gt;tm_year + 1900;
+
+		sprintf(session-&gt;gNMEAdata.utc
+			, &quot;%04d/%02d/%dT%02d:%02d:%02dZ&quot;
+			, tm-&gt;tm_year + 1900
+			, tm-&gt;tm_mon + 1
+			, tm-&gt;tm_mday
+			, tm-&gt;tm_hour
+			, tm-&gt;tm_min
+			, tm-&gt;tm_sec);
+
+		session-&gt;gNMEAdata.latitude = radtodeg(pvt-&gt;lat);
+		session-&gt;gNMEAdata.longitude = radtodeg(pvt-&gt;lon);
+		REFRESH(session-&gt;gNMEAdata.latlon_stamp);
+
+                // altitude over WGS84
+		session-&gt;gNMEAdata.altitude = pvt-&gt;alt;
+		// geoid separation from WGS 84
+		session-&gt;separation = pvt-&gt;msl_hght;
+		REFRESH(session-&gt;gNMEAdata.altitude_stamp);
+
+		// do not really have an ?dop, use ep? instead
+		session-&gt;gNMEAdata.pdop = pvt-&gt;epe;
+		session-&gt;gNMEAdata.hdop = pvt-&gt;eph;
+		session-&gt;gNMEAdata.vdop = pvt-&gt;epv;
+		REFRESH(session-&gt;gNMEAdata.fix_quality_stamp);
+
+		// convert lat/lon in meters/sec to speed in knots
+		session-&gt;gNMEAdata.speed
+		   = hypot(pvt-&gt;lon_vel, pvt-&gt;lat_vel) * 1.9438445;
+		REFRESH(session-&gt;gNMEAdata.speed_stamp);
+
+		track = atan2(pvt-&gt;lon_vel, pvt-&gt;lat_vel);
+                if (track &lt; 0) {
+                        track += 2 * M_PIl;
+		}
+		session-&gt;gNMEAdata.track = radtodeg(track);
+		REFRESH(session-&gt;gNMEAdata.track_stamp);
+
+
+		switch ( pvt-&gt;fix) {
+		case 0:
+		case 1:
+		default:
+			// no fix
+			session-&gt;gNMEAdata.status = STATUS_NO_FIX;
+			session-&gt;gNMEAdata.mode = MODE_NO_FIX;
+			break;
+		case 2:
+			// 2D fix
+			session-&gt;gNMEAdata.status = STATUS_FIX;
+			session-&gt;gNMEAdata.mode = MODE_2D;
+			break;
+		case 3:
+			// 3D fix
+			session-&gt;gNMEAdata.status = STATUS_FIX;
+			session-&gt;gNMEAdata.mode = MODE_3D;
+			break;
+		case 4:
+			// 2D Differential fix
+			session-&gt;gNMEAdata.status = STATUS_DGPS_FIX;
+			session-&gt;gNMEAdata.mode = MODE_2D;
+			break;
+		case 5:
+			// 3D differential fix
+			session-&gt;gNMEAdata.status = STATUS_DGPS_FIX;
+			session-&gt;gNMEAdata.mode = MODE_3D;
+			break;
+		}
+
+		gpsd_report(4, &quot;mode %d, status %d\n&quot;
+			, session-&gt;gNMEAdata.mode
+			, session-&gt;gNMEAdata.status);
+		REFRESH(session-&gt;gNMEAdata.status_stamp);
+		REFRESH(session-&gt;gNMEAdata.mode_stamp);
+
+
+		gpsd_report(3, &quot;UTC Time: %s\n&quot;, session-&gt;gNMEAdata.utc);
+		gpsd_report(3, &quot;Alt: %.3f, Epe: %.3f, Eph: %.3f, Epv: %.3f, Fix: %d, Gps_tow: %f, Lat: %.3f, Lon: %.3f, LonVel: %.3f, LatVel: %.3f, AltVel: %.3f, MslHgt: %.3f, Leap: %d, GarminDays: %ld\n&quot;
+		    , pvt-&gt;alt
+		    , pvt-&gt;epe
+		    , pvt-&gt;eph
+		    , pvt-&gt;epv
+		    , pvt-&gt;fix
+		    , pvt-&gt;gps_tow
+		    , session-&gt;gNMEAdata.latitude
+		    , session-&gt;gNMEAdata.longitude
+		    , pvt-&gt;lon_vel
+		    , pvt-&gt;lat_vel
+		    , pvt-&gt;alt_vel
+		    , pvt-&gt;msl_hght
+		    , pvt-&gt;leap_sec
+		    , pvt-&gt;grmn_days);
+
+            // stolen verbatim from zodiac.c
+	    if (session-&gt;gNMEAdata.mode &gt; 1) {
+		sprintf(bufp,
+			&quot;$GPGGA,%02d%02d%02d,%f,%c,%f,%c,%d,%02d,%.2f,%.1f,%c,%f,%c,%s,%s*&quot;,
+		   session-&gt;hours,
+                   session-&gt;minutes,
+                   session-&gt;seconds,
+			degtodm(fabs(session-&gt;gNMEAdata.latitude)),
+			((session-&gt;gNMEAdata.latitude &gt; 0) ? 'N' : 'S'),
+			degtodm(fabs(session-&gt;gNMEAdata.longitude)),
+			((session-&gt;gNMEAdata.longitude &gt; 0) ? 'E' : 'W'),
+		    session-&gt;gNMEAdata.mode,
+                    session-&gt;gNMEAdata.satellites_used,
+                    session-&gt;gNMEAdata.hdop,
+		    session-&gt;gNMEAdata.altitude, 'M',
+                    session-&gt;separation, 'M', &quot;&quot;, &quot;&quot;);
+		nmea_add_checksum(bufp + 1);
+		bufp = bufp + strlen(bufp);
+	    }
+	    sprintf(bufp,
+		    &quot;$GPRMC,%02d%02d%02d,%c,%f,%c,%f,%c,%f,%f,%02d%02d%02d,,*&quot;,
+		    session-&gt;hours, session-&gt;minutes, session-&gt;seconds,
+		    session-&gt;gNMEAdata.status ? 'A' : 'V',
+                    degtodm(fabs(session-&gt;gNMEAdata.latitude)),
+		    ((session-&gt;gNMEAdata.latitude &gt; 0) ? 'N' : 'S'),
+		    degtodm(fabs(session-&gt;gNMEAdata.longitude)),
+		    ((session-&gt;gNMEAdata.longitude &gt; 0) ? 'E' : 'W'),
+                    session-&gt;gNMEAdata.speed,
+		    session-&gt;gNMEAdata.track,
+                    session-&gt;day,
+                    session-&gt;month,
+		    (session-&gt;year % 100));
+		nmea_add_checksum(bufp + 1);
+                // end stolen verbatim from zodiac.c
+		break;
+            case GARMIN_PKTID_SAT_DATA:
+		gpsd_report(3, &quot;SAT Data Sz: %d\n&quot;, pkt-&gt;mDataSize);
+		sats = (cpo_sat_data*)pkt-&gt;mData;
+
+		session-&gt;gNMEAdata.satellites = 12; // always got data for 12
+		session-&gt;gNMEAdata.satellites_used = 0;
+
+		// clear used table
+		for ( i = 0 ; i &lt; MAXCHANNELS ; i++ ) {
+			session-&gt;gNMEAdata.used[i] = 0;
+		}
+		for ( i = 0, j = 0 ; i &lt; GARMIN_MAXCHANNELS ; i++, sats++ ) {
+			gpsd_report(4,
+			  &quot;  Sat %d, snr: %d, elev: %d, Azmth: %d, Stat: %x\n&quot;
+				, sats-&gt;svid
+				, sats-&gt;snr
+				, sats-&gt;elev
+				, sats-&gt;azmth
+				, sats-&gt;status);
+
+			// busted??
+// FIXME!! need to elimate sats over 32
+			//if ( 255 == sats-&gt;svid ) {
+				// Garmin uses 255 for empty
+                                // gpsd uses 0 for empty
+				//sats-&gt;svid = 0;
+			//}
+
+			session-&gt;gNMEAdata.PRN[i] = sats-&gt;svid;
+			session-&gt;gNMEAdata.azimuth[i] = sats-&gt;azmth;
+			session-&gt;gNMEAdata.elevation[i] = sats-&gt;elev;
+			// snr units??
+			// garmin 0 -&gt; 0xffff, NMEA 99 -&gt; 0
+			session-&gt;gNMEAdata.ss[i]
+				= 99 - ((100 *(long)sats-&gt;snr) &gt;&gt; 16);
+			if ( sats-&gt;status &amp; 4 ) {
+				// used in solution?
+				session-&gt;gNMEAdata.used[ session-&gt;gNMEAdata.satellites_used++] = sats-&gt;svid;
+			}
+		}
+		REFRESH(session-&gt;gNMEAdata.satellite_stamp);
+
+		// stolen verbatim from zodiac.c
+	    j = (session-&gt;gNMEAdata.satellites / 4) + (((session-&gt;gNMEAdata.satellites % 4) &gt; 0) ? 1 : 0);
+
+	    for( i = 0 ; i &lt; GARMIN_MAXCHANNELS; i++ ) {
+		if (i % 4 == 0)
+		    sprintf(bufp, &quot;$GPGSV,%d,%d,%02d&quot;, j, (i / 4) + 1, session-&gt;gNMEAdata.satellites);
+		bufp += strlen(bufp);
+		if (i &lt;= session-&gt;gNMEAdata.satellites &amp;&amp; session-&gt;gNMEAdata.elevation[i])
+		    sprintf(bufp, &quot;,%02d,%02d,%03d,%02d&quot;, session-&gt;gNMEAdata.PRN[i],
+			    session-&gt;gNMEAdata.elevation[i], session-&gt;gNMEAdata.azimuth[i], session-&gt;gNMEAdata.ss[i]);
+		else
+		    sprintf(bufp, &quot;,%02d,00,000,%02d,&quot;, session-&gt;gNMEAdata.PRN[i],
+			    session-&gt;gNMEAdata.ss[i]);
+		bufp += strlen(bufp);
+		if (i % 4 == 3) {
+		    sprintf(bufp, &quot;*&quot;);
+		    nmea_add_checksum(bufp2 + 1);
+		    bufp += strlen(bufp);
+		    bufp2 = bufp;
+		}
+	    }
+	    sprintf(bufp, &quot;$GPGSA,%c,%d,&quot;, 'A', session-&gt;gNMEAdata.mode);
+	    j = 0;
+	    for (i = 0; i &lt; MAXCHANNELS; i++) {
+		if (session-&gt;gNMEAdata.used[i]) {
+		    bufp = bufp + strlen(bufp);
+		    sprintf(bufp, &quot;%02d,&quot;, session-&gt;gNMEAdata.PRN[i]);
+		    j++;
+		}
+	    }
+	    for (i = j; i &lt; MAXCHANNELS; i++) {
+		bufp = bufp + strlen(bufp);
+		sprintf(bufp, &quot;,&quot;);
+	    }
+	    bufp = bufp + strlen(bufp);
+	    sprintf(bufp, &quot;%.2f,%.2f,%.2f*&quot;, session-&gt;gNMEAdata.pdop, session-&gt;gNMEAdata.hdop,
+		    session-&gt;gNMEAdata.vdop);
+	    nmea_add_checksum(bufp2 + 1);
+	    bufp2 = bufp = bufp + strlen(bufp);
+
+                // end stolen verbatim from zodiac.c
+		break;
+            default:
+		gpsd_report(3, &quot;ID: %d, Sz: %d\n&quot;
+			, pkt-&gt;mPacketId
+			, pkt-&gt;mDataSize);
+		break;
+	    }
+            break;
+    case 75:
+	    // private
+	    gpsd_report(3, &quot;Private &quot;);
+	    switch( pkt-&gt;mPacketId ) {
+	    case PRIV_PKTID_INFO_REQ:
+		    gpsd_report(3, &quot;ID: Info Req\n&quot;);
+		    break;
+	    case PRIV_PKTID_INFO_RESP:
+		    ver = get_int(pkt-&gt;mData);
+		    maj_ver = ver &gt;&gt; 16;
+		    min_ver = ver &amp; 0xffff;
+		    mode = get_int(pkt-&gt;mData + 4);
+		    serial = get_int(pkt-&gt;mData + 8);
+		    gpsd_report(3, &quot;ID: Info Resp\n&quot;);
+		    gpsd_report(3, &quot;  Version %d. %d, Mode: %d, Serial:%u\n&quot;
+			,  maj_ver, min_ver, mode, serial);
+		    break;
+	    default:
+		    gpsd_report(3, &quot;Packet: ID: %d, Sz: %d\n&quot;
+			, pkt-&gt;mPacketId
+			, pkt-&gt;mDataSize);
+			break;
+	    }
+	break;
+    default:
+	    gpsd_report(3, &quot;Packet: Type %d %d %d, ID: %d, Sz: %d\n&quot;
+		, pkt-&gt;mPacketType
+		, pkt-&gt;mReserved1
+		, pkt-&gt;mReserved2
+		, pkt-&gt;mPacketId
+		, pkt-&gt;mDataSize);
+	break;
+    }
+
+    if ( bufp != buf ) {
+	gpsd_report(3, &quot;%s&quot;, buf);
+	if (session-&gt;gNMEAdata.raw_hook) {
+	    session-&gt;gNMEAdata.raw_hook(buf);
+        }
+    }
+
+}
+
+//-----------------------------------------------------------------------------
+// send a packet in GarminUSB format
+void SendPacket (struct gps_session_t *session, Packet_t *aPacket ) {
+
+	long theBytesToWrite = 12 + aPacket-&gt;mDataSize;
+	long theBytesReturned = 0;
+
+        gpsd_report(4, &quot;SendPacket(), writing %d bytes\n&quot;, theBytesToWrite);
+        PrintPacket ( session,  aPacket);
+
+	theBytesReturned = write( session-&gt;gNMEAdata.gps_fd
+		    , aPacket, theBytesToWrite);
+	gpsd_report(4, &quot;SendPacket(), wrote %d bytes\n&quot;, theBytesReturned);
+
+	// Garmin says:
+	// If the packet size was an exact multiple of the USB packet
+	// size, we must make a final write call with no data
+
+	// as a practival matter no known pckets are 64 bytes long so
+        // this is untested
+
+	// So here goes just in case
+	if( 0 == (theBytesToWrite % ASYNC_DATA_SIZE) ) {
+		char *n = &quot;&quot;;
+		theBytesReturned = write( session-&gt;gNMEAdata.gps_fd
+		    , &amp;n, 0);
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Gets a single packet.
+// this is odd, the garmin usb driver will only return 64 byte, or less
+// at a time, no matter what you ask for.
+//
+// is you ask for less than 64 bytes then the next packet will include
+// just the remaining bytes of the last 64 byte packet.
+//
+// The Garmin sample WinXX code also assumes the same behavior, so
+// maybe it is something in the USB protocol.
+Packet_t* GetPacket (struct gps_session_t *session ) {
+
+	Packet_t *thePacket = NULL;
+	long theBufferSize = 0;
+	unsigned char* theBuffer = 0;
+	struct timespec delay, rem;
+        unsigned char theTempBuffer[ASYNC_DATA_SIZE];
+
+	gpsd_report(4, &quot;GetPacket()\n&quot;);
+
+	for( ; ; ) {
+		// Read async data until the driver returns less than the
+		// max async data size, which signifies the end of a packet
+
+		// not optimal, but given the speed and packet nature of
+                // the USB not too bad for a start
+		unsigned char* theNewBuffer = NULL;
+		long theBytesReturned = 0;
+
+		theBytesReturned = read(session-&gt;gNMEAdata.gps_fd
+		    , theTempBuffer, sizeof(theTempBuffer));
+		if ( 0 &gt;  theBytesReturned ) {
+			// gotta handle theses better, but they happen often
+                        // during init
+			continue;
+		}
+		gpsd_report(5, &quot;got %d bytes\n&quot;, theBytesReturned);
+
+		theBufferSize += ASYNC_DATA_SIZE;
+		theNewBuffer = (unsigned char*) malloc( theBufferSize );
+		memcpy( theNewBuffer, theBuffer, theBufferSize - ASYNC_DATA_SIZE );
+		memcpy( theNewBuffer + theBufferSize - ASYNC_DATA_SIZE,
+		theTempBuffer, ASYNC_DATA_SIZE );
+
+		free( theBuffer );
+
+		theBuffer = theNewBuffer;
+
+		if( theBytesReturned != ASYNC_DATA_SIZE ) {
+			thePacket = (Packet_t*) theBuffer;
+			break;
+		}
+		delay.tv_sec = 0;
+		delay.tv_nsec = 333000L;
+		while (nanosleep(&amp;delay, &amp;rem) &lt; 0)
+			;
+
+	}
+	gpsd_report(5, &quot;GotPacket() sz=%d \n&quot;, theBufferSize);
+	return thePacket;
+}
+
+/*
+ * garmin_init()
+ *
+ * init a garmin_usb device,
+ * session-&gt;gNMEAdata.gps_fd is assumed to already be open.
+ *
+ * the garmin_usb driver ignores all termios, baud rates, etc. so
+ * any twiddling of that previously done is harmless.
+ *
+ * gps_fd was opened in NDELAY mode to be carefull about reads.
+ *
+ */
+static void garmin_init(struct gps_session_t *session)
+{
+
+	Packet_t theProductDataPacket
+		= { GARMIN_LAYERID_APPL, 0, 0
+			, GARMIN_PKTID_PRODUCT_RQST, 0 , 0, &quot;&quot; };
+	Packet_t PvtOnPacket
+		= { GARMIN_LAYERID_APPL, 0, 0
+			, GARMIN_PKTID_L001_COMMAND_DATA, 0 , 2
+		, &quot;1&quot; }; // 49, CMND_START_PVT_DATA
+	Packet_t RmdOnPacket
+		= { GARMIN_LAYERID_APPL, 0, 0
+			, GARMIN_PKTID_L001_COMMAND_DATA, 0 , 2
+		, &quot;n&quot; }; // 110, CMND_START_ Rcv Measurement Data
+
+	Packet_t theStartSessionPacket
+		= { 0, 0, 0, GARMIN_PKTID_TRANSPORT_START_SESSION_REQ, 0
+			, 0, &quot;&quot; };
+
+	Packet_t* thePacket = 0;
+
+	char buffer[256];
+
+
+	gpsd_report(1, &quot;garmin_init\n&quot;);
+
+	// get Mode 0
+        set_int(buffer, GARMIN_LAYERID_PRIVATE);
+        set_int(buffer+4, PRIV_PKTID_SET_MODE);
+        set_int(buffer+8, 4); // data length 4
+        set_int(buffer+12, 0); // mode 0
+
+	gpsd_report(3, &quot;Set garmin_usb driver mode = 0\n&quot;);
+	SendPacket( session,  (Packet_t*) buffer);
+	// expect no return packet !?
+
+	// get Version info
+	gpsd_report(3, &quot;Get garmin_usb driver version\n&quot;);
+        set_int(buffer, GARMIN_LAYERID_PRIVATE);
+        set_int(buffer+4, PRIV_PKTID_INFO_REQ);
+        set_int(buffer+8, 0); // data length 0
+
+	SendPacket(session,  (Packet_t*) buffer);
+
+	// get and print the driver Version info
+
+	// Wait until the device returns the Version info
+	// Toss any other packets
+	for( ; ; ) {
+		thePacket = GetPacket( session );
+		PrintPacket(session,  thePacket);
+
+		if( ( 75 == thePacket-&gt;mPacketType)
+		    &amp;&amp; (PRIV_PKTID_INFO_RESP == thePacket-&gt;mPacketId) ) {
+			break;
+		}
+		free( thePacket );
+	}
+	free( thePacket );
+
+	// Tell the device that we are starting a session.
+	gpsd_report(3, &quot;Send Garmin Start Session\n&quot;);
+	SendPacket( session,  &amp;theStartSessionPacket );
+
+	// Wait until the device is ready to the start the session
+	// Toss any other packets
+	for( ; ; ) {
+		thePacket = GetPacket( session );
+		PrintPacket(session,  thePacket);
+
+		if( (GARMIN_LAYERID_TRANSPORT == thePacket-&gt;mPacketType)
+		    &amp;&amp; (GARMIN_PKTID_TRANSPORT_START_SESSION_RESP
+                      == thePacket-&gt;mPacketId) ) {
+			break;
+		}
+		free( thePacket );
+	}
+	free( thePacket );
+
+	// Tell the device to send product data
+	gpsd_report(3, &quot;Get Garmin Product Data\n&quot;);
+	SendPacket( session, &amp;theProductDataPacket );
+
+	// Get the product data packet
+	// Ignore any other packets on the way
+	for( ; ; ) {
+		thePacket = GetPacket( session);
+		PrintPacket( session, thePacket);
+
+		if( (GARMIN_LAYERID_APPL == thePacket-&gt;mPacketType)
+		    &amp;&amp; ( GARMIN_PKTID_PRODUCT_DATA == thePacket-&gt;mPacketId) ) {
+			break;
+		}
+		free( thePacket );
+	}
+
+	free( thePacket );
+
+	// turn on PVT data 49
+	gpsd_report(3, &quot;Set Garmin to send reports every 1 second\n&quot;);
+	SendPacket( session, &amp;PvtOnPacket );
+	// turn on RMD data 110
+	//SendPacket( session, &amp;RmdOnPacket );
+
+}
+
+static void garmin_handle_input(struct gps_session_t *session)
+{
+	Packet_t *thePacket = NULL;
+
+	thePacket = GetPacket( session );
+	PrintPacket( session, thePacket);
+	free( thePacket );
+}
+
+/* caller needs to specify a wrapup function */
+
+/* this is everything we export */
+struct gps_type_t zodiac_binary =
+{
+    'g',		/* select with 'g' */
+    &quot;Garmin USB&quot;,	/* full name of type */
+    NULL,		/* only switched to by some other driver */
+    garmin_init,	/* initialize the device */
+    garmin_handle_input,/* read and parse message packets */
+    NULL,		/* send DGPS correction */
+    NULL,		/* caller needs to supply a close hook */
+    9600,		/* bit rate, unused */
+    1,			/* stop bits, unused */
+    1,			/* updates every second */
+};
+
+#endif /* ZODIAC_ENABLE */
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.2.3 (GNU/Linux)
+
+iD8DBQFCEGSV8KZibdeR3qURAqPvAKCkSyLthGTD/8y0q+JPUvQR/MJlAQCgnJbp
+d9Fb4hXzVMkOWcKv+1uB+7E=
+=QGFK
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000629.html">[Gpsd-dev] Dang.  Probing for SiRFness still doesn't work for me
+</A></li>
+	<LI>Next message: <A HREF="000633.html">[Gpsd-dev] Garmin USB driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#632">[ date ]</a>
+              <a href="thread.html#632">[ thread ]</a>
+              <a href="subject.html#632">[ subject ]</a>
+              <a href="author.html#632">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

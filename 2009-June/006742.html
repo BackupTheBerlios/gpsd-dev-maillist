@@ -1,0 +1,189 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Bug in GPS I suspect (with workaround)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Bug%20in%20GPS%20I%20suspect%20%28with%20workaround%29&In-Reply-To=%3Ca2d3b4550906070822l3c1ba4d8i11506cb536d4e456%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006741.html">
+   <LINK REL="Next"  HREF="006743.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Bug in GPS I suspect (with workaround)</H1>
+    <B>Don Weeks</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Bug%20in%20GPS%20I%20suspect%20%28with%20workaround%29&In-Reply-To=%3Ca2d3b4550906070822l3c1ba4d8i11506cb536d4e456%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Bug in GPS I suspect (with workaround)">don.l.weeks.jr at gmail.com
+       </A><BR>
+    <I>Sun Jun  7 17:22:20 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006741.html">[Gpsd-dev] Bug in GPS I suspect (with workaround)
+</A></li>
+        <LI>Next message: <A HREF="006743.html">[Gpsd-dev] Bug in GPS I suspect (with workaround)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6742">[ date ]</a>
+              <a href="thread.html#6742">[ thread ]</a>
+              <a href="subject.html#6742">[ subject ]</a>
+              <a href="author.html#6742">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Eric,
+   Thanks for the reply. There is a problem here in that doing as you
+suggest as it creates a problem in the checksum code. With the diff you
+mentioned, the code below breaks as inbufptr would need to be -6 to work:
+
+        else if (lexer-&gt;state == NMEA_RECOGNIZED) {
+            bool checksum_ok = true;
+            char csum[3];
+            char *trailer = (char *)lexer-&gt;inbufptr-5;
+            if (*trailer == '*') {
+                unsigned int n, crc = 0;
+                for (n = 1; (char *)lexer-&gt;inbuffer + n &lt; trailer; n++)
+                    crc ^= lexer-&gt;inbuffer[n];
+                (void)snprintf(csum, sizeof(csum), &quot;%02X&quot;, crc);
+                checksum_ok = (csum[0]==toupper(trailer[1])
+                                &amp;&amp; csum[1]==toupper(trailer[2]));
+            }
+I did try this when I was debugging and found that I was still not getting
+packets.  Using the second /r does have the effect of dropping the /n from
+the sentence but does not hurt the resulting packet that is sent for decode
+and does not require a change in the checksum code. Any thoughts? (Hope the
+patch below is more to your liking).
+             Don
+
+--- ../gpsd-2.39/packet.c       2009-03-15 01:38:17.000000000 -0500
++++ packet.c    2009-06-07 10:12:21.000000000 -0500
+@@ -270,9 +270,6 @@
+     case NMEA_LEADER_END:
+        if (c == '\r')
+            lexer-&gt;state = NMEA_CR;
+-       else if (c == '\n')
+-           /* not strictly correct, but helps for interpreting logfiles */
+-           lexer-&gt;state = NMEA_RECOGNIZED;
+        else if (c == '$')
+            /* faster recovery from missing sentence trailers */
+            lexer-&gt;state = NMEA_DOLLAR;
+@@ -280,7 +277,15 @@
+            lexer-&gt;state = GROUND_STATE;
+        break;
+     case NMEA_CR:
+-       if (c == '\n')
++/*
++ * A second \r is used for Firefly-1a as NMEA_RECOGNIZED
++ * There will be a \n ignored in this case but the checksum computation
++ * code will remain untouched
++ *
++ */
++       if (c == '\r')
++           lexer-&gt;state = NMEA_RECOGNIZED;
++       else if (c == '\n')
+            lexer-&gt;state = NMEA_RECOGNIZED;
+        else
+            lexer-&gt;state = GROUND_STATE;
+
+On Sun, Jun 7, 2009 at 6:43 AM, Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+
+&gt;<i> Don Weeks &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">don.l.weeks.jr at gmail.com</A>&gt;:
+</I>&gt;<i> &gt; I modified the 2.39 code to accept a second /r as an NMEA_RECOGNIZED due
+</I>&gt;<i> to
+</I>&gt;<i> &gt; a problem with a Jackson-labs Firefly-1a. The Firefly-1a is now working
+</I>&gt;<i> with
+</I>&gt;<i> &gt; gpsd flawlessly. The issue was that the Firefly-1a was returning /r/r/n
+</I>&gt;<i> at
+</I>&gt;<i> &gt; the end of each of its NMEA strings which would cause a great deal of
+</I>&gt;<i> havoc.
+</I>&gt;<i> &gt; This was because the 2nd /r would cause it to return to ground and the
+</I>&gt;<i> code
+</I>&gt;<i> &gt; would decide to do a character discard on the after the /n. So not only
+</I>&gt;<i> did
+</I>&gt;<i> &gt; I lose /n, I was losing the $ of the next NMEA string. adding the code to
+</I>&gt;<i> &gt; accept the /r as an NMEA recognized did the trick. To have gone with
+</I>&gt;<i> &gt; allowing it to carry forward the /r as a NMEA_CR would have caused
+</I>&gt;<i> problems
+</I>&gt;<i> &gt; with the buffer counters in the checksum verification code.
+</I>&gt;<i> &gt; Here is the code snippet I changed:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;     case NMEA_LEADER_END:
+</I>&gt;<i> &gt;         if (c == '\r')
+</I>&gt;<i> &gt;             lexer-&gt;state = NMEA_CR;
+</I>&gt;<i> &gt;         else if (c == '$')
+</I>&gt;<i> &gt;             /* faster recovery from missing sentence trailers */
+</I>&gt;<i> &gt;             lexer-&gt;state = NMEA_DOLLAR;
+</I>&gt;<i> &gt;         else if (!isprint(c))
+</I>&gt;<i> &gt;             lexer-&gt;state = GROUND_STATE;
+</I>&gt;<i> &gt;         break;
+</I>&gt;<i> &gt;     case NMEA_CR:
+</I>&gt;<i> &gt; *        if (c == '\r')
+</I>&gt;<i> &gt;             lexer-&gt;state = NMEA_RECOGNIZED;
+</I>&gt;<i> &gt;         else* if (c == '\n')
+</I>&gt;<i> &gt;             lexer-&gt;state = NMEA_RECOGNIZED;
+</I>&gt;<i> &gt;         else
+</I>&gt;<i> &gt;             lexer-&gt;state = GROUND_STATE;
+</I>&gt;<i> &gt;         break;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Hope this helps someone else.
+</I>&gt;<i> &gt;           Don
+</I>&gt;<i>
+</I>&gt;<i> Your patch will work, but it has two flaws: (a) no documentation, and (b)
+</I>&gt;<i> it actually takes the packet getter to RECOGNIZED state a bit prematurely,
+</I>&gt;<i> leaving the \n to be discarded by the next packet fetch.  Please try this
+</I>&gt;<i> patch against 2.39.
+</I>&gt;<i>
+</I>&gt;<i> --- packet.c    (revision 5601)
+</I>&gt;<i> +++ packet.c    (working copy)
+</I>&gt;<i> @@ -297,6 +297,12 @@
+</I>&gt;<i>     case NMEA_CR:
+</I>&gt;<i>         if (c == '\n')
+</I>&gt;<i>            lexer-&gt;state = NMEA_RECOGNIZED;
+</I>&gt;<i> +       /*
+</I>&gt;<i> +        * There's a GPS called a Jackson Labs Firefly-1a that emits \r\r\n
+</I>&gt;<i> +        * at the end of each sentence.  Don't be confused by this.
+</I>&gt;<i> +        */
+</I>&gt;<i> +       else if (c == '\r')
+</I>&gt;<i> +           lexer-&gt;state = NMEA_CR;
+</I>&gt;<i>        else
+</I>&gt;<i>             lexer-&gt;state = GROUND_STATE;
+</I>&gt;<i>        break;
+</I>&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i>                &lt;a href=&quot;<A HREF="http://www.catb.org/~esr/&lt;http://www.catb.org/%7Eesr/">http://www.catb.org/~esr/&lt;http://www.catb.org/%7Eesr/</A>&gt;&quot;&gt;Eric
+</I>&gt;<i> S. Raymond&lt;/a&gt;
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090607/524c33ea/attachment.html">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090607/524c33ea/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006741.html">[Gpsd-dev] Bug in GPS I suspect (with workaround)
+</A></li>
+	<LI>Next message: <A HREF="006743.html">[Gpsd-dev] Bug in GPS I suspect (with workaround)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6742">[ date ]</a>
+              <a href="thread.html#6742">[ thread ]</a>
+              <a href="subject.html#6742">[ subject ]</a>
+              <a href="author.html#6742">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

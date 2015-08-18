@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] AIS decode questions
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20AIS%20decode%20questions&In-Reply-To=%3CBLU0-SMTP54F57A553D468A22B33F61C3CF0%40phx.gbl%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007975.html">
+   <LINK REL="Next"  HREF="008053.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] AIS decode questions</H1>
+    <B>Randy</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20AIS%20decode%20questions&In-Reply-To=%3CBLU0-SMTP54F57A553D468A22B33F61C3CF0%40phx.gbl%3E"
+       TITLE="[Gpsd-dev] AIS decode questions">randyqiuxy at hotmail.com
+       </A><BR>
+    <I>Sat Jul  3 03:40:11 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007975.html">[Gpsd-dev] AIS decode questions
+</A></li>
+        <LI>Next message: <A HREF="008053.html">[Gpsd-dev] AIS decode questions
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7985">[ date ]</a>
+              <a href="thread.html#7985">[ thread ]</a>
+              <a href="subject.html#7985">[ subject ]</a>
+              <a href="author.html#7985">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Eric,
+So sorry for my ambiguous description.
+&gt;<i> Randy &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">randyqiuxy at hotmail.com</A>&gt;:
+</I>&gt;<i> &gt; Sorry if I ask a bad question but still wait for your response,thanks!
+</I>&gt;<i> 
+</I>&gt;<i> I don't understand what your question is.  What are you still confused by?
+</I>I mean I don't understand the way you decoding from ASCII char to
+six-bits.and I'd like to know whether you use encryption algorithm or
+not. 
+I see you use many bits operation in the following code(in
+&quot;aivdm_decode&quot;function):
+/* wacky 6-bit encoding, shades of FIELDATA */
+    /*@ +charint @*/
+    for (cp = data; cp &lt; data + strlen((char *)data); cp++) {
+ch = *cp;
+ch -= 48;
+if (ch &gt;= 40)
+    ch -= 8;
+#ifdef __UNUSED_DEBUG__
+gpsd_report(LOG_RAW, &quot;%c: %s\n&quot;, *cp, sixbits[ch]);
+#endif
+/*@ -shiftnegative @*/
+for (i = 5; i &gt;= 0; i--) {
+    if ((ch &gt;&gt; i) &amp; 0x01) {
+ais_context-&gt;bits[ais_context-&gt;bitlen / 8] |=/*especially these two
+lines*/
+    (1 &lt;&lt; (7 - ais_context-&gt;bitlen % 8));
+    }
+    ais_context-&gt;bitlen++;
+}
+/*@ +shiftnegative @*/
+to be frank, I would not understand what the codes mean if I don't
+understand how to covert char to six-bits binary stream.
+And I think the following code is easier to understand:
+   for (cp = data; cp &lt; data + strlen((char *)data); cp++) {
+ch = *cp;
+ch -= 48;
+if (ch &gt;= 40)
+    ch -= 8;
+
+for (i = 5; i &gt;= 0; i--) {
+   ais_context-&gt;bits[ais_context-&gt;bitlen++] =(ch &gt;&gt; i) &amp; 0x01;
+    }
+}
+ais_context-&gt;bits[ais_context-&gt;bitlen]='\0';
+
+I don't know whether I explain my question explicitly or not. Thanks.
+
+Regards,
+Randy
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007975.html">[Gpsd-dev] AIS decode questions
+</A></li>
+	<LI>Next message: <A HREF="008053.html">[Gpsd-dev] AIS decode questions
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7985">[ date ]</a>
+              <a href="thread.html#7985">[ thread ]</a>
+              <a href="subject.html#7985">[ subject ]</a>
+              <a href="author.html#7985">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

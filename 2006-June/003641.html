@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Re%3A%20accuracy%20in%20conversion%20from%0A%20meters/sec%20to%20knots&In-Reply-To=%3Cp06230903c0ade49d2986%40%5B192.168.11.10%5D%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003636.html">
+   <LINK REL="Next"  HREF="003647.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots</H1>
+    <B>Robin L Darroch</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Re%3A%20accuracy%20in%20conversion%20from%0A%20meters/sec%20to%20knots&In-Reply-To=%3Cp06230903c0ade49d2986%40%5B192.168.11.10%5D%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots">robin at spade-men.com
+       </A><BR>
+    <I>Thu Jun  8 16:55:16 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003636.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+        <LI>Next message: <A HREF="003647.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3641">[ date ]</a>
+              <a href="thread.html#3641">[ thread ]</a>
+              <a href="subject.html#3641">[ subject ]</a>
+              <a href="author.html#3641">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>At 10:10 -0400 8/6/06, Eric S. Raymond wrote:
+&gt;<i>Robin L Darroch &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>&gt;:
+</I>&gt;&gt;<i>  OK - now I know there is some support for making the &quot;simple&quot; version
+</I>&gt;&gt;<i>  the default behaviour, but obviously we have to take care of the
+</I>&gt;&gt;<i>  &quot;purists&quot; or &quot;experts&quot; too... attached is a patch to &quot;make it so&quot;.
+</I>&gt;<i>
+</I>&gt;<i>Not quite the right idea here.  Command-line options are evil; instead,
+</I>&gt;<i>we should have an addition to the command set that can be used to turn data
+</I>&gt;<i>hold on or off.
+</I>
+Except this isn't the kind of thing that any user is likely to want 
+to change dynamically in their GPSd - or indeed ever.  Most users 
+will be happy with &quot;buffer all, never clear&quot; (as has been shown by 
+the existing reports of problems on the users list, as opposed to the 
+complete absense of reports of problems with the faulty CaSoC logic). 
+Those that want it to clear-at-start-of-cycle will always want it 
+that way, so it could even be a configure option.
+
+&gt;<i>That's assuming we want to do this in the daemon at all.  I'd prefer
+</I>&gt;<i>if data holding were implemented in libgps.
+</I>
+It can't really be there, because gpsd using CaSoC (not sure why I 
+kept spelling that &quot;CaSoS&quot;, except phonetically) logic has already 
+discarded the data, so there's nothing sensible that libgps can do to 
+recover it for query-mode clients, and adding code to handle it just 
+for watcher mode clients would be a huge waste of time, not to 
+mention introducing a lot more ways for things to go wrong.  The 
+trick is, gpsd *knows* the instant a sentence is received that 
+supercedes previous data, so it can realistically do both options 
+without risking reporting known-invalid data (I'm not just making it 
+up: I've done it and tested it to the n'th degree).  libgps, on the 
+other hand, has no idea what gpsd is receiving from the gps, so it 
+can't reliably know when to invalidate data in any additional buffer 
+we might add to it.
+
+Perhaps this is a compile-time switch rather than a command-line 
+switch (although I'm not sure why you hate command-line switches 
+so... they occasionally serve a purpose), but it definitely can't go 
+further &quot;down the line&quot; than that, because it just won't work.
+
+Remember, the very worst case scenario that anyone has come up with 
+for &quot;never clear&quot; is that you get an O report with an altitude (for 
+example) that came from a sentence with a timestamp one second 
+earlier than the latitude and longitude reported in the same O. 
+Because of the fault in the CaSoC logic, everyone has been having 
+this problem all along, and yet there hasn't been a single complaint 
+about it, even from the loggers that Gary was talking about.  By 
+contrast, there have been plenty of complaints about the altitude or 
+speed/track data jumping between numeric and NaN (which parameters 
+jitter depends on the version of GPSd you're using), and we have a 
+simple solution to it.  It doesn't seem like too much to ask to put 
+that in as a compile-time or command-line option... and just to 
+reduce support e-mails about the issue, I'd strongly suggest making 
+it the default.
+
+Anyhow, this issue is starting to affect my sleep, so I will try not 
+to let it do so any more.  I care about it a lot because I'd like to 
+see GPSd become a very widely adopted standard for sharing GPS units 
+(something I see happening a lot more in future), and having to send 
+people to an FAQ when they ask &quot;my GPS has a good view of the sky... 
+why is my data jittering?&quot; just puts another obstacle in the way of 
+widespread adoption.  Don't lie to people: by all means, explain in 
+the documentation what the two buffering-logic options are (you've 
+written a pretty good description in the white paper - just copy and 
+paste for the most part)... then let them choose if they want the 
+purer form that causes fake jitter (which they'll then have to code 
+around in their client), or the more usable form which may sometimes 
+mix one-second-old data with zero-second-old data (but which they 
+won't need to add special code to handle in every application they 
+develop).
+
+In the end, it has to come down to either a command-line switch or a 
+compile-time option... it can't work anywhere else.  I've created the 
+command-line switch version, but I'm not really sufficiently 
+comfortable with autoconfs and makefiles and the like to do the 
+compile-time version instead: if that's what you think is best, 
+hopefully it is easy enough for someone with that know-how to hack my 
+patch to be compile-time rather than command-line.
+
+Cheers,
+Robin
+-- 
+
+-------------------------------------------------------------------------
+  Robin L. Darroch - PO Box 2715, South Hedland WA 6722 - +61 421 503 966
+       <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at darroch.id.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at nyca.org.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003636.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+	<LI>Next message: <A HREF="003647.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3641">[ date ]</a>
+              <a href="thread.html#3641">[ thread ]</a>
+              <a href="subject.html#3641">[ subject ]</a>
+              <a href="author.html#3641">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

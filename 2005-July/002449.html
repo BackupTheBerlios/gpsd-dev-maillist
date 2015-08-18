@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: Your RTCM decoder
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20Your%20RTCM%20decoder&In-Reply-To=%3C873bqlvw74.fsf%40bonnet.wsrcc.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002434.html">
+   <LINK REL="Next"  HREF="002453.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: Your RTCM decoder</H1>
+    <B>Wolfgang S. Rupprecht</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20Your%20RTCM%20decoder&In-Reply-To=%3C873bqlvw74.fsf%40bonnet.wsrcc.com%3E"
+       TITLE="[Gpsd-dev] Re: Your RTCM decoder">wolfgang+gnus20050711 at dailyplanet.dontspam.wsrcc.com
+       </A><BR>
+    <I>Tue Jul 12 00:01:35 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002434.html">[Gpsd-dev] Your RTCM decoder
+</A></li>
+        <LI>Next message: <A HREF="002453.html">[Gpsd-dev] Re: Your RTCM decoder
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2449">[ date ]</a>
+              <a href="thread.html#2449">[ thread ]</a>
+              <a href="subject.html#2449">[ subject ]</a>
+              <a href="author.html#2449">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&quot;Eric S. Raymond&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at snark.thyrsus.com</A>&gt; writes:
+&gt;<i> Yours is even in approximately the right form to be called by the gpsd
+</I>&gt;<i> packet getter.  Yours wants to grab words rather than bytes, though, 
+</I>&gt;<i> which means a certain amount of duct tape and brute force is going
+</I>&gt;<i> to be required to mate the two.
+</I>
+Thanks!
+
+I'm very impressed that you managed to follow it with not a scratch of
+documentation.  RTCM-SC104 has got to qualify as the most insane
+protocol I ever heard of.
+
+RTCM dgps radios put out 8-bit data in what is called Magnavox-format.
+the top two bits are a tag to identify the data-stream the byte is
+part of and the lower 6-bits are the next 6-bits from the data stream.
+
+For DGPS data, the lowest 6-bits are not bit-aligned in any way shape
+or form.  You basically have to shift the bits into your decoder one
+bit at a time and decide if it looks right.
+
+My goal in the code was to try to make the bit-shifting aspect of the
+protocol as run-time efficient as possible.  The bits are only shifted
+in one-at-a-time when looking for a lock.  After that the offset is
+recorded and the CPU's barrel shifter is used to crank them over the
+right amount in one go.
+
+I believe bit-slips are always possible, so the code is prepared to
+find a different bit-offset if the decoder ever loses lock.
+
+The basic entrance point to the decode is &quot;void rtcm_decode(struct
+rtcm_ctx * ctx, int c)&quot;.  The &quot;int c&quot; is really just the next magnavox
+format byte passed in an int slot.  One should be able to glue this
+into any RTCM byte-stream and have it work.
+
+The one thing I never bothered to do was accommodate big-endians or
+machines with ints smaller than 32-bits.
+
+-wolfgang
+-- 
+Wolfgang S. Rupprecht                <A HREF="http://www.wsrcc.com/wolfgang/">http://www.wsrcc.com/wolfgang/</A>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002434.html">[Gpsd-dev] Your RTCM decoder
+</A></li>
+	<LI>Next message: <A HREF="002453.html">[Gpsd-dev] Re: Your RTCM decoder
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2449">[ date ]</a>
+              <a href="thread.html#2449">[ thread ]</a>
+              <a href="subject.html#2449">[ subject ]</a>
+              <a href="author.html#2449">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

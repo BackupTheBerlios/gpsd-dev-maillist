@@ -1,0 +1,144 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] setting oncore timing parameters with gpsctl
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20setting%20oncore%20timing%20parameters%20with%20gpsctl&In-Reply-To=%3Calpine.DEB.1.10.1012041244140.30643%40org-pc51.fy.chalmers.se%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008305.html">
+   <LINK REL="Next"  HREF="008258.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] setting oncore timing parameters with gpsctl</H1>
+    <B>H&#229;kan Johansson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20setting%20oncore%20timing%20parameters%20with%20gpsctl&In-Reply-To=%3Calpine.DEB.1.10.1012041244140.30643%40org-pc51.fy.chalmers.se%3E"
+       TITLE="[Gpsd-dev] setting oncore timing parameters with gpsctl">f96hajo at chalmers.se
+       </A><BR>
+    <I>Sat Dec  4 12:48:03 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008305.html">[Gpsd-dev] [PATCH] Export log levels in the gps.h API and document that gpsd_report is
+</A></li>
+        <LI>Next message: <A HREF="008258.html">[Gpsd-dev] setting oncore timing parameters with gpsctl
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8256">[ date ]</a>
+              <a href="thread.html#8256">[ thread ]</a>
+              <a href="subject.html#8256">[ subject ]</a>
+              <a href="author.html#8256">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Updated (merge-fixed) patch, with documentation.  Please consider for 
+inclusion.
+
+Cheers,
+H&#229;kan
+
+
+
+On Sat, 30 Oct 2010, H&#229;kan Johansson wrote:
+
+&gt;<i>
+</I>&gt;<i> The attached patch adds an option -y opt=val to gpsctl for setting a few
+</I>&gt;<i> device-specific parameters for motorola oncore devices.  The options are
+</I>&gt;<i>
+</I>&gt;<i> -y poshold=lat,lon,alt
+</I>&gt;<i>
+</I>&gt;<i> switch position hold mode on with given parameters. This mode improves
+</I>&gt;<i> timing performance for a stationary antenna. Note: N and E are positive (i
+</I>&gt;<i> attemped to make it parse N/S and W/E postfixes, but ran into trouble with
+</I>&gt;<i> scanf and 'E' after a double being treated as part of scientific
+</I>&gt;<i> notation). The altitude (in m) is in raw numbers, i.e. no geoid
+</I>&gt;<i> correction, for compatibility with gpsmon output.
+</I>&gt;<i>
+</I>&gt;<i> -y poshold=0
+</I>&gt;<i>
+</I>&gt;<i> switch position hold mode off
+</I>&gt;<i>
+</I>&gt;<i> -y poshold=survey
+</I>&gt;<i>
+</I>&gt;<i> enable the internal oncore position survey mode (10000 samples), after
+</I>&gt;<i> which it automatically goes into position hold mode
+</I>&gt;<i>
+</I>&gt;<i> -y traim=limit
+</I>&gt;<i>
+</I>&gt;<i> TRAIM (Time Receiver Autonomous Integrity Monitoring) is used to assess
+</I>&gt;<i> the quality of the timing solution.  Removal of bad measurements (SVs) is
+</I>&gt;<i> possible in position-hold mode.  limit (in us) is the alarm limit.  When
+</I>&gt;<i> given as a positive number, the module pps ctrl is set to only give a PPS
+</I>&gt;<i> pulse if the limit is not exceeded.  Minimum value is .3 us (which
+</I>&gt;<i> according to manual requires all 8 channels to have locks on satellites).
+</I>&gt;<i> At 1 us limit, 2 SVs are enough to detect and with 3 one bad can be
+</I>&gt;<i> removed.  Remark: with 3-4 SVs, the time solution sigma is ususally
+</I>&gt;<i> reported in the range 40-60 ns.  Timing with this sub-us precision will
+</I>&gt;<i> likely also require the sawtooth-correction.
+</I>&gt;<i>
+</I>&gt;<i> With limit given as 0, the TRAIM is switched off and the PPS pulse always
+</I>&gt;<i> emitted.  With limit &lt; 0, the TRAIM is switched off, but the PPS set to
+</I>&gt;<i> only be emitted if at least one SV delivers time.
+</I>&gt;<i>
+</I>&gt;<i> -y ppsoffset=offset
+</I>&gt;<i>
+</I>&gt;<i> Shifts (delays) the PPS pulse by offset us (0 - 1 s possible).  Useful if
+</I>&gt;<i> several GPS receivers are connected to the same computer.
+</I>&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i>
+</I>&gt;<i> I'm not sure if the new -y option to gpsctl is the best idea.  I also
+</I>&gt;<i> dabbled with -p 0|survey|lat,lon,alt -q limit -o offset, but that felt
+</I>&gt;<i> less intuitive and consumed more command line option name space.
+</I>&gt;<i>
+</I>&gt;<i> The actual formatting of the serial messages have been placed in
+</I>&gt;<i> driver_oncore.c Here, also the handling of the pps_offset response message
+</I>&gt;<i> was corrected from pps_delay.  (There is an oncore pps (negative) delay
+</I>&gt;<i> option also, allowing cable delay adjustment in the 0 - 1 ms range, not
+</I>&gt;<i> used.  The old naming was an mistake.)
+</I>&gt;<i>
+</I>&gt;<i> The automatic mangling of the oncore TRAIM settings on gpsd startup has
+</I>&gt;<i> been removed.
+</I>&gt;<i>
+</I>&gt;<i> Should one make gpsctl accept several -y options in the same invokation?
+</I>&gt;<i> Also for the -x option?
+</I>&gt;<i>
+</I>&gt;<i> Documentation for the above (mail rehashed) to come if accepted.
+</I>&gt;<i>
+</I>&gt;<i> Cheers,
+</I>&gt;<i> H&#229;kan
+</I>-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: 0001-Add-an-option-y-opt-val-to-gpsctl-for-setting-device.patch
+Type: text/x-diff
+Size: 12111 bytes
+Desc: 
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20101204/46c2aae8/attachment.patch">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20101204/46c2aae8/attachment.patch</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008305.html">[Gpsd-dev] [PATCH] Export log levels in the gps.h API and document that gpsd_report is
+</A></li>
+	<LI>Next message: <A HREF="008258.html">[Gpsd-dev] setting oncore timing parameters with gpsctl
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8256">[ date ]</a>
+              <a href="thread.html#8256">[ thread ]</a>
+              <a href="subject.html#8256">[ subject ]</a>
+              <a href="author.html#8256">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

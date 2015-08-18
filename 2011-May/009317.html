@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [patch] Fix cross-compile linking and allow ncurses to	be disabled
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bpatch%5D%20Fix%20cross-compile%20linking%20and%20allow%20ncurses%20to%0A%09be%20disabled&In-Reply-To=%3C20110502180047.GA9259%40shaftnet.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="009318.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [patch] Fix cross-compile linking and allow ncurses to	be disabled</H1>
+    <B>Solomon Peachy</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bpatch%5D%20Fix%20cross-compile%20linking%20and%20allow%20ncurses%20to%0A%09be%20disabled&In-Reply-To=%3C20110502180047.GA9259%40shaftnet.org%3E"
+       TITLE="[Gpsd-dev] [patch] Fix cross-compile linking and allow ncurses to	be disabled">pizza at shaftnet.org
+       </A><BR>
+    <I>Mon May  2 20:00:47 CEST 2011</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="009318.html">[Gpsd-dev] [patch] Fix MTK detection
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9317">[ date ]</a>
+              <a href="thread.html#9317">[ thread ]</a>
+              <a href="subject.html#9317">[ subject ]</a>
+              <a href="author.html#9317">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Folks,
+
+The attached patch (against git HEAD) fixes two problems I ran into when 
+cross-compiling gpsd.  First, the ncurses detection is flawed (detects 
+host system's ncurses rather than the target system), so I added an 
+option to just disable it.  Second and more importantly, the logic that 
+pulls various environment variables (eg CC, LD, etc) is broken, which 
+causes linking to fail when using a cross-compiler.
+
+ - Solomon
+-- 
+Solomon Peachy        		       pizza at shaftnet dot org	 
+Melbourne, FL                          ^^ (mail/jabber/gtalk) ^^
+Quidquid latine dictum sit, altum viditur.
+-------------- next part --------------
+diff --git a/SConstruct b/SConstruct
+index 8bbcd1c..6f13791 100644
+--- a/SConstruct
++++ b/SConstruct
+@@ -93,6 +93,7 @@ boolopts = (
+     (&quot;controlsend&quot;,   True,  &quot;allow gpsctl/gpsmon to change device settings&quot;),
+     (&quot;cheapfloats&quot;,   True,  &quot;float ops are cheap, compute error estimates&quot;),
+     (&quot;squelch&quot;,       False, &quot;squelch gpsd_report/gpsd_hexdump to save cpu&quot;),
++    (&quot;ncurses&quot;,       True,  &quot;build with ncurses&quot;),
+     # Build control
+     (&quot;shared&quot;,        True,  &quot;build shared libraries, not static&quot;),
+     (&quot;debug&quot;,         False, &quot;include debug information in build&quot;),
+@@ -141,9 +142,10 @@ env['STRIP'] = &quot;strip&quot;
+ env['CHRPATH'] = 'chrpath'
+ for i in [&quot;AR&quot;, &quot;ARFLAGS&quot;, &quot;CCFLAGS&quot;, &quot;CFLAGS&quot;, &quot;CC&quot;, &quot;CXX&quot;, &quot;CXXFLAGS&quot;, &quot;STRIP&quot;, &quot;CHRPATH&quot;, &quot;LD&quot;, &quot;TAR&quot;]:
+     if os.environ.has_key(i):
++        j = i
+         if i == &quot;LD&quot;:
+             i = &quot;SHLINK&quot;
+-        env[i]=os.getenv(i)
++        env[j]=os.getenv(i)
+ for flags in [&quot;LDFLAGS&quot;, &quot;CPPFLAGS&quot;]:
+     if os.environ.has_key(flags):
+         env.MergeFlags([os.getenv(flags)])
+@@ -311,10 +313,13 @@ for f in (&quot;daemon&quot;, &quot;strlcpy&quot;, &quot;strlcat&quot;):
+     else:
+         confdefs.append(&quot;/* #undef HAVE_%s */\n\n&quot; % f.upper())
+ 
+-if config.CheckPKG('ncurses'):
+-    ncurseslibs = pkg_config('ncurses')
+-elif config.CheckExecutable('ncurses5-config --version', 'ncurses5-config'):
+-    ncurseslibs = ['!ncurses5-config --libs --cflags']
++if env['ncurses']:
++    if config.CheckPKG('ncurses'):
++        ncurseslibs = pkg_config('ncurses')
++    elif config.CheckExecutable('ncurses5-config --version', 'ncurses5-config'):
++        ncurseslibs = ['!ncurses5-config --libs --cflags']
++    else:
++        ncurseslibs= []
+ else:
+     ncurseslibs= []
+ 
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 190 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110502/8b760159/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110502/8b760159/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="009318.html">[Gpsd-dev] [patch] Fix MTK detection
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9317">[ date ]</a>
+              <a href="thread.html#9317">[ thread ]</a>
+              <a href="subject.html#9317">[ subject ]</a>
+              <a href="author.html#9317">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

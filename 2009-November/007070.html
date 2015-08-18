@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] pps splint fall-out, 5 Hz handling
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20pps%20splint%20fall-out%2C%205%20Hz%20handling&In-Reply-To=%3Calpine.DEB.1.10.0911150759330.13613%40org-pc51.fy.chalmers.se%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007068.html">
+   <LINK REL="Next"  HREF="007072.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] pps splint fall-out, 5 Hz handling</H1>
+    <B>H&#229;kan Johansson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20pps%20splint%20fall-out%2C%205%20Hz%20handling&In-Reply-To=%3Calpine.DEB.1.10.0911150759330.13613%40org-pc51.fy.chalmers.se%3E"
+       TITLE="[Gpsd-dev] pps splint fall-out, 5 Hz handling">f96hajo at chalmers.se
+       </A><BR>
+    <I>Sun Nov 15 10:34:50 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007068.html">[Gpsd-dev] pps splint fall-out
+</A></li>
+        <LI>Next message: <A HREF="007072.html">[Gpsd-dev] pps splint fall-out, 5 Hz handling
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7070">[ date ]</a>
+              <a href="thread.html#7070">[ thread ]</a>
+              <a href="subject.html#7070">[ subject ]</a>
+              <a href="author.html#7070">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Hi Gary,
+
+moving the (double) makes splint continue to (erroneously) complain:
+
+ntpshm.c: (in function ntpshm_pps)
+ntpshm.c:208:19: Function fabs expects arg 1 to be double gets long int:
+     (tv-&gt;tv_sec - seconds) + ((double)(tv-&gt;tv_usec - 0) / 1000000.0)
+   To allow all numeric types to match, use +relaxtypes.
+
+Am now trying with +relaxtypes to avoid having to do a strange typecast.
+
+Also, the microseconds are ints everywhere, so went for that instead to 
+avoid this:
+
+ntpshm.c:229:5: Assignment of time_t to int:
+                    shmTimeP-&gt;clockTimeStampUSec = microseconds
+   To allow arbitrary integral types to match any integral type, use
+   +matchanyintegral.
+
+The bulk of the patch is an additional parameter 'period' to ntpshm_pps to 
+cope with the 5 Hz pulses, and associated handling.  For normal 1 Hz the 
+net change is zero.  I have tested with the modules I have, fiddling with 
+the system clock and so on, but have no 5 Hz device.  Someone with such a 
+device needs to test (and preferably supply a log).
+
+Also a .%03lu -&gt; .%06lu fix in the ntpshm_pps log to prevent small 
+microsecond offsets looking like milliseconds.
+
+Finally, I'd like to promote a slightly longer command for logging, so we 
+get also the ntpshm_put time, and the device driver type and serial speed:
+ 	gpsd -nN -D6 /dev/ttyS0 2&gt;&amp;1 | grep -E &quot;PPS|NTPD|: speed|driver&quot;
+
+Cheers,
+H&#229;kan
+
+
+On Sun, 15 Nov 2009, Gary E. Miller wrote:
+
+&gt;<i> -----BEGIN PGP SIGNED MESSAGE-----
+</I>&gt;<i> Hash: SHA1
+</I>&gt;<i>
+</I>&gt;<i> Yo H&#229;kan!
+</I>&gt;<i>
+</I>&gt;<i> On Sat, 14 Nov 2009, H&#229;kan Johansson wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Attachment fixes 3 splint warnings in the new pps code.  The second one, about
+</I>&gt;&gt;<i> fabs getting a long while expecting a double seems bogus to me, it ought to
+</I>&gt;&gt;<i> anyhow be promoted to a double...
+</I>&gt;<i>
+</I>&gt;<i> Thanks! SVN r6480.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> RGDS
+</I>&gt;<i> GARY
+</I>&gt;<i> - ---------------------------------------------------------------------------
+</I>&gt;<i> Gary E. Miller Rellim 109 NW Wilmington Ave., Suite E, Bend, OR 97701
+</I>&gt;<i> 	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+</I>&gt;<i>
+</I>&gt;<i> -----BEGIN PGP SIGNATURE-----
+</I>&gt;<i> Version: GnuPG v1.4.3 (GNU/Linux)
+</I>&gt;<i>
+</I>&gt;<i> iD8DBQFK/21eBmnRqz71OvMRAmE3AKCMiR0ErTy4+reb4RExYGOF/T2iLwCfWl+G
+</I>&gt;<i> OAFGI8OWd4OBakFIRC95A6M=
+</I>&gt;<i> =gMC/
+</I>&gt;<i> -----END PGP SIGNATURE-----
+</I>&gt;<i>
+</I>-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: ntpshm_5Hz.diff
+Type: text/x-diff
+Size: 3847 bytes
+Desc: 
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091115/ceb502fa/attachment.diff">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091115/ceb502fa/attachment.diff</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007068.html">[Gpsd-dev] pps splint fall-out
+</A></li>
+	<LI>Next message: <A HREF="007072.html">[Gpsd-dev] pps splint fall-out, 5 Hz handling
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7070">[ date ]</a>
+              <a href="thread.html#7070">[ thread ]</a>
+              <a href="subject.html#7070">[ subject ]</a>
+              <a href="author.html#7070">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

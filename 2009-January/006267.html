@@ -1,0 +1,143 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] automake issues
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20automake%20issues&In-Reply-To=%3Crmiwsd5ppn5.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006263.html">
+   <LINK REL="Next"  HREF="006269.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] automake issues</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20automake%20issues&In-Reply-To=%3Crmiwsd5ppn5.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] automake issues">gdt at ir.bbn.com
+       </A><BR>
+    <I>Thu Jan  8 20:24:30 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006263.html">[Gpsd-dev] Continuing the pre-2.38-release cleanup
+</A></li>
+        <LI>Next message: <A HREF="006269.html">[Gpsd-dev] automake issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6267">[ date ]</a>
+              <a href="thread.html#6267">[ thread ]</a>
+              <a href="subject.html#6267">[ subject ]</a>
+              <a href="author.html#6267">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+This is more for discussion than to commit this minute.
+
+I was unable to do 'gmake dist', and I figured out that it was because
+geoid_test didn't have a _SOURCES statement and thus it was looking for
+geoid_test.c.
+
+I don't remember why I had the change about packet_names.h, but gpsd.h
+is generated and thus shouldn't be in the distribution tarball.
+
+With this I am able to make dist, and then make distcheck almost works.
+It fails due to having a non-src-dir build directory with finding
+gpsd.h-head, but if I do a manual build in the dist dir it seems ok.
+So perhaps including gpsd.h is intentional, but it seems wrong.
+
+Is anyone else able to run make dist and make distcheck?
+
+
+
+Index: Makefile.am
+===================================================================
+--- Makefile.am	(revision 4955)
++++ Makefile.am	(working copy)
+@@ -153,12 +153,15 @@
+ 	bsd-base64.h \
+ 	timebase.h \
+ 	bits.h \
++	rtcm2.h \
++	crc24q.h
++
++nodist_libgpsd_h_sources = \
+ 	packet_names.h \
+-	rtcm2.h \
+-	crc24q.h \
+ 	gpsd.h
+ 
+-BUILT_SOURCES = packet_names.h gpsd.h
++BUILT_SOURCES = $(nodist_libgpsd_h_sources)
++
+ packet_names.h: packet_states.h
+ 	sed -e '/^ *\([A-Z][A-Z0-9_]*\),/s//   &quot;\1&quot;,/' -e '/_states/s//_names/' &lt; `test -f 'packet_states.h' || echo '$(srcdir)/'`packet_states.h &gt; packet_names.h
+ 
+@@ -170,7 +173,7 @@
+ 
+ libgps_la_SOURCES = $(libgpsd_c_sources) $(libgpsd_h_sources) \
+ 				rtcm2.h libgpsmm.cpp packet_states.h
+-nodist_libgps_la_SOURCES = packet_names.h
++nodist_libgps_la_SOURCES = packet_names.h $(nodist_libgps_h_sources)
+ libgps_la_LIBADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(LIBPTHREAD)
+ 
+ #
+@@ -213,6 +216,14 @@
+ mkgmtime_test_SOURCES = mkgmtime_test.c
+ mkgmtime_test_LDADD = $(LIBC) libgps.la -lm
+ 
++geoid_test_SOURCES = geoid.c
++geoid_test_LDADD = -lm
++geoid_test_CPPFLAGS = -DTESTMAIN
++
++#geoid_test: geoid.c
++#	$(CC) $(CFLAGS) -o geoid_test -lm -DTESTMAIN -g geoid.c
++
++
+ if HAVE_XSLT_PROCESSOR
+ #
+ # Create Manpages
+@@ -338,8 +349,6 @@
+ # These are not distributed
+ libgps: libgps.c .libs/libgps.a
+ 	$(CC) $(CFLAGS) -o libgps -lm -DTESTMAIN $(LIBPTHREAD) -g libgps.c .libs/libgps.a
+-geoid_test: geoid.c
+-	$(CC) $(CFLAGS) -o geoid_test -lm -DTESTMAIN -g geoid.c
+ 
+ # Report splint warnings
+ SPLINTOPTS = -I/usr/include/dbus-1.0/
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 193 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090108/6881d55d/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090108/6881d55d/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006263.html">[Gpsd-dev] Continuing the pre-2.38-release cleanup
+</A></li>
+	<LI>Next message: <A HREF="006269.html">[Gpsd-dev] automake issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6267">[ date ]</a>
+              <a href="thread.html#6267">[ thread ]</a>
+              <a href="subject.html#6267">[ subject ]</a>
+              <a href="author.html#6267">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

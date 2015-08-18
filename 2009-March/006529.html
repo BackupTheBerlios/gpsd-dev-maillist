@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd release status
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20release%20status&In-Reply-To=%3C20090317050915.GA3573%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006525.html">
+   <LINK REL="Next"  HREF="006534.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd release status</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20release%20status&In-Reply-To=%3C20090317050915.GA3573%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] gpsd release status">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Mar 17 06:09:15 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006525.html">[Gpsd-dev] gpsd release status
+</A></li>
+        <LI>Next message: <A HREF="006534.html">[Gpsd-dev] gpsd release status
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6529">[ date ]</a>
+              <a href="thread.html#6529">[ thread ]</a>
+              <a href="subject.html#6529">[ subject ]</a>
+              <a href="author.html#6529">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Remco Treffkorn &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>&gt;:
+&gt;<i> &gt; That is worth a shared-file version bump to fix, and I will do so. I have
+</I>&gt;<i> &gt; reordered so all fields not conditioned out by config symbols precede all
+</I>&gt;<i> &gt; fields that are, and I have added a comment to the structure definition
+</I>&gt;<i> &gt; requiring that in the future.
+</I>&gt;<i> 
+</I>&gt;<i> I don't know if this is much safer. I think it would be best to have the 
+</I>&gt;<i> structure always have the space for all possible members, even if they are 
+</I>&gt;<i> not populated. Provide a bitfield  that marks certain members [in]valid.
+</I>&gt;<i> 
+</I>&gt;<i> Unless you want to switch to accessor functions, this is the only way to 
+</I>&gt;<i> handle conditional inclusions.
+</I>
+As a general claim that is quite correct.  But...look at what's at the
+end of the structure.
+
+    /*
+     * Do not put any configuration-symbol-dependent members
+     * above this point, as we need things to be at stable
+     * offsets.
+     */
+#ifdef OCEANSERVER_ENABLE
+    double magnetic_length; /* unitvector sqrt(x^2 + y^2 +z^2) */
+    double magnetic_field_x;
+    double magnetic_field_y;
+    double magnetic_field_z;
+    double acceleration_length; /* unitvector sqrt(x^2 + y^2 +z^2) */
+    double acceleration_field_x;
+    double acceleration_field_y;
+    double acceleration_field_z;
+    double gyro_output_x;
+    double gyro_output_y;
+    double temperature;
+#endif
+
+#if defined(TNT_ENABLE) || defined(OCEANSERVER_ENABLE)
+    /* compass status -- TrueNorth (and any similar) devices only */
+    char headingStatus;
+    char pitchStatus;
+    char rollStatus;
+    double horzField;   /* Magnitude of horizontal magnetic field */
+#endif
+
+#if 0	/* not yet used or filled in */
+    /* measurement data */
+    double pseudorange[MAXCHANNELS];	/* meters */
+    double deltarange[MAXCHANNELS];	/* meters/sec */
+    double doppler[MAXCHANNELS];	/* Hz */
+    unsigned satstat[MAXCHANNELS];	/* tracking status */
+#define SAT_ACQUIRED	0x01		/* satellite acquired */
+#define SAT_CODE_TRACK	0x02		/* code-tracking loop acquired */
+#define SAT_CARR_TRACK	0x04		/* carrier-tracking loop acquired */
+#define SAT_DATA_SYNC	0x08		/* data-bit synchronization done */
+#define SAT_FRAME_SYNC	0x10		/* frame synchronization done */
+#define SAT_EPHEMERIS	0x20		/* ephemeris collected */
+#define SAT_FIX_USED	0x40		/* used for position fix */
+#endif
+};
+
+One device that's rare, one for which support is outright broken, and
+a bunch of fields we don't use yet.  You know, I'd eat the extra 3-00-odd
+bytes to have all the members there all the time, but a lot of our customers
+are on SBCs and get irritated by the wasted space.  
+
+I think this is one of the unusual cases in which doing something
+slightly unsafe is justified.  But I'm open to argument about the
+tradeoff.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006525.html">[Gpsd-dev] gpsd release status
+</A></li>
+	<LI>Next message: <A HREF="006534.html">[Gpsd-dev] gpsd release status
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6529">[ date ]</a>
+              <a href="thread.html#6529">[ thread ]</a>
+              <a href="subject.html#6529">[ subject ]</a>
+              <a href="author.html#6529">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: remaining patches - summary
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20remaining%20patches%20-%20summary&In-Reply-To=%3C91981b3e0605191047i4e01e028ne8cf13dce50d4128%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003508.html">
+   <LINK REL="Next"  HREF="003516.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: remaining patches - summary</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20remaining%20patches%20-%20summary&In-Reply-To=%3C91981b3e0605191047i4e01e028ne8cf13dce50d4128%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Re: remaining patches - summary">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Fri May 19 19:47:55 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003508.html">[Gpsd-dev] Re: remaining patches - summary
+</A></li>
+        <LI>Next message: <A HREF="003516.html">[Gpsd-dev] Re: remaining patches - summary
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3513">[ date ]</a>
+              <a href="thread.html#3513">[ thread ]</a>
+              <a href="subject.html#3513">[ subject ]</a>
+              <a href="author.html#3513">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>All gps solutions are estimates of navigation parameters, just some
+are more precise and/or more trustworthy than others.
+
+On 5/19/06, Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> Chris Kuethe &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">chris.kuethe at gmail.com</A>&gt;:
+</I>&gt;<i> I should have said &quot;Not passing the user bad data just because the GPS
+</I>&gt;<i> happens to be wonky is even more important than being neutral.&quot;  If
+</I>&gt;<i> some GPSes put garbage in this field when mode != 3D, then the O logic
+</I>&gt;<i> should report it undefined when mode != 3D.
+</I>
+Agreed. I think I might have said in IRC last week that I don't care
+if the GPS gives me pure garbage, so long as the status isn't set to
+&quot;valid&quot;. The gps can put whatever it likes in the altitude field, but
+I won't look at it unless my fix is 3D or better.
+
+&gt;<i> &gt; SiRF receivers use an altitude hold, either from the last good 3d fix
+</I>&gt;<i> &gt; or from user-specified initialization data.
+</I>&gt;<i>
+</I>&gt;<i> IMO, an altitude hold in the GPS is bad design.  That's a policy decision
+</I>&gt;<i> that belongs in the application or client software; thus, I won't treat
+</I>&gt;<i> this as an argument for passing the altitude through.
+</I>
+Altitude hold, in some receivers, can be disabled. It's not
+necessarily a bad design: the receiver is doing it's best to give you
+some information, and if it's having to guess at your position, it
+does admit that fact with the status flags: 2D, 3D, 3D-overdetermined,
+3D-DGPS... if you don't like that, look at the flags and ignore the
+fix until it's a real 3D fix.
+
+Altitude hold may be necessary to allow the solver to work in 2D: all
+the navigation is done in ECEF, and is then converted to LLA. If you
+know time (you get that from having code lock) and have a good
+estimate of your altitude, then you should be able to work towards a
+reasonable 2D position estimate using an otherwise-insufficient number
+of satellites.
+
+For most (average joe) gps users, the big win is latitude and
+longitude. I don't care if my destination is on the 100th floor of
+this building - first I need to navigate to the front door. Altitude
+isn't important.
+
+The same criticism can be levelled at static navigation and smoothing...
+
+&gt;<i> &gt; The navigation solver is capable of providing a 2d position estimate
+</I>&gt;<i> &gt; either using the least squares method or the kalman filter.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; In the case that altitude is invalid coming out of the solver, the UI
+</I>&gt;<i> &gt; (the part of the code that generates SiRF or NMEA messages) can delete
+</I>&gt;<i> &gt; that data, and set a flag that says &quot;there was garbage here, so i
+</I>&gt;<i> &gt; cleaned this message up for you&quot;.
+</I>&gt;<i>
+</I>&gt;<i> I'm not sure I understand the above. If it's &quot;2d position estimate&quot; how
+</I>&gt;<i> is there an altitude to be valid or invalid?
+</I>
+It's an estimate because it's not a proper 3d solution.The gps is
+playing some tricks to give you an estimate of where you are, at least
+in terms of latitude and longitude. There is an altitude because it's
+a necessary part of computing latitude and longitude - remember, your
+position is first computed in ECEF and then is converted to LLA for
+your convenience.
+
+CK
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003508.html">[Gpsd-dev] Re: remaining patches - summary
+</A></li>
+	<LI>Next message: <A HREF="003516.html">[Gpsd-dev] Re: remaining patches - summary
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3513">[ date ]</a>
+              <a href="thread.html#3513">[ thread ]</a>
+              <a href="subject.html#3513">[ subject ]</a>
+              <a href="author.html#3513">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

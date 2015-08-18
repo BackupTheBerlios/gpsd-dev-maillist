@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd seems to have stalled
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20seems%20to%20have%20stalled&In-Reply-To=%3C200706262025.06132.remco%40rvt.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005739.html">
+   <LINK REL="Next"  HREF="005741.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd seems to have stalled</H1>
+    <B>Remco Treffkorn</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20seems%20to%20have%20stalled&In-Reply-To=%3C200706262025.06132.remco%40rvt.com%3E"
+       TITLE="[Gpsd-dev] gpsd seems to have stalled">remco at rvt.com
+       </A><BR>
+    <I>Wed Jun 27 05:25:05 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005739.html">[Gpsd-dev] gpsd seems to have stalled
+</A></li>
+        <LI>Next message: <A HREF="005741.html">[Gpsd-dev] gpsd seems to have stalled
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5740">[ date ]</a>
+              <a href="thread.html#5740">[ thread ]</a>
+              <a href="subject.html#5740">[ subject ]</a>
+              <a href="author.html#5740">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Tuesday 26 June 2007, Chris Kuethe wrote:
+&gt;<i> On 6/26/07, Remco Treffkorn &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>&gt; wrote:
+</I>&gt;<i> &gt; Yes, it looks like an fd could easily orphaned by the new code.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Chris, can you replicate this easily enough to run gpsd under gdb, and
+</I>&gt;<i> &gt; break out of it when it starts spinning? You could then single step
+</I>&gt;<i> &gt; around the select a few times. This might tell you which fd is ready, but
+</I>&gt;<i> &gt; never handled.
+</I>&gt;<i>
+</I>&gt;<i> i can replicate it very easily, simply open a bunch of connections
+</I>&gt;<i> really fast. I'll see if i'm quick enough with the break or
+</I>&gt;<i> whatever...
+</I>
+My understanding is, that gpsd gets to a point where it takes 100% cpu, but 
+still functions. If it gets into this mode you should be able to interrupt it 
+at any time, and should be able to just single step it through a few selects. 
+Since it can only take 100% if select returns immediately that implies that 
+one of the expected events happens without delay. Most likely the condition 
+that triggered the return of select the last time has not been cleared (i.e. 
+a ready-for-read fd was not read from) the next time you enter select it will 
+just return the same fd again immediately.
+
+It looks like an fd gets not dropped from all_fds, although it should.
+
+BTW: a 'for loop' with over threehundred lines of code in it is not my kind of 
+humor. Maybe that's just me :-(
+
+&gt;<i> xterm1: (some versions of top can match strings like &quot;gps&quot;)
+</I>&gt;<i> top
+</I>&gt;<i>
+</I>&gt;<i> xterm2: (foreground and debug is easier to watch but it makes no
+</I>&gt;<i> difference) ./gpsd -n -N -D2 /dev/gps
+</I>&gt;<i>
+</I>&gt;<i> xterm3: (may need to use &quot;nc -w 1&quot; if your nc doesn't close properly)
+</I>&gt;<i> for n in 0 1 2 3 4 5 6 7 8 9 a b c d e f ; do
+</I>&gt;<i>     echo O | nc 127.0.0.1 2947 &amp;
+</I>&gt;<i> done
+</I>
+That means we are opening _and_ closing connections quickly? (sorry I am not 
+nc-enabled)
+
+&gt;<i> &gt; BTW: I have a report claiming this bug with a version way older than
+</I>&gt;<i> &gt; this. Take it with a grain of salt...
+</I>&gt;<i>
+</I>&gt;<i> Dunno, I had the connection rate up to ~100conn/sec before r3690 with
+</I>&gt;<i> no ill effect. Maybe it's a different bug that just looks the same?
+</I>
+Hence the salt ;-)
+
+I feel the urge to re-shape main, so it becomes a bit more manageable.
+
+A single function with more than 570 loc... That's just not natural !-)
+
+Cheers,
+Remco
+
+-- 
+Remco Treffkorn (RT445)
+HAM DC2XT
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005739.html">[Gpsd-dev] gpsd seems to have stalled
+</A></li>
+	<LI>Next message: <A HREF="005741.html">[Gpsd-dev] gpsd seems to have stalled
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5740">[ date ]</a>
+              <a href="thread.html#5740">[ thread ]</a>
+              <a href="subject.html#5740">[ subject ]</a>
+              <a href="author.html#5740">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

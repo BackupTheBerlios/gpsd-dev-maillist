@@ -1,0 +1,154 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Advice on how a driver is expected to behave
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Advice%20on%20how%20a%20driver%20is%20expected%20to%20behave&In-Reply-To=%3C200612062108.33315.mick.durkin%40saunalahti.fi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005389.html">
+   <LINK REL="Next"  HREF="005398.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Advice on how a driver is expected to behave</H1>
+    <B>Mick Durkin</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Advice%20on%20how%20a%20driver%20is%20expected%20to%20behave&In-Reply-To=%3C200612062108.33315.mick.durkin%40saunalahti.fi%3E"
+       TITLE="[Gpsd-dev] Advice on how a driver is expected to behave">mick.durkin at saunalahti.fi
+       </A><BR>
+    <I>Wed Dec  6 20:08:33 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005389.html">[Gpsd-dev] Another Garmin &quot;patch&quot;
+</A></li>
+        <LI>Next message: <A HREF="005398.html">[Gpsd-dev] Advice on how a driver is expected to behave
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5396">[ date ]</a>
+              <a href="thread.html#5396">[ thread ]</a>
+              <a href="subject.html#5396">[ subject ]</a>
+              <a href="author.html#5396">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Guys,
+
+I am trying to bring my driver into line with the latest version of the SVN 
+(4094) and there have been recent changes to the methods and some splitting 
+of information in the header files which have caused me a bit of head 
+scratching.
+
+What I need to know is a general flow of the start up, initialisation and 
+shutdown sequences.
+
+Here is how I think it goes, so please guide/correct me if I am wrong:-
+
+==================================================================
+
+1) If we fire up the daemon in -N mode with &quot;gpsd -N -D1 /dev/ttyS0&quot;, the only 
+effect compared to normal operation should be that it does not go into true 
+daemon mode (and doesn't drop privileges?) but otherwise behaves normally. 
+Using the -N allows us to keep control over the code and allow easy exit when 
+testing. The following sequence is somewhat different for me if I add the -n 
+option to the above command line, but let's not go there just yet.
+
+2) Right up front, we scan all compiled drivers in turn to see if they support 
+the probe_detect call and trigger that entry point, using a free file 
+descriptor (it always seems to be fd = 4 for me). If a probe matures, that 
+driver gets the port and we stop checking further. If there are no probes 
+supported or none of them responds, we will determine the device later by a 
+port scan at different baud rates. That activity doesn't concern me here.
+
+3) If we got a good probe, we then issue a subtype probe (if supported). This 
+subtype probe should get the version data and maybe do some other good 
+things. The arguments of the gpsd_activate() function triggering this call 
+are such that there is no configurator call triggered at this point.
+
+4) We then sit in a loop, waiting until we have detected a good packet in the 
+main parser. When the packet type is known, because we have no users, we 
+issue a wrapup call (if supported) to reverse the actions of the subtype 
+probe and release the file descriptor (not sure about that?).
+
+==================================================================
+
+So far so good, but what follows next is what I see happen with my code and I 
+am not sure if it is the correct sequence.
+
+5) If a client comes along, we then grab a new file descriptor (always seems 
+to be fd = 5 for me) and issue a new probe_detect call. This succeeds (as it 
+should).
+
+6) gpsd_activate() now triggers a subtype probe again, but this time its 
+arguments are such that it also triggers a configurator call. This latter is 
+intended to set up any reports we need.
+
+==================================================================
+
+The normal gpsd stuff happens now, but eventually the client gets bored and 
+goes off line.
+
+==================================================================
+
+7) We now issue a revert call (if supported) to undo the work of the 
+configurator call.
+
+8) We now issue a wrapup (if supported) to undo the work of the subtype.
+
+9) We drop the file descriptor (maybe?) and sit idle again.
+
+10) If the session is ended, the daemon is killed and exits. If a client comes 
+back, we go to step 5. Again, I always see fd = 5 when going to the 
+probe_detect part.
+
+==================================================================
+
+
+I am a bit surprised that we appear to drop the fd after the initial 
+probe_detect or at least use a new one for the client (this is one of the 
+differences I saw with the -n switch), but I was more surprised to see that 
+the probe_detect is triggered again.
+
+I had supposed that once we had determined what device was on a port (at least 
+for a serial port) we could assume that it will not be going away?
+
+USB might be different, but I haven't gone into that (my device is serial port 
+only).
+
+The multiple subtype and configurator calls seem reasonable as we might need 
+to reconfigure the device for gpsd and undoing these changes when idling the 
+device makes things safe.
+
+
+Any advice or clarification would be welcome.
+
+Best Regards
+
+Mick
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005389.html">[Gpsd-dev] Another Garmin &quot;patch&quot;
+</A></li>
+	<LI>Next message: <A HREF="005398.html">[Gpsd-dev] Advice on how a driver is expected to behave
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5396">[ date ]</a>
+              <a href="thread.html#5396">[ thread ]</a>
+              <a href="subject.html#5396">[ subject ]</a>
+              <a href="author.html#5396">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

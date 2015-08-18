@@ -1,0 +1,105 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Net::GPSD3 package done, 2 bugs,	slipping in	&quot;DEVICES&quot;
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Net%3A%3AGPSD3%20package%20done%2C%202%20bugs%2C%0A%09slipping%20in%09%22DEVICES%22&In-Reply-To=%3C20090928231716.GA28327%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006903.html">
+   <LINK REL="Next"  HREF="006906.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Net::GPSD3 package done, 2 bugs,	slipping in	&quot;DEVICES&quot;</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Net%3A%3AGPSD3%20package%20done%2C%202%20bugs%2C%0A%09slipping%20in%09%22DEVICES%22&In-Reply-To=%3C20090928231716.GA28327%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Net::GPSD3 package done, 2 bugs,	slipping in	&quot;DEVICES&quot;">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Sep 29 01:17:16 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006903.html">[Gpsd-dev] Net::GPSD3 package done, 2 bugs, slipping in &quot;DEVICES&quot;
+</A></li>
+        <LI>Next message: <A HREF="006906.html">[Gpsd-dev]  Can I port GPSD for ThreadX
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6905">[ date ]</a>
+              <a href="thread.html#6905">[ thread ]</a>
+              <a href="subject.html#6905">[ subject ]</a>
+              <a href="author.html#6905">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Michael R. Davis &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mrdvt92 at yahoo.com</A>&gt;:
+&gt;<i> &gt; Michael R. Davis &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mrdvt92 at yahoo.com</A>&gt;:
+</I>&gt;<i> &gt; &gt; Is there any reason why we can't slip a &quot;DEVICES&quot;
+</I>&gt;<i> &gt; objects into the watcher stream periodically especially
+</I>&gt;<i> &gt; whenever we add a device or remove a device? 
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; It's supposed to work that way already.&#160; See trunk
+</I>&gt;<i> &gt; gpsd.c, lines 596 and 665.
+</I>&gt;<i> 
+</I>&gt;<i> Well, gpsd didn't insert DEVICES objects often enough for me so I added the capability to the perl package as an option which defaults to every 20 seconds.
+</I>
+You were right.  I investigated and fount that the code to emit a DEVICE dump on
+device assignment had gone missing.  Fixed.
+ 
+&gt;<i> As of this weekend, I feel the Net::GPSD3 package is done.
+</I>&gt;<i> <A HREF="http://search.cpan.org/dist/Net-GPSD3/">http://search.cpan.org/dist/Net-GPSD3/</A>
+</I>
+I've added a pointer to this on the master fotr the project maun page, under
+&quot;Related resources&quot;.
+
+&gt;<i> As for the 2.40dev daemon, I think it's a bit unstable in the input argument parsing.  If you bring up a telnet session.  The daemon will crash with this process.  I've seen it crash before but could not reproduce but this case.
+</I>&gt;<i> 
+</I>&gt;<i> [gpsd-2.40dev]$ telnet 127.0.0.1 2947
+</I>&gt;<i> Trying 127.0.0.1...
+</I>&gt;<i> Connected to reston.stopllc.com (127.0.0.1).
+</I>&gt;<i> Escape character is '^]'.
+</I>&gt;<i> {&quot;class&quot;:&quot;VERSION&quot;,&quot;release&quot;:&quot;2.40dev&quot;,&quot;rev&quot;:&quot;$Id: gpsd_json.c 6258 2009-09-20 05:39:25Z ckuethe $&quot;,&quot;proto_major&quot;:3,&quot;proto_minor&quot;:1}
+</I>&gt;<i> ?DEVICES;
+</I>&gt;<i> {&quot;class&quot;:&quot;DEVICES&quot;,&quot;devices&quot;:[{&quot;class&quot;:&quot;DEVICE&quot;,&quot;path&quot;:&quot;/dev/ttyUSB0&quot;,&quot;activated&quot;:1254154835.28,&quot;flags&quot;:1,&quot;driver&quot;:&quot;SiRF binary&quot;,&quot;native&quot;:1,&quot;bps&quot;:4800,&quot;parity&quot;:&quot;N&quot;,&quot;stopbits&quot;:1,&quot;cycle&quot;:1.00}]}
+</I>&gt;<i> ?WATCH={&quot;enable&quot;:true,&quot;raw&quot;:1};
+</I>&gt;<i> {&quot;class&quot;:&quot;WATCH&quot;,&quot;enable&quot;:true,&quot;nmea&quot;:false,&quot;raw&quot;:1,&quot;scaled&quot;:false}
+</I>&gt;<i> Connection closed by foreign host.
+</I>
+Doesn't reproduce at r6342.
+
+&gt;<i> Bug two is &quot;wr&quot; returns duplicate raw rows.  See attached log.
+</I>
+Yes, this is an architectural problem with where NMEA reports are
+emitted.  It only affects binary-protocol GOSes.  I'm got a patch to
+fix it, but the patch induces some regression failures I don't
+understand yet. I'll figure it out - that's my last polishing
+item before we ship.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006903.html">[Gpsd-dev] Net::GPSD3 package done, 2 bugs, slipping in &quot;DEVICES&quot;
+</A></li>
+	<LI>Next message: <A HREF="006906.html">[Gpsd-dev]  Can I port GPSD for ThreadX
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6905">[ date ]</a>
+              <a href="thread.html#6905">[ thread ]</a>
+              <a href="subject.html#6905">[ subject ]</a>
+              <a href="author.html#6905">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

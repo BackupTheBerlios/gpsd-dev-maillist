@@ -1,0 +1,139 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] (no subject)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%28no%20subject%29&In-Reply-To=%3C91981b3e0610271143l49cafe52t3489aaf72372802c%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004687.html">
+   <LINK REL="Next"  HREF="004690.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] (no subject)</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%28no%20subject%29&In-Reply-To=%3C91981b3e0610271143l49cafe52t3489aaf72372802c%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] (no subject)">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Fri Oct 27 20:43:25 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004687.html">[Gpsd-dev] (no subject)
+</A></li>
+        <LI>Next message: <A HREF="004690.html">[Gpsd-dev] (no subject)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4688">[ date ]</a>
+              <a href="thread.html#4688">[ thread ]</a>
+              <a href="subject.html#4688">[ subject ]</a>
+              <a href="author.html#4688">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 10/27/06, Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt; wrote:
+&gt;<i> Actually I find it quite easy to work with.  Once you get the hang
+</I>&gt;<i> of throw/catch some things are much easier to code.  Just thing of
+</I>&gt;<i> it like an inline function with early returns.
+</I>
+I like it.
+
+&gt;<i> goto's?  You gotta be kidding....
+</I>
+Nope. He's serious. I like goto for some cleanup things. If a function
+should always do this on the way out:
+    tcdrain(fd);
+    close(fd);
+    return retval;
+
+I'm happy to use goto to jump to that chunk when it's time to bail out
+part way through. Of course, do { } while(0), would allow you to break
+out of that block and continue with the common code just as well. I
+guess I prefer goto for a jump that cleans up before a return, and a
+do block as an exception handler.
+
+int waldo(){
+	int r;
+	struct complicated state;
+
+	if ((r = setup(&amp;state)))
+		goto bye;
+	if ((r = foo(&amp;state)))
+		goto bye;
+	if ((r = bar(&amp;state)))
+		goto bye;
+	if ((r = baz(&amp;state)))
+		goto bye;
+
+	r = do_stuff(&amp;state);
+
+bye:	tcdrain(state.fd);
+	close(state.fd);
+	return r;
+}
+
+int waldo2(){
+	int r;
+
+	do {
+		struct complicated state;
+		if ((r = setup(&amp;state)))
+			break;
+		if ((r = foo(&amp;state)))
+			break;
+		if ((r = bar(&amp;state)))
+			break;
+		if ((r = baz(&amp;state)))
+			break;
+
+		r = do_stuff(&amp;state);
+	} while (0);
+
+	tcdrain(state.fd);
+	close(state.fd);
+	return r;
+}
+
+&gt;<i> Just w/o the goto's OK?  That makes code unmaintainable.  Otherwise I am
+</I>&gt;<i> not in love with the contruct, as I said I just copied it from elsewhere
+</I>&gt;<i> in the same file.
+</I>
+I disagree that goto necessarily causes unmaintainability. They can,
+but it's not guaranteed.
+
+I also disgree that do { } while(0); is obfuscation. It's a handy way
+to have a block of code with a tight little scope. Like eval() in a
+scripting language.
+
+CK
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004687.html">[Gpsd-dev] (no subject)
+</A></li>
+	<LI>Next message: <A HREF="004690.html">[Gpsd-dev] (no subject)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4688">[ date ]</a>
+              <a href="thread.html#4688">[ thread ]</a>
+              <a href="subject.html#4688">[ subject ]</a>
+              <a href="author.html#4688">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

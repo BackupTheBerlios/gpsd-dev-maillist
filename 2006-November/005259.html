@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] revert call
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20revert%20call&In-Reply-To=%3C498kkoTOJ8580S08.1163619669%40uwdvg008.cms.usa.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005258.html">
+   <LINK REL="Next"  HREF="005262.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] revert call</H1>
+    <B>Petr Slansky</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20revert%20call&In-Reply-To=%3C498kkoTOJ8580S08.1163619669%40uwdvg008.cms.usa.net%3E"
+       TITLE="[Gpsd-dev] revert call">slansky at usa.net
+       </A><BR>
+    <I>Wed Nov 15 20:41:09 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005258.html">[Gpsd-dev] Compile problem with SVN 3892
+</A></li>
+        <LI>Next message: <A HREF="005262.html">[Gpsd-dev] revert call
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5259">[ date ]</a>
+              <a href="thread.html#5259">[ thread ]</a>
+              <a href="subject.html#5259">[ subject ]</a>
+              <a href="author.html#5259">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>------ Original Message ------
+Received: Wed, 15 Nov 2006 10:13:30 AM CET
+From: &quot;Petr Slansky&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">slansky at usa.net</A>&gt;
+
+&gt;<i> I am not happy with the way that revert call was implemented. It is caled
+</I>after /dev/gps port is closed. How to revert GPS setting when communication
+&gt;<i> chanel was disconnected?
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> gpsd: detaching 0 in detach_client
+</I>&gt;<i> gpsd: unflagging descriptor 5
+</I>&gt;<i> gpsd: closing GPS=/dev/gps (5)
+</I>&gt;<i> gpsd: evermore_revert
+</I>&gt;<i> gpsd: =&gt; GPS: 1002128eff0101000101010000000000000000921003
+</I>
+Well, my first example is not proble, it is only confusing log. /dev/gps port
+is closed after revert call in the real. But revert can be called to closed
+port too:
+
+gpsd: checking client(0)
+gpsd: detaching 0 in detach_client
+gpsd: unflagging descriptor 5
+gpsd: closing GPS=/dev/gps (5)
+gpsd: evermore_n_revert
+gpsd: =&gt; GPS: 1002128eff0101000101010000000000000000921003
+  CLIENT DISCONNECTED
+   CTRL+C signal sent to gpsd
+gpsd: closing GPS=/dev/gps (-1)
+gpsd: evermore_n_revert
+gpsd: =&gt; GPS: 1002128eff0101000101010000000000000000921003 FAILED
+gpsd: Received terminating signal 2. Exiting...
+
+
+Or just start  gpsd -N -D5 /dev/gps
+and exit it with CRTL+C without client connection:
+
+gpsd: GPGSV field 3 value of 8 != actual count 4
+gpsd: Satellite data OK.
+gpsd: unflagging descriptor 4
+gpsd: closing GPS=/dev/gps (4)
+gpsd: closing GPS=/dev/gps (-1)
+gpsd: Received terminating signal 2. Exiting...
+
+In both cases gpsd tries to close closed /dev/gps port. This is not revert
+call problem but some related issue in gpsd. I think problem is located at  
+gpsd_deactivate function.
+
+Petr
+
+
+---------------------------------
+  Petr Slansky, <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">slansky at usa.net</A>
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005258.html">[Gpsd-dev] Compile problem with SVN 3892
+</A></li>
+	<LI>Next message: <A HREF="005262.html">[Gpsd-dev] revert call
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5259">[ date ]</a>
+              <a href="thread.html#5259">[ thread ]</a>
+              <a href="subject.html#5259">[ subject ]</a>
+              <a href="author.html#5259">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

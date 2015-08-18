@@ -1,0 +1,118 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Altitude%20not%20always%20being%20reported&In-Reply-To=%3C091kDDism3856S24.1144138692%40cmsweb24.cms.usa.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003366.html">
+   <LINK REL="Next"  HREF="003377.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported</H1>
+    <B>Petr Slansky</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Altitude%20not%20always%20being%20reported&In-Reply-To=%3C091kDDism3856S24.1144138692%40cmsweb24.cms.usa.net%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported">slansky at usa.net
+       </A><BR>
+    <I>Tue Apr  4 10:18:12 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003366.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+        <LI>Next message: <A HREF="003377.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3376">[ date ]</a>
+              <a href="thread.html#3376">[ thread ]</a>
+              <a href="subject.html#3376">[ subject ]</a>
+              <a href="author.html#3376">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+------ Original Message ------
+Received: Tue, 04 Apr 2006 08:41:21 AM CEST
+From: Robin L Darroch &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>&gt;
+To: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>
+Subject: Re: [Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+
+&gt;<i> At 1:36 +0200 4/4/06, Rob Janssen wrote:
+</I>&gt;<i> &gt;  &gt; I have no idea how it's currently done.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;Right now we have this &quot;gps_clear_fix&quot; function which sets everything to
+</I>&gt;<i> &gt;invalid (NAN).  It is called when the driver returns CYCLE_START_SET,
+</I>&gt;<i> &gt;which it does (for NMEA) when the timestamp in the message changes.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;This is reasonable for an intermediate buffer that gets filled from the
+</I>&gt;<i> &gt;GPS messages, but it is done to the main fix buffer.
+</I>&gt;<i> &gt;So, when the GPS sends a message with a new timestamp and only part of the
+</I>&gt;<i> &gt;fix data (this is always true in NMEA because no single message contains
+</I>&gt;<i> &gt;all data), the fix buffer is left with partly valid data and partly NaN
+</I>&gt;<i> &gt;values.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;When using xgps, this can be observed as fields toggling between n/a and
+</I>&gt;<i> &gt;valid values.  Discussions about this are always dismissed with &quot;but xgps
+</I>&gt;<i> &gt;is only a test application&quot;, but I think it is unreasonable to expect all
+</I>&gt;<i> &gt;applications to incorporate another layer of buffering to avoid this.
+</I>&gt;<i> &gt;Besides, when an application polls at the same rate as the cycle time, it
+</I>&gt;<i> &gt;could be getting NaN values all the time.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;I think gpsd should perform the necessary buffering itself, or at least
+</I>&gt;<i> &gt;offer the option to do so.  Indeed this could mean that separate &quot;valid
+</I>&gt;<i> &gt;times&quot; are required for data items that are typically sent in separate
+</I>&gt;<i> &gt;messages (and/or at different cycle times).
+</I>&gt;<i> 
+</I>&gt;<i> I *think* that if we simply omit the gps_clear_fix call, gpsd should 
+</I>&gt;<i> behave in the expected manner.  It seems to me that we should aim for 
+</I>&gt;<i> clients to get the same picture from gpsd that a human gets from 
+</I>&gt;<i> looking at the screen of a GPS unit.  A GPS unit which outputs NMEA 
+</I>&gt;<i> doesn't flicker between displaying altitude/speed/track information 
+</I>&gt;<i> and not doing so in the moments between sending NMEA sentences, so 
+</I>&gt;<i> nor should gpsd.  The code for responding to queries already has the 
+</I>&gt;<i> means to prevent data being returned as fixed when in fact it isn't. 
+</I>&gt;<i> I'll try some testing myself, and look forward to hearing the results 
+</I>&gt;<i> from others with NMEA gps units.
+</I>
+I think that it cannot be so simple, at least timeout have to be added that
+data will be set invalid after some time when no new messages will come. Other
+way is to keep previous data and report combination of previous cycle and
+current cycle. 
+
+Petr
+
+
+---------------------------------
+  Petr Slansky, <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">slansky at usa.net</A>
+---------------------------------
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003366.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+	<LI>Next message: <A HREF="003377.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3376">[ date ]</a>
+              <a href="thread.html#3376">[ thread ]</a>
+              <a href="subject.html#3376">[ subject ]</a>
+              <a href="author.html#3376">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

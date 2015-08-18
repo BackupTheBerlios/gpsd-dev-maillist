@@ -1,0 +1,269 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] time presence and precision, tags,	class member queries.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20time%20presence%20and%20precision%2C%20tags%2C%0A%09class%20member%20queries.&In-Reply-To=%3CAANLkTimqpTbfhZJh%2B1uZmXzpj%2BfB8RJ77mSYX0ugaAV-%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008839.html">
+   <LINK REL="Next"  HREF="008842.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] time presence and precision, tags,	class member queries.</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20time%20presence%20and%20precision%2C%20tags%2C%0A%09class%20member%20queries.&In-Reply-To=%3CAANLkTimqpTbfhZJh%2B1uZmXzpj%2BfB8RJ77mSYX0ugaAV-%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] time presence and precision, tags,	class member queries.">thomas at mich.com
+       </A><BR>
+    <I>Wed Mar 16 19:20:32 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008839.html">[Gpsd-dev] time presence and precision, tags, class member queries.
+</A></li>
+        <LI>Next message: <A HREF="008842.html">[Gpsd-dev] time presence and precision, tags, class member queries.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8840">[ date ]</a>
+              <a href="thread.html#8840">[ thread ]</a>
+              <a href="subject.html#8840">[ subject ]</a>
+              <a href="author.html#8840">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Wed, Mar 16, 2011 at 12:40 PM, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+</I>
+...
+
+&gt;&gt;<i> So you send some kind of not very well specified blob, and get back
+</I>&gt;&gt;<i> some kind of not very well specified blob - if it happens to contain
+</I>&gt;&gt;<i> fields, the contents are detailed.
+</I>&gt;<i>
+</I>&gt;<i> I think I see part of the problem. &#160;You appear to be expecting the
+</I>&gt;<i> control protocol to be specified as though it were a conversational or
+</I>&gt;<i> lockstep protocol. &#160;It isn't. &#160;There is not anywhere in it anything
+</I>&gt;<i> like synchronous command/response transaction. &#160;There can't be,
+</I>&gt;<i> because the devices can insert arbitrary delays before they respond to
+</I>&gt;<i> command.
+</I>&gt;<i>
+</I>&gt;<i> There were a couple of major design errors in the old protocol. &#160;One
+</I>&gt;<i> of them is that it pretended to be synchronous. It took me longer
+</I>&gt;<i> than it should have to realize how many problems this was causing.
+</I>&gt;<i>
+</I>&gt;<i> The right way to think about it is that the daemon is going to spew
+</I>&gt;<i> reports at you at random intervals. &#160;What *kind* of reports is
+</I>&gt;<i> controlled mainly by the WATCH state, with a small random delay after
+</I>&gt;<i> you set it. &#160;Until a WATCH policy is set, all you'll see is device connect
+</I>&gt;<i> and device disconnect notifications (after the initial VERSION and
+</I>&gt;<i> DEVICES reports).
+</I>
+For example:
+
+&quot;The daemon occasionally ships a bare DEVICE object to the client
+(that is, one not inside a DEVICES wrapper). The data content of these
+objects will be described later in the section covering
+notifications.&quot;
+
+There are bits and pieces in other sections, mostly not having
+anything to do with notification, but no &quot;Notifications&quot; section as
+such.
+
+&gt;<i> It's up to client code to aggregate the state from these events. &#160;The C
+</I>&gt;<i> library binding does this for you.
+</I>&gt;<i>
+</I>&gt;&gt;<i> What I was expecting is something like (don't take these to be accurate)
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> ?WATCH= MUST specify parameters in a specific order
+</I>&gt;&gt;<i> ?WATCH= SHOULD specify enable last in the list
+</I>&gt;&gt;<i> ?WATCH= MAY specify parameters in any order
+</I>&gt;<i>
+</I>&gt;<i> The third alternative is correct. I just added this to the manual
+</I>&gt;<i> page: &quot;The order of JSON attributes within a response object is never
+</I>&gt;<i> significant, and you may specify attributes in commands in any order.&quot;
+</I>&gt;<i>
+</I>&gt;&gt;<i> (I also can't seem to find a way to only watch for position TPV and
+</I>&gt;&gt;<i> not get the SKY but I might just be dense - I don't think browser
+</I>&gt;&gt;<i> location will need SKY).
+</I>&gt;<i>
+</I>&gt;<i> There is at present no way to specify this. &#160;In general, the policy
+</I>&gt;<i> options in WATCH specify what formats the daemon should ship reports
+</I>&gt;<i> in, but do not set filters on which reports should be shipped. When
+</I>&gt;<i> you set WATCH, all devices will ship you every report they can deliver;
+</I>&gt;<i> it's up to the client to do content filtering.
+</I>&gt;<i>
+</I>&gt;<i> The reason it's designed this way is that even at full flood from several
+</I>&gt;<i> devices the data volume is not very high; for most of each second the
+</I>&gt;<i> socket will be idle. &#160;Content filtering would add complexity that I'm
+</I>&gt;<i> not yet convinced is necessary.
+</I>&gt;<i>
+</I>&gt;<i> If you have a measured need to throttle back the amount of sending,
+</I>&gt;<i> then I might consider adding something like &quot;filter&quot;:{&quot;TPV&quot;} to WATCH.
+</I>&gt;<i> But it would have to be a *measured* need, with profiling, not one
+</I>&gt;<i> just guessed at. &#160;I am concerned to avoid code bloat.
+</I>
+One of the things I am trying to do is to figure out how to use
+xhttpdrequest to get something from gpsd-ng - use an existing json
+coder efficiently instead of writing up a new blob of json
+specifically for it.  Part of that path is getting my version to emit
+the same or very similar output and adjusting the javascript to it.
+
+Here is where I find WATCH to have a problem.  You could simply dump
+everything and allow the client to pick out the bits (as they are
+clearly labeled and easily parsed).  But you do split at least raw,
+(pseudo)nmea, and json as individually controllable.
+
+One of the most common cases would be simply telling the browsers in
+the system the current latitude and longitude as that is all they want
+or need for geolocation.  Bloating every client to make gpsd thin
+would be counterproductive.
+
+&gt;<i>From the client's point of view, I want lat/lon, and maybe altitude
+</I>and heading if I'm doing google earth.  I also don't need every tiny
+update on my 10Hz stream.  I might also want the last stale reading
+(which WATCH won't return and I don't think POLL will even if we just
+entered a parking structure - we might need a &quot;keep on always&quot;, or
+&quot;poll every N minute&quot; option).  Ending up with the entire USA on the
+map instead of the entrance to the structure or a street a mile away
+is a fail - and too many implementations (that don't use gpsd) do this
+and have no option.
+
+I can use something like POLL, but it would help if I can trim the
+data it returns to just what I need.  Even now what happens if you
+have more than one GPS device and the combined fix and sky data
+exceeds 1024 bytes (listed as a hard limit)?
+
+Worse (noting what 10Hz NMEA does to my jailbroken slow iPod touch),
+each of these events typically are acted upon, so the small amount of
+power gpsd might consume causes a cascade of reloading or scrolling a
+whole screen almost constantly to move it 2-3 pixels every fraction of
+a second.  From the other side, if I wanted to use geolocation, I
+would only want a notification every N seconds (even if redundant,
+sort of a keep-alive, or just a PING), or if the location changed more
+than a given amount.  If I 'm standing still, the map stays fixed and
+no activity.  If I move slowly, it reloads or shifts every minute or
+so to keep me on the map.  If I'm driving across the freeways out
+west, every few seconds or every second is not unwarranted.
+
+Legacy GPSD was easy to pick out.  By having variable JSON it is only
+easier to pick out if you have a library that can parse it and do
+exceptions right if things are missing or coding around it.  And it is
+likely to be all done in doubles anyway negating having NOFLOAT for
+gpsd itself.
+
+That is probably what the web interface will implement in some form.
+There should be a way of having some simple http request return just a
+few select pieces of data - JSON and/or XML.  But this would be an
+alternate API.
+
+&gt;&gt;<i> The response MUST return the following:... &#160;The response SHOULD ...
+</I>&gt;&gt;<i> The response MAY... &#160;Both for content and ordering.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> For the TPV - are the device and tag fields MUST, SHOULD, or MAY?
+</I>&gt;&gt;<i> They might be for libgps, but not if you are decoding the json
+</I>&gt;&gt;<i> directly.
+</I>&gt;<i>
+</I>&gt;<i> Look in the attribute tables. There's a column to tell you whether or
+</I>&gt;<i> not an attribute is optional; that's your MUST. &#160;If you want or need
+</I>&gt;<i> more detailed specification than that, explain and I'll try to fill it
+</I>&gt;<i> in.
+</I>
+It just says always, and then typically for only the class and one
+other entry.  Some of the fields are only present if mode is 2, some
+if 3.  Will alt always be there if mode is 3?  Can it be there (maybe
+stale) if mode is 2?
+
+If there is supposed to be some system to this, it should be
+explained.  If it is all ad-hoc/willy-nilly, you should add regression
+tests to randomize which fields are there or not.  (It doesn't even
+say that you will get both lat and lon or neither).
+
+&gt;&gt;<i> This might not belong on the gpsd.8 manpage, but it is a detailed
+</I>&gt;&gt;<i> protocol and it isn't really documented as a protocol. &#160;Think RFC
+</I>&gt;&gt;<i> (actually that would be a good idea - do an RFC to document this).
+</I>&gt;&gt;<i> There should be a certain minimum MUST.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> The actual protocol is whatever standard you want to set and has to
+</I>&gt;&gt;<i> precisely describe the behavior of whatever implementation. &#160;Right now
+</I>&gt;&gt;<i> it is &quot;whatever the code does&quot; and the code can change. &#160;If some are
+</I>&gt;&gt;<i> depending on specific fields and they go away, it will break.
+</I>&gt;<i>
+</I>&gt;<i> The intent is that the protocol is documented with RFC completeness
+</I>&gt;<i> on gpsd(8). &#160;If I'm not achieving that, do criticize the docs so
+</I>&gt;<i> I can fix them.
+</I>&gt;<i>
+</I>&gt;&gt;<i> One of the problems with the original GPSD is it was quirky - the
+</I>&gt;&gt;<i> commands and responses were all ad-hoc but at least were uniform and
+</I>&gt;&gt;<i> constant.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> JSON creates the problem because it is &quot;extensible&quot;, but also
+</I>&gt;&gt;<i> contractable, e.g. no altitude for 2d. &#160;But is this behavior set in
+</I>&gt;&gt;<i> stone, or ad-hoc?
+</I>&gt;<i>
+</I>&gt;<i> It depends on what the underlying device sends. &#160;If you don't have a 3D
+</I>&gt;<i> fix, TPV won't report altitude. &#160;It really can't be any other way.
+</I>
+It could have &quot;alt&quot;:null.  You are documenting what the current code
+actually does, not what a conforming implementation may/should/must
+do.  And you are explaining it here, not on the manpage.  All the
+manpage says for alt is Always:no.
+
+The manpage should then explain the behavior of the code, not the
+other way around.
+
+And what is required by libgpsd? - if it depends on undocumented or
+not fully documented gpsd behavior, then there are problems.  For that
+matter, if I understand, you need to know the unix device name of the
+GPS even if there is only one in the system, or it moves (bluetooth on
+an new rfcommN), and as far as I can tell there isn't anything in
+libgpsd which can return a list of devices.  And you can pick the
+disabled GPS instead of the working one.
+
+In my implementation, I only return one set of fix/sky data directly,
+but use the fix from the device with the best fix/DoP.  Clients won't
+have to do it or even have multiple &quot;good&quot; data but jitter between the
+two if they don't pick one out.
+
+Even if I merge my implementation into gpsd-ng to make it NOFLOAT -
+which I really want to do - I'm in a position to ask the questions as
+if I was going to implement it ex nihilo.  Also I have all the data in
+mine that it should be simple just to follow the manpage as a recipe
+and just implement the formats and behaviors such that clients
+shouldn't care which one is running.  But it isn't that way, at least
+not yet.  That is why the questions on why &quot;tag&quot; exists - I don't have
+anything similar and it sounds like something implementation specific
+even if useful.  And that is why the other questions.  I know what
+gpsd-ng does because the code is easily readable, but there isn't a
+why it does what it does but not something else.
+
+&gt;<i> --
+</I>&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+</I>&gt;<i>
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008839.html">[Gpsd-dev] time presence and precision, tags, class member queries.
+</A></li>
+	<LI>Next message: <A HREF="008842.html">[Gpsd-dev] time presence and precision, tags, class member queries.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8840">[ date ]</a>
+              <a href="thread.html#8840">[ thread ]</a>
+              <a href="subject.html#8840">[ subject ]</a>
+              <a href="author.html#8840">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

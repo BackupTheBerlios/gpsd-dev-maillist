@@ -1,0 +1,151 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-commit-watch] r2321 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r2321%20-%20trunk&In-Reply-To=%3CPine.LNX.4.62.0504121111160.30878%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001336.html">
+   <LINK REL="Next"  HREF="001341.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-commit-watch] r2321 - trunk</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r2321%20-%20trunk&In-Reply-To=%3CPine.LNX.4.62.0504121111160.30878%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-commit-watch] r2321 - trunk">gem at rellim.com
+       </A><BR>
+    <I>Tue Apr 12 20:54:26 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001336.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2321 - trunk
+</A></li>
+        <LI>Next message: <A HREF="001341.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2321 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1337">[ date ]</a>
+              <a href="thread.html#1337">[ thread ]</a>
+              <a href="subject.html#1337">[ subject ]</a>
+              <a href="author.html#1337">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Eric!
+
+On Tue, 12 Apr 2005, Eric S. Raymond wrote:
+
+&gt;<i> &gt; Nope, that broke it again.   Now xgps shows speed, course EPH and EPV
+</I>&gt;<i> &gt; even with NO_FIX.  See attached screen shot.
+</I>&gt;<i>
+</I>&gt;<i> Aha.  I know why. It's because xgps isn't checking the right validity flags
+</I>&gt;<i> before looking at the data in the fix structure.  This is not something
+</I>&gt;<i> that should be kluged around by zeroing things other than the mode and status
+</I>&gt;<i> fields in libgps.
+</I>&gt;<i>
+</I>&gt;<i> I've put a kluge to deal with this in the SVN head version of xgps.
+</I>&gt;<i> Please test.
+</I>
+Nope.  Same results.
+
+&gt;<i> But what this is really demanding is a definitive answer to two related
+</I>&gt;<i> questions:
+</I>
+Yup.  You need to pick a policy, document it in the source, then the
+rest of us can try to be consistent to that.
+
+&gt;<i> 1. When a command returns ?, does that mean &quot;leave the corresponding
+</I>&gt;<i> field in the gps_fix_t or gps_data_t structure unchanged&quot; or &quot;fill the
+</I>&gt;<i> corresponding field with a recognizable out-of-band value?
+</I>
+I would slightly prefer to clear the data out.  That makes it less likely
+that a sloppy client might miss the flag meaning.  Reading invalid or
+uninitialized data is a recurring issue with all code.
+
+A smart client can implement a &quot;coast mode&quot; if it wants by keeping it's
+own copy of prior data.
+
+
+&gt;<i> So far I've opted for the first answer, leaving it entirely up to the
+</I>&gt;<i> client to nuke fields in these structures that it decides are stale
+</I>&gt;<i> (e.g.  by nuking them before each poll, or making a policy decision
+</I>&gt;<i> based on the fix timestamp).  I changed your last patch to libgps because it
+</I>&gt;<i> was only consistent with the *other* interpretation.
+</I>
+More important that gpsd is consistent than optimal.
+
+Right now xgps is not seeing, or acting, on the flags right and is giving
+bad answers.
+
+&gt;<i> 2. What should a client look for to determine if a given field has valid data
+</I>&gt;<i> in it?  The alternatives are:
+</I>&gt;<i>
+</I>&gt;<i> a) The status flag in the 'valid' field.
+</I>&gt;<i> b) Out-of-band value in the field itself.
+</I>&gt;<i> c) Value of the mode field (e.g. MODE_NO_FIX means lat/lon is no good)
+</I>&gt;<i> d) Age based on an associated timestamp.
+</I>&gt;<i>
+</I>&gt;<i> Right now xgps mixes a, b, and c.  This is too complicated.
+</I>
+Prolly best that gpsd stick to the spirit of NMEA.  That is to have
+status flags/bits to denote invalid/valid data (a or c).  I could care
+less whether (a) or (c) but only one should be kept around.  Since bits
+are cheap these days I slightly prefer (a).
+
+Timestamps (d) have to be in there somewhere.  If the GPS just stops
+sending data an invalid condition can only be detected by a timer.  This
+could be a privater time that then implements one of (a), (b)  or (c).
+
+OTOH, debugging is easier with an out-of band value (b).  That way no
+chance that an invalid data point slips by a sloppy client and be
+seen by tthe user as seemingly valid.
+
+So, being a belt-and-suspenders guy I would go with (a) and (b).
+
+Once again, more important that gpsd is consistent than optimal.  Pick
+something, document it, stick to it.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.2.3 (GNU/Linux)
+
+iD8DBQFCXBlm8KZibdeR3qURAi3aAKDAJBCtZGf1T3R9G3GOX7Ceg62kVwCgphcJ
+ssH6QgERL8iyAXAo0Blv4aU=
+=xdgY
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001336.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2321 - trunk
+</A></li>
+	<LI>Next message: <A HREF="001341.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2321 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1337">[ date ]</a>
+              <a href="thread.html#1337">[ thread ]</a>
+              <a href="subject.html#1337">[ subject ]</a>
+              <a href="author.html#1337">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

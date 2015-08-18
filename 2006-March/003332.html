@@ -1,0 +1,186 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] incorrect mode handling with NMEA + multiple gpsd_report defs
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20incorrect%20mode%20handling%20with%20NMEA%20%2B%20multiple%0A%20gpsd_report%20defs&In-Reply-To=%3Cp06230902c04441cf6121%40%5B58.163.136.223%5D%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003329.html">
+   <LINK REL="Next"  HREF="003333.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] incorrect mode handling with NMEA + multiple gpsd_report defs</H1>
+    <B>Robin L Darroch</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20incorrect%20mode%20handling%20with%20NMEA%20%2B%20multiple%0A%20gpsd_report%20defs&In-Reply-To=%3Cp06230902c04441cf6121%40%5B58.163.136.223%5D%3E"
+       TITLE="[Gpsd-dev] incorrect mode handling with NMEA + multiple gpsd_report defs">robin at spade-men.com
+       </A><BR>
+    <I>Mon Mar 20 12:27:12 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003329.html">[Gpsd-dev] Re: [Gpsd-users] usb via usbtouart problem (fwd)
+</A></li>
+        <LI>Next message: <A HREF="003333.html">[Gpsd-dev] incorrect mode handling with NMEA + multiple gpsd_report defs
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3332">[ date ]</a>
+              <a href="thread.html#3332">[ thread ]</a>
+              <a href="subject.html#3332">[ subject ]</a>
+              <a href="author.html#3332">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>[resend to list as suggested]
+
+Info as requested:
+
+Mac OS X 10.4.5
+Xcode 2.1
+
+cc &amp; ld versions followed by make output as follows (&quot;true&quot; lines at end workaround for missing manpages in current svn head and absence of xmlto on OS X, reported a week or so ago).  As soon as I comment out report.c's definition, the problems all go away.
+
+23:58 [~/src/gpsd-trunk] robin&gt; ld -v
+Apple Computer, Inc. version cctools-590.obj~12
+23:58 [~/src/gpsd-trunk] robin&gt; cc -dumpversion
+4.0.0
+23:58 [~/src/gpsd-trunk] robin&gt; make
+make  all-am
+source='report.c' object='report.lo' libtool=yes \
+depfile='.deps/report.Plo' tmpdepfile='.deps/report.TPlo' \
+depmode=gcc3 /bin/sh ./depcomp \
+/bin/sh ./libtool --mode=compile gcc -DHAVE_CONFIG_H -I. -I. -I.     -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -c -o report.lo `test -f 'report.c' || echo './'`report.c
+ gcc -DHAVE_CONFIG_H -I. -I. -I. -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -c report.c -MT report.lo -MD -MP -MF .deps/report.TPlo  -fno-common -DPIC -o .libs/report.o
+ gcc -DHAVE_CONFIG_H -I. -I. -I. -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -c report.c -MT report.lo -MD -MP -MF .deps/report.TPlo -o report.o &gt;/dev/null 2&gt;&amp;1
+/bin/sh ./libtool --mode=link g++  -g -O2  -L/usr/X11R6/lib -o libgps.la -rpath /usr/lib -version-number 15:0:0 netlib.lo nmea_parse.lo serial.lo drivers.lo zodiac.lo garmin.lo tsip.lo evermore.lo italk.lo libgpsd_core.lo ntpshm.lo libgps.lo packet.lo gpsutils.lo geoid.lo dgpsip.lo sirf.lo report.lo isgps.lo rtcm.lo srecord.lo truenorth.lo libgpsmm.lo  -lm -lc   -lpthread
+rm -fr  .libs/libgps.15 .libs/libgps.15.0.0 .libs/libgps.a .libs/libgps.la .libs/libgps.lai
+g++ -dynamiclib  -single_module -flat_namespace -undefined suppress -o .libs/libgps.15  .libs/netlib.o .libs/nmea_parse.o .libs/serial.o .libs/drivers.o .libs/zodiac.o .libs/garmin.o .libs/tsip.o .libs/evermore.o .libs/italk.o .libs/libgpsd_core.o .libs/ntpshm.o .libs/libgps.o .libs/packet.o .libs/gpsutils.o .libs/geoid.o .libs/dgpsip.o .libs/sirf.o .libs/report.o .libs/isgps.o .libs/rtcm.o .libs/srecord.o .libs/truenorth.o .libs/libgpsmm.o  -L/usr/X11R6/lib -lm -lc -lpthread  -install_name  /usr/lib/libgps.15 -Wl,-compatibility_version -Wl,16 -Wl,-current_version -Wl,16.0
+(cd .libs &amp;&amp; rm -f libgps &amp;&amp; ln -s libgps.15 libgps)
+(cd .libs &amp;&amp; rm -f libgps.15.0.0 &amp;&amp; ln -s libgps.15 libgps.15.0.0)
+ar cru .libs/libgps.a  netlib.o nmea_parse.o serial.o drivers.o zodiac.o garmin.o tsip.o evermore.o italk.o libgpsd_core.o ntpshm.o libgps.o packet.o gpsutils.o geoid.o dgpsip.o sirf.o report.o isgps.o rtcm.o srecord.o truenorth.o libgpsmm.o
+ranlib .libs/libgps.a
+creating libgps.la
+(cd .libs &amp;&amp; rm -f libgps.la &amp;&amp; ln -s ../libgps.la libgps.la)
+/bin/sh ./libtool --mode=link gcc  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE   -L/usr/X11R6/lib -o xgps  display.o xgps.o -lm -lc   -lXm -lXt -L/usr/X11R6/lib -lSM -lICE libgps.la -lm -lpthread
+gcc -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -o .libs/xgps display.o xgps.o  -L/usr/X11R6/lib /usr/local/lib/libXm.dylib -lXp -lXext -lX11 -lXt -lSM -lICE ./.libs/libgps.15.0.0 -lc -lm -lpthread
+creating xgps
+/bin/sh ./libtool --mode=link gcc  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE   -L/usr/X11R6/lib -o xgpsspeed  xgpsspeed.o Tachometer.o -lm -lc   -lXaw -lXm -L/usr/X11R6/lib -lSM -lICE libgps.la -lm -lpthread
+gcc -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -o .libs/xgpsspeed xgpsspeed.o Tachometer.o  -L/usr/X11R6/lib -lXaw /usr/local/lib/libXm.dylib -lXt -lXp -lXext -lX11 -lSM -lICE ./.libs/libgps.15.0.0 -lc -lm -lpthread
+creating xgpsspeed
+/bin/sh ./libtool --mode=link gcc  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE   -L/usr/X11R6/lib -o rtcmdecode  rtcmdecode.o -lm -lncurses libgps.la -lm -lpthread
+gcc -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -o .libs/rtcmdecode rtcmdecode.o  -L/usr/X11R6/lib -lncurses ./.libs/libgps.15.0.0 -lc -lm -lpthread
+/usr/bin/ld: warning multiple definitions of symbol _gpsd_report
+rtcmdecode.o definition of _gpsd_report in section (__TEXT,__text)
+./.libs/libgps.15.0.0(single module) definition of _gpsd_report
+creating rtcmdecode
+/bin/sh ./libtool --mode=link gcc  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE   -L/usr/X11R6/lib -o sirfmon  sirfmon.o -lm -lncurses libgps.la -lm -lpthread
+gcc -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -o .libs/sirfmon sirfmon.o  -L/usr/X11R6/lib -lncurses ./.libs/libgps.15.0.0 -lc -lm -lpthread
+creating sirfmon
+/bin/sh ./libtool --mode=link gcc  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE   -L/usr/X11R6/lib -o gpspipe  gpspipe.o  -lm libgps.la -lm
+gcc -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -o .libs/gpspipe gpspipe.o  -L/usr/X11R6/lib ./.libs/libgps.15.0.0 -lc -lpthread -lm
+creating gpspipe
+source='gpsflash.c' object='gpsflash.o' libtool=no \
+depfile='.deps/gpsflash.Po' tmpdepfile='.deps/gpsflash.TPo' \
+depmode=gcc3 /bin/sh ./depcomp \
+gcc -DHAVE_CONFIG_H -I. -I. -I.     -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -c `test -f 'gpsflash.c' || echo './'`gpsflash.c
+/bin/sh ./libtool --mode=link gcc  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE   -L/usr/X11R6/lib -o gpsflash  gpsflash.o sirfflash.o -lm libgps.la -lm
+gcc -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -o .libs/gpsflash gpsflash.o sirfflash.o  -L/usr/X11R6/lib ./.libs/libgps.15.0.0 -lc -lpthread -lm
+/usr/bin/ld: warning multiple definitions of symbol _gpsd_report
+gpsflash.o definition of _gpsd_report in section (__TEXT,__text)
+./.libs/libgps.15.0.0(single module) definition of _gpsd_report
+creating gpsflash
+/bin/sh ./libtool --mode=link gcc  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE   -L/usr/X11R6/lib -o cgps  cgps.o -lm -lc   -lncurses libgps.la -lm -lpthread
+gcc -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -o .libs/cgps cgps.o  -L/usr/X11R6/lib -lncurses ./.libs/libgps.15.0.0 -lc -lm -lpthread
+creating cgps
+/bin/sh ./libtool --mode=link gcc  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE   -L/usr/X11R6/lib -o gpsd  gpsd_dbus.o gpsd.o  -lm libgps.la -lm -lpthread
+gcc -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -o .libs/gpsd gpsd_dbus.o gpsd.o  -L/usr/X11R6/lib ./.libs/libgps.15.0.0 -lc -lm -lpthread
+/usr/bin/ld: warning multiple definitions of symbol _gpsd_report
+gpsd.o definition of _gpsd_report in section (__TEXT,__text)
+./.libs/libgps.15.0.0(single module) definition of _gpsd_report
+creating gpsd
+true man gpsd.xml
+true man gps.xml
+true man gps.xml
+true man gps.xml
+true man rtcmdecode.xml
+true man gpspipe.xml
+true man gpsflash.xml
+23:59 [~/src/gpsd-trunk] robin&gt;
+
+&gt;<i>On Saturday 18 March 2006 14:43, Robin L Darroch wrote:
+</I>&gt;<i> &gt;
+</I>&gt;&gt;<i> Part 2:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> While attempting to troubleshoot Part 1, I added a number of gpsd_report
+</I>&gt;&gt;<i> statements.  Unfortunately, although I set them at level 3 and 4, I found
+</I>&gt;&gt;<i> my output flooded by higher debug level reports despite setting -D 4.
+</I>&gt;&gt;<i> Turns out that there were (as warned during building) multiple definitions
+</I>&gt;&gt;<i> of gpsd_report(), and many parts of gpsd were using the (crude and
+</I>&gt;&gt;<i> unleveled) definition in &quot;report.c&quot;.  Although I haven't removed report.c
+</I>&gt;&gt;<i> from my source yet, I've commented out the function definition entirely,
+</I>&gt;&gt;<i> and it now builds without warnings and behaves as one would expect.
+</I>&gt;<i>
+</I>&gt;<i>That is strange. The way it should work:
+</I>&gt;<i>
+</I>&gt;<i>If There is no gpsd_report in the client code (there is one in gpsd), then the
+</I>&gt;<i>version from the library is linked in. If there is one in the code already,
+</I>&gt;<i>the linker will not pull in the one from the library.
+</I>&gt;<i>
+</I>&gt;<i>This is a standard way of providing a base functionality with the ability to
+</I>&gt;<i>provide a more capable custom solution.
+</I>&gt;<i>
+</I>&gt;<i>When I link gpsd, I do not get multiple definitions of gpsd_report. No
+</I>&gt;<i>warning. It works as advertised in my environment.
+</I>&gt;<i>
+</I>&gt;<i>Could you please save the make output, and send it to me. Also it would be
+</I>&gt;<i>nice to know about OS and versions of tools.
+</I>&gt;<i>
+</I>&gt;<i>I am really curious to find the cause of this.
+</I>&gt;<i>
+</I>&gt;<i>Cheers,
+</I>&gt;<i>Remco
+</I>&gt;<i>
+</I>&gt;<i>--
+</I>&gt;<i>Remco Treffkorn (RT445)
+</I>&gt;<i>HAM DC2XT
+</I>&gt;<i><A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+</I>&gt;<i>_______________________________________________
+</I>&gt;<i>Gpsd-dev mailing list
+</I>&gt;<i><A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i><A HREF="http://lists.berlios.de/mailman/listinfo/gpsd-dev">http://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>
+
+-- 
+
+-------------------------------------------------------------------------
+ Robin L. Darroch - PO Box 2715, South Hedland WA 6722 - +61 421 503 966
+      <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at darroch.id.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at nyca.org.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>
+   
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003329.html">[Gpsd-dev] Re: [Gpsd-users] usb via usbtouart problem (fwd)
+</A></li>
+	<LI>Next message: <A HREF="003333.html">[Gpsd-dev] incorrect mode handling with NMEA + multiple gpsd_report defs
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3332">[ date ]</a>
+              <a href="thread.html#3332">[ thread ]</a>
+              <a href="subject.html#3332">[ subject ]</a>
+              <a href="author.html#3332">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,196 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Writing a long-lasting gpsd client in python?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Writing%20a%20long-lasting%20gpsd%20client%20in%20python%3F&In-Reply-To=%3C2flwtuja99e.fsf%40saruman.uio.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000513.html">
+   <LINK REL="Next"  HREF="000514.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Writing a long-lasting gpsd client in python?</H1>
+    <B>Petter Reinholdtsen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Writing%20a%20long-lasting%20gpsd%20client%20in%20python%3F&In-Reply-To=%3C2flwtuja99e.fsf%40saruman.uio.no%3E"
+       TITLE="[Gpsd-dev] Writing a long-lasting gpsd client in python?">pere at hungry.com
+       </A><BR>
+    <I>Tue Jan 11 23:30:53 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000513.html">[Gpsd-dev] Writing a long-lasting gpsd client in python?
+</A></li>
+        <LI>Next message: <A HREF="000514.html">[Gpsd-dev] [PATCH] Correct initialization of gpsdata.satellites_used
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#520">[ date ]</a>
+              <a href="thread.html#520">[ thread ]</a>
+              <a href="subject.html#520">[ subject ]</a>
+              <a href="author.html#520">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>[Eric S. Raymond]
+&gt;<i> I suppose it might be possible to do this.  The poll function would have 
+</I>&gt;<i> to check the file descriptor and reopen the connection to the 
+</I>&gt;<i> device if it's bad.
+</I>&gt;<i>
+</I>&gt;<i> I'd take C and/or Python patches for this.
+</I>
+Good.  Too bad I do not know python socket handling very well, so I am
+currently unable to provide fixes.  :(
+
+Here is a draft patch for the C library.  It fixes a few memory leaks,
+and add code to try to reconnect.  It adds the name and port used when
+connecting to the gps_data_t struct, to make sure they are available
+when reconnecting.  Perhaps getpeername() can be used, but this would
+only give us the IP number of the currently connected peer, and any
+round robin DNS lookups would not happen on reconnects.  Not sure if
+this is a good thing or not.  (Besides, I am not sure if getpeername()
+will return anything useful when the connection is lost.)  I will have
+to investigate more to find out.  It is a long time since I did socket
+programming in C. :)
+
+I'm just posting the patch here for comments. :)
+
+I decided to return an error when the read/write fails, and let the
+next call to gps_poll()/gps_query() use the reconnected socket, to
+allow the library user to detect these problems.  I also wanted to
+avoid loops in the library functions, as it isn't too obvious when to
+break out of such loop.
+
+Index: gps.h
+===================================================================
+--- gps.h       (revision 1317)
++++ gps.h       (working copy)
+@@ -96,6 +96,8 @@
+     /* these members are private */
+     int gps_fd;                        /* socket or file descriptor to GPS */
+     void (*raw_hook)(char *buf);/* Raw-mode hook for GPS data. */
++    const char *host; /* Remember hostname and port for reconnects */
++    const char *port;
+ };
+
+ struct gps_data_t *gps_open(const char *host, const char *port);
+Index: libgps.c
+===================================================================
+--- libgps.c    (revision 1317)
++++ libgps.c    (working copy)
+@@ -22,9 +22,13 @@
+
+     if ((gpsdata-&gt;gps_fd = netlib_connectsock(host, port, &quot;tcp&quot;)) &lt; 0) {
+        errno = gpsdata-&gt;gps_fd;
++       free(gpsdata);
+        return NULL;
+     }
+
++    gpsdata-&gt;host = strdup(host);
++    gpsdata-&gt;port = strdup(port);
++
+     now = time(NULL);
+     INIT(gpsdata-&gt;online_stamp, now);
+     INIT(gpsdata-&gt;latlon_stamp, now);
+@@ -43,7 +47,9 @@
+ int gps_close(struct gps_data_t *gpsdata)
+ /* close a gpsd connection */
+ {
+-    return close(gpsdata-&gt;gps_fd);
++    int retval = close(gpsdata-&gt;gps_fd);
++    free(gpsdata);
++    return retval;
+ }
+
+ void gps_set_raw_hook(struct gps_data_t *gpsdata, void (*hook)(char *buf))
+@@ -188,7 +194,39 @@
+        || gpsdata-&gt;satellite_stamp.changed
+        ;
+ }
++#include &lt;sys/socket.h&gt;
+
++static int try_reconnect(struct gps_data_t *gpsdata)
++{
++    int fd;
++#if 0
++int getpeername(int socket, struct sockaddr *address,
++                socklen_t *address_len);
++    /* Find out where we were connected. */
++    struct sockaddr address;
++    socklen_t address_len;
++    int status = getpeername(gpsdata-&gt;gps_fd, &amp;address, &amp;address_len);
++
++    if (NULL==(peerent=gethostbyaddr((void*)&amp;address.sin_addr.s_addr,
++                                     sizeof(struct in_addr),
++                                     AF_INET)
++              )) {
++        perror(&quot;gethostbyaddr&quot;);
++        exit(3);
++    }
++    printf(&quot;peer: %s\n&quot;, peerent-&gt;h_name);
++#endif
++
++    /* Try to connect, and replace filedescriptor if it succeeds */
++    if ((fd = netlib_connectsock(gpsdata-&gt;host, gpsdata-&gt;port, &quot;tcp&quot;)) &gt;= 0) {
++        int status = close(gpsdata-&gt;gps_fd);
++       gpsdata-&gt;gps_fd = fd;
++       return 0;
++    } else {
++        return -1;
++    }
++}
++
+ int gps_poll(struct gps_data_t *gpsdata)
+ /* wait for and read data being streamed from the daemon */
+ {
+@@ -196,8 +234,10 @@
+     int                n;
+
+     /* the daemon makes sure that every read is NUL-terminated */
+-    if ((n = read(gpsdata-&gt;gps_fd, buf, sizeof(buf)-1)) &lt;= 0)
++    if ((n = read(gpsdata-&gt;gps_fd, buf, sizeof(buf)-1)) &lt;= 0) {
++       try_reconnect(gpsdata);
+        return -1;
++    }
+     buf[n] = '\0';
+     return gps_unpack(buf, gpsdata);
+ }
+@@ -205,8 +245,10 @@
+ int gps_query(struct gps_data_t *gpsdata, const char *requests)
+ /* query a gpsd instance for new data */
+ {
+-    if (write(gpsdata-&gt;gps_fd, requests, strlen(requests)) &lt;= 0)
++    if (write(gpsdata-&gt;gps_fd, requests, strlen(requests)) &lt;= 0) {
++       try_reconnect(gpsdata);
+        return -1;
++    }
+     return gps_poll(gpsdata);
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000513.html">[Gpsd-dev] Writing a long-lasting gpsd client in python?
+</A></li>
+	<LI>Next message: <A HREF="000514.html">[Gpsd-dev] [PATCH] Correct initialization of gpsdata.satellites_used
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#520">[ date ]</a>
+              <a href="thread.html#520">[ thread ]</a>
+              <a href="subject.html#520">[ subject ]</a>
+              <a href="author.html#520">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

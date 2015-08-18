@@ -1,0 +1,173 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Stripping down gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Stripping%20down%20gpsd&In-Reply-To=%3C20110310055110.GC5406%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008727.html">
+   <LINK REL="Next"  HREF="008731.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Stripping down gpsd</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Stripping%20down%20gpsd&In-Reply-To=%3C20110310055110.GC5406%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Stripping down gpsd">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Mar 10 06:51:10 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008727.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+        <LI>Next message: <A HREF="008731.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8728">[ date ]</a>
+              <a href="thread.html#8728">[ thread ]</a>
+              <a href="subject.html#8728">[ subject ]</a>
+              <a href="author.html#8728">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+&gt;<i> &gt; One major question I have for you is: could you live with scons as a
+</I>&gt;<i> &gt; build system? That would be a relatively easy transition.
+</I>&gt;<i> 
+</I>&gt;<i> Yes, provided it didn't have similar dependencies - can I compile it
+</I>&gt;<i> quickly and easily on an ARM based system without having to install
+</I>&gt;<i> half of the existing auto-tools and libs in a current linux distro
+</I>&gt;<i> either for sconf or for the target.
+</I>
+scons isn't compiled at all. It's a Python program.  If you can run
+Python programs, I don't believe it has any odd dependencies.
+
+&gt;<i> Are the following actually protocols?
+</I>&gt;<i> 
+</I>&gt;<i> &gt; GPSclock &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;: yes
+</I>
+Yes. It supports a set of extension commands specific to a specialiced
+GPS called the Furuno Electric GPSClock (GH-79L4), usable as a precision
+time service.
+
+&gt;<i> &gt; Timing support &#160; &#160; &#160; &#160; &#160;: yes
+</I>&gt;<i> 
+</I>&gt;<i> &gt; Client debugging support: yes
+</I>
+Hm, those should be under &quot;Daemon Features&quot;. I'll move them.
+
+&gt;<i> And don't I also need to pull some of the following:
+</I>&gt;<i> 
+</I>&gt;<i> &gt; &#160; &#160; &#160; &#160;Daemon Features
+</I>&gt;<i> &gt; &#160; &#160; &#160; &#160;---------------
+</I>&gt;<i> &gt; NTP SHM &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; : yes
+</I>&gt;<i> &gt; NTP PPS &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; : yes
+</I>&gt;<i> ...
+</I>
+Yes. That's what I meant by the PPS stuff.  The PPS support talks to an NTPD
+instance.
+ 
+&gt;<i> &gt; I don't quite inderstand this. &#160;What &quot;NMEA output&quot; is a short string of
+</I>&gt;<i> &gt; integers? &#160;NMEA sentences generally at least have an alphabetic tag.
+</I>&gt;<i> 
+</I>&gt;<i> The alphabetic tag is used with strncmp in an if-else tree.
+</I>
+Oh, I see. Unlike my packet sniffer.  Well...let's strip out what we can,
+
+&gt;<i> Even if you were to use sscanf into an integer type, sscanf is a lot
+</I>&gt;<i> of code to pick out numbers.
+</I>
+It is.  We'll tackle this.
+ 
+&gt;<i> &gt;&gt;It would be intertesting to compare ncycles
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; How would you recommend we do this?
+</I>&gt;<i> 
+</I>&gt;<i> Come up with the stripped NMEA gpsd-ng 2.96, and run it with a 10Hz
+</I>&gt;<i> NMEA GPS on a soft-float ARM embedded board like a chumby hacker
+</I>&gt;<i> board, or maybe an early jailbroken iPhone or not-top/thin client.
+</I>&gt;<i> 
+</I>&gt;<i> Compile my version (though I do things like logging to KML files and I
+</I>&gt;<i> don't have a way to #ifdef them out).
+</I>&gt;<i> 
+</I>&gt;<i> Does gdb have some fine timer so you could time between two
+</I>&gt;<i> breakpoints (or if there were a hardware timer available you could
+</I>&gt;<i> just add a line before an after to measure microseconds, or use a port
+</I>&gt;<i> and an oScope).
+</I>&gt;<i> 
+</I>&gt;<i> You could run both for say 1000 seconds using time and show the
+</I>&gt;<i> system/user time.  Or check the CPU load with top or something.
+</I>&gt;<i> 
+</I>&gt;<i> I have one master select() it sits at so you could also use a digital
+</I>&gt;<i> storage scope or something from the point the select returns to the
+</I>&gt;<i> point it starts again if you want overall processing time.
+</I>
+Saving this for the record.  I'll look for a hardware timer in gdb;
+I don't have the hardware to do these other things.
+
+&gt;<i> &gt;&gt;As I've shown, you are using libraries and floats everywhere. &#160;We're
+</I>&gt;<i> &gt;&gt;talking extreme liposuction.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Yes. &#160;But it's the right thing to do. &#160;We'll just have to take it in steps.
+</I>&gt;<i> 
+</I>&gt;<i> OK - we're agreed here in that case.  I didn't want to suggest it
+</I>&gt;<i> earlier since I didn't think it would be considered because of the
+</I>&gt;<i> size of the task.
+</I>
+In truth, I welcome this.  I've been concerned about the code getting bloated;
+targeting a really constrained deployment will be a good way to find out
+exactly where the fat is and slim it down.
+
+&gt;<i> Yes, start with NOFLOAT for NMEA and slowly move it out to the rest of
+</I>&gt;<i> the protocols.
+</I>
+We'll do that, then.
+ 
+&gt;<i> Again, as long as scons is mostly self-contained, it should be OK.
+</I>&gt;<i> (Taking a further look, it is basically plain Python, no fancy extra
+</I>&gt;<i> libs, so yes)
+</I>
+Excellent.  That will be the first major task after 2.96 then - sconsifying
+the build system.
+
+&gt;<i> The units could be in 100 nano-degree increments without overflowing,
+</I>&gt;<i> and in an separate communication, I suggested if there are
+</I>&gt;<i> nano-degrees, they can be in a second integer which is otherwise
+</I>&gt;<i> always zero, either a short or something such that ((microdegrees &lt;&lt;
+</I>&gt;<i> 32) | fractional &amp; 0xffffffff) would produce the precision where
+</I>&gt;<i> needed.  There are some RTK systems that do go to centimeter precision
+</I>&gt;<i> (100nano).
+</I>
+Noted. I don't want to go the route of a second integer, at least not
+yet.  There are obvious complications lurking there. 
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008727.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+	<LI>Next message: <A HREF="008731.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8728">[ date ]</a>
+              <a href="thread.html#8728">[ thread ]</a>
+              <a href="subject.html#8728">[ subject ]</a>
+              <a href="author.html#8728">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,146 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Rob Janssen's upset screed
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Rob%20Janssen%27s%20upset%20screed&In-Reply-To=%3C16023.213.84.187.156.1118136193.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002002.html">
+   <LINK REL="Next"  HREF="002013.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Rob Janssen's upset screed</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Rob%20Janssen%27s%20upset%20screed&In-Reply-To=%3C16023.213.84.187.156.1118136193.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] Rob Janssen's upset screed">gpsd at xs4all.nl
+       </A><BR>
+    <I>Tue Jun  7 11:23:13 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002002.html">[Gpsd-dev] Rob Janssen's upset screed
+</A></li>
+        <LI>Next message: <A HREF="002013.html">[Gpsd-dev] Rob Janssen's upset screed
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2009">[ date ]</a>
+              <a href="thread.html#2009">[ thread ]</a>
+              <a href="subject.html#2009">[ subject ]</a>
+              <a href="author.html#2009">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> I just read Rob Janssen's upset screed about my latest commit.  I then
+</I>&gt;<i> lost it due to a glitch related to my somewhat jerry-rigged
+</I>&gt;<i> arrangement for reading mail on the road.
+</I>&gt;<i>
+</I>&gt;<i> In one respect, Rob simply has his facts wrong.  That change to sirf.c
+</I>&gt;<i> is not a random twitch in an unexplored direction.  Allowing for the
+</I>&gt;<i> rename of the macros, it simply reverts them to an earlier state that
+</I>&gt;<i> is known good -- I used Andreas Brauchli's information that revision
+</I>&gt;<i> 2560 is the last one without a speed bug.  Thus, this code has already
+</I>&gt;<i> been thoroughly &quot;investigated&quot; in Rob's sense.
+</I>
+Oh NO!
+I thought we had hashed this out a week or so ago.
+
+I am still running the last version before splint.  When I do a diff, I
+see the following change in sirf.c:
+
+102,104c109,111
+&lt; #define getb(off)     (buf[off])
+&lt; #define getw(off)     ((short)((getb(off) &lt;&lt; 8) | getb(off+1)))
+&lt; #define getl(off)     ((int)((getw(off) &lt;&lt; 16) | (getw(off+2) &amp; 0xffff)))
+---
+&gt;<i> #define getbyte(off)  buf[off]
+</I>&gt;<i> #define getword(off)  ((getbyte(off) &lt;&lt; 8) | getbyte(off+1))
+</I>&gt;<i> #define getlong(off)  ((int)((getword(off) &lt;&lt; 16) | (getword(off+2) &amp;
+</I>0xffff))
+
+That is just wrong!  The (short) cast in getw or getword is REQUIRED.
+I have explained that, and I am not going to continue to explain that over
+and over again.
+
+I have installed splint and I am not impressed by it.  It warns about
+things that are just plain silly to warn about, like assigning the NULL
+value to a pointer (why would that be wrong??) or comparing an unsigned
+char to a small constant integer.  I also find it extremely lacking that
+it does not parse the system includefiles to pickup types.
+The author of this tool is of the typical &quot;I wished that C would be
+Pascal&quot; type, who did not carefully study the basics of the C language. 
+What you are doing by eradicating warnings is just massaging the source to
+his likings, not improving the quality in a general sense.
+
+To come back to the above macros: they are not sacred.  I see some room
+for improvement.  But they were carefully designed, and they do work.  In
+the original version.
+When splint is issuing warnings about them, you could make modifications. 
+But I object to modifications that destroy the functionality (and thus
+introduce bugs) just because they make splint happy.
+
+Before you try your next modification, I would suggest that you write a
+test program, that does getx calls on a buffer that you fill with some
+testdata.  Use testvalues that provide you with some info, e.g.:
+
+0102030405060708
+FFFEFDFCFBFAF9F8
+
+See if your &quot;improved&quot; macro still returns the same value when accessing
+this data.  Yours don't, and it shows as problems that you don't notice
+every time (because values are more often positive than negative).
+
+In hindsight, it would have been better to have separate macros for signed
+and unsigned results.  This makes the list longer:
+
+getsb
+getub
+getsw
+getuw
+getsl
+getul
+
+but it would allow the removal of some of the casts in the code.  The
+unsigned variants would also be more suitable to build the getl in terms
+of getw etc.
+
+The macros would have to be carefully coded again, and the entire binary
+drivers again need to be checked against the manufacturers docs to make
+sure that the macro used agrees with the type of value in the message
+(signed or unsigned).
+The datatypes used to store the result, and the parameters specified for
+functions, should match as closely as possible with these types.
+(e.g. when &quot;gps week&quot; is an unsigned, it should not be passed to
+gpstime_to_unix as an int)
+
+But I am not going to do that in an environment as it exists now.
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002002.html">[Gpsd-dev] Rob Janssen's upset screed
+</A></li>
+	<LI>Next message: <A HREF="002013.html">[Gpsd-dev] Rob Janssen's upset screed
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2009">[ date ]</a>
+              <a href="thread.html#2009">[ thread ]</a>
+              <a href="subject.html#2009">[ subject ]</a>
+              <a href="author.html#2009">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

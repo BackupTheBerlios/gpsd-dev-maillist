@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Subframe data decoded in in SVN head
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Subframe%20data%20decoded%20in%20in%20SVN%20head&In-Reply-To=%3CPine.BSO.4.61.0504131101310.19675%40pyxis.cns.ualberta.ca%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001357.html">
+   <LINK REL="Next"  HREF="001359.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Subframe data decoded in in SVN head</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Subframe%20data%20decoded%20in%20in%20SVN%20head&In-Reply-To=%3CPine.BSO.4.61.0504131101310.19675%40pyxis.cns.ualberta.ca%3E"
+       TITLE="[Gpsd-dev] Subframe data decoded in in SVN head">ckuethe at ualberta.ca
+       </A><BR>
+    <I>Wed Apr 13 19:15:25 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001357.html">[Gpsd-dev] Subframe data decoded in in SVN head
+</A></li>
+        <LI>Next message: <A HREF="001359.html">[Gpsd-dev] Subframe data decoded in in SVN head
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1358">[ date ]</a>
+              <a href="thread.html#1358">[ thread ]</a>
+              <a href="subject.html#1358">[ subject ]</a>
+              <a href="author.html#1358">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Wed, 13 Apr 2005, Eric S. Raymond wrote:
+
+&gt;<i> Chris Kuethe, this one is especially for you, but I'll take all the
+</I>&gt;<i> eyeballs I can get.
+</I>&gt;<i>
+</I>&gt;<i> I have toiled through the dense thickets of ICD-GPS-200, and sirf.c
+</I>&gt;<i> now includes code to extract a leap-second correction from 50BPS
+</I>&gt;<i> subframe data after 1 Jan 2006.  But I don't trust this code.  Here's why:
+</I>
+No sense in disabling it: decode it now, and just don't use it (other than
+printing it as a regression test).
+
+&gt;<i> 1. In general the subframe decode process is, as Chris previously
+</I>&gt;<i> observed, hideously complex and fiddly.
+</I>&gt;<i>
+</I>&gt;<i> 2. I sometimes see messages with an apparent subframe of 6, which
+</I>&gt;<i> isn't supposed to be possible.  Chris sees them from his decoder too,
+</I>&gt;<i> so either we're both screwing up or this is a symptom of SiRF
+</I>&gt;<i> firmware bug.  Neither possibility inspires me with confidence in the
+</I>&gt;<i> rest of the data.
+</I>
+f
+And this can be reproduced with 2.3.1, 2.3.1ES and 2.3.2(unreleased).
+
+In light of assertion #1, I am not willing to say that I am certain my
+decoder is getting it right. We could be making the same mistakes, as
+6 == ~2, but the subframe preamble was right, and our subframe 6's were
+not received in the middle of a batch of subframe 2's.
+
+&gt;<i> 3. My first cut spat out leap-second corrections with values of 13
+</I>&gt;<i> (correct) and 242 (grossly incorrect) at random.  This puzzled the
+</I>&gt;<i> crap out of me until I noticed that in an 8-bit byte, 242 = ~13.  I
+</I>&gt;<i> inserted a kluge that inverts values above 128, but I'm not happy.
+</I>&gt;<i> This probably means that either I or the SiRF firmware is messing up the
+</I>&gt;<i> inversion step.  Perhaps the firmware is pre-inverting the data and
+</I>&gt;<i> not bothering to document the fact!
+</I>
+ICD says that for many of the quantities you're working with, the Control
+Segment will keep the parameters in the range -127..+127. So your inversion
+is approaching the right thing to do.
+
+&gt;<i> 4. After doing that inversion step, I have -- exactly once! -- seen
+</I>&gt;<i> a wrong value come out.  11 seconds rather than 13.
+</I>
+I have seen the Geodetic Navigation message say that UTC-GPS was
+12.9999997 seconds, not 13 seconds. Which is Wrong.
+
+&gt;<i> NOTE: to test, you will have to condition out the check near
+</I>&gt;<i> gpsd.c:891 that disables subframe decoding before 1 Jan 2006 (earliest
+</I>&gt;<i> date at which another leap second might occur).
+</I>
+Oh, you're trying for upcoming-leap-second detection too? Brave.
+
+nifty timing information site: <A HREF="http://www.leapsecond.com/java/gpsclock.htm">http://www.leapsecond.com/java/gpsclock.htm</A>
+
+CK
+
+-- 
+Chris Kuethe, GCIA: Secure Systems Specialist - U of A CNS
+       office: 157 General Services Bldg.    +1.780.492.8135
+               chris.kuethe@[pyxis.cns.]ualberta.ca
+
+      GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001357.html">[Gpsd-dev] Subframe data decoded in in SVN head
+</A></li>
+	<LI>Next message: <A HREF="001359.html">[Gpsd-dev] Subframe data decoded in in SVN head
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1358">[ date ]</a>
+              <a href="thread.html#1358">[ thread ]</a>
+              <a href="subject.html#1358">[ subject ]</a>
+              <a href="author.html#1358">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

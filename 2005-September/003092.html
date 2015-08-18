@@ -1,0 +1,109 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] cgpxlogger
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20cgpxlogger&In-Reply-To=%3C200509281436.20669.remco%40rvt.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003090.html">
+   <LINK REL="Next"  HREF="003093.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] cgpxlogger</H1>
+    <B>Remco Treffkorn</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20cgpxlogger&In-Reply-To=%3C200509281436.20669.remco%40rvt.com%3E"
+       TITLE="[Gpsd-dev] cgpxlogger">remco at rvt.com
+       </A><BR>
+    <I>Wed Sep 28 23:36:20 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003090.html">[Gpsd-dev] Re: Assorted issues from while I was off learning to swordfight
+</A></li>
+        <LI>Next message: <A HREF="003093.html">[Gpsd-dev] cgpxlogger
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3092">[ date ]</a>
+              <a href="thread.html#3092">[ thread ]</a>
+              <a href="subject.html#3092">[ subject ]</a>
+              <a href="author.html#3092">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I suggest the following:
+
+--- cgpxlogger.c.orig   2005-09-28 14:09:50.000000000 -0700
++++ cgpxlogger.c        2005-09-28 14:10:54.000000000 -0700
+@@ -144,9 +144,6 @@
+        FD_ZERO(&amp;fds);
+        FD_SET(fd, &amp;fds);
+
+-       tv.tv_usec = 250000;
+-       tv.tv_sec = 0;
+-
+        signal(SIGINT, bye);
+        signal(SIGTERM, bye);
+        signal(SIGQUIT, bye);
+@@ -165,6 +162,10 @@
+                }
+
+                write(fd, poll, l);
++
++               tv.tv_usec = 250000;
++               tv.tv_sec = 0;
++
+                select(fd + 1, &amp;fds, NULL, NULL, &amp;tv);
+                bzero(buf, BS);
+                if ((rl = read(fd, buf, BS - 1)) != -1){
+
+That just moves the initialization of the timeout into the loop.
+I have researched selects behavior in that regard many, many years ago. 
+Between Linux, BSD, and Solaris I found:
+One system preserves tv, one clobbers it, and one returns the remaining time 
+to timeout, if the return was for an active fd. I forgot which system does 
+what, but you get the idea.
+
+As a side note: I like K&amp;R indentation with only two minor exceptions. 
+My .indentpro looks like this:
+
+-kr -cli4 -l96
+
+And I indent by 4 spaces, not eight or Tab. Code formatted like this looks 
+aesthetically pleasing to my eye ;-)
+
+Cheers,
+Remco
+
+-- 
+Remco Treffkorn (RT445)
+HAM DC2XT
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003090.html">[Gpsd-dev] Re: Assorted issues from while I was off learning to swordfight
+</A></li>
+	<LI>Next message: <A HREF="003093.html">[Gpsd-dev] cgpxlogger
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3092">[ date ]</a>
+              <a href="thread.html#3092">[ thread ]</a>
+              <a href="subject.html#3092">[ subject ]</a>
+              <a href="author.html#3092">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

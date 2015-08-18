@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] RMC doesn't update year
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20RMC%20doesn%27t%20update%20year&In-Reply-To=%3C20100106150505.GC1772%40localhost%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007310.html">
+   <LINK REL="Next"  HREF="007312.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] RMC doesn't update year</H1>
+    <B>Miroslav Lichvar</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20RMC%20doesn%27t%20update%20year&In-Reply-To=%3C20100106150505.GC1772%40localhost%3E"
+       TITLE="[Gpsd-dev] RMC doesn't update year">mlichvar at redhat.com
+       </A><BR>
+    <I>Wed Jan  6 16:05:05 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007310.html">[Gpsd-dev] MinGW/Win32 port housekeeping patch
+</A></li>
+        <LI>Next message: <A HREF="007312.html">[Gpsd-dev] IPv6 Support patch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7311">[ date ]</a>
+              <a href="thread.html#7311">[ thread ]</a>
+              <a href="subject.html#7311">[ subject ]</a>
+              <a href="author.html#7311">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+on the machine I'm running gpsd with GPS 18x LVC in NMEA mode I've
+noticed that year wasn't updated to 2010 and it reports 31536000
+second offset now.
+
+The problem seems to be in merge_ddmmyy() in driver_nmea.c.
+
+Here is a possible fix (not tested):
+
+--- driver_nmea.c	(revision 6913)
++++ driver_nmea.c	(working copy)
+@@ -75,12 +75,20 @@
+ static void merge_ddmmyy(char *ddmmyy, struct gps_device_t *session)
+ /* sentence supplied ddmmyy, but no century part */
+ {
+-    if (session-&gt;driver.nmea.date.tm_year == 0) {
+-	session-&gt;driver.nmea.date.tm_year = (CENTURY_BASE + DD(ddmmyy+4)) - 1900;
++    int yy = DD(ddmmyy+4), year = session-&gt;driver.nmea.date.tm_year;
++
++    if (year == 0) {
++	year = (CENTURY_BASE + yy) - 1900;
+ 	gpsd_report(LOG_DATA, &quot;merge_ddmmyy(ddmmyy) sets year %d from %s\n&quot;,
+-		    session-&gt;driver.nmea.date.tm_year,
++		    year,
+ 		    ddmmyy);
++    } else if (year % 100 != yy) {
++	/* update year */
++	if (year % 100 == 99 &amp;&amp; yy == 0)
++	   yy += 100;	/* century change */
++	year = year / 100 * 100 + yy;
+     }
++    session-&gt;driver.nmea.date.tm_year = year;
+     session-&gt;driver.nmea.date.tm_mon = DD(ddmmyy+2)-1;
+     session-&gt;driver.nmea.date.tm_mday = DD(ddmmyy);
+ }
+
+
+-- 
+Miroslav Lichvar
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007310.html">[Gpsd-dev] MinGW/Win32 port housekeeping patch
+</A></li>
+	<LI>Next message: <A HREF="007312.html">[Gpsd-dev] IPv6 Support patch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7311">[ date ]</a>
+              <a href="thread.html#7311">[ thread ]</a>
+              <a href="subject.html#7311">[ subject ]</a>
+              <a href="author.html#7311">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

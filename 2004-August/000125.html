@@ -1,0 +1,197 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] CS7 or CS8
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20CS7%20or%20CS8&In-Reply-To=%3C20040831164431.GB14818%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000121.html">
+   <LINK REL="Next"  HREF="000126.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] CS7 or CS8</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20CS7%20or%20CS8&In-Reply-To=%3C20040831164431.GB14818%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] CS7 or CS8">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Aug 31 18:44:31 CEST 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000121.html">[Gpsd-dev] CS7 or CS8
+</A></li>
+        <LI>Next message: <A HREF="000126.html">[Gpsd-dev] CS7 or CS8
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#125">[ date ]</a>
+              <a href="thread.html#125">[ thread ]</a>
+              <a href="subject.html#125">[ subject ]</a>
+              <a href="author.html#125">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>James Cameron &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">quozl at us.netrek.org</A>&gt;:
+&gt;<i> Summary: perhaps CSIZE &amp; CS7 is more appropriate in serial.c, rather
+</I>&gt;<i> than CSIZE &amp; CS8?  What does the standard say?  What does your GPS use?
+</I>
+I believe the NMEA standard specifies 1 stop bit, 8 data bits, no
+parity.  But I'm not certain of this as I have never seen the standard
+myself (and don't want to, lest NMEA's lawyers trump up a
+copyright-violation charge).  There is at least one person on this
+list who has access to a copy; he helped me out about the format of GPVTG.
+Perhaps he'll speak up.
+
+&gt;<i> I've been fiddling with an FV18 module and gpsd.  For gpsd to believe in
+</I>&gt;<i> the position given by GPGGA, it also needs GPGSA.
+</I>
+This opens up the vexing question of what the NMEA validity fields mean
+and how they interact.
+
+NMEA actually has *three* kinds of validity bits.  Mode, status, and the
+Active/Void bit (some sources interpret 'V' as 'Navigation receiver warning').
+Sentences that have an Active/Void send V when there is no fix, so the 
+position data is no good.
+
+Let's look at which sentences send what:
+
+                GPRMC     GPGLL     GPGGA     GPGSA     PMGNST
+Returns fix      Yes       Yes       Yes        No        No
+Returns status   No        Yes       Yes        No        Yes
+Returns mode     No        No        No         Yes       Yes
+Returns A/V      Yes       Yes       No         No        No
+
+The basic question here is: which of these bits is actually meaningful,
+and how should they be interpreted?  
+
+We can start by throwing PMGNST out of the table.  It's proprietary,
+therefore it cannot be necessary to interpret the state transitions 
+in a standard NMEA stream correctly.  Besides, a comment attached to it
+says it's only there to recover mode and status if we can't get them 
+any other way, and it does so through a layer of deduction.  There is
+only some point to that to the extent both fields are meaningful, which
+is what we're questioning now.
+
+                GPRMC     GPGLL     GPGGA     GPGSA
+Returns fix      Yes       Yes       Yes        No
+Returns status   No        Yes       Yes        No
+Returns mode     No        No        No         Yes
+Returns A/V      Yes       Yes       No         No
+
+My first conclusion from looking at this table is that the designers
+of NMEA 0183 should be hung for galloping incompetence.  But never mind that.
+What are we to make of this mess?
+
+The fact that the FV18 sends GPMRC/GPGLL/GPGGA but not GPGSA
+argues that GPGSA is optional.  I don't see how it can be, since it
+seems to be the only status bit that applies to altitude.
+
+Does anyone want to propose a theory of what these flags mean?  Can
+someone with a copy of the standard read us chapter and verse?
+
+&gt;<i> But nothing happened.  Very persistently.  So I read through the manual
+</I>&gt;<i> more carefully, and found that the serial data format was specified as;
+</I>&gt;<i> 
+</I>&gt;<i> 	4800 bps, 1 start bit, 8 data bits (MSB=0), 1 stop bit, no
+</I>&gt;<i> 	parity bit.
+</I>&gt;<i> 
+</I>&gt;<i> gpsd uses tcsetattr() to configure the port CSIZE &amp; CS8, but does not
+</I>&gt;<i> specify the number of stop bits.  CSTOPB appears to be clear in c_cflag,
+</I>&gt;<i> which would imply one stop bit.  So it matched fine, but didn't work.
+</I>&gt;<i>
+</I>&gt;<i> When I tried CSIZE &amp; CS7, it worked.  Not only did the input sentence
+</I>&gt;<i> get processed, but the NMEA output sentences from the GPS arrived in
+</I>&gt;<i> fine order.  I presume that the manual for my module is wrong.  But I've
+</I>&gt;<i> not yet hooked up equipment to tell what format the actual transmissions
+</I>&gt;<i> are in.  I do recall that superfluous stop bits are harmless to the
+</I>&gt;<i> receiving unit, normally.
+</I>&gt;<i>
+</I>&gt;<i> The manual-specified data format is functionally equivalent to 7 data
+</I>&gt;<i> bits and two stop bits.  Perhaps my system is sending two stop bits
+</I>&gt;<i> without me knowing.  
+</I>
+I find that &quot;1 start bit&quot; highly suspicious.  Look at these diagrams:
+
+|<i> = byte-packet boundary
+</I>x = databit
+S = start/stop bit
+
+Here are several packets of 8N1:  
+
+     |xxxxxxxxS|xxxxxxxxS|xxxxxxxxS|xxxxxxxxS|
+
+Your manual seems to be describing this:
+
+     |SxxxxxxxxS|SxxxxxxxxS|SxxxxxxxxS|SxxxxxxxxS|
+
+I bet you the receiving UART thinks it's seeing this
+
+     |xxxxxxxxSS|xxxxxxxxSS|xxxxxxxxSS|xxxxxxxxSS|
+
+which, as you say, is 7 bits, no parity 2 stop bits.
+
+&gt;<i> So, does the NMEA standard describe the data word format?
+</I>
+Various Web sources claim it does.
+ 
+&gt;<i> Do you have a GPS that works with CSIZE &amp; CS7 as well as CS8?
+</I>&gt;<i> 
+</I>&gt;<i> Does anyone have a method for determining the number of stop bits sent?
+</I>
+I don't.
+
+&gt;<i> Kernel 2.4.20 is being used on the system running gpsd, in case that is
+</I>&gt;<i> significant.  ttyS00 at 0x03f8 (irq = 4) is a 16550A
+</I>&gt;<i> 
+</I>&gt;<i> The FV18 code fragment that I added to gpsd_open() [not suggesting this
+</I>&gt;<i> be taken, it's just a hack]:
+</I>&gt;<i> 
+</I>&gt;<i> 	int x;
+</I>&gt;<i> 	char buf[82];
+</I>&gt;<i> 
+</I>&gt;<i> 	sprintf(buf, &quot;$PFEC,GPint,GSA01,DTM00,ZDA00,RMC01,GLL01*&quot;);
+</I>&gt;<i> 	nmea_add_checksum(buf + 1);
+</I>&gt;<i> 	x=write(ttyfd, buf, strlen(buf));
+</I>&gt;<i> 	gpscli_report(1, &quot;=&gt; GPS: (%d) %s&quot;, x, buf);
+</I>&gt;<i> 
+</I>&gt;<i> Is there any generic capability in gpsd for sending configuration
+</I>&gt;<i> sentences to a GPS?  I've found the tripmate stuff, but it sounds like
+</I>&gt;<i> it might be on the way out.
+</I>
+No -- the Earthmate stuff may be on the way out.  but my driver structure
+is designed to handle cases like yours through initializer functions.
+
+I guess we need an FV18 driver.  I just checked one into trunk; please
+test.  It will set 7N2 on open and send the required init string.
+You'll have to tell me what its send-cycle time is, and whether
+it accepts RTCM. I've assumed &quot;1 second&quot; and &quot;yes&quot;.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000121.html">[Gpsd-dev] CS7 or CS8
+</A></li>
+	<LI>Next message: <A HREF="000126.html">[Gpsd-dev] CS7 or CS8
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#125">[ date ]</a>
+              <a href="thread.html#125">[ thread ]</a>
+              <a href="subject.html#125">[ subject ]</a>
+              <a href="author.html#125">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

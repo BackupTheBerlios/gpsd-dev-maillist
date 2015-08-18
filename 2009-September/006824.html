@@ -1,0 +1,124 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Enhanced udev utility
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Enhanced%20udev%20utility&In-Reply-To=%3C4AA16826.7090609%40wildgooses.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006823.html">
+   <LINK REL="Next"  HREF="006825.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Enhanced udev utility</H1>
+    <B>Ed W</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Enhanced%20udev%20utility&In-Reply-To=%3C4AA16826.7090609%40wildgooses.com%3E"
+       TITLE="[Gpsd-dev] Enhanced udev utility">lists at wildgooses.com
+       </A><BR>
+    <I>Fri Sep  4 21:19:02 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006823.html">[Gpsd-dev] Enhanced udev utility
+</A></li>
+        <LI>Next message: <A HREF="006825.html">[Gpsd-dev] Enhanced udev utility
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6824">[ date ]</a>
+              <a href="thread.html#6824">[ thread ]</a>
+              <a href="subject.html#6824">[ subject ]</a>
+              <a href="author.html#6824">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Eric S. Raymond wrote:
+&gt;<i> Ed W &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">lists at wildgooses.com</A>&gt;:
+</I>&gt;<i>   
+</I>&gt;&gt;<i> Hi, I have a need for an enhanced udev utility which will get watch the 
+</I>&gt;&gt;<i> input from generic serial to usb adaptors and decide if they are a gps 
+</I>&gt;&gt;<i> or a modem.  If it's a GPS then we pass it to gpsd, if it's a modem then 
+</I>&gt;&gt;<i> pass it somewhere else. This is hopefully quite useful because at 
+</I>&gt;&gt;<i> present gpsd snaffles any serial device
+</I>&gt;&gt;<i>     
+</I>&gt;<i>
+</I>&gt;<i> But releases it if it's not identifiably a GPS. I have trouble seeing how a
+</I>&gt;<i> seperate utiliyy could do a beter job than the preent combination of udev 
+</I>&gt;<i> script and gpsd, which tosses USB devices at gpsd nd has it release then if it
+</I>&gt;<i> can't achieve sync on the data stream.
+</I>&gt;<i>
+</I>&gt;<i> What do you want the hypothetical utility to do that this combination is 
+</I>&gt;<i> not already doing?
+</I>&gt;<i>   
+</I>
+The reason &quot;why&quot; this is useful is that serial to usb adaptors are right 
+now fairly generic devices and used in all kinds of odd places 
+(especially the PL2303... sigh...)  So my situation is I have an 
+embedded device (on a boat) which will be connected to lots of them and 
+I expect anything up to all three of the following to be connected at 
+various times (or all at once)
+
+- generic pl2303 s2usb connected to some NMEA talker with a gps on it
+- generic BU-353 gps (which just looks like a pl2303 to udev)
+- generic pl2303 s2usb with a satellite telephone on the end of it 
+(looks like a standard AT modem)
+
+I have to assume that people will be foolish enough to swap these around 
+from time to time, especially 1) and 3) above where you can even leave 
+the s2usb connected and unplug the serial cables and swap them around 
+(sigh...)
+
+About the best I can reasonably do is simply scan any new serial devices 
+and try to guess what kind of device we have got (sounds a lot like gpsd 
+so far except it's slightly more generic in that I need to also spot AT 
+modems).  Once I figure out the type of device I will need to either:
+
+- Add it to my gpsd instance if it's a gps
+- Configure it as a dialup device if it's a modem
+
+Whilst gpsd has no reason to care about modems, there does seem to be a 
+huge overlap with what it already does and the desired end goal. I had 
+suggested making it a standalone utility because otherwise interfacing 
+with whatever happens after it's identified as a modem becomes a case of 
+log watching (not ideal on an embedded device).  However, most of the 
+code to probe a serial port for interesting output seems already in gpsd 
+and all I really need is a kind of &quot;does it say &quot;OK&quot; when I say &quot;AT&quot; to 
+it&quot; test added
+
+I hope the logic of what I am attempting is sensible even if it's not 
+something you will be using yourself tomorrow...  Serial connected 
+modems are still somewhat common in certain markets
+
+Grateful for any thoughts
+
+Ed W
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090904/0f8f200a/attachment.html">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090904/0f8f200a/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006823.html">[Gpsd-dev] Enhanced udev utility
+</A></li>
+	<LI>Next message: <A HREF="006825.html">[Gpsd-dev] Enhanced udev utility
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6824">[ date ]</a>
+              <a href="thread.html#6824">[ thread ]</a>
+              <a href="subject.html#6824">[ subject ]</a>
+              <a href="author.html#6824">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

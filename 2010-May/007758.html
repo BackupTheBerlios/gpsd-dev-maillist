@@ -1,0 +1,175 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Input packets buffering bug(s)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3CAANLkTimzxYmdU2UXgV231VgkHRboPwSs8ZuYgQG3mqh3%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007769.html">
+   <LINK REL="Next"  HREF="007759.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Input packets buffering bug(s)</H1>
+    <B>Olivier Cornu</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3CAANLkTimzxYmdU2UXgV231VgkHRboPwSs8ZuYgQG3mqh3%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Input packets buffering bug(s)">o.cornu at gmail.com
+       </A><BR>
+    <I>Sun May 23 21:46:37 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007769.html">[Gpsd-dev] [patch] AIVDM type 24A and 24B aggregation checks
+</A></li>
+        <LI>Next message: <A HREF="007759.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7758">[ date ]</a>
+              <a href="thread.html#7758">[ thread ]</a>
+              <a href="subject.html#7758">[ subject ]</a>
+              <a href="author.html#7758">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>There is a severe bug in the way input packets are processed.
+
+To cut it short, the design wrongly assumes packets will be received
+one-at-a-time.
+GPS device may actually send them one-at-a-time, yet there is no
+guarantee that's how they'll be received by gpsd.
+This is how it currently works:
+  1. wait until new tty input is available  [gpsd.c:1639]
+  2. append it into inbuffer                [packet.c:1646]
+  3. parse first inbuffer packet            [packet.c:1684]
+  4. broadcast it to clients                [gpsd.c:1709]
+  5. back to 1.
+
+What if 2 packets arrive at time t? First one will be parsed and
+broadcast at time t, then main loop() will wait until t+1 packets
+arrive to parse the 2d packet.
+First bug:  clients receive packets with a lag.
+Second bug: this lag can only get bigger (if multiple packets are
+again received).
+Perhaps more once buffers get full.
+
+I'm working on an app (gps2nmea) where location info is updated every
+~5s. From this info, corresponding NMEA packets are crafted and sent
+on a tty. Excellent conditions to showcase this bug.
+When there's a valid fix and good satellites data, 6 or 7 packets can
+be sent at once. In other words, every 5s the lag is growing by 30s!
+Goodbye real-time navigation...  ;-)
+
+Here is a stripped log of what happens:
+$ ./gpsd -n -N -b -D9 /dev/rfcomm0
+gpsd: launching (Version 2.95~dev)
+gpsd: opening read-only GPS data source type 0 and at '/dev/rfcomm0'
+gpsd: gpsd_activate(): opened GPS (fd 5)
+==&gt; wait for tty input data
+gpsd: select waits
+gpsd: select() {3 4 5} -&gt; {} at 1274632424.454401 (errno 0)
+gpsd: select waits
+gpsd: select() {3 4 5} -&gt; { 5 } at 1274632425.234852 (errno 0)
+&gt;&gt;&gt;<i> time t, 5 packets are received (237 chars)
+</I>gpsd: polling 5
+gpsd: Read 237 chars to buffer offset 0 (total 237):
+&gt;&gt;&gt;<i> first packet is processed
+</I>gpsd: Packet type 1 accepted 45 =
+&gt;&gt;&gt;<i> inbuffer contains the 4 remaining packets
+</I>gpsd: Packet discard of 45, chars remaining is 192
+gpsd: &lt;= GPS: $GPRMC,163403.11,A,,,,,0.0,0.0,230410,,,*23\x0d\x0a
+&gt;&gt;&gt;<i> back to waiting
+</I>gpsd: select waits
+gpsd: select() {3 4 5} -&gt; {} at 1274632426.240638 (errno 0)
+gpsd: select waits
+gpsd: select() {3 4 5} -&gt; {} at 1274632427.241247 (errno 0)
+gpsd: select waits
+gpsd: select() {3 4 5} -&gt; {} at 1274632428.242723 (errno 0)
+gpsd: select waits
+gpsd: select() {3 4 5} -&gt; {} at 1274632429.244125 (errno 0)
+gpsd: select waits
+gpsd: select() {3 4 5} -&gt; {} at 1274632430.245538 (errno 0)
+gpsd: select waits
+gpsd: select() {3 4 5} -&gt; { 5 } at 1274632430.369327 (errno 0)
+&gt;&gt;&gt;<i> time t+1, 5 new packets are received
+</I>gpsd: polling 5
+gpsd: Read 237 chars to buffer offset 192 (total 429):
+&gt;&gt;&gt;<i> 2d packet from time t is processed (outdated)
+</I>gpsd: Packet type 1 accepted 37 =
+&gt;&gt;&gt;<i> 8 packets remaining in buffer (3 of which outdated)
+</I>gpsd: Packet discard of 37, chars remaining is 392 =
+gpsd: &lt;= GPS: $GPGGA,163403.11,,,,,0,,,,M,,M,,*4B\x0d\x0a
+&gt;&gt;&gt;<i> back to waiting
+</I>gpsd: select waits
+gpsd: select() {3 4 5} -&gt; {} at 1274632431.376090 (errno 0)
+gpsd: select waits
+gpsd: select() {3 4 5} -&gt; {} at 1274632432.377475 (errno 0)
+gpsd: select waits
+gpsd: select() {3 4 5} -&gt; {} at 1274632433.377939 (errno 0)
+gpsd: select waits
+gpsd: select() {3 4 5} -&gt; {} at 1274632434.378771 (errno 0)
+gpsd: select waits
+gpsd: select() {3 4 5} -&gt; {} at 1274632435.380017 (errno 0)
+gpsd: select waits
+gpsd: select() {3 4 5} -&gt; { 5 } at 1274632435.398888 (errno 0)
+==&gt; time t+2, 5 new packets are received
+gpsd: polling 5
+gpsd: Read 237 chars to buffer offset 392 (total 629):
+==&gt; 3d packet from time t is processed
+gpsd: Packet type 1 accepted 64 =
+==&gt; 12 packets remaining in buffer (7 of which outdated),
+gpsd: Packet discard of 64, chars remaining is 565 =
+gpsd: &lt;= GPS: $GPGSV,3,1,09,26,55,176,26,09,77,029,,12,56,245,,15,34,168,*7F\x0d\x0a
+gpsd: select waits
+gpsd: select() {3 4 5} -&gt; {} at 1274632436.414284 (errno 0)
+gpsd: select waits
+gpsd: received terminating signal 2.
+gpsd: closing GPS=/dev/rfcomm0 (5)
+gpsd: exiting.
+
+
+
+The solution seems straightforward, at least from an abstract point of view:
+  1. wait until new tty input is available
+  2. append it into inbuffer
+  3. while a complete packet can be parsed from inbuffer, broadcast it
+  4. back to 1.
+&gt;<i>From a practical point of view though, implementing 3 is not
+</I>completely obvious...
+
+As i'm pretty new to gpsd code, i'd like to hear feedback from
+experienced developers about how to best resolve this issue before i
+start hacking around...
+
+
+Regards,
+
+--
+Olivier
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007769.html">[Gpsd-dev] [patch] AIVDM type 24A and 24B aggregation checks
+</A></li>
+	<LI>Next message: <A HREF="007759.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7758">[ date ]</a>
+              <a href="thread.html#7758">[ thread ]</a>
+              <a href="subject.html#7758">[ subject ]</a>
+              <a href="author.html#7758">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

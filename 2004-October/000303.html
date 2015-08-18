@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Fw: [Pkg-grass-general] gpsd installed as a service?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Fw%3A%20%5BPkg-grass-general%5D%20gpsd%20installed%20as%20a%20service%3F&In-Reply-To=%3C200410181204.42589.remco%40rvt.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000300.html">
+   <LINK REL="Next"  HREF="000304.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Fw: [Pkg-grass-general] gpsd installed as a service?</H1>
+    <B>Remco Treffkorn</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Fw%3A%20%5BPkg-grass-general%5D%20gpsd%20installed%20as%20a%20service%3F&In-Reply-To=%3C200410181204.42589.remco%40rvt.com%3E"
+       TITLE="[Gpsd-dev] Fw: [Pkg-grass-general] gpsd installed as a service?">remco at rvt.com
+       </A><BR>
+    <I>Mon Oct 18 21:04:42 CEST 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000300.html">[Gpsd-dev] Fw: [Pkg-grass-general] gpsd installed as a service?
+</A></li>
+        <LI>Next message: <A HREF="000304.html">[Gpsd-dev] Fw: [Pkg-grass-general] gpsd installed as a service?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#303">[ date ]</a>
+              <a href="thread.html#303">[ thread ]</a>
+              <a href="subject.html#303">[ subject ]</a>
+              <a href="author.html#303">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Monday 18 October 2004 00:59, Eric S. Raymond wrote:
+&gt;<i> Remco Treffkorn &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>&gt;:
+</I>...
+&gt;<i> &gt; So, gpsd only kept the gps open (on) while a client listened.
+</I>&gt;<i> &gt; (ed. There is a downside to it, and I wanted to make this configurable
+</I>&gt;<i> &gt; since ages. Eric, any thoughts?)
+</I>&gt;<i>
+</I>&gt;<i> I may already have done this.  See the -n option.
+</I>&gt;<i>
+</I>
+Cool, looks about right.
+
+&gt;<i> &gt; Thanks for validating last decades design choices ;-)
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; The bit I was not aware of is the 500ms polling interval. Is it not
+</I>&gt;<i> &gt; driven by a select() on the gps fd any more?
+</I>&gt;<i>
+</I>&gt;<i> Yes, it is, but I halved the polling interval.  The basic send cycle of
+</I>&gt;<i> most GPSes is one second; Nyquist's theorem tells us that twice that is the
+</I>&gt;<i> optimal sampling rate.
+</I>
+Nyquist does not enter into it, since that's not how select works.
+Select returns: whenever a watched fd becomes ready, or a timeout occures.
+
+Thus, any data from the gps or user commands make select return immediately.
+The data is processed when it comes, not just every 500ms.
+
+When select returns, you do not know if it is because a fd got ready or a 
+timeout. You use the macro FD_ISSET to check for data on an fd. If no fd was 
+ready, then it was the timeout.
+
+It does not matter if your timeout is 1, 2, or 10 seconds.
+
+This is an event driven loop, no polling done. A timeout is just another 
+event, and should not lead to a read attempt on any fd, unless FD_ISSET says 
+it's ready.
+
+Select is dangerous, since there are so many flavours. Gpsd makes minimal 
+assumptions about the functionality (brokenness) of select.
+
+Remco
+-- 
+Remco Treffkorn (RT445)
+HAM DC2XT
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000300.html">[Gpsd-dev] Fw: [Pkg-grass-general] gpsd installed as a service?
+</A></li>
+	<LI>Next message: <A HREF="000304.html">[Gpsd-dev] Fw: [Pkg-grass-general] gpsd installed as a service?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#303">[ date ]</a>
+              <a href="thread.html#303">[ thread ]</a>
+              <a href="subject.html#303">[ subject ]</a>
+              <a href="author.html#303">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,149 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Shared-memory interface.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Shared-memory%20interface.&In-Reply-To=%3C20110324122722.GA25395%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008993.html">
+   <LINK REL="Next"  HREF="008997.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Shared-memory interface.</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Shared-memory%20interface.&In-Reply-To=%3C20110324122722.GA25395%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Shared-memory interface.">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Mar 24 13:27:22 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008993.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+        <LI>Next message: <A HREF="008997.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8996">[ date ]</a>
+              <a href="thread.html#8996">[ thread ]</a>
+              <a href="subject.html#8996">[ subject ]</a>
+              <a href="author.html#8996">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+&gt;<i> &gt; I'm not seeing a problem here. &#160;The user can't modify or delete those files,
+</I>&gt;<i> &gt; so where's the security/assurance threat?
+</I>&gt;<i> 
+</I>&gt;<i> I think you can delete &quot;those files&quot;, depending on where they are or
+</I>&gt;<i> how secure they are since they are just a filesystem node and you are
+</I>&gt;<i> only doing an exclusive flag with an ioctl after the open, not locking
+</I>&gt;<i> the inode.
+</I>
+You are in a general way right.  But if my opponent has root server
+access so I can't trust filesystem security, I'll have much larger
+problems than this including some vulnerabilities I can't block even
+in principle.  It's not a good use of effort to install a slightly 
+better lock on your door when the walls around it have crumbled.
+
+&gt;<i> Also don't assume they are in /dev or otherwise owned by root.  I
+</I>&gt;<i> might also be able to grab the datastream from a pty with just a cat
+</I>&gt;<i> command since you don't open those exclusively (the EXCL isn't set,
+</I>&gt;<i> but it might be, just the &quot;is opened elsewhere already&quot; could be
+</I>&gt;<i> dropped for a pty).
+</I>
+Opening devices not owned by root is another one of those &quot;if you're
+smart enough to to get yourself into this kind of trouble, you better
+be smart enough to deal with the consequences&quot; cases.  It's just not
+worth complicating the code for these.  When you try, the increment
+of complexity does things to your defect rate that are worse than
+ignoring the supposed problem.
+
+EXCL only works on a create.  It would be handy if it were otherwise, 
+but alas no.
+
+&gt;<i> &gt; Note that if you were actually to come up with a sneak path I would
+</I>&gt;<i> &gt; become much less hostile to channel numbers, since that vulnerability
+</I>&gt;<i> &gt; would create a *requirement* for a layer of indirection to mask the
+</I>&gt;<i> &gt; filenames.
+</I>&gt;<i> 
+</I>&gt;<i> A bit contrived, but off the top of my head, assume you have an
+</I>&gt;<i> otherwise secure system behind an ethernet switch but I'm somewhere on
+</I>&gt;<i> the net where I can access the gpsd port and I do an ordinary WATCH or
+</I>&gt;<i> POLL.  I see the udp or tcp URI, say the actual GPS source is an
+</I>&gt;<i> embedded device on the roof or outside with a wifi or ethernet
+</I>&gt;<i> connection.  UDP is now simple as I can probably inject packets and
+</I>&gt;<i> even take over the stream.  TCP is a bit more subtle, but I now also
+</I>&gt;<i> know another address which is active, so can play games with ARP, even
+</I>&gt;<i> if switches or something like WPK2 was active.
+</I>
+Contrived indeed, but the best argument you've made yet because it
+doesn't involve the victim doing something actively perverse or
+bonehead-stupid. :-)
+
+This really falls under &quot;don't use unsecured wireless for anything
+life-critical&quot;. Duh...  If you care about security that much, why
+don't you have proper end-to-end encryption on your network?
+
+&gt;<i> It would also let me tell if I was chrooted - I should see the device
+</I>&gt;<i> node gpsd is connected with in my tree if I'm not.
+</I>
+Point.  Minor one, but a point.  If I get a bug report that says &quot;gpsd
+is leaking info about my chroot structure and this is a practical
+problem because...&quot; I'll take it seriously.
+
+&gt;<i> Another things is the device name buffer is 64 bytes.  I don't think
+</I>&gt;<i> the strlcpy is pre-checked by strlen when you do:
+</I>&gt;<i> 
+</I>&gt;<i>    if (device != NULL)
+</I>&gt;<i>         (void)strlcpy(session-&gt;gpsdata.dev.path, device,
+</I>&gt;<i>                       sizeof(session-&gt;gpsdata.dev.path));
+</I>&gt;<i> 
+</I>&gt;<i> The problem is if the desired node is beyond 63 bytes, and the 63 byte
+</I>&gt;<i> path is valid, it will attempt to open whatever the path does point to
+</I>&gt;<i> - a directory most likely but it might do something unexpected.  You
+</I>&gt;<i> could use the return from strlcpy:
+</I>&gt;<i> 
+</I>&gt;<i> if( strlen(device) != strlcpy... )
+</I>&gt;<i>   error_handle();
+</I>
+Have you ever in your entire life seen a serial device name that was
+63 chars long?  No, better: have you ever even seen one that was *16*
+chars long?
+
+I haven't, not even once in the 31 years I've been a Unix guy.  There
+are potential buffer-overrun problems worth worrying about. This is
+not one of them.
+
+I grant you there are rare cases like Ntrip URLs that can get longer
+than that.  But they won't have valid prefixes.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008993.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+	<LI>Next message: <A HREF="008997.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8996">[ date ]</a>
+              <a href="thread.html#8996">[ thread ]</a>
+              <a href="subject.html#8996">[ subject ]</a>
+              <a href="author.html#8996">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

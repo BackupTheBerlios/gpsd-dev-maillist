@@ -1,0 +1,103 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Loss of first packet
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Loss%20of%20first%20packet&In-Reply-To=%3C12638.213.84.187.156.1122134793.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002582.html">
+   <LINK REL="Next"  HREF="002599.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Loss of first packet</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Loss%20of%20first%20packet&In-Reply-To=%3C12638.213.84.187.156.1122134793.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] Loss of first packet">gpsd at xs4all.nl
+       </A><BR>
+    <I>Sat Jul 23 18:06:33 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002582.html">[Gpsd-dev] Loss of first packet
+</A></li>
+        <LI>Next message: <A HREF="002599.html">[Gpsd-dev] Loss of first packet
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2583">[ date ]</a>
+              <a href="thread.html#2583">[ thread ]</a>
+              <a href="subject.html#2583">[ subject ]</a>
+              <a href="author.html#2583">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Just run the daemon with a real receiver and -D5.
+For example with the TSIP driver:
+
+gpsd -n -N -D5 /dev/ttyS1
+gpsd: launching (Version 2.28)
+gpsd: listening on port gpsd
+gpsd: running with effective group ID 0
+gpsd: running with effective user ID 0
+gpsd: opening GPS data source at '/dev/ttyS1'
+gpsd: garmin_gps not active.
+gpsd: no probe matched...
+gpsd: speed 9600, 8N1
+gpsd: gpsd_activate: opened GPS (4)
+gpsd: packet sniff finds type -1
+gpsd: packet sniff finds type -1
+gpsd: packet sniff finds type -1
+gpsd: packet sniff finds type -1
+gpsd: packet sniff finds type -1
+gpsd: packet sniff finds type 3                &lt;-- TSIP packet type detected
+gpsd: Selecting Trimble TSIP driver...
+gpsd: speed 9600, 8O1                          &lt;-- init function called
+gpsd: Sent TSIP packet id 0x35: 1e020008
+gpsd: Sent TSIP packet id 0x1f:
+gpsd: Sent TSIP packet id 0x21:
+gpsd: Sent TSIP packet id 0x28:
+gpsd: Sent TSIP packet id 0x8e: 15
+gpsd: Sent TSIP packet id 0xbb: 03
+gpsd: tsip_analyze packet type -1              &lt;-- packet passed to
+analyze but type value is bad
+gpsd: TSIP packet id 0x6d length 25:         
+84401347ba3f76fe4d4005b5fb3fa1d32a161a1c0509071d12
+gpsd: Sat info: 3 2.301253 0.964818 2.089232 1.264257 2.625664 8: 22 26 28
+5 9 7 29 18
+
+I saw this before with other drivers and added those type checks at the
+beginning of the parsers (which should be redundant).  Interestingly, I no
+longer see this check trapping with the zodiac driver.
+In the SiRF driver, someone has removed the check.
+However, before I had that check in place I had seen a damaged data packet
+at that point.
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002582.html">[Gpsd-dev] Loss of first packet
+</A></li>
+	<LI>Next message: <A HREF="002599.html">[Gpsd-dev] Loss of first packet
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2583">[ date ]</a>
+              <a href="thread.html#2583">[ thread ]</a>
+              <a href="subject.html#2583">[ subject ]</a>
+              <a href="author.html#2583">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

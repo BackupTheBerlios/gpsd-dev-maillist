@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] The state of RTCM3 support, and two request for	healp
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20The%20state%20of%20RTCM3%20support%2C%20and%20two%20request%20for%09healp&In-Reply-To=%3C20090108155838.GA6699%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006225.html">
+   <LINK REL="Next"  HREF="006227.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] The state of RTCM3 support, and two request for	healp</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20The%20state%20of%20RTCM3%20support%2C%20and%20two%20request%20for%09healp&In-Reply-To=%3C20090108155838.GA6699%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] The state of RTCM3 support, and two request for	healp">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Jan  8 16:58:38 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006225.html">[Gpsd-dev] The state of RTCM3 support, and two request for	healp
+</A></li>
+        <LI>Next message: <A HREF="006227.html">[Gpsd-dev] The state of RTCM3 support, and two request for	healp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6265">[ date ]</a>
+              <a href="thread.html#6265">[ thread ]</a>
+              <a href="subject.html#6265">[ subject ]</a>
+              <a href="author.html#6265">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Matthias Urlichs &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">smurf at smurf.noris.de</A>&gt;:
+&gt;<i> Well, you write a bunch of data and only half gets written. Now what?
+</I>&gt;<i> 
+</I>&gt;<i> Two possibilities:
+</I>&gt;<i> 
+</I>&gt;<i> * select() on the write side of that file descriptor and write-when-ready
+</I>&gt;<i>   - Advantage: No need to buffer
+</I>&gt;<i>   - Disadvantage: The delay may be substantial and introduces jitter to
+</I>&gt;<i>     the timing of the data you receive
+</I>&gt;<i>   - no need to modify core code
+</I>&gt;<i> 
+</I>&gt;<i> * buffer the remaining data and remember that you need to write them
+</I>&gt;<i>   - Advantage: immediately returns to the main select loop
+</I>&gt;<i>   - Disadvantage: need to buffer a variable and unknown amount of data
+</I>&gt;<i>   - need to hook that buffer write into the main select() call
+</I>
+The flaws you have identified in these strategies are both fatal, in my view.
+
+On the one hand, large and variable delays while we block waiting to write.
+On the other, having to use malloc -- I really like the property of the
+current code that it can never memory-leak, and I want to keep it.
+
+Accordingly, my inclination is to punt on a short write and wait for
+the next message.  I'll write up something about this for the Hacker's
+Guide.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006225.html">[Gpsd-dev] The state of RTCM3 support, and two request for	healp
+</A></li>
+	<LI>Next message: <A HREF="006227.html">[Gpsd-dev] The state of RTCM3 support, and two request for	healp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6265">[ date ]</a>
+              <a href="thread.html#6265">[ thread ]</a>
+              <a href="subject.html#6265">[ subject ]</a>
+              <a href="author.html#6265">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

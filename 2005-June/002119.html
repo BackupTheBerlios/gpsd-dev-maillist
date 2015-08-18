@@ -1,0 +1,92 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Detecting end-of-cycle
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Detecting%20end-of-cycle&In-Reply-To=%3C20050613124708.GA23200%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002116.html">
+   <LINK REL="Next"  HREF="002126.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Detecting end-of-cycle</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Detecting%20end-of-cycle&In-Reply-To=%3C20050613124708.GA23200%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Detecting end-of-cycle">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Jun 13 14:47:09 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002116.html">[Gpsd-dev] Rob's second architecture bug
+</A></li>
+        <LI>Next message: <A HREF="002126.html">[Gpsd-dev] Rob's second architecture bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2119">[ date ]</a>
+              <a href="thread.html#2119">[ thread ]</a>
+              <a href="subject.html#2119">[ subject ]</a>
+              <a href="author.html#2119">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+&gt;<i> So it is actually quite simple to find the start of the cycle: this occurs
+</I>&gt;<i> when the timestamp in the messages differs from the last-seen one. 
+</I>
+Alas, it's not that simple.  Some GPSes change the timestamp in mid-cycle.
+Look in the test directory for the logfiles that have &quot;Well-behaved: N&quot;.
+
+&gt;<i>                                                                  Some
+</I>&gt;<i> protocols even have a cycling &quot;fix sequence number&quot; that can be used to
+</I>&gt;<i> correlate the messages within a single fix.
+</I>
+I know you're thinking of Zodiac, which isn't a problem anyway because
+the fix info is all neatly bundled in packet type 1000.  But the
+non-well-behaved NMEA devices like the Holux and Garmin 48, which
+are the real problem for an accumulating policy, don't have this.
+
+&gt;<i> Maybe the two techniques could be combined: when the timestamp changes we
+</I>&gt;<i> always assume a new cycle has started (this may misfire on some receivers
+</I>&gt;<i> but it will never make matters worse than they are now).  When no input is
+</I>&gt;<i> pending after processing a message, we ship the fix data to the client. 
+</I>&gt;<i> When we detect that a new cycle starts and we had not yet sent the data
+</I>&gt;<i> from the previous cycle, we send it immediately.
+</I>
+&quot;When no input is pending&quot; -- once again, that test would make the detection
+algorithm vulnerable to serial-layer stalls and other timing-dependent errors.
+You're proposing that we combine two unreliable techniques and treat the
+result as reliable.  I don't think this would work.
+
+I'm looking at the other two issues you raised.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002116.html">[Gpsd-dev] Rob's second architecture bug
+</A></li>
+	<LI>Next message: <A HREF="002126.html">[Gpsd-dev] Rob's second architecture bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2119">[ date ]</a>
+              <a href="thread.html#2119">[ thread ]</a>
+              <a href="subject.html#2119">[ subject ]</a>
+              <a href="author.html#2119">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

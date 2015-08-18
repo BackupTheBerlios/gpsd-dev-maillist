@@ -1,0 +1,77 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPSD Protocol Inconsistencies
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3CAANLkTi%3D%3DJRqKbYLhHmrxGo%2B1RXVCFJQOkix-pfANLQdK%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008895.html">
+   <LINK REL="Next"  HREF="008897.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPSD Protocol Inconsistencies</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3CAANLkTi%3D%3DJRqKbYLhHmrxGo%2B1RXVCFJQOkix-pfANLQdK%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] GPSD Protocol Inconsistencies">thomas at mich.com
+       </A><BR>
+    <I>Sat Mar 19 19:11:42 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008895.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+        <LI>Next message: <A HREF="008897.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8896">[ date ]</a>
+              <a href="thread.html#8896">[ thread ]</a>
+              <a href="subject.html#8896">[ subject ]</a>
+              <a href="author.html#8896">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I have the whole log available if you want to examine it (-D9), but
+the two strange things is no matter what, GPRMC and GPGGA are starting
+and ending a reporting cycle.
+GGA is reporting alt=nan in the logs but the packet has a valid
+altitude.  GPGSA is/was switching between 2d and 3d, but it applied to
+the previous data, so it was using possibly stale dead-reckoning
+altitude data when it reported altitude.  So the valid altitudes were
+thrown out because the previous set was 2d, and the ones marked valid
+were stale and caused two reports, one for the RMC and one for the
+GGA.
+
+If you are going to alter the report on the basis of GPGSA, and GPGSA
+occurs ofter the current &quot;ender&quot; sentence, you should use GPGGA itself
+as the ender even if it contains no timestamp because the validity of
+the GPGGA timestamp depends on the value in GPGGA and you won't know
+that until you get it.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008895.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+	<LI>Next message: <A HREF="008897.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8896">[ date ]</a>
+              <a href="thread.html#8896">[ thread ]</a>
+              <a href="subject.html#8896">[ subject ]</a>
+              <a href="author.html#8896">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

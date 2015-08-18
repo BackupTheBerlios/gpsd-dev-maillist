@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-839-g5590d20
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20Project%20gpsd%20at%20BerliOS%20branch%2C%0A%20master%2C%20updated.%20release-2.95-839-g5590d20&In-Reply-To=%3CAANLkTimPm7KyZvk37V4NYE7-N63dyr3_UmESpfEvn%3Dhq%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008634.html">
+   <LINK REL="Next"  HREF="008603.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-839-g5590d20</H1>
+    <B>Jon Schlueter</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20Project%20gpsd%20at%20BerliOS%20branch%2C%0A%20master%2C%20updated.%20release-2.95-839-g5590d20&In-Reply-To=%3CAANLkTimPm7KyZvk37V4NYE7-N63dyr3_UmESpfEvn%3Dhq%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-839-g5590d20">jon.schlueter at gmail.com
+       </A><BR>
+    <I>Thu Feb 24 15:06:36 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008634.html">[Gpsd-dev] How the RTCM2 support is supposed to be working
+</A></li>
+        <LI>Next message: <A HREF="008603.html">[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-839-g5590d20
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8599">[ date ]</a>
+              <a href="thread.html#8599">[ thread ]</a>
+              <a href="subject.html#8599">[ subject ]</a>
+              <a href="author.html#8599">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>does the Garming USB GPS show up as is_serial... I don't have the code
+here to peek at.
+
+Jon
+
+
+On Thu, Feb 24, 2011 at 8:15 AM, esr at BerliOS
+&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>&gt; wrote:
+&gt;<i> This is an automated email from the git hooks/post-receive script. It was
+</I>&gt;<i> generated because a ref change was pushed to the repository containing
+</I>&gt;<i> the project &quot;Project gpsd at BerliOS&quot;.
+</I>&gt;<i>
+</I>&gt;<i> The branch, master has been updated
+</I>&gt;<i> &#160; &#160; &#160; via &#160;5590d2014af405d1a65619d8e190ce54235836ae (commit)
+</I>&gt;<i> &#160; &#160; &#160;from &#160;1694ad3bc0cbcf968729ebae90991dfd758417ff (commit)
+</I>&gt;<i>
+</I>&gt;<i> Those revisions listed above that are new to this repository have
+</I>&gt;<i> not appeared on any other notification email; so we list those
+</I>&gt;<i> revisions in full, below.
+</I>&gt;<i>
+</I>&gt;<i> - Log -----------------------------------------------------------------
+</I>&gt;<i> commit 5590d2014af405d1a65619d8e190ce54235836ae
+</I>&gt;<i> Author: Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt;
+</I>&gt;<i> Date: &#160; Thu Feb 24 08:15:04 2011 -0500
+</I>&gt;<i>
+</I>&gt;<i> &#160; &#160;Guard probes on whether the device being activated is serial.
+</I>&gt;<i>
+</I>&gt;<i> &#160; &#160;The previous test was wrong. &#160;Checking if the net correction service available
+</I>&gt;<i> &#160; &#160;is netgnss might give the wrong result is it is but there are attached serial
+</I>&gt;<i> &#160; &#160;devices as well.
+</I>&gt;<i>
+</I>&gt;<i> diff --git a/libgpsd_core.c b/libgpsd_core.c
+</I>&gt;<i> index 790270c..2a532ee 100644
+</I>&gt;<i> --- a/libgpsd_core.c
+</I>&gt;<i> +++ b/libgpsd_core.c
+</I>&gt;<i> @@ -738,7 +738,7 @@ int gpsd_activate(struct gps_device_t *session)
+</I>&gt;<i> &#160; &#160; &#160; &#160;return -1;
+</I>&gt;<i> &#160; &#160; else {
+</I>&gt;<i> &#160;#ifdef NON_NMEA_ENABLE
+</I>&gt;<i> - &#160; &#160; &#160; if (session-&gt;context-&gt;netgnss_service != netgnss_ntrip) &#160;{
+</I>&gt;<i> + &#160; &#160; &#160; if (session-&gt;is_serial) &#160;{
+</I>&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160;const struct gps_type_t **dp;
+</I>&gt;<i>
+</I>&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160;/*@ -mustfreeonly @*/
+</I>&gt;<i>
+</I>&gt;<i> -----------------------------------------------------------------------
+</I>&gt;<i>
+</I>&gt;<i> Summary of changes:
+</I>&gt;<i> &#160;libgpsd_core.c | &#160; &#160;2 +-
+</I>&gt;<i> &#160;1 files changed, 1 insertions(+), 1 deletions(-)
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> hooks/post-receive
+</I>&gt;<i> --
+</I>&gt;<i> Project gpsd at BerliOS
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-commit-watch mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-commit-watch at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-commit-watch">https://lists.berlios.de/mailman/listinfo/gpsd-commit-watch</A>
+</I>&gt;<i>
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008634.html">[Gpsd-dev] How the RTCM2 support is supposed to be working
+</A></li>
+	<LI>Next message: <A HREF="008603.html">[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-839-g5590d20
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8599">[ date ]</a>
+              <a href="thread.html#8599">[ thread ]</a>
+              <a href="subject.html#8599">[ subject ]</a>
+              <a href="author.html#8599">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

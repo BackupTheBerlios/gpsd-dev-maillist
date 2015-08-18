@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] The state of RTCM3 support, and two request for	healp
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%0A%09%3D%3Fiso-8859-1%3Fq%3FThe_state_of_RTCM3_support%3D2C_and_two_r%3F%3D%0A%09%3D%3Fiso-8859-1%3Fq%3Fequest_for%3D09healp%3F%3D&In-Reply-To=%3C200901050920.54969.remco%40rvt.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006265.html">
+   <LINK REL="Next"  HREF="006231.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] The state of RTCM3 support, and two request for	healp</H1>
+    <B>Remco Treffkorn</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%0A%09%3D%3Fiso-8859-1%3Fq%3FThe_state_of_RTCM3_support%3D2C_and_two_r%3F%3D%0A%09%3D%3Fiso-8859-1%3Fq%3Fequest_for%3D09healp%3F%3D&In-Reply-To=%3C200901050920.54969.remco%40rvt.com%3E"
+       TITLE="[Gpsd-dev] The state of RTCM3 support, and two request for	healp">remco at rvt.com
+       </A><BR>
+    <I>Mon Jan  5 18:20:54 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006265.html">[Gpsd-dev] The state of RTCM3 support, and two request for	healp
+</A></li>
+        <LI>Next message: <A HREF="006231.html">[Gpsd-dev] The state of RTCM3 support, and two request	for?healp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6227">[ date ]</a>
+              <a href="thread.html#6227">[ thread ]</a>
+              <a href="subject.html#6227">[ subject ]</a>
+              <a href="author.html#6227">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Monday 05 January 2009, Eric S. Raymond wrote:
+&gt;<i> Matthias Urlichs &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">smurf at smurf.noris.de</A>&gt;:
+</I>&gt;<i> &gt; Hi,
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Matthias Urlichs:
+</I>&gt;<i> &gt; &gt; gpsd: =&gt; GPS:
+</I>&gt;<i> &gt; &gt; 9fb7e40dd300593f4000a2162402b086b81f7b002b3bfa79a80c0016f0ff1431155830f
+</I>&gt;<i> &gt; &gt;ffc9986968afe57fd54a1ca1458a13887fa783fa89c8160015e9fefc58f9dd0ef00a38fe
+</I>&gt;<i> &gt; &gt;8b0e03e81c03bfdaa84b49e8d007be7fa3b8810508a7dff640dd4da0d FAILED gpsd:
+</I>&gt;<i> &gt; &gt; &lt;= DGPS: 100 bytes of RTCM relayed.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; This FAILED is obviously a consequence of
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; ssize_t gpsd_write(struct gps_device_t *session, void const *buf, size_t
+</I>&gt;<i> &gt; len) {
+</I>&gt;<i> &gt;      ssize_t status;
+</I>&gt;<i> &gt;      bool ok;
+</I>&gt;<i> &gt;      if (session-&gt;context-&gt;readonly)
+</I>&gt;<i> &gt;         return 0;
+</I>&gt;<i> &gt;      status = write(session-&gt;gpsdata.gps_fd, buf, len);
+</I>&gt;<i> &gt;      ok = (status == (ssize_t)len);
+</I>&gt;<i> &gt;      (void)tcdrain(session-&gt;gpsdata.gps_fd);
+</I>&gt;<i> &gt;      /* no test here now, always print as hex */
+</I>&gt;<i> &gt;      gpsd_report(LOG_IO, &quot;=&gt; GPS: %s%s\n&quot;, gpsd_hexdump(buf, len),
+</I>&gt;<i> &gt; ok?&quot;&quot;:&quot;      + FAILED&quot;); return status;
+</I>&gt;<i> &gt; }
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; which is unable to send the whole buffer; apparently Bluetooth/rfcomm
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; is somewhat limited here.  strace says much the same thing:
+</I>&gt;<i> &gt; &gt;&gt; write(4, &quot;$PASHQ,RID*28\r\n&quot;, 15)       = 15
+</I>&gt;<i> &gt; &gt;&gt; ioctl(4, TCSBRK, 0x1)                   = 0
+</I>&gt;<i> &gt; &gt;&gt; write(2, &quot;gpsd: =&gt; GPS: $PASHQ,RID*28\\x0d\n\n&quot;, 33) = 33
+</I>&gt;<i> &gt; &gt;&gt; write(2, &quot;gpsd: Navcom: command dump: 0299661c0800040200001203\n&quot;, 53)
+</I>&gt;<i> &gt; &gt;&gt; = 53 write(4, &quot;\2\231f\34\10\0\4\2\0\0\22\3&quot;, 12) = 12
+</I>&gt;<i> &gt; &gt;&gt; ioctl(4, TCSBRK, 0x1)                   = 0
+</I>&gt;<i> &gt; &gt;&gt; write(2, &quot;gpsd: =&gt; GPS: 0299661c0800040200001203\n&quot;, 39) = 39
+</I>&gt;<i> &gt; &gt;&gt; write(2, &quot;gpsd: Navcom: sent command 0x1c (Test Support Block)\n&quot;, 53)
+</I>&gt;<i> &gt; &gt;&gt; = 53 write(2, &quot;gpsd: Navcom: command 0x1c mode = 02, length = 0\n&quot;,
+</I>&gt;<i> &gt; &gt;&gt; 49) = 49 write(2, &quot;gpsd: Navcom: command dump:
+</I>&gt;<i> &gt; &gt;&gt; 029966200e000001ae02000071000000f203\n&quot;, 65) = 65 write(4, &quot;\2\231f
+</I>&gt;<i> &gt; &gt;&gt; \16\0\0\1\256\2\0\0q\0\0\0\362\3&quot;, 18) = 18 ioctl(4, TCSBRK, 0x1)     
+</I>&gt;<i> &gt; &gt;&gt;              = 0
+</I>&gt;<i> &gt; &gt;&gt; write(2, &quot;gpsd: =&gt; GPS: 029966200e000001ae02000071000000f203\n&quot;, 51) =
+</I>&gt;<i> &gt; &gt;&gt; 51 write(2, &quot;gpsd: Navcom: sent command 0x20 (Data Request) - data
+</I>&gt;<i> &gt; &gt;&gt; block id = ae at rate 00\n&quot;, 79) = 79 write(2, &quot;gpsd: Navcom: command
+</I>&gt;<i> &gt; &gt;&gt; dump: 029966200e00000186020a0071000000d003\n&quot;, 65) = 65 write(4,
+</I>&gt;<i> &gt; &gt;&gt; &quot;\2\231f \16\0\0\1\206\2\n\0q\0\0\0\320\3&quot;, 18) = -1 EAGAIN (Resource
+</I>&gt;<i> &gt; &gt;&gt; temporarily unavailable)
+</I>&gt;<i>
+</I>&gt;<i> I agree with this diagnosis.
+</I>&gt;<i>
+</I>&gt;<i> &gt; Thus it seems that gpsd_write() needs to buffer its data and hook
+</I>&gt;<i> &gt; into the select loop.
+</I>&gt;<i>
+</I>&gt;<i> I'm not clear what you mean by &quot;hook into the select loop&quot; or what this
+</I>&gt;<i> would accomplish.
+</I>
+Somehow I wound up missing part of this thread. Please take my response with a 
+bit of salt...
+
+You seem to run out of tx buffer on a slow link. That means that either your 
+average bandwidth requirements are too high for the channel, or your peak 
+usage is bigger than the tx buffer. In the first case, just drop the message 
+completely. You have no chance to ever get it through. In the second case, 
+make the buffer bigger.
+
+In other words: In the first case buffering and select()ing will not solve the 
+problem. In the second case making the buffer bigger is the cheaper solution.
+
+If the tx buffer can not be made bigger, that would be a bug in the channel...
+
+Cheers,
+Remco
+
+-- 
+Remco Treffkorn (RT445)
+HAM DC2XT
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006265.html">[Gpsd-dev] The state of RTCM3 support, and two request for	healp
+</A></li>
+	<LI>Next message: <A HREF="006231.html">[Gpsd-dev] The state of RTCM3 support, and two request	for?healp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6227">[ date ]</a>
+              <a href="thread.html#6227">[ thread ]</a>
+              <a href="subject.html#6227">[ subject ]</a>
+              <a href="author.html#6227">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

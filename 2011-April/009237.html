@@ -1,0 +1,142 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Please test the new scons-based build system
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Please%20test%20the%20new%20scons-based%20build%20system&In-Reply-To=%3CBANLkTimNKY9gHi06uktgBxprhykHhGa23g%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009236.html">
+   <LINK REL="Next"  HREF="009241.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Please test the new scons-based build system</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Please%20test%20the%20new%20scons-based%20build%20system&In-Reply-To=%3CBANLkTimNKY9gHi06uktgBxprhykHhGa23g%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Please test the new scons-based build system">thomas at mich.com
+       </A><BR>
+    <I>Tue Apr  5 21:46:51 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009236.html">[Gpsd-dev] Please test the new scons-based build system
+</A></li>
+        <LI>Next message: <A HREF="009241.html">[Gpsd-dev] Please test the new scons-based build system
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9237">[ date ]</a>
+              <a href="thread.html#9237">[ thread ]</a>
+              <a href="subject.html#9237">[ subject ]</a>
+              <a href="author.html#9237">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>gpspacket.c:8:20: fatal error: Python.h: no such file or directory
+
+On Fedora core 14. I was missing python-devel on that machine.
+
+I don't have xml* installed on my mac, so scons fails there (is there
+a nodocs option, or a way of saying gpsd only so I don't need to find
+dependencies for other things I might not use).
+
+But it is FAST!  and no gpsd-&gt;./.libs/lt-gpsd stuff.
+
+Thank You, finally a reasonable build system .
+
+On Tue, Apr 5, 2011 at 2:58 PM, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at snark.thyrsus.com</A>&gt; wrote:
+&gt;<i> We now have a working and almost complete scons build recipe. I plan
+</I>&gt;<i> this to replace the autotools-based build system, probably in 3.0 and
+</I>&gt;<i> certainly in 3.1. &#160;Please test - especially those of you with unusual
+</I>&gt;<i> platforms and compilers.
+</I>&gt;<i>
+</I>&gt;<i> Advantages: Much more maintainable. Blazingly fast
+</I>&gt;<i> Disadvantages: &#160;Can't yet build the Qt client binding. No VPATH support,
+</I>&gt;<i>
+</I>&gt;<i> About maintainability, the line counts tell the story:
+</I>&gt;<i>
+</I>&gt;<i> &#160;1024 SConstruct
+</I>&gt;<i>
+</I>&gt;<i> &#160;1029 configure.ac
+</I>&gt;<i> &#160; 957 Makefile.am
+</I>&gt;<i> &#160;9309 aclocal.m4
+</I>&gt;<i> &#160;1693 config.sub
+</I>&gt;<i> &#160;1533 config.guess
+</I>&gt;<i> &#160;14521 total
+</I>&gt;<i>
+</I>&gt;<i> The Python in SConstruct is a good deal more readable than the contents
+</I>&gt;<i> of configure.ac and Makefile.am, so the line counts understate the advantages
+</I>&gt;<i> of scons a bit.
+</I>&gt;<i>
+</I>&gt;<i> As for speed, here are times from my 2MHz Untel Core Duo:
+</I>&gt;<i>
+</I>&gt;<i> autotools:
+</I>&gt;<i> real &#160; &#160;0m45.986s
+</I>&gt;<i> user &#160; &#160;0m44.120s
+</I>&gt;<i> sys &#160; &#160; 0m6.210s
+</I>&gt;<i>
+</I>&gt;<i> scons:
+</I>&gt;<i> real &#160; &#160;0m17.194s
+</I>&gt;<i> user &#160; &#160;0m15.490s
+</I>&gt;<i> sys &#160; &#160; 0m2.360s
+</I>&gt;<i>
+</I>&gt;<i> That 66% drop is particularly impressive in view of the fact that scons
+</I>&gt;<i> is a one-phase system - does its equivalent of autotools configure every
+</I>&gt;<i> time.
+</I>&gt;<i>
+</I>&gt;<i> There is no problem in principle with the Qt client binding - the only
+</I>&gt;<i> reason that isn't working is I don't understand the particularly convoluted
+</I>&gt;<i> autotools quicksand around it.
+</I>&gt;<i>
+</I>&gt;<i> Out-of-directory builds are a thornier issue. Something functionally like a
+</I>&gt;<i> VPATH build is supposed to be possible under scons, but the conceptual
+</I>&gt;<i> model is quite different: see <A HREF="http://www.scons.org/wiki/UsingBuildDir">http://www.scons.org/wiki/UsingBuildDir</A>
+</I>&gt;<i> for discussion.
+</I>&gt;<i>
+</I>&gt;<i> I have, however, carefully preserved all the instances of $(srcdir)
+</I>&gt;<i> from Makefile.am, in case that's useful; they're now $SRCDIR in the
+</I>&gt;<i> scons recipe and it's just set to '.'.
+</I>&gt;<i>
+</I>&gt;<i> Somebody who groks VPATH builds will have to dive in and do the right
+</I>&gt;<i> thing using the VariantDir() and Repository() features of SCons. &#160;It
+</I>&gt;<i> won't be me; I've never had any requirement for VPATH builds myself,
+</I>&gt;<i> so I don't have a good feel for the problems.
+</I>&gt;<i> --
+</I>&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+</I>&gt;<i>
+</I>&gt;<i> You [should] not examine legislation in the light of the benefits it will
+</I>&gt;<i> convey if properly administered, but in the light of the wrongs it
+</I>&gt;<i> would do and the harm it would cause if improperly administered
+</I>&gt;<i> &#160; &#160; &#160; &#160;-- Lyndon Johnson, former President of the U.S.
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009236.html">[Gpsd-dev] Please test the new scons-based build system
+</A></li>
+	<LI>Next message: <A HREF="009241.html">[Gpsd-dev] Please test the new scons-based build system
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9237">[ date ]</a>
+              <a href="thread.html#9237">[ thread ]</a>
+              <a href="subject.html#9237">[ subject ]</a>
+              <a href="author.html#9237">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

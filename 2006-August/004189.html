@@ -1,0 +1,147 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Fix repeatedly lost on a TomTom ONE.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Fix%20repeatedly%20lost%20on%20a%20TomTom%20ONE.&In-Reply-To=%3C91981b3e0608241742o7724b2c6s8e7d784c95dc8ba7%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004186.html">
+   <LINK REL="Next"  HREF="004190.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Fix repeatedly lost on a TomTom ONE.</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Fix%20repeatedly%20lost%20on%20a%20TomTom%20ONE.&In-Reply-To=%3C91981b3e0608241742o7724b2c6s8e7d784c95dc8ba7%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Fix repeatedly lost on a TomTom ONE.">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Fri Aug 25 02:42:43 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004186.html">[Gpsd-dev] Fix repeatedly lost on a TomTom ONE.
+</A></li>
+        <LI>Next message: <A HREF="004190.html">[Gpsd-dev] Fix repeatedly lost on a TomTom ONE.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4189">[ date ]</a>
+              <a href="thread.html#4189">[ thread ]</a>
+              <a href="subject.html#4189">[ subject ]</a>
+              <a href="author.html#4189">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 8/24/06, Stelian Pop &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">stelian at popies.net</A>&gt; wrote:
+&gt;<i> Hi,
+</I>&gt;<i>
+</I>&gt;<i> I'm trying to set-up gpsd and (a customized version of) cgpxlogger on a
+</I>&gt;<i> TomTom ONE navigation system (the TomTom has an ARM processor, has a
+</I>&gt;<i> Sirf Star III GPS, runs Linux, and the navigation system is done by a
+</I>&gt;<i> proprietary application).
+</I>
+w00t. This is two people today hacking with gpsd on ARM boxen. This
+ONE device sounds a lot like another... well, let's call it pretender
+to the throne. Linux, ARM, SiRFstar, gpsd and proprietary nav app. I
+don't suppose they're storing their database in SQLite are they? ;)
+
+&gt;<i> I have a problem with gpsd losing the fix something like every one or
+</I>&gt;<i> two seconds. Launching cgps for example shows the fix is acquired for
+</I>&gt;<i> one or two seconds, then the fix is lost and the values go n/a, then it
+</I>&gt;<i> comes back again and again...
+</I>
+Sounds like fallout from our experiments with buffering policies.
+
+&gt;<i> Hacking the source I found out the culprit to be the
+</I>&gt;<i>          mask |= CYCLE_START_SET
+</I>&gt;<i> set in nmea_parse.c:processGPGGA(). In my tests (look at the NMEA data
+</I>&gt;<i> below), 'gpsdata.sentence_time' is always one second before
+</I>&gt;<i> 'gpsdata.newdata.time'.
+</I>&gt;<i>
+</I>&gt;<i> If I comment the CYCLE_START_SET line, the fix is no longer lost, and
+</I>&gt;<i> all seems perfect. This is with the latest SVN version.
+</I>
+you could try the --enabled-wired-policy option to configure... i
+believe i saw a patch to cgps to send the j command to en-/dis-able
+buffering. which accomplishes the same thing.
+
+If you want to test your logger, you can point it at gpsd.mainframe.cx
+- it's a static test station I have set up and it's running with
+--enable-wired-policy
+
+&gt;<i> I'm not sure if this is a bug in my GPS device or a bug in the code. My
+</I>&gt;<i> limited understanding of the NMEA protocol may be the issue...
+</I>
+I've explained your nmea trace below. I guess this could be a bug, if
+you define bug to be &quot;behaviour I don't expect&quot;.
+
+&gt;<i> (FYI, I've kept in the log blow a few unknown sentences reported by
+</I>&gt;<i> gpsd. These are most probably not related to my problem...)
+</I>
+Not really related, but I'll give you the 25-cent tour anyway.
+
+&gt;<i> gpsd: &lt;= GPS: $PFEC,GPint,GSA01,DTM00,ZDA01,RMC01,GLL00,VTG00,GSV05*3B
+</I>&gt;<i> gpsd: unknown sentence: &quot;$PFEC,GPint,GSA01,DTM00,ZDA01,RMC01,GLL00,VTG00,GSV05*3B\x0d\x0a&quot;
+</I>&gt;<i> gpsd: &lt;= GPS: $PMOTG,ZDA,1*2F
+</I>&gt;<i> gpsd: unknown sentence: &quot;$PMOTG,ZDA,1*2F\x0d\x0a&quot;
+</I>&gt;<i> gpsd: &lt;= GPS: $PGRMCE*0E
+</I>&gt;<i> gpsd: unknown sentence: &quot;$PGRMCE*0E\x0d\x0a&quot;
+</I>&gt;<i> gpsd: &lt;= GPS: $PSRF105,1*3E
+</I>&gt;<i> gpsd: unknown sentence: &quot;$PSRF105,1*3E\x0d\x0a&quot;
+</I>
+These are probe strings to determine what sort of receiver you have.
+Some receivers ignore them, some will reply with $GPWTF ;) and others
+will give you a distinguishable acknowledgement. I'm surprised that
+$PSRF105 didn't identify the SiRFstar, because PSRF105 is enables
+debugging mode. Enabling debug mode when debugging is already enabled
+returns an OK message and that's how we fingerprint SiRFstar. Do you
+know what version of firmware you're running?
+
+&gt;<i> gpsd: &lt;= GPS: $GPGGA,210907.000,4852.5776,N,00223.0439,E,1,04,4.8,96.6,M,47.3,M,,0000*65
+</I>&gt;<i> gpsd: GPGGA sets status 1
+</I>
+Yes, that's good... you have a non-differential GPS fix from 4 satellites.
+
+&gt;<i> gpsd: &lt;= GPS: $GPGSA,A,3,06,21,18,22,,,,,,,,,6.5,4.8,4.3*36
+</I>&gt;<i> gpsd: GPGSA sets mode 3
+</I>
+Your GPS is in automatic mode, you have a 3D solution, PRN 6 21 18 22
+were used, and not great DOP numbers. To be expected from only 4SVs
+
+&gt;<i> gpsd: &lt;= GPS: $GPRMC,210907.000,A,4852.5776,N,00223.0439,E,0.00,307.53,240806,,*01
+</I>
+And the &quot;A&quot; is the important bit: your fix is valid.
+
+&gt;<i> gpsd: &lt;= GPS: $GPGGA,210908.000,4852.5776,N,00223.0439,E,1,04,4.8,96.6,M,47.3,M,,0000*6A
+</I>
+And your cycle starts with $GPGGA
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004186.html">[Gpsd-dev] Fix repeatedly lost on a TomTom ONE.
+</A></li>
+	<LI>Next message: <A HREF="004190.html">[Gpsd-dev] Fix repeatedly lost on a TomTom ONE.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4189">[ date ]</a>
+              <a href="thread.html#4189">[ thread ]</a>
+              <a href="subject.html#4189">[ subject ]</a>
+              <a href="author.html#4189">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

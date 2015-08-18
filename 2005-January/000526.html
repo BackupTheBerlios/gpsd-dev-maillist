@@ -1,0 +1,114 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] Fix insecure buffer handling in gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Fix%20insecure%20buffer%20handling%20in%20gpsd&In-Reply-To=%3C2floefsgp5o.fsf%40saruman.uio.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000524.html">
+   <LINK REL="Next"  HREF="000528.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] Fix insecure buffer handling in gpsd</H1>
+    <B>Petter Reinholdtsen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Fix%20insecure%20buffer%20handling%20in%20gpsd&In-Reply-To=%3C2floefsgp5o.fsf%40saruman.uio.no%3E"
+       TITLE="[Gpsd-dev] [PATCH] Fix insecure buffer handling in gpsd">pere at hungry.com
+       </A><BR>
+    <I>Fri Jan 14 13:40:03 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000524.html">[Gpsd-dev] [PATCH] Add test code for the NMEA parser
+</A></li>
+        <LI>Next message: <A HREF="000528.html">[Gpsd-dev] [PATCH] Fix insecure buffer handling in gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#526">[ date ]</a>
+              <a href="thread.html#526">[ thread ]</a>
+              <a href="subject.html#526">[ subject ]</a>
+              <a href="author.html#526">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I found this bug by accident, while reading the code.
+
+If the read() call on socket connected to a client is returning a
+negative number, memory outside 'buf' might be written to.
+
+For example, if read() return -1, &quot;buf[-1] = '\0'&quot; would be invoked.
+This would result in undefined behaviour.
+
+This patch fixes the problem, as well as moves the scope of buf and
+buflen into the block where it is used.
+
+Index: gpsd.c
+===================================================================
+--- gpsd.c	(revision 1321)
++++ gpsd.c	(working copy)
+@@ -598,9 +598,6 @@
+ 	     * streaming (raw or watcher mode).
+ 	     */
+ 	    if (FD_ISSET(fd, &amp;rfds) || FD_ISSET(fd, &amp;nmea_fds) || FD_ISSET(fd, &amp;watcher_fds)) {
+-		char buf[BUFSIZE];
+-		int buflen;
+-
+ 		if (session-&gt;gNMEAdata.gps_fd == -1) {
+ 		    gpsd_deactivate(session);
+ 		    if (gpsd_activate(session) &gt;= 0) {
+@@ -609,17 +606,19 @@
+ 		}
+ 
+ 		if (FD_ISSET(fd, &amp;rfds)) {
+-		    buflen = read(fd, buf, sizeof(buf) - 1);
++		    char buf[BUFSIZE];
++		    int buflen = read(fd, buf, sizeof(buf) - 1);
+ 		    if (buflen &lt;= 0) {
+ 			(void) close(fd);
+ 			FD_CLR(fd, &amp;all_fds);
++		    } else {
++		        buf[buflen] = '\0';
++			gpsd_report(1, &quot;&lt;= client: %s&quot;, buf);
++			if (handle_request(fd, buf, buflen) &lt; 0) {
++			    (void) close(fd);
++			    FD_CLR(fd, &amp;all_fds);
++			}
+ 		    }
+-		    buf[buflen] = '\0';
+-		    gpsd_report(1, &quot;&lt;= client: %s&quot;, buf);
+-		    if (handle_request(fd, buf, buflen) &lt; 0) {
+-			(void) close(fd);
+-			FD_CLR(fd, &amp;all_fds);
+-		    }
+ 		}
+ 	    }
+ 	    if (fd != session-&gt;gNMEAdata.gps_fd &amp;&amp; fd != msock &amp;&amp; FD_ISSET(fd, &amp;all_fds))
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000524.html">[Gpsd-dev] [PATCH] Add test code for the NMEA parser
+</A></li>
+	<LI>Next message: <A HREF="000528.html">[Gpsd-dev] [PATCH] Fix insecure buffer handling in gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#526">[ date ]</a>
+              <a href="thread.html#526">[ thread ]</a>
+              <a href="subject.html#526">[ subject ]</a>
+              <a href="author.html#526">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

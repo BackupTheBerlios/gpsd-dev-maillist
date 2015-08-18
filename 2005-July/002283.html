@@ -1,0 +1,161 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] dgpsip server (was: Big change -- FIONREAD is no longer used)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20dgpsip%20server%20%28was%3A%20Big%20change%20--%20FIONREAD%20is%20no%20longer%20used%29&In-Reply-To=%3C87wtoaa9ig.fsf_-_%40bonnet.wsrcc.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002282.html">
+   <LINK REL="Next"  HREF="002298.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] dgpsip server (was: Big change -- FIONREAD is no longer used)</H1>
+    <B>Wolfgang S. Rupprecht</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20dgpsip%20server%20%28was%3A%20Big%20change%20--%20FIONREAD%20is%20no%20longer%20used%29&In-Reply-To=%3C87wtoaa9ig.fsf_-_%40bonnet.wsrcc.com%3E"
+       TITLE="[Gpsd-dev] dgpsip server (was: Big change -- FIONREAD is no longer used)">wolfgang+gnus20050701T052907 at dailyplanet.dontspam.wsrcc.com
+       </A><BR>
+    <I>Fri Jul  1 16:25:27 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002282.html">[Gpsd-dev] Re: Big change -- FIONREAD is no longer used
+</A></li>
+        <LI>Next message: <A HREF="002298.html">[Gpsd-dev] Self-defense for gpsd/dgps sessions
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2283">[ date ]</a>
+              <a href="thread.html#2283">[ thread ]</a>
+              <a href="subject.html#2283">[ subject ]</a>
+              <a href="author.html#2283">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&quot;Eric S. Raymond&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; writes:
+&gt;<i> I'm somewhat tempted to fold this into gpsd -- that is, give it a second
+</I>&gt;<i> serial device class that is &quot;DGPS radio&quot; and allow clients to open 
+</I>&gt;<i> connections on port 2101.  All the logic for managing multiple client
+</I>&gt;<i> sessions would be identical -- in fact. I'll bet I could add this
+</I>&gt;<i> feature in less than a hundred lines of code.
+</I>
+Just some random observations from running a dgpsip server for a
+while.
+
+There are a surprising number of folks that connect up to it with a
+web browser.  (I won't reinforce stereotypes by mentioning the browser
+id-strings for the folks doing this, but they all have the word
+&quot;compatible&quot; in them.  Oops, just did. ;-)) The problem for the server
+is that the browsers don't generally disconnect until the server drops
+them.
+
+There are some broken web proxies (like akamai) that also connect for
+weeks at a time.  Perhaps this is related to a browser initiating the
+connect from above.
+
+The first line of defense I added to the server was to detect an http
+connect and send an http redirect to the dgpsip web page.  Note, some
+browsers also need to have the tcp connection closed before they go
+away.  The redirect itself isn't enough.
+
+The second line of defense (added just recently) was to
+unceremoniously drop any connection that doesn't issue a &quot;HELO ...&quot;
+string within 60 seconds.
+
+You will probably need to add some protection to gpsd to keep it from
+collecting an ever-growing number of junk TCP connections.
+
+There was also a (failed) share and share alike political angle for me
+not releasing a multi-user server.  By only releasing a single-user
+server I was hoping to force folks to let me redistribute the signal
+from here.  That would prevent them from only serving paying customers
+etc.  Back in the days when I wrote the server there was a thriving
+business in selling differential corrections over FM (and perhaps
+other RF means).  Those companies all died rather quickly when
+selective-availability went away.  Some people speculated at the time
+that the reason selective availability went way with less than 24hrs
+notice was that the military planners were afraid that the for-pay
+differential corrections companies would lobby their tame senators and
+try to perpetuate SA.
+
+Well, in any case there was never a ground-swell of folks offering
+dgpsip feeds.  I'd hoped that eventually the CORS umbrella group (or
+the Coast Guard) would give me a feed, but that never happened.
+
+     <A HREF="http://www.ngs.noaa.gov/CORS/cors-data.html">http://www.ngs.noaa.gov/CORS/cors-data.html</A>
+
+Someone with more political, people-hacking savvy might want to try
+their hand at springing some feeds from them.
+
+&gt;<i> Hm.  The SiRF engineer I've been talking with tells me the UERE
+</I>&gt;<i> estimate he gives customers for a non-DGPS fix is 8 meters, while the
+</I>&gt;<i> DGPS UERE is 2 meters.  That sounds like a difference worth chasing.
+</I>&gt;<i> Is he being...er...optimistic about the capability of the hardware?
+</I>
+Those numbers sound about right for the 95% figure.  I'm very bad at
+picturing what 95% looks like and much prefer to think of the 50%
+level.  I can easily picture a 4.5 meter circle with half the marbles
+inside it and half outside.
+
+In any case, the 2 meter number almost certainly is for a differential
+reference station that is located very close to the GPS in question.
+The whole differential hack assumes that the paths and angles between
+the reference station and the mobile GPS unit are similar enough that
+one can simply subtract the path-length errors the reference station
+is seeing from the path the mobile GPS had calculated.  If the angles
+to the satellite are vastly different (as in the case of dgpsip from
+across the country) one can start adding errors.  In the days of SA
+the largest component of error was due to SA, so miscorrecting the
+paths hardly mattered at all.  Even cross-country dgpsip was
+worthwhile and improved accuracy.  I doubt that one would see any that
+2meter accuracy if one were more than a 100 miles away.
+
+Just for completeness, there are other issues too, like different
+ionospheric and tropospheric pierce points for the rays going to the
+reference and mobile units.  The speed of light is slightly lowered by
+going through the atmosphere.  The amount it slows down is enough to
+add a few meters (very roughly, up to 15 meters) of path-length error.
+The ionosphere and troposphere aren't a constant height.  They are
+substantially pumped up by sunlight, so taking a reading from one
+location in heavy sun and applying it to a distant area with a lower
+sun angle could make things quite a bit worse.  (There may also be
+roughness associated with the layer thickness that defies modeling
+with a simple sun-angle model.  I don't know enough about that sort of
+thing.)
+
+In summary, while I have no problem believing the SiRF engineer that
+you can get 2 meters accuracy from their chips when using a very close
+reference, I fear that the average user will be getting the same 8m or
+worse accuracy by using dgpsip.
+
+-wolfgang
+-- 
+Wolfgang S. Rupprecht                <A HREF="http://www.wsrcc.com/wolfgang/">http://www.wsrcc.com/wolfgang/</A>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002282.html">[Gpsd-dev] Re: Big change -- FIONREAD is no longer used
+</A></li>
+	<LI>Next message: <A HREF="002298.html">[Gpsd-dev] Self-defense for gpsd/dgps sessions
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2283">[ date ]</a>
+              <a href="thread.html#2283">[ thread ]</a>
+              <a href="subject.html#2283">[ subject ]</a>
+              <a href="author.html#2283">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

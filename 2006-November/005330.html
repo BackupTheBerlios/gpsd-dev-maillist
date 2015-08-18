@@ -1,0 +1,706 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Data in trunk/test/trimble-lassen_iq-3dfix.log	doesn't look right
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Data%20in%20trunk/test/trimble-lassen_iq-3dfix.log%0A%09doesn%27t%20look%20right&In-Reply-To=%3C91981b3e0611290858y71d815a6oe76fa881396e6d45%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005329.html">
+   <LINK REL="Next"  HREF="005381.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Data in trunk/test/trimble-lassen_iq-3dfix.log	doesn't look right</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Data%20in%20trunk/test/trimble-lassen_iq-3dfix.log%0A%09doesn%27t%20look%20right&In-Reply-To=%3C91981b3e0611290858y71d815a6oe76fa881396e6d45%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Data in trunk/test/trimble-lassen_iq-3dfix.log	doesn't look right">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Wed Nov 29 17:58:50 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005329.html">[Gpsd-dev] Data in trunk/test/trimble-lassen_iq-3dfix.log doesn't	look right
+</A></li>
+        <LI>Next message: <A HREF="005381.html">[Gpsd-dev] Data in trunk/test/trimble-lassen_iq-3dfix.log	doesn't look right
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5330">[ date ]</a>
+              <a href="thread.html#5330">[ thread ]</a>
+              <a href="subject.html#5330">[ subject ]</a>
+              <a href="author.html#5330">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 11/29/06, Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> This one's for Chris.
+</I>&gt;<i>
+</I>&gt;<i> I've checked in changes to gpsfake.py that allow it to gather TSIP packets
+</I>&gt;<i> from a test load.   Look at this:
+</I>&gt;<i>
+</I>&gt;<i> [snip]
+</I>&gt;<i>
+</I>&gt;<i> Script done on Wed 29 Nov 2006 05:28:48 AM EST
+</I>&gt;<i>
+</I>&gt;<i> Now, on the one hand, that does look like gpsd is seeing the correct sequence
+</I>&gt;<i> of packets.  The packet sniffer achieves lock and correctly selects the
+</I>&gt;<i> TSIP driver.  After that we see no messages suggesting an invalid packet
+</I>&gt;<i> fragment (discounting the spurious Garmin-checksum ones).
+</I>&gt;<i>
+</I>&gt;<i> On the other hand, all the daemon is extracting is the equivalent of GSAs,  Are
+</I>&gt;<i> you sure there is actual fix data in there?
+</I>
+There is definately fix data there. Run with a higher debug level and
+see what is happening to packet 0x8f (the superpackets).
+
+Here's what happens when i do this
+
+#mkfifo /tmp/gps
+# cat test/trimble-lassen_iq-3dfix.log &gt; /tmp/gps &amp;
+#./gpsd -n -N -D4 /tmp/gps |&amp; tee trimble-check2
+gpsd: launching (Version 2.34)
+gpsd: listening on port 2947
+gpsd: running with effective group ID 1000
+gpsd: running with effective user ID 1000
+gpsd: opening GPS data source at '/tmp/gps'
+gpsd: garmin_gps not active.
+gpsd: no probe matched...
+gpsd: gpsd_activate(0): opened GPS (6)
+gpsd: switch_driver(Trimble TSIP) called...
+gpsd: selecting Trimble TSIP driver...
+gpsd: TSIP packet id 0x6d length 21: 44407367ab4017687c403e9506400bcd4b1609120b
+gpsd: Sat info: mode 3, satellites used 4:  22 9 18 11
+gpsd: Sat info: DOP P=3.8 H=2.4 V=3.0 T=2.2 G=4.4
+gpsd: Sent TSIP packet id 0x21:
+gpsd: Sent TSIP packet id 0x26:
+gpsd: &lt;= GPS: $GPGSA,A,3,22,09,18,11,,,,,,,,,3.8,2.4,3.0*3C
+
+gpsd: Sent TSIP packet id 0x1f:
+gpsd: Sent TSIP packet id 0x21:
+gpsd: Sent TSIP packet id 0x28:
+gpsd: Sent TSIP packet id 0x8e: 15
+gpsd: Sent TSIP packet id 0xbb: 03
+gpsd: TSIP packet id 0x6d length 21: 44407367a94017687b403e9504400bcd4b1216090b
+gpsd: Sat info: mode 3, satellites used 4:  18 22 9 11
+gpsd: Sat info: DOP P=3.8 H=2.4 V=3.0 T=2.2 G=4.4
+gpsd: &lt;= GPS: $GPGSA,A,3,18,22,09,11,,,,,,,,,3.8,2.4,3.0*3C
+
+gpsd: TSIP packet id 0x6d length 22:
+54403b87af3fb6ce7c4023bf203fbbece9121609130b
+gpsd: Sat info: mode 3, satellites used 5:  18 22 9 19 11
+gpsd: Sat info: DOP P=2.9 H=1.4 V=2.6 T=1.5 G=3.3
+gpsd: &lt;= GPS: $GPGSA,A,3,18,22,09,19,11,,,,,,,,2.9,1.4,2.6*30
+
+gpsd: TSIP packet id 0x5c length 24:
+1308011341e8000046c3c92b3ee847dd408b760000000001
+gpsd: Satellite Tracking Status: Ch  1 PRN  19 Res 0 Acq 1 Eph 19 SNR
+29.0 LMT 25060.5840 El 26.0 Az 249.7
+gpsd: TSIP packet id 0x5c length 24:
+12180113420c000046c3c92b3eeaf1263fd5996200000001
+gpsd: Satellite Tracking Status: Ch  3 PRN  18 Res 0 Acq 1 Eph 19 SNR
+35.0 LMT 25060.5840 El 26.3 Az  95.6
+gpsd: TSIP packet id 0x5c length 24:
+0120000341d0000046c3c92b3f01e46f40771ed801000001
+gpsd: Satellite Tracking Status: Ch  4 PRN   1 Res 0 Acq 0 Eph  3 SNR
+26.0 LMT 25060.5840 El 29.1 Az 221.2
+gpsd: TSIP packet id 0x5c length 24:
+0b28011341e8000046c3c92b3eda7a3c40aba3d800000001
+gpsd: Satellite Tracking Status: Ch  5 PRN  11 Res 0 Acq 1 Eph 19 SNR
+29.0 LMT 25060.5840 El 24.4 Az 307.3
+gpsd: TSIP packet id 0x5c length 24:
+0330000341e0000046c3c92b3e0d778b407bd36a01000001
+gpsd: Satellite Tracking Status: Ch  6 PRN   3 Res 0 Acq 0 Eph  3 SNR
+28.0 LMT 25060.5840 El  7.9 Az 225.4
+gpsd: Garmin checksum failed: 1d!=0
+gpsd: TSIP packet id 0x5c length 24:
+164001134218000046c3c92b3f9082323fd1056700000001
+gpsd: Satellite Tracking Status: Ch  8 PRN  22 Res 0 Acq 1 Eph 19 SNR
+38.0 LMT 25060.5840 El 64.7 Az  93.6
+gpsd: TSIP packet id 0x5c length 24:
+094801134218000046c3c92b3ed8dc463f4a8a0b00000001
+gpsd: Satellite Tracking Status: Ch  9 PRN   9 Res 0 Acq 1 Eph 19 SNR
+38.0 LMT 25060.5840 El 24.3 Az  45.3
+gpsd: TSIP packet id 0x6d length 22:
+54403b7ceb3fb6bc124023b7ef3fbbd92e121609130b
+gpsd: Sat info: mode 3, satellites used 5:  18 22 9 19 11
+gpsd: Sat info: DOP P=2.9 H=1.4 V=2.6 T=1.5 G=3.3
+gpsd: &lt;= GPS: $GPGSA,A,3,18,22,09,19,11,,,,,,,,2.9,1.4,2.6*30
+
+gpsd: TSIP packet id 0x41 length 10: 46c3cef4057b41600000
+gpsd: GPS Time 25063.476562 1403 14.000000
+gpsd: Garmin checksum failed: 46!=0
+gpsd: TSIP packet id 0x46 length 2: 0000
+gpsd: Receiver health 00 00
+gpsd: TSIP packet id 0x4b length 3: 5a0001
+gpsd: Machine ID 5a 00 01
+gpsd: Switching to Super Packet mode
+gpsd: Sent TSIP packet id 0x35: 2c000008
+gpsd: TSIP packet id 0x6d length 22:
+54403b7ceb3fb6bc124023b7ef3fbbd92e121609130b
+gpsd: Sat info: mode 3, satellites used 5:  18 22 9 19 11
+gpsd: Sat info: DOP P=2.9 H=1.4 V=2.6 T=1.5 G=3.3
+gpsd: &lt;= GPS: $GPGSA,A,3,18,22,09,19,11,,,,,,,,2.9,1.4,2.6*30
+
+gpsd: TSIP packet id 0x6d length 22:
+54403b69173fb6abde4023a5c03fbbbd54121609130b
+gpsd: Sat info: mode 3, satellites used 5:  18 22 9 19 11
+gpsd: Sat info: DOP P=2.9 H=1.4 V=2.6 T=1.5 G=3.3
+gpsd: &lt;= GPS: $GPGSA,A,3,18,22,09,19,11,,,,,,,,2.9,1.4,2.6*30
+
+gpsd: TSIP packet id 0x6d length 22:
+54403b72793fb6aa294023b0f83fbbc5fd121609130b
+gpsd: Sat info: mode 3, satellites used 5:  18 22 9 19 11
+gpsd: Sat info: DOP P=2.9 H=1.4 V=2.6 T=1.5 G=3.3
+gpsd: &lt;= GPS: $GPGSA,A,3,18,22,09,19,11,,,,,,,,2.9,1.4,2.6*30
+
+gpsd: TSIP packet id 0x5c length 24:
+1308011341e8000046c3d52d3ee7fa72408b703d00000001
+gpsd: Satellite Tracking Status: Ch  1 PRN  19 Res 0 Acq 1 Eph 19 SNR
+29.0 LMT 25066.5879 El 26.0 Az 249.7
+gpsd: TSIP packet id 0x5c length 24:
+121801134214000046c3d52d3eea8ce63fd5a77c00000001
+gpsd: Satellite Tracking Status: Ch  3 PRN  18 Res 0 Acq 1 Eph 19 SNR
+37.0 LMT 25066.5879 El 26.2 Az  95.6
+gpsd: TSIP packet id 0x5c length 24:
+0120000341d0000046c3d52d3f021c674077246e01000001
+gpsd: Satellite Tracking Status: Ch  4 PRN   1 Res 0 Acq 0 Eph  3 SNR
+26.0 LMT 25066.5879 El 29.1 Az 221.3
+gpsd: TSIP packet id 0x5c length 24:
+0b28011341e8000046c3d52d3edad12440aba0c400000001
+gpsd: Satellite Tracking Status: Ch  5 PRN  11 Res 0 Acq 1 Eph 19 SNR
+29.0 LMT 25066.5879 El 24.5 Az 307.3
+gpsd: TSIP packet id 0x5c length 24:
+0330000341e0000046c3d52d3e0ccad3407bcc4a01000001
+gpsd: Satellite Tracking Status: Ch  6 PRN   3 Res 0 Acq 0 Eph  3 SNR
+28.0 LMT 25066.5879 El  7.9 Az 225.4
+gpsd: Garmin checksum failed: 8a!=0
+gpsd: TSIP packet id 0x5c length 24:
+164001134214000046c3d52d3f9066693fd1179d00000001
+gpsd: Satellite Tracking Status: Ch  8 PRN  22 Res 0 Acq 1 Eph 19 SNR
+37.0 LMT 25066.5879 El 64.6 Az  93.6
+gpsd: TSIP packet id 0x5c length 24:
+094801134214000046c3d52d3ed8b25b3f4a6bda00000001
+gpsd: Satellite Tracking Status: Ch  9 PRN   9 Res 0 Acq 1 Eph 19 SNR
+37.0 LMT 25066.5879 El 24.2 Az  45.3
+gpsd: &lt;= GPS: $GPGSV,3,1,10,00,00,000,00,19,26,250,29,00,00,000,00,18,26,096,37*7C\x0d\x0a$GPGSV,3,2,10,01,29,221,26,11,24,307,29,03,08,225,28,00,00,000,00*7B\x0d\x0a$GPGSV,3,3,10,22,65,094,37,09,24,045,37*78
+
+gpsd: Garmin checksum failed: 46!=0
+gpsd: TSIP packet id 0x46 length 2: 0000
+gpsd: Receiver health 00 00
+gpsd: TSIP packet id 0x41 length 10: 46c3e2e9057b41600000
+gpsd: GPS Time 25073.455078 1403 14.000000
+gpsd: TSIP packet id 0x4b length 3: 5a0001
+gpsd: Machine ID 5a 00 01
+gpsd: TSIP packet id 0x6d length 22:
+544043db653fe0532940208f653fb0798e1216091301
+gpsd: Sat info: mode 3, satellites used 5:  18 22 9 19 1
+gpsd: Sat info: DOP P=3.1 H=1.8 V=2.5 T=1.4 G=3.4
+gpsd: &lt;= GPS: $GPGSA,A,3,18,22,09,19,01,,,,,,,,3.1,1.8,2.5*37
+
+gpsd: TSIP packet id 0x82 length 1: 02
+gpsd: DGPS mode 2
+gpsd: TSIP packet id 0x6d length 22:
+544043db653fe0532940208f653fb0798e1216091301
+gpsd: Sat info: mode 3, satellites used 5:  18 22 9 19 1
+gpsd: Sat info: DOP P=3.1 H=1.8 V=2.5 T=1.4 G=3.4
+gpsd: &lt;= GPS: $GPGSA,A,3,18,22,09,19,01,,,,,,,,3.1,1.8,2.5*37
+
+gpsd: TSIP packet id 0x5c length 24:
+121801134218000046c3e31c3eea2caf3fd5b4f800000001
+gpsd: Satellite Tracking Status: Ch  3 PRN  18 Res 0 Acq 1 Eph 19 SNR
+38.0 LMT 25073.5547 El 26.2 Az  95.7
+gpsd: TSIP packet id 0x5c length 24:
+0120011341e8000046c3e31c3f0252fc40772a0400000001
+gpsd: Satellite Tracking Status: Ch  4 PRN   1 Res 0 Acq 1 Eph 19 SNR
+29.0 LMT 25073.5547 El 29.2 Az 221.3
+gpsd: TSIP packet id 0x5c length 24:
+0b28010341d0000046c3e31c3edb240540ab9dda00000001
+gpsd: Satellite Tracking Status: Ch  5 PRN  11 Res 0 Acq 1 Eph  3 SNR
+26.0 LMT 25073.5547 El 24.5 Az 307.3
+gpsd: TSIP packet id 0x5c length 24:
+0330000341e0000046c3e31c3e0c2594407bc58601000001
+gpsd: Satellite Tracking Status: Ch  6 PRN   3 Res 0 Acq 0 Eph  3 SNR
+28.0 LMT 25073.5547 El  7.8 Az 225.4
+gpsd: Garmin checksum failed: 9f!=0
+gpsd: TSIP packet id 0x5c length 24:
+164001134218000046c3e31c3f904bb73fd1286d00000001
+gpsd: Satellite Tracking Status: Ch  8 PRN  22 Res 0 Acq 1 Eph 19 SNR
+38.0 LMT 25073.5547 El 64.6 Az  93.6
+gpsd: TSIP packet id 0x5c length 24:
+094801134218000046c3e31c3ed85bed3f4a2e0100000001
+gpsd: Satellite Tracking Status: Ch  9 PRN   9 Res 0 Acq 1 Eph 19 SNR
+38.0 LMT 25073.5547 El 24.2 Az  45.3
+gpsd: &lt;= GPS: $GPGSV,3,1,10,00,00,000,00,19,26,250,29,00,00,000,00,18,26,096,38*73\x0d\x0a$GPGSV,3,2,10,01,29,221,29,11,25,307,26,03,08,225,28,00,00,000,00*7A\x0d\x0a$GPGSV,3,3,10,22,65,094,38,09,24,045,38*78
+
+gpsd: TSIP packet id 0x6d length 21: 444051815340049be0402231fd3fc54f9d12160901
+gpsd: Sat info: mode 3, satellites used 4:  18 22 9 1
+gpsd: Sat info: DOP P=3.3 H=2.1 V=2.5 T=1.5 G=3.6
+gpsd: &lt;= GPS: $GPGSA,A,3,18,22,09,01,,,,,,,,,206029986.0,2.1,70441045.1*0E
+
+gpsd: Garmin checksum failed: 46!=0
+gpsd: TSIP packet id 0x46 length 2: 0000
+gpsd: Receiver health 00 00
+gpsd: TSIP packet id 0x6d length 21: 4440517bd440048bdc402237f93fc5525c12160901
+gpsd: Sat info: mode 3, satellites used 4:  18 22 9 1
+gpsd: Sat info: DOP P=3.3 H=2.1 V=2.5 T=1.5 G=3.6
+gpsd: &lt;= GPS: $GPGSA,A,3,18,22,09,01,,,,,,,,,3.3,2.1,2.5*37
+
+gpsd: TSIP packet id 0x6d length 21: 4440517bd440048bdc402237f93fc5525c12160901
+gpsd: Sat info: mode 3, satellites used 4:  18 22 9 1
+gpsd: Sat info: DOP P=3.3 H=2.1 V=2.5 T=1.5 G=3.6
+gpsd: &lt;= GPS: $GPGSA,A,3,18,22,09,01,,,,,,,,,3.3,2.1,2.5*37
+
+gpsd: TSIP packet id 0x6d length 21: 444051767440047c4640223dc43fc5550c12160901
+gpsd: Sat info: mode 3, satellites used 4:  18 22 9 1
+gpsd: Sat info: DOP P=3.3 H=2.1 V=2.5 T=1.5 G=3.6
+gpsd: &lt;= GPS: $GPGSA,A,3,18,22,09,01,,,,,,,,,3.3,2.1,2.5*37
+
+gpsd: TSIP packet id 0x41 length 10: 46c3eced057b41600000
+gpsd: GPS Time 25078.462891 1403 14.000000
+gpsd: TSIP packet id 0x4b length 3: 5a0001
+gpsd: Machine ID 5a 00 01
+gpsd: TSIP packet id 0x5c length 24:
+12180113421c000046c3ed1d3ee9eb953fd5be1a00000001
+gpsd: Satellite Tracking Status: Ch  3 PRN  18 Res 0 Acq 1 Eph 19 SNR
+39.0 LMT 25078.5566 El 26.2 Az  95.7
+gpsd: TSIP packet id 0x5c length 24:
+0120011341f0000046c3ed1d3f0276b840772d7200000001
+gpsd: Satellite Tracking Status: Ch  4 PRN   1 Res 0 Acq 1 Eph 19 SNR
+30.0 LMT 25078.5566 El 29.2 Az 221.3
+gpsd: TSIP packet id 0x5c length 24:
+0b28000341d0000046c3ed1d3edb5cdb40ab9bce01000001
+gpsd: Satellite Tracking Status: Ch  5 PRN  11 Res 0 Acq 0 Eph  3 SNR
+26.0 LMT 25078.5566 El 24.5 Az 307.3
+gpsd: TSIP packet id 0x5c length 24:
+0330000341e0000046c3ed1d3e0bb574407bc0d201000001
+gpsd: Satellite Tracking Status: Ch  6 PRN   3 Res 0 Acq 0 Eph  3 SNR
+28.0 LMT 25078.5566 El  7.8 Az 225.4
+gpsd: Garmin checksum failed: dd!=0
+gpsd: TSIP packet id 0x5c length 24:
+164001134214000046c3ed1d3f9039b23fd134af00000001
+gpsd: Satellite Tracking Status: Ch  8 PRN  22 Res 0 Acq 1 Eph 19 SNR
+37.0 LMT 25078.5566 El 64.6 Az  93.6
+gpsd: TSIP packet id 0x6d length 21: 4440516b1940045b6b402249ed3fc55aa712091601
+gpsd: Sat info: mode 3, satellites used 4:  18 9 22 1
+gpsd: Sat info: DOP P=3.3 H=2.1 V=2.5 T=1.5 G=3.6
+gpsd: &lt;= GPS: $GPGSA,A,3,18,09,22,01,,,,,,,,,3.3,2.1,2.5*37
+
+gpsd: TSIP packet id 0x5c length 24:
+12180113421c000046c3f72b3ee9a8493fd5c7a400000001
+gpsd: Satellite Tracking Status: Ch  3 PRN  18 Res 0 Acq 1 Eph 19 SNR
+39.0 LMT 25083.5840 El 26.1 Az  95.7
+gpsd: TSIP packet id 0x5c length 24:
+0120011341f0000046c3f72b3f029c2b4077313400000001
+gpsd: Satellite Tracking Status: Ch  4 PRN   1 Res 0 Acq 1 Eph 19 SNR
+30.0 LMT 25083.5840 El 29.2 Az 221.3
+gpsd: TSIP packet id 0x5c length 24:
+0b28000341d0000046c3f72b3edb973240ab99b801000001
+gpsd: Satellite Tracking Status: Ch  5 PRN  11 Res 0 Acq 0 Eph  3 SNR
+26.0 LMT 25083.5840 El 24.6 Az 307.2
+gpsd: TSIP packet id 0x5c length 24:
+0330000341e0000046c3f72b3e0b40fa407bbc0c01000001
+gpsd: Satellite Tracking Status: Ch  6 PRN   3 Res 0 Acq 0 Eph  3 SNR
+28.0 LMT 25083.5840 El  7.8 Az 225.4
+gpsd: Garmin checksum failed: b4!=0
+gpsd: TSIP packet id 0x5c length 24:
+164001134218000046c3f72b3f90270b3fd1411600000001
+gpsd: Satellite Tracking Status: Ch  8 PRN  22 Res 0 Acq 1 Eph 19 SNR
+38.0 LMT 25083.5840 El 64.5 Az  93.7
+gpsd: TSIP packet id 0x5c length 24:
+094801134224000046c3f72b3ed806dd3f49f0ed00000001
+gpsd: Satellite Tracking Status: Ch  9 PRN   9 Res 0 Acq 1 Eph 19 SNR
+41.0 LMT 25083.5840 El 24.2 Az  45.2
+gpsd: &lt;= GPS: $GPGSV,3,1,10,00,00,000,00,19,26,250,29,00,00,000,00,18,26,096,39*72\x0d\x0a$GPGSV,3,2,10,01,29,221,30,11,25,307,26,03,08,225,28,00,00,000,00*72\x0d\x0a$GPGSV,3,3,10,22,65,094,38,09,24,045,41*76
+
+gpsd: TSIP packet id 0x6d length 21: 444051659940044b6040224fe73fc55d7212091601
+gpsd: Sat info: mode 3, satellites used 4:  18 9 22 1
+gpsd: Sat info: DOP P=3.3 H=2.1 V=2.5 T=1.5 G=3.6
+gpsd: &lt;= GPS: $GPGSA,A,3,18,09,22,01,,,,,,,,,206029986.0,2.1,70441045.1*0E
+
+gpsd: TSIP packet id 0x6d length 21: 444051659940044b6040224fe73fc55d7212091601
+gpsd: Sat info: mode 3, satellites used 4:  18 9 22 1
+gpsd: Sat info: DOP P=3.3 H=2.1 V=2.5 T=1.5 G=3.6
+gpsd: &lt;= GPS: $GPGSA,A,3,18,09,22,01,,,,,,,,,3.3,2.1,2.5*37
+
+gpsd: TSIP packet id 0x6d length 21: 444051604240043be5402255a13fc5601d12160901
+gpsd: Sat info: mode 3, satellites used 4:  18 22 9 1
+gpsd: Sat info: DOP P=3.3 H=2.1 V=2.5 T=1.5 G=3.6
+gpsd: &lt;= GPS: $GPGSA,A,3,18,22,09,01,,,,,,,,,3.3,2.1,2.5*37
+
+gpsd: TSIP packet id 0x4b length 3: 5a0001
+gpsd: Machine ID 5a 00 01
+gpsd: TSIP packet id 0x6d length 21: 4440515adb40042c1b40225b853fc562e412160901
+gpsd: Sat info: mode 3, satellites used 4:  18 22 9 1
+gpsd: Sat info: DOP P=3.3 H=2.1 V=2.5 T=1.5 G=3.6
+gpsd: &lt;= GPS: $GPGSA,A,3,18,22,09,01,,,,,,,,,3.3,2.1,2.5*37
+
+gpsd: TSIP packet id 0x5c length 24:
+12180113421c000046c4011a3ee9471a3fd5d56e00000001
+gpsd: Satellite Tracking Status: Ch  3 PRN  18 Res 0 Acq 1 Eph 19 SNR
+39.0 LMT 25088.5508 El 26.1 Az  95.7
+gpsd: TSIP packet id 0x5c length 24:
+0120011341f0000046c4011a3f02d244407736a200000001
+gpsd: Satellite Tracking Status: Ch  4 PRN   1 Res 0 Acq 1 Eph 19 SNR
+30.0 LMT 25088.5508 El 29.3 Az 221.3
+gpsd: TSIP packet id 0x5c length 24:
+0b28000341d0000046c4011a3edbeb7040ab96b401000001
+gpsd: Satellite Tracking Status: Ch  5 PRN  11 Res 0 Acq 0 Eph  3 SNR
+26.0 LMT 25088.5508 El 24.6 Az 307.2
+gpsd: TSIP packet id 0x5c length 24:
+0330000341e0000046c4011a3e0a98b6407bb52801000001
+gpsd: Satellite Tracking Status: Ch  6 PRN   3 Res 0 Acq 0 Eph  3 SNR
+28.0 LMT 25088.5508 El  7.8 Az 225.3
+gpsd: Garmin checksum failed: a6!=0
+gpsd: TSIP packet id 0x5c length 24:
+16400113421c000046c4011a3f900c1e3fd1530000000001
+gpsd: Satellite Tracking Status: Ch  8 PRN  22 Res 0 Acq 1 Eph 19 SNR
+39.0 LMT 25088.5508 El 64.5 Az  93.7
+gpsd: TSIP packet id 0x5c length 24:
+094801134220000046c4011a3ed7c7de3f49c3f000000001
+gpsd: Satellite Tracking Status: Ch  9 PRN   9 Res 0 Acq 1 Eph 19 SNR
+40.0 LMT 25088.5508 El 24.1 Az  45.2
+gpsd: &lt;= GPS: $GPGSV,3,1,10,00,00,000,00,19,26,250,29,00,00,000,00,18,26,096,39*72\x0d\x0a$GPGSV,3,2,10,01,29,221,30,11,25,307,26,03,08,225,28,00,00,000,00*72\x0d\x0a$GPGSV,3,3,10,22,64,094,39,09,24,045,40*77
+
+gpsd: TSIP packet id 0x6d length 21: 444051558a40041ca5402261403fc5659412160901
+gpsd: Sat info: mode 3, satellites used 4:  18 22 9 1
+gpsd: Sat info: DOP P=3.3 H=2.1 V=2.5 T=1.5 G=3.6
+gpsd: &lt;= GPS: $GPGSA,A,3,18,22,09,01,,,,,,,,,206029986.0,2.1,70441045.1*0E
+
+gpsd: TSIP packet id 0x41 length 10: 46c40522057b41600000
+gpsd: GPS Time 25090.566406 1403 14.000000
+gpsd: Garmin checksum failed: 46!=0
+gpsd: TSIP packet id 0x46 length 2: 0000
+gpsd: Receiver health 00 00
+gpsd: TSIP packet id 0x6d length 21: 444051558a40041ca5402261403fc5659412160901
+gpsd: Sat info: mode 3, satellites used 4:  18 22 9 1
+gpsd: Sat info: DOP P=3.3 H=2.1 V=2.5 T=1.5 G=3.6
+gpsd: &lt;= GPS: $GPGSA,A,3,18,22,09,01,,,,,,,,,3.3,2.1,2.5*37
+
+gpsd: TSIP packet id 0x6d length 21: 444051500a40040c9b402267353fc5685e12160901
+gpsd: Sat info: mode 3, satellites used 4:  18 22 9 1
+gpsd: Sat info: DOP P=3.3 H=2.1 V=2.5 T=1.5 G=3.6
+gpsd: &lt;= GPS: $GPGSA,A,3,18,22,09,01,,,,,,,,,3.3,2.1,2.5*37
+
+gpsd: TSIP packet id 0x4b length 3: 5a0001
+gpsd: Machine ID 5a 00 01
+gpsd: TSIP packet id 0x6d length 21: 444051500a40040c9b402267353fc5685e12160901
+gpsd: Sat info: mode 3, satellites used 4:  18 22 9 1
+gpsd: Sat info: DOP P=3.3 H=2.1 V=2.5 T=1.5 G=3.6
+gpsd: &lt;= GPS: $GPGSA,A,3,18,22,09,01,,,,,,,,,3.3,2.1,2.5*37
+
+gpsd: TSIP packet id 0x5c length 24:
+12180113421c000046c40b223ee906293fd5dea400000001
+gpsd: Satellite Tracking Status: Ch  3 PRN  18 Res 0 Acq 1 Eph 19 SNR
+39.0 LMT 25093.5664 El 26.1 Az  95.7
+gpsd: TSIP packet id 0x5c length 24:
+0120011341f0000046c40b223f02f66c40773a4400000001
+gpsd: Satellite Tracking Status: Ch  4 PRN   1 Res 0 Acq 1 Eph 19 SNR
+30.0 LMT 25093.5664 El 29.3 Az 221.3
+gpsd: TSIP packet id 0x5c length 24:
+0b28000341d0000046c40b223edc23b840ab94af01000001
+gpsd: Satellite Tracking Status: Ch  5 PRN  11 Res 0 Acq 0 Eph  3 SNR
+26.0 LMT 25093.5664 El 24.6 Az 307.2
+gpsd: TSIP packet id 0x5c length 24:
+0330000341e0000046c40b223e0a2848407bb08c01000001
+gpsd: Satellite Tracking Status: Ch  6 PRN   3 Res 0 Acq 0 Eph  3 SNR
+28.0 LMT 25093.5664 El  7.7 Az 225.3
+gpsd: Garmin checksum failed: ad!=0
+gpsd: TSIP packet id 0x5c length 24:
+164001134220000046c40b223f8ffa1f3fd15ef800000001
+gpsd: Satellite Tracking Status: Ch  8 PRN  22 Res 0 Acq 1 Eph 19 SNR
+40.0 LMT 25093.5664 El 64.4 Az  93.7
+gpsd: TSIP packet id 0x5c length 24:
+09480113421c000046c40b223ed79db93f49a5ea00000001
+gpsd: Satellite Tracking Status: Ch  9 PRN   9 Res 0 Acq 1 Eph 19 SNR
+39.0 LMT 25093.5664 El 24.1 Az  45.1
+gpsd: &lt;= GPS: $GPGSV,3,1,10,00,00,000,00,19,26,250,29,00,00,000,00,18,26,096,39*72\x0d\x0a$GPGSV,3,2,10,01,29,221,30,11,25,307,26,03,08,225,28,00,00,000,00*72\x0d\x0a$GPGSV,3,3,10,22,64,094,40,09,24,045,39*77
+
+gpsd: TSIP packet id 0x41 length 10: 46c414e6057b41600000
+gpsd: GPS Time 25098.449219 1403 14.000000
+gpsd: TSIP packet id 0x5c length 24:
+12180113421c000046c415183ee8c3443fd5e82300000001
+gpsd: Satellite Tracking Status: Ch  3 PRN  18 Res 0 Acq 1 Eph 19 SNR
+39.0 LMT 25098.5469 El 26.0 Az  95.7
+gpsd: TSIP packet id 0x5c length 24:
+0120011341e8000046c415183f031bae40773e0400000001
+gpsd: Satellite Tracking Status: Ch  4 PRN   1 Res 0 Acq 1 Eph 19 SNR
+29.0 LMT 25098.5469 El 29.3 Az 221.3
+gpsd: TSIP packet id 0x5c length 24:
+0b28000341d0000046c415183edc5dae40ab929901000001
+gpsd: Satellite Tracking Status: Ch  5 PRN  11 Res 0 Acq 0 Eph  3 SNR
+26.0 LMT 25098.5469 El 24.7 Az 307.2
+gpsd: TSIP packet id 0x5c length 24:
+0330000341e0000046c415183e09b467407babce01000001
+gpsd: Satellite Tracking Status: Ch  6 PRN   3 Res 0 Acq 0 Eph  3 SNR
+28.0 LMT 25098.5469 El  7.7 Az 225.3
+gpsd: Garmin checksum failed: 79!=0
+gpsd: TSIP packet id 0x5c length 24:
+164001134224000046c415183f8fe7963fd16b4f00000001
+gpsd: Satellite Tracking Status: Ch  8 PRN  22 Res 0 Acq 1 Eph 19 SNR
+41.0 LMT 25098.5469 El 64.4 Az  93.7
+gpsd: TSIP packet id 0x5c length 24:
+094801134218000046c415183ed7723d3f49870100000001
+gpsd: Satellite Tracking Status: Ch  9 PRN   9 Res 0 Acq 1 Eph 19 SNR
+38.0 LMT 25098.5469 El 24.1 Az  45.1
+gpsd: &lt;= GPS: $GPGSV,3,1,10,00,00,000,00,19,26,250,29,00,00,000,00,18,26,096,39*72\x0d\x0a$GPGSV,3,2,10,01,29,221,29,11,25,307,26,03,08,225,28,00,00,000,00*7A\x0d\x0a$GPGSV,3,3,10,22,64,094,41,09,24,045,38*77
+
+gpsd: TSIP packet id 0x6d length 21: 4440513fa24003dc90402279193fc570da12160901
+gpsd: Sat info: mode 3, satellites used 4:  18 22 9 1
+gpsd: Sat info: DOP P=3.3 H=2.1 V=2.5 T=1.5 G=3.6
+gpsd: &lt;= GPS: $GPGSA,A,3,18,22,09,01,,,,,,,,,206029986.0,2.1,70441045.1*0E
+
+gpsd: TSIP packet id 0x6d length 21: 4440513fa24003dc90402279193fc570da12160901
+gpsd: Sat info: mode 3, satellites used 4:  18 22 9 1
+gpsd: Sat info: DOP P=3.3 H=2.1 V=2.5 T=1.5 G=3.6
+gpsd: &lt;= GPS: $GPGSA,A,3,18,22,09,01,,,,,,,,,3.3,2.1,2.5*37
+
+gpsd: TSIP packet id 0x6d length 21: 4440513a354003cca240227f093fc573b012160901
+gpsd: Sat info: mode 3, satellites used 4:  18 22 9 1
+gpsd: Sat info: DOP P=3.3 H=2.1 V=2.5 T=1.5 G=3.6
+gpsd: &lt;= GPS: $GPGSA,A,3,18,22,09,01,,,,,,,,,3.3,2.1,2.5*37
+
+gpsd: TSIP packet id 0x41 length 10: 46c41ede057b41600000
+gpsd: GPS Time 25103.433594 1403 14.000000
+gpsd: TSIP packet id 0x4b length 3: 5a0001
+gpsd: Machine ID 5a 00 01
+gpsd: TSIP packet id 0x5c length 24:
+12180113421c000046c41f0e3ee862273fd5f5ef00000001
+gpsd: Satellite Tracking Status: Ch  3 PRN  18 Res 0 Acq 1 Eph 19 SNR
+39.0 LMT 25103.5273 El 26.0 Az  95.8
+gpsd: TSIP packet id 0x5c length 24:
+0120011341e0000046c41f0e3f0351c24077437800000001
+gpsd: Satellite Tracking Status: Ch  4 PRN   1 Res 0 Acq 1 Eph 19 SNR
+28.0 LMT 25103.5273 El 29.4 Az 221.4
+gpsd: TSIP packet id 0x5c length 24:
+0b28000341d0000046c41f0e3edcb1cb40ab8f9001000001
+gpsd: Satellite Tracking Status: Ch  5 PRN  11 Res 0 Acq 0 Eph  3 SNR
+26.0 LMT 25103.5273 El 24.7 Az 307.2
+gpsd: TSIP packet id 0x5c length 24:
+0330000341e0000046c41f0e3e090c20407ba4ee01000001
+gpsd: Satellite Tracking Status: Ch  6 PRN   3 Res 0 Acq 0 Eph  3 SNR
+28.0 LMT 25103.5273 El  7.7 Az 225.3
+gpsd: Garmin checksum failed: 73!=0
+gpsd: TSIP packet id 0x5c length 24:
+164001134224000046c41f0e3f8fccae3fd17d3a00000001
+gpsd: Satellite Tracking Status: Ch  8 PRN  22 Res 0 Acq 1 Eph 19 SNR
+41.0 LMT 25103.5273 El 64.4 Az  93.8
+gpsd: TSIP packet id 0x5c length 24:
+094801134220000046c41f0e3ed733123f495a3200000001
+gpsd: Satellite Tracking Status: Ch  9 PRN   9 Res 0 Acq 1 Eph 19 SNR
+40.0 LMT 25103.5273 El 24.1 Az  45.1
+gpsd: &lt;= GPS: $GPGSV,3,1,10,00,00,000,00,19,26,250,29,00,00,000,00,18,26,096,39*72\x0d\x0a$GPGSV,3,2,10,01,29,221,28,11,25,307,26,03,08,225,28,00,00,000,00*7B\x0d\x0a$GPGSV,3,3,10,22,64,094,41,09,24,045,40*78
+
+gpsd: TSIP packet id 0x6d length 21: 44405135074003bd63402284ba3fc5766c12160901
+gpsd: Sat info: mode 3, satellites used 4:  18 22 9 1
+gpsd: Sat info: DOP P=3.3 H=2.1 V=2.5 T=1.5 G=3.6
+gpsd: &lt;= GPS: $GPGSA,A,3,18,22,09,01,,,,,,,,,206029986.0,2.1,70441045.1*0E
+
+gpsd: Garmin checksum failed: 46!=0
+gpsd: TSIP packet id 0x46 length 2: 0000
+gpsd: Receiver health 00 00
+gpsd: TSIP packet id 0x8f length 64:
+20ca000000000000017f1a3826126237af4a26e2000a5ced00000114030e057b52e0169d49ed0000000000000000000000000000000000000cfeff0230f9fd0b
+gpsd: &lt;= GPS: $GPGGA,065813,5332.3091,N,11329.9353,W,1,03,2.06,699.0,M,-19.813,M,,*4F\x0d\x0a$GPRMC,065813,A,5332.3091,N,11329.9353,W,0.0000,0.000,261106,,*3C
+
+gpsd: TSIP packet id 0x8f length 64:
+202a000000000000017f1e2026126233af4a26e5000a5cf100000114030e057b52e0169d49ed0000000000000000000000000000000000000cfeff0230f9fd0b
+gpsd: &lt;= GPS: $GPGGA,065814,5332.3090,N,11329.9353,W,1,03,2.06,699.0,M,-19.813,M,,*49\x0d\x0a$GPRMC,065814,A,5332.3090,N,11329.9353,W,0.0000,0.000,261106,,*3A
+
+gpsd: TSIP packet id 0x41 length 10: 46c428e7057b41600000
+gpsd: GPS Time 25108.451172 1403 14.000000
+gpsd: TSIP packet id 0x4b length 3: 5a0001
+gpsd: Machine ID 5a 00 01
+gpsd: TSIP packet id 0x6d length 20: 3340764d95406dd2073f802a8d40231e3e121609
+gpsd: Sat info: mode 2, satellites used 3:  18 22 9
+gpsd: Sat info: DOP P=3.8 H=3.7 V=1.0 T=2.5 G=4.6
+gpsd: &lt;= GPS: $GPGSA,A,2,18,22,09,,,,,,,,,,3.8,3.7,1.0*3D
+
+gpsd: TSIP packet id 0x5c length 24:
+1308000341d8000046c4290f3ee618e5408b4cbe01000001
+gpsd: Satellite Tracking Status: Ch  1 PRN  19 Res 0 Acq 0 Eph  3 SNR
+27.0 LMT 25108.5293 El 25.7 Az 249.4
+gpsd: TSIP packet id 0x5c length 24:
+121801134218000046c4290f3ee821623fd5ff2800000001
+gpsd: Satellite Tracking Status: Ch  3 PRN  18 Res 0 Acq 1 Eph 19 SNR
+38.0 LMT 25108.5293 El 26.0 Az  95.8
+gpsd: TSIP packet id 0x5c length 24:
+0120010341d0000046c4290f3f0375d64077471c00000001
+gpsd: Satellite Tracking Status: Ch  4 PRN   1 Res 0 Acq 1 Eph  3 SNR
+26.0 LMT 25108.5293 El 29.4 Az 221.4
+gpsd: TSIP packet id 0x5c length 24:
+0b28000341d0000046c4290f3edce9e440ab8d8901000001
+gpsd: Satellite Tracking Status: Ch  5 PRN  11 Res 0 Acq 0 Eph  3 SNR
+26.0 LMT 25108.5293 El 24.7 Az 307.2
+gpsd: TSIP packet id 0x5c length 24:
+0330000341e0000046c4290f3e089bc6407ba05801000001
+gpsd: Satellite Tracking Status: Ch  6 PRN   3 Res 0 Acq 0 Eph  3 SNR
+28.0 LMT 25108.5293 El  7.6 Az 225.3
+gpsd: Garmin checksum failed: 7c!=0
+gpsd: TSIP packet id 0x5c length 24:
+164001134224000046c4290f3f8fbabc3fd1893000000001
+gpsd: Satellite Tracking Status: Ch  8 PRN  22 Res 0 Acq 1 Eph 19 SNR
+41.0 LMT 25108.5293 El 64.3 Az  93.8
+gpsd: TSIP packet id 0x5c length 24:
+094801134224000046c4290f3ed708e23f493c5700000001
+gpsd: Satellite Tracking Status: Ch  9 PRN   9 Res 0 Acq 1 Eph 19 SNR
+41.0 LMT 25108.5293 El 24.1 Az  45.0
+gpsd: &lt;= GPS: $GPGSV,3,1,10,00,00,000,00,19,26,249,27,00,00,000,00,18,26,096,38*75\x0d\x0a$GPGSV,3,2,10,01,29,221,26,11,25,307,26,03,08,225,28,00,00,000,00*75\x0d\x0a$GPGSV,3,3,10,22,64,094,41,09,24,045,41*79
+
+gpsd: TSIP packet id 0x8f length 64:
+2032000000000000017f22082612622faf4a26e8000a5cf500000114030e057b52e0169d49ed0000000000000000000000000000000000000cfeff0230f9fd0b
+gpsd: &lt;= GPS: $GPGGA,065815,5332.3090,N,11329.9353,W,1,03,3.72,699.0,M,-19.813,M,,*4A\x0d\x0a$GPRMC,065815,A,5332.3090,N,11329.9353,W,0.0000,0.000,261106,,*3B
+
+gpsd: TSIP packet id 0x8f length 64:
+20d2000000000000017f25f02612622baf4a26ea000a5cf900000114030e057b52e0169d49ed0000000000000000000000000000000000000cfeff0230f9fd0b
+gpsd: &lt;= GPS: $GPGGA,065816,5332.3090,N,11329.9352,W,1,03,3.72,699.0,M,-19.813,M,,*48\x0d\x0a$GPRMC,065816,A,5332.3090,N,11329.9352,W,0.0000,0.000,261106,,*39
+
+gpsd: TSIP packet id 0x82 length 1: 02
+gpsd: DGPS mode 2
+gpsd: Garmin checksum failed: 46!=0
+gpsd: TSIP packet id 0x46 length 2: 0000
+gpsd: Receiver health 00 00
+gpsd: TSIP packet id 0x8f length 64:
+205a000000000000017f29d826126227af4a26ed000a5cfd00000114030e057b52e0169d49ed0000000000000000000000000000000000000cfeff0230f9fd0b
+gpsd: &lt;= GPS: $GPGGA,065817,5332.3090,N,11329.9352,W,1,03,3.72,699.0,M,-19.813,M,,*49\x0d\x0a$GPRMC,065817,A,5332.3090,N,11329.9352,W,0.0000,0.000,261106,,*38
+
+gpsd: TSIP packet id 0x8f length 64:
+20a2000000000000017f2dc026126223af4a26ef000a5d0100000114030e057b52e0169d49ed0000000000000000000000000000000000000cfeff0230f9fd0b
+gpsd: &lt;= GPS: $GPGGA,065818,5332.3090,N,11329.9352,W,1,03,3.72,699.0,M,-19.813,M,,*46\x0d\x0a$GPRMC,065818,A,5332.3090,N,11329.9352,W,0.0000,0.000,261106,,*37
+
+gpsd: TSIP packet id 0x6d length 20: 33407669aa406def1a3f802a9a402344cf121609
+gpsd: Sat info: mode 2, satellites used 3:  18 22 9
+gpsd: Sat info: DOP P=3.9 H=3.7 V=1.0 T=2.6 G=4.6
+gpsd: &lt;= GPS: $GPGSA,A,2,18,22,09,,,,,,,,,,3.9,3.7,1.0*3C
+
+gpsd: TSIP packet id 0x8f length 64:
+200a000000000000017f31a826126220af4a26f1000a5d0400000114030e057b52e0169d49ed0000000000000000000000000000000000000cfeff0230f9fd0b
+gpsd: &lt;= GPS: $GPGGA,065819,5332.3090,N,11329.9352,W,1,03,3.72,699.0,M,-19.813,M,,*47\x0d\x0a$GPRMC,065819,A,5332.3090,N,11329.9352,W,0.0000,0.000,261106,,*36
+
+gpsd: TSIP packet id 0x41 length 10: 46c432dd057b41600000
+gpsd: GPS Time 25113.431641 1403 14.000000
+gpsd: Garmin checksum failed: 46!=0
+gpsd: TSIP packet id 0x46 length 2: 0000
+gpsd: Receiver health 00 00
+gpsd: TSIP packet id 0x6d length 20: 33407669aa406def1a3f802a9a402344cf121609
+gpsd: Sat info: mode 2, satellites used 3:  18 22 9
+gpsd: Sat info: DOP P=3.9 H=3.7 V=1.0 T=2.6 G=4.6
+gpsd: &lt;= GPS: $GPGSA,A,2,18,22,09,,,,,,,,,,3.9,3.7,1.0*3C
+
+gpsd: TSIP packet id 0x5c length 24:
+1308000341d8000046c433063ee5e4b1408b48eb01000001
+gpsd: Satellite Tracking Status: Ch  1 PRN  19 Res 0 Acq 0 Eph  3 SNR
+27.0 LMT 25113.5117 El 25.7 Az 249.4
+gpsd: TSIP packet id 0x5c length 24:
+0120010341d0000046c433063f039b1840774adc00000001
+gpsd: Satellite Tracking Status: Ch  4 PRN   1 Res 0 Acq 1 Eph  3 SNR
+26.0 LMT 25113.5117 El 29.5 Az 221.4
+gpsd: TSIP packet id 0x5c length 24:
+0b28000341d0000046c433063edd23c940ab8b7001000001
+gpsd: Satellite Tracking Status: Ch  5 PRN  11 Res 0 Acq 0 Eph  3 SNR
+26.0 LMT 25113.5117 El 24.7 Az 307.1
+gpsd: TSIP packet id 0x5c length 24:
+0330000341e0000046c433063e0827fd407b9b9a01000001
+gpsd: Satellite Tracking Status: Ch  6 PRN   3 Res 0 Acq 0 Eph  3 SNR
+28.0 LMT 25113.5117 El  7.6 Az 225.3
+gpsd: Garmin checksum failed: 42!=0
+gpsd: TSIP packet id 0x5c length 24:
+164001134228000046c433063f8fa8343fd1957f00000001
+gpsd: Satellite Tracking Status: Ch  8 PRN  22 Res 0 Acq 1 Eph 19 SNR
+42.0 LMT 25113.5117 El 64.3 Az  93.8
+gpsd: TSIP packet id 0x5c length 24:
+094801134224000046c433063ed6dd403f491d8900000001
+gpsd: Satellite Tracking Status: Ch  9 PRN   9 Res 0 Acq 1 Eph 19 SNR
+41.0 LMT 25113.5117 El 24.0 Az  45.0
+gpsd: &lt;= GPS: $GPGSV,3,1,10,00,00,000,00,19,26,249,27,00,00,000,00,18,26,096,38*75\x0d\x0a$GPGSV,3,2,10,01,29,221,26,11,25,307,26,03,08,225,28,00,00,000,00*75\x0d\x0a$GPGSV,3,3,10,22,64,094,42,09,24,045,41*7A
+
+gpsd: TSIP packet id 0x8f length 64:
+2034000000000000017f35902612621caf4a26f4000a5d0800000114030e057b52e0169d49ed0000000000000000000000000000000000000cfeff0230f9fd0b
+gpsd: &lt;= GPS: $GPGGA,065820,5332.3089,N,11329.9352,W,1,03,3.72,699.0,M,-19.813,M,,*45\x0d\x0a$GPRMC,065820,A,5332.3089,N,11329.9352,W,0.0000,0.000,261106,,*34
+
+gpsd: TSIP packet id 0x6d length 20: 334076776f406dfd5b3f802aa3402357a9121609
+gpsd: Sat info: mode 2, satellites used 3:  18 22 9
+gpsd: Sat info: DOP P=3.9 H=3.7 V=1.0 T=2.6 G=4.6
+gpsd: &lt;= GPS: $GPGSA,A,2,18,22,09,,,,,,,,,,3.9,3.7,1.0*3C
+
+gpsd: TSIP packet id 0x8f length 64:
+2002000000000000017f397826126218af4a26f6000a5d0c00000114030e057b52e0169d49ed0000000000000000000000000000000000000cfeff0230f9fd0b
+gpsd: &lt;= GPS: $GPGGA,065821,5332.3089,N,11329.9352,W,1,03,3.72,699.0,M,-19.813,M,,*44\x0d\x0a$GPRMC,065821,A,5332.3089,N,11329.9352,W,0.0000,0.000,261106,,*35
+
+gpsd: TSIP packet id 0x6d length 20: 334076776f406dfd5b3f802aa3402357a9121609
+gpsd: Sat info: mode 2, satellites used 3:  18 22 9
+gpsd: Sat info: DOP P=3.9 H=3.7 V=1.0 T=2.6 G=4.6
+gpsd: &lt;= GPS: $GPGSA,A,2,18,22,09,,,,,,,,,,3.9,3.7,1.0*3C
+
+gpsd: TSIP packet id 0x8f length 64:
+20ea000000000000017f414826126212af4a26f9000a5d1300000114030e057b52e0169d49ed0000000000000000000000000000000000000cfeff0230f9fd0b
+gpsd: &lt;= GPS: $GPGGA,065823,5332.3089,N,11329.9352,W,1,03,3.72,699.0,M,-19.813,M,,*46\x0d\x0a$GPRMC,065823,A,5332.3089,N,11329.9352,W,0.0000,0.000,261106,,*37
+
+gpsd: TSIP packet id 0x6d length 20: 33407684f4406e0b5b3f802aa740236a26121609
+gpsd: Sat info: mode 2, satellites used 3:  18 22 9
+gpsd: Sat info: DOP P=3.9 H=3.7 V=1.0 T=2.6 G=4.6
+gpsd: &lt;= GPS: $GPGSA,A,2,18,22,09,,,,,,,,,,3.9,3.7,1.0*3C
+
+gpsd: TSIP packet id 0x8f length 64:
+20ca000000000000017f45302612620eaf4a26fb000a5d1700000114030e057b52e0169d49ed0000000000000000000000000000000000000cfeff0230f9fd0b
+gpsd: &lt;= GPS: $GPGGA,065824,5332.3089,N,11329.9352,W,1,03,3.72,699.0,M,-19.813,M,,*41\x0d\x0a$GPRMC,065824,A,5332.3089,N,11329.9352,W,0.0000,0.000,261106,,*30
+
+gpsd: Garmin checksum failed: 46!=0
+gpsd: TSIP packet id 0x46 length 2: 0000
+gpsd: Receiver health 00 00
+gpsd: TSIP packet id 0x82 length 1: 02
+gpsd: DGPS mode 2
+gpsd: TSIP packet id 0x5c length 24:
+12180113420c000046c43cfd3ee77d263fd6167800000001
+gpsd: Satellite Tracking Status: Ch  3 PRN  18 Res 0 Acq 1 Eph 19 SNR
+35.0 LMT 25118.4941 El 25.9 Az  95.8
+gpsd: TSIP packet id 0x5c length 24:
+0120000341d0000046c43cfd3f03d15a4077505401000001
+gpsd: Satellite Tracking Status: Ch  4 PRN   1 Res 0 Acq 0 Eph  3 SNR
+26.0 LMT 25118.4941 El 29.5 Az 221.4
+gpsd: TSIP packet id 0x5c length 24:
+0330000341e0000046c43cfd3e077f64407b94b401000001
+gpsd: Satellite Tracking Status: Ch  6 PRN   3 Res 0 Acq 0 Eph  3 SNR
+28.0 LMT 25118.4941 El  7.6 Az 225.2
+gpsd: Garmin checksum failed: 27!=0
+gpsd: TSIP packet id 0x5c length 24:
+164001134228000046c43cfd3f8f8d373fd1a76a00000001
+gpsd: Satellite Tracking Status: Ch  8 PRN  22 Res 0 Acq 1 Eph 19 SNR
+42.0 LMT 25118.4941 El 64.3 Az  93.8
+gpsd: TSIP packet id 0x5c length 24:
+094801134220000046c43cfd3ed69daa3f48f0bc00000001
+gpsd: Satellite Tracking Status: Ch  9 PRN   9 Res 0 Acq 1 Eph 19 SNR
+40.0 LMT 25118.4941 El 24.0 Az  45.0
+gpsd: &lt;= GPS: $GPGSV,3,1,10,00,00,000,00,19,26,249,27,00,00,000,00,18,26,096,35*78\x0d\x0a$GPGSV,3,2,10,01,30,221,26,11,25,307,26,03,08,225,28,00,00,000,00*7D\x0d\x0a$GPGSV,3,3,10,22,64,094,42,09,24,045,40*7B
+
+gpsd: GPS is offline (2.000008 sec since data)
+gpsd: closing GPS=/tmp/gps (6)
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005329.html">[Gpsd-dev] Data in trunk/test/trimble-lassen_iq-3dfix.log doesn't	look right
+</A></li>
+	<LI>Next message: <A HREF="005381.html">[Gpsd-dev] Data in trunk/test/trimble-lassen_iq-3dfix.log	doesn't look right
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5330">[ date ]</a>
+              <a href="thread.html#5330">[ thread ]</a>
+              <a href="subject.html#5330">[ subject ]</a>
+              <a href="author.html#5330">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

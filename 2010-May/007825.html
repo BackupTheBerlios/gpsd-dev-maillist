@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Input packets buffering bug(s)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3C201005301131.18783.remco%40rvt.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007824.html">
+   <LINK REL="Next"  HREF="007829.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Input packets buffering bug(s)</H1>
+    <B>Remco Treffkorn</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3C201005301131.18783.remco%40rvt.com%3E"
+       TITLE="[Gpsd-dev] Input packets buffering bug(s)">remco at rvt.com
+       </A><BR>
+    <I>Sun May 30 20:31:17 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007824.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+        <LI>Next message: <A HREF="007829.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7825">[ date ]</a>
+              <a href="thread.html#7825">[ thread ]</a>
+              <a href="subject.html#7825">[ subject ]</a>
+              <a href="author.html#7825">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+
+I don't want to respond to every bit you said, so I just grab an example
+to highlight my general opinion.
+
+On Sunday, May 30, 2010, Olivier Cornu wrote:
+...
+&gt;<i> Using the main() loop as a tty reading loop (16-bytes patch) has
+</I>&gt;<i> another curious consequence: it behaves like a progressive tax on
+</I>&gt;<i> processor speed. The fastest it is, the more cycles go up in smoke.
+</I>&gt;<i> If your system is fast enough to run the full main() loop between each
+</I>&gt;<i> char received on a real serial line, it probably will and you'll run
+</I>&gt;<i> at maximum inefficiency -- which should supposedly be around 16-20
+</I>&gt;<i> times worse than slow systems.
+</I>&gt;<i> If the design was right, that is (according to me) if a small thread
+</I>&gt;<i> loop was reading and parsing the tty, there would of course be no such
+</I>&gt;<i> tax on fast systems.
+</I>
+May I remind you that you yourself pointed out that although the measured
+numbers are a factor of ten worse for the bad fix, you also pointed out that
+in the big picture even the bad case does not make a dent in cpu load.
+
+Your 'cpu tax' issue is well understood. That is the price you pay in select
+loops like this. Please also note: the less cpu speed you have, the smaller
+the penalty becomes. Please also note: The effect is worst if your cpu is
+so fast as to make single byte reads. That is what we do in the serial case
+even on low end systems. Last: if you increase the cpu clock your 'tax'
+goes up, but it can go only to the worst case: single byte reads, and you
+still have a net gain.
+
+This just does not bother me at all.
+
+...
+&gt;<i> As the project is faced with this little design issue, it might be a
+</I>&gt;<i> good opportunity for maintainers to discuss long terms plans for the
+</I>&gt;<i> global gpsd architecture? Perhaps there are such plans already?
+</I>&gt;<i> In any case, all of this is not my call. I'm just an outsider throwing
+</I>&gt;<i> out ideas that you can of course dismiss with no regrets, i won't take
+</I>&gt;<i> offense. :-)
+</I>
+I just don't see the glaring architectural fault. Unless Eric is concerned
+I can only repeat: This just does not bother me at all.
+
+Cheers,
+Remco
+
+-- 
+Remco Treffkorn (RT445)
+HAM DC2XT
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007824.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+	<LI>Next message: <A HREF="007829.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7825">[ date ]</a>
+              <a href="thread.html#7825">[ thread ]</a>
+              <a href="subject.html#7825">[ subject ]</a>
+              <a href="author.html#7825">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Success!  (was: gpsd now hunts baud rates)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Success%21%20%20%28was%3A%20gpsd%20now%20hunts%20baud%20rates%29&In-Reply-To=%3C20050214001726.GA31095%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000624.html">
+   <LINK REL="Next"  HREF="000628.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Success!  (was: gpsd now hunts baud rates)</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Success%21%20%20%28was%3A%20gpsd%20now%20hunts%20baud%20rates%29&In-Reply-To=%3C20050214001726.GA31095%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Success!  (was: gpsd now hunts baud rates)">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Feb 14 01:17:26 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000624.html">[Gpsd-dev] gpsd now hunts baud rates
+</A></li>
+        <LI>Next message: <A HREF="000628.html">[Gpsd-dev] Success!  (was: gpsd now hunts baud rates)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#627">[ date ]</a>
+              <a href="thread.html#627">[ thread ]</a>
+              <a href="subject.html#627">[ subject ]</a>
+              <a href="author.html#627">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>James Cameron &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">quozl at us.netrek.org</A>&gt;:
+&gt;<i> On Sun, Feb 13, 2005 at 10:56:18AM -0500, Eric S. Raymond wrote:
+</I>&gt;<i> &gt; For those who understand serial programming better than I, a question:
+</I>&gt;<i> &gt; what are the input variables in this settle time?  Is it likely to be
+</I>&gt;<i> &gt; just a function of UART performance, or does host-processor speed
+</I>&gt;<i> &gt; matter?
+</I>&gt;<i> 
+</I>&gt;<i> It should have nothing to do with host-processor speed, provided you're
+</I>&gt;<i> talking about something faster than a 33MHz 486.
+</I>
+OK, that's the answer I pretty much expected.
+ 
+&gt;<i> When the baud rate is changed, a new divisor for the oscillator is sent
+</I>&gt;<i> to the UART (as an I/O memory port write, see drivers/serial/8250.c:1701
+</I>&gt;<i> of 2.6.10).  This changes all the derived clocks.  The changes are not
+</I>&gt;<i> synchronised.  If data is arriving at the time, the resulting data read
+</I>&gt;<i> from the chip buffer is considered unpredictable.  The UART may also
+</I>&gt;<i> report framing errors.  There's a settling time during which the clocks
+</I>&gt;<i> are invalid, which varies according to the chip model.  Some chips clear
+</I>&gt;<i> their buffers, some do not.  The kernel may also have characters
+</I>&gt;<i> buffered; but these will have been sampled at the prior baud rate.
+</I>
+If I'm getting this right, the kernel's buffers can be cleared with tcflush(),
+but whether the UART's physical FIFO gets cleared is not under software
+control and depends on the UART hardware design.  My dim memory from 
+fifteen years ago when I was closer to this stuff is that the physical
+FIFO is on a 16550 is 8 to 14 bytes long, thus we're going to see it 
+dribble about that many butes after a baud change.
+
+&gt;<i> Do you only test baud rate?  Other factors are number of bits in the
+</I>&gt;<i> word, parity existence and polarity, and number of stop bits.  There can
+</I>&gt;<i> be multiple working combinations.  There can be combinations that work
+</I>&gt;<i> for most bytes read and then fail on one.  Verify the NMEA checksum.
+</I>
+At the moment I only check baud rates.  I suppose I could iterate over
+one or two stop bits -- the FV18 is 7N2.  I think it's pretty safe to
+assume no parity; I haven't seen or heard of a serial link using even
+parity in almost twenty years, and I've *never* seen odd parity.
+
+The checksum stuff should be more logic to go in nmea_validate_buffer().
+
+&gt;<i> Do you shut off the receiver before changing the baud rate?  Toggle
+</I>&gt;<i> CREAD, read all data received in a second, flush, then change the baud
+</I>&gt;<i> rate, then toggle CREAD back again.  This will reduce the chances of
+</I>&gt;<i> unpredictable data; the flood gates will open in the middle of a bit
+</I>&gt;<i> stream and the UART should resynchronise more predictably.
+</I>
+Actually, at this point, the problem isn't the blat of garbage we get
+after a baud rate change; that's easy to ignore.  It is -- or rather
+was -- that the GPS was not seeing the transmitted baud-rate-change
+$PSRF string at all.
+
+But I just solved that one!  Turns out what's needed is some settle time 
+after the $PSRF is shipped but before you change the link speed.  One
+second does it; I'm going to do the obvious binary search and see if I
+can shave something off that.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000624.html">[Gpsd-dev] gpsd now hunts baud rates
+</A></li>
+	<LI>Next message: <A HREF="000628.html">[Gpsd-dev] Success!  (was: gpsd now hunts baud rates)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#627">[ date ]</a>
+              <a href="thread.html#627">[ thread ]</a>
+              <a href="subject.html#627">[ subject ]</a>
+              <a href="author.html#627">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,118 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] fix minor issues with gpsd source
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20fix%20minor%20issues%20with%20gpsd%20source&In-Reply-To=%3CE1Cfc4c-0005fP-Gc%40saruman.uio.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000361.html">
+   <LINK REL="Next"  HREF="000363.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] fix minor issues with gpsd source</H1>
+    <B>Petter Reinholdtsen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20fix%20minor%20issues%20with%20gpsd%20source&In-Reply-To=%3CE1Cfc4c-0005fP-Gc%40saruman.uio.no%3E"
+       TITLE="[Gpsd-dev] [PATCH] fix minor issues with gpsd source">pere at hungry.com
+       </A><BR>
+    <I>Sat Dec 18 11:44:30 CET 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000361.html">[Gpsd-dev] Re: [Gpsd-users] Announcing release 2.4 of gpsd
+</A></li>
+        <LI>Next message: <A HREF="000363.html">[Gpsd-dev] [PATCH] fix minor issues with gpsd source
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#362">[ date ]</a>
+              <a href="thread.html#362">[ thread ]</a>
+              <a href="subject.html#362">[ subject ]</a>
+              <a href="author.html#362">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Here is a patch to fix a few minor issues with the gpsd source:
+
+ - Make static two functions only used internally in driver.c.
+
+ - Make sure to use unsigned int on both side of a compare, avoiding
+   warning about signed/unsigned compare.
+
+Please include it in a future version of gpsd.
+
+Index: drivers.c
+===================================================================
+--- drivers.c	(revision 1133)
++++ drivers.c	(working copy)
+@@ -11,7 +11,7 @@
+  *
+  **************************************************************************/
+ 
+-void gpsd_NMEA_handle_message(struct gps_session_t *session, char *sentence)
++static void gpsd_NMEA_handle_message(struct gps_session_t *session, char *sentence)
+ /* visible so the direct-connect clients can use it */
+ {
+     gpsd_report(2, &quot;&lt;= GPS: %s\n&quot;, sentence);
+@@ -92,7 +92,7 @@
+  *
+  **************************************************************************/
+ 
+-void fv18_initializer(struct gps_session_t *session)
++static void fv18_initializer(struct gps_session_t *session)
+ {
+     /* tell it to send GSAs so we'll know if 3D is accurate */
+     nmea_send(session-&gt;gNMEAdata.gps_fd, &quot;$PFEC,GPint,GSA01,DTM00,ZDA00,RMC01,GLL01&quot;);
+Index: zodiac.c
+===================================================================
+--- zodiac.c	(revision 1133)
++++ zodiac.c	(working copy)
+@@ -471,7 +471,7 @@
+ 	case ZODIAC_HUNT_DATA:
+ 	    if (!(byte = putword(data + words, c, byte)))
+ 		words++;
+-	    if (words == h.ndata + 1) {
++	    if (words == (unsigned int)h.ndata + 1) {
+ 		analyze(session, &amp;h, data);
+ 		free(data);
+ 		state = ZODIAC_HUNT_FF;
+Index: nmea_parse.c
+===================================================================
+--- nmea_parse.c	(revision 1133)
++++ nmea_parse.c	(working copy)
+@@ -19,7 +19,7 @@
+ {
+     static char result[100];
+     char c, *p = sentence;
+-    int i;
++    unsigned int i;
+ 
+     while (n-- &gt; 0)
+         while ((c = *p++) != ',' &amp;&amp; c != '\0')
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000361.html">[Gpsd-dev] Re: [Gpsd-users] Announcing release 2.4 of gpsd
+</A></li>
+	<LI>Next message: <A HREF="000363.html">[Gpsd-dev] [PATCH] fix minor issues with gpsd source
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#362">[ date ]</a>
+              <a href="thread.html#362">[ thread ]</a>
+              <a href="subject.html#362">[ subject ]</a>
+              <a href="author.html#362">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

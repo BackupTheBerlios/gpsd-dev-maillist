@@ -1,0 +1,191 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] deheader (was: PPS serial port support lost...	ioctl-related change?)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20deheader%20%28was%3A%20PPS%20serial%20port%20support%20lost...%0A%09ioctl-related%20change%3F%29&In-Reply-To=%3C4D0B7030.8050804%40bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008307.html">
+   <LINK REL="Next"  HREF="008316.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] deheader (was: PPS serial port support lost...	ioctl-related change?)</H1>
+    <B>Michael Cook</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20deheader%20%28was%3A%20PPS%20serial%20port%20support%20lost...%0A%09ioctl-related%20change%3F%29&In-Reply-To=%3C4D0B7030.8050804%40bbn.com%3E"
+       TITLE="[Gpsd-dev] deheader (was: PPS serial port support lost...	ioctl-related change?)">mcook at bbn.com
+       </A><BR>
+    <I>Fri Dec 17 15:14:08 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008307.html">[Gpsd-dev] PPS serial port support lost... ioctl-related change?
+</A></li>
+        <LI>Next message: <A HREF="008316.html">[Gpsd-dev] deheader (was: PPS serial port support lost... ioctl-related change?)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8315">[ date ]</a>
+              <a href="thread.html#8315">[ thread ]</a>
+              <a href="subject.html#8315">[ subject ]</a>
+              <a href="author.html#8315">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 12/17/2010 12:09 AM, Eric Raymond wrote:
+&gt;<i> Some week ago I wrote a tool called deheader (learn more at
+</I>&gt;<i> <A HREF="http://www.catb.org/~esr/deheader/">http://www.catb.org/~esr/deheader/</A>) that finds &quot;ghost&quot; inclusions not
+</I>&gt;<i> actually required for compilation.  C and C++ projects tend to
+</I>&gt;<i> accumulate these over time as fossils of old code.
+</I>
+FWIW, Coverity will do this kind of analysis (excellence.html 
+&lt;<A HREF="http://gpsd.berlios.de/excellence.html">http://gpsd.berlios.de/excellence.html</A>&gt; mentions having run gpsd 
+through Coverity a few years ago), though not by default. You need to 
+enable the &quot;HFA&quot; checker. The tool is pretty precise, it seems -- if it 
+tells you the #include isn't needed, it's almost always right. When it's 
+wrong, it's because the code was doing something unusual like #including 
+a header only because that header declares static functions with gcc's 
+__attribute__((constructor)).
+
+We're currently using Coverity in a project that uses gpsd-2.95. Here's 
+what Coverity said in a recent run. Note it found 36 unnecessary 
+#includes (HFA). Perhaps it's time to run the latest code through 
+Coverity again?
+
+BUFFER_SIZE_WARNING do_lat_lon at driver_nmea.c line 34
+CHECKED_RETURN daemonize at gpspipe.c line 85
+CONSTANT_EXPRESSION_RESULT json_internal_read_object at json.c line 202
+DEADCODE ntrip_sourcetable_parse at net_ntrip.c line 234
+FORWARD_NULL json_internal_read_object at json.c line 311
+FORWARD_NULL json_internal_read_object at json.c line 319
+FORWARD_NULL json_internal_read_object at json.c line 324
+FORWARD_NULL json_internal_read_object at json.c line 327
+FORWARD_NULL json_internal_read_object at json.c line 330
+FORWARD_NULL json_internal_read_object at json.c line 333
+FORWARD_NULL json_internal_read_object at json.c line 336
+FORWARD_NULL json_internal_read_object at json.c line 343
+FORWARD_NULL json_internal_read_object at json.c line 346
+FORWARD_NULL json_internal_read_object at json.c line 353
+FORWARD_NULL json_internal_read_object at json.c line 362
+HFA at driver_aivdm.c line 14
+HFA at driver_aivdm.c line 23
+HFA at driver_evermore.c line 118
+HFA at driver_evermore.c line 122
+HFA at driver_evermore.c line 127
+HFA at driver_garmin.c line 101
+HFA at driver_garmin_txt.c line 128
+HFA at driver_italk.c line 12
+HFA at driver_italk.c line 17
+HFA at driver_italk.c line 8
+HFA at driver_navcom.c line 33
+HFA at driver_navcom.c line 37
+HFA at driver_navcom.c line 44
+HFA at driver_nmea.c line 14
+HFA at driver_oncore.c line 10
+HFA at driver_sirf.c line 31
+HFA at driver_sirf.c line 40
+HFA at driver_superstar2.c line 13
+HFA at driver_ubx.c line 14
+HFA at gpsd_dbus.c line 7
+HFA at gpsmon.c line 45
+HFA at libgpsd_core.c line 20
+HFA at libgpsd_core.c line 8
+HFA at monitor_italk.c line 9
+HFA at monitor_nmea.c line 13
+HFA at monitor_nmea.c line 30
+HFA at monitor_oncore.c line 11
+HFA at monitor_sirf.c line 12
+HFA at monitor_superstar2.c line 9
+HFA at monitor_tnt.c line 11
+HFA at monitor_tnt.c line 28
+HFA at monitor_ubx.c line 9
+HFA at netlib.c line 17
+HFA at packet.c line 1113
+HFA at pseudonmea.c line 17
+HFA at pseudonmea.c line 7
+NEGATIVE_RETURNS daemonize at gpspipe.c line 85
+NEGATIVE_RETURNS netlib_connectsock at netlib.c line 132
+NULL_RETURNS handle_request at gpsd.c line 1057
+OVERRUN_STATIC ubx_nmea_mode at driver_ubx.c line 692
+OVERRUN_STATIC ubx_speed at driver_ubx.c line 731
+OVERRUN_STATIC wgs84_separation at geoid.c line 86
+PW.DECLARED_BUT_NOT_REFERENCED at monitor_nmea.c line 317
+REVERSE_INULL gpsd_poll at libgpsd_core.c line 648
+REVERSE_INULL handle_request at gpsd.c line 1141
+SECURE_CODING dgpsip_autoconnect at net_dgpsip.c line 135
+SECURE_CODING do_lat_lon at driver_nmea.c line 45
+SECURE_CODING gps_unpack at libgps_core.c line 463
+SECURE_CODING json_ais_read at ais_json.c line 90
+SECURE_CODING json_internal_read_object at json.c line 342
+SECURE_CODING json_rtcm2_read at rtcm2_json.c line 214
+SECURE_CODING ntrip_str_parse at net_ntrip.c line 182
+SECURE_CODING processGPGSV at driver_nmea.c line 492
+STACK_USE dgpsip_autoconnect at net_dgpsip.c line 117
+STACK_USE dgpsip_open at net_dgpsip.c line 35
+STACK_USE dgpsip_report at net_dgpsip.c line 83
+STACK_USE display_nav_sol at monitor_ubx.c line 132
+STACK_USE gps_query at gpsctl.c line 70
+STACK_USE gps_query at gpsctl.c line 84
+STACK_USE gps_send at libgps_core.c line 635
+STACK_USE gps_trace at libgps_core.c line 74
+STACK_USE gpsd_report at gpsd.c line 253
+STACK_USE json_report at gpsd.c line 1286
+STACK_USE json_trace at json.c line 78
+STACK_USE main at gpsctl.c line 110
+STACK_USE main at gpsctl.c line 115
+STACK_USE main at gpsd.c line 1923
+STACK_USE main at gpsd.c line 1956
+STACK_USE monitor_nmea_send at monitor_nmea.c line 319
+STACK_USE nmea_send at driver_nmea.c line 1151
+STACK_USE notify_watchers at gpsd.c line 625
+STACK_USE ntrip_report at net_ntrip.c line 510
+STACK_USE ntrip_stream_open at net_ntrip.c line 369
+STACK_USE ntrip_stream_probe at net_ntrip.c line 317
+STACK_USE oceanserver_send at drivers.c line 746
+STACK_USE socket_mainloop at gpxlogger.c line 306
+STACK_USE socket_mainloop at gpxlogger.c line 333
+STACK_USE tnt_send at drivers.c line 656
+STRING_NULL gps_read at libgps_core.c line 609
+TAINTED_SCALAR main at gpsd.c line 1902
+TAINTED_SCALAR main at gpsd.c line 1978
+TOCTOU main at gpsd.c line 1701
+UNINIT display_nav_sol at monitor_ubx.c line 177
+UNINIT main at gpsctl.c line 270
+UNINIT main at gpsmon.c line 678
+UNINIT oncore_msg_navsol at driver_oncore.c line 119
+UNUSED_VALUE handle_control at gpsd.c line 793
+UNUSED_VALUE handle_control at gpsd.c line 802
+UNUSED_VALUE handle_control at gpsd.c line 815
+UNUSED_VALUE handle_control at gpsd.c line 835
+
+Michael
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20101217/cf3db91a/attachment.html">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20101217/cf3db91a/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008307.html">[Gpsd-dev] PPS serial port support lost... ioctl-related change?
+</A></li>
+	<LI>Next message: <A HREF="008316.html">[Gpsd-dev] deheader (was: PPS serial port support lost... ioctl-related change?)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8315">[ date ]</a>
+              <a href="thread.html#8315">[ thread ]</a>
+              <a href="subject.html#8315">[ subject ]</a>
+              <a href="author.html#8315">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

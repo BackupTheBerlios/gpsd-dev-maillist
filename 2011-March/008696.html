@@ -1,0 +1,104 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] The state of RTCM2 and RTCM3
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20The%20state%20of%20RTCM2%20and%20RTCM3&In-Reply-To=%3C20110304230343.GA12789%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008690.html">
+   <LINK REL="Next"  HREF="008703.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] The state of RTCM2 and RTCM3</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20The%20state%20of%20RTCM2%20and%20RTCM3&In-Reply-To=%3C20110304230343.GA12789%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] The state of RTCM2 and RTCM3">esr at thyrsus.com
+       </A><BR>
+    <I>Sat Mar  5 00:03:43 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008690.html">[Gpsd-dev] The state of RTCM2 and RTCM3
+</A></li>
+        <LI>Next message: <A HREF="008703.html">[Gpsd-dev] The state of RTCM2 and RTCM3
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8696">[ date ]</a>
+              <a href="thread.html#8696">[ thread ]</a>
+              <a href="subject.html#8696">[ subject ]</a>
+              <a href="author.html#8696">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Andre Naujoks &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">nautsch2 at googlemail.com</A>&gt;:
+&gt;<i> Am 03.03.2011 17:52, schrieb Eric Raymond:
+</I>&gt;<i> &gt; Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt;:
+</I>&gt;<i> &gt;&gt; Andre Naujoks &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">nautsch2 at googlemail.com</A>&gt;:
+</I>&gt;<i> &gt;&gt;&gt; The other way just begs for stupid mistakes like mine there.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; I have applied the corrected version, with patches.
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; I meant &quot;with braces&quot;.
+</I>&gt;<i> 
+</I>&gt;<i> The patch is still not in the git master branch. Am I missing something
+</I>&gt;<i> here?
+</I>
+Either you are or I am.  Here's the relevant section of code from 
+net_dgnss_dispatch.c in head of my repo:
+
+/*@ -branchstate */
+int netgnss_uri_open(struct gps_device_t *dev, char *netgnss_service)
+/* open a connection to a DGNSS service */
+{
+#ifdef NTRIP_ENABLE
+    if (strncmp(netgnss_service, NETGNSS_NTRIP, strlen(NETGNSS_NTRIP)) == 0) {
+	dev-&gt;ntrip.conn_state = ntrip_conn_init;
+	return ntrip_open(dev, netgnss_service + strlen(NETGNSS_NTRIP));
+    }
+#endif
+
+    if (strncmp(netgnss_service, NETGNSS_DGPSIP, strlen(NETGNSS_DGPSIP)) == 0)
+	return dgpsip_open(dev, netgnss_service + strlen(NETGNSS_DGPSIP));
+
+#ifndef REQUIRE_DGNSS_PROTO
+    return dgpsip_open(dev, netgnss_service);
+#else
+    gpsd_report(LOG_ERROR,
+		&quot;Unknown or unspecified DGNSS protocol for service %s\n&quot;,
+		netgnss_service);
+    return -1;
+#endif
+}
+
+Does that look right?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008690.html">[Gpsd-dev] The state of RTCM2 and RTCM3
+</A></li>
+	<LI>Next message: <A HREF="008703.html">[Gpsd-dev] The state of RTCM2 and RTCM3
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8696">[ date ]</a>
+              <a href="thread.html#8696">[ thread ]</a>
+              <a href="subject.html#8696">[ subject ]</a>
+              <a href="author.html#8696">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

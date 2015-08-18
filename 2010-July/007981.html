@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] configure failing on Mac OS X
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20configure%20failing%20on%20Mac%20OS%20X&In-Reply-To=%3C6A2A9628-943E-4D39-A888-16ECBF79DA47%40ledford.cc%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007977.html">
+   <LINK REL="Next"  HREF="008006.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] configure failing on Mac OS X</H1>
+    <B>Michael Ledford</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20configure%20failing%20on%20Mac%20OS%20X&In-Reply-To=%3C6A2A9628-943E-4D39-A888-16ECBF79DA47%40ledford.cc%3E"
+       TITLE="[Gpsd-dev] configure failing on Mac OS X">michael at ledford.cc
+       </A><BR>
+    <I>Fri Jul  2 22:31:51 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007977.html">[Gpsd-dev] configure failing on Mac OS X
+</A></li>
+        <LI>Next message: <A HREF="008006.html">[Gpsd-dev] configure failing on Mac OS X
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7981">[ date ]</a>
+              <a href="thread.html#7981">[ thread ]</a>
+              <a href="subject.html#7981">[ subject ]</a>
+              <a href="author.html#7981">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+On Jul 2, 2010, at 1:20 PM, Greg Troxel wrote:
+
+&gt;<i> Looks like you don't have pkg-config.
+</I>
+Hi Greg,
+
+Do you think we could entertain the idea of not requiring pkg-config  
+to build and instead degrade gracefully if it is not installed?  
+Currently it appears that pkg-config is only used for  
+PKG_CHECK_MODULES when looking for QtNetwork support. This fails even  
+if you try to configure --disable-libQgpsmm since the function is not  
+defined.
+
+I propose that in this instance we eval the line as shown in this diff:
+
+==========
+
+$ git diff
+diff --git a/configure.ac b/configure.ac
+index b10cdff..bc4b4be 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -949,7 +949,8 @@ AC_ARG_ENABLE(libQgpsmm,
+                 [ac_libQgpsmm=$enableval], [ac_libQgpsmm=$ISCXX])
+  AC_MSG_CHECKING([for QT support])
+  if test x&quot;$ac_libQgpsmm&quot; = &quot;xyes&quot;; then
+-  PKG_CHECK_MODULES(QtNetwork, [QtNetwork &gt;= 4.4],  ac_qt=&quot;yes&quot;,  
+ac_qt=&quot;no&quot;)
++  ac_qt=&quot;no&quot;
++  eval `PKG_CHECK_MODULES(QtNetwork, [QtNetwork &gt;= 4.4],   
+ac_qt=&quot;yes&quot;, ac_qt=&quot;no&quot;)`
+    if test x&quot;$ac_qt&quot; != &quot;xyes&quot;; then
+      AC_MSG_WARN([QtNetwork library not found. Not including QT  
+support])
+      ac_libQgpsmm=&quot;no&quot;
+
+==========
+
+Sincerely,
+Michael
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: smime.p7s
+Type: application/pkcs7-signature
+Size: 3920 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100702/afeadbfb/attachment.bin">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100702/afeadbfb/attachment.bin</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007977.html">[Gpsd-dev] configure failing on Mac OS X
+</A></li>
+	<LI>Next message: <A HREF="008006.html">[Gpsd-dev] configure failing on Mac OS X
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7981">[ date ]</a>
+              <a href="thread.html#7981">[ thread ]</a>
+              <a href="subject.html#7981">[ subject ]</a>
+              <a href="author.html#7981">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

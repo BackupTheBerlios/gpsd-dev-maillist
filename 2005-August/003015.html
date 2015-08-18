@@ -1,0 +1,176 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] DD MM SS.SSS
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20DD%20MM%20SS.SSS&In-Reply-To=%3CPine.LNX.4.63.0508231518550.20774%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003014.html">
+   <LINK REL="Next"  HREF="003016.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] DD MM SS.SSS</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20DD%20MM%20SS.SSS&In-Reply-To=%3CPine.LNX.4.63.0508231518550.20774%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] DD MM SS.SSS">gem at rellim.com
+       </A><BR>
+    <I>Wed Aug 24 00:22:48 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003014.html">[Gpsd-dev] Early detection of device types
+</A></li>
+        <LI>Next message: <A HREF="003016.html">[Gpsd-dev] DD MM SS.SSS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3015">[ date ]</a>
+              <a href="thread.html#3015">[ thread ]</a>
+              <a href="subject.html#3015">[ subject ]</a>
+              <a href="author.html#3015">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo All!
+
+I am getting sick of looking at DD.DDDD when my charts are DD MM.MMM.  So
+I came up with the attached patch to cgps.
+
+Couple more things to do with it:
+
+My guess is that d_to_str() might be more properly in libgps.c.
+
+Selecting the display type s/b a cgps command line option.
+
+Ideas anyone?
+
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.1 (GNU/Linux)
+
+iD8DBQFDC6G78KZibdeR3qURAh9iAJ46n4V4IR4jdMWzwNDiAeub5QcudQCfbkd6
+RGz3iicp1geuSb8fanzfK60=
+=a9JM
+-----END PGP SIGNATURE-----
+-------------- next part --------------
+Index: cgps.c
+===================================================================
+--- cgps.c	(revision 3177)
++++ cgps.c	(working copy)
+@@ -77,6 +77,46 @@
+     exit(0);
+ }
+ 
++/* convert double degrees to string: D&quot; MM.MMMM' */
++enum d_str_type { d_dd, d_ddmm, d_ddmmss };
++static char *d_to_str( enum d_str_type type,  double f) 
++{
++	static char str[40];
++	int dsec, sec, deg, min;
++	double fdsec, fsec, fdeg, fmin;
++
++	if ( f &lt; 0 || f &gt; 360 ) {
++		strcpy( str, &quot;nan&quot;);
++		return str;
++	}
++
++	if ( d_dd == type ) {
++		/* DD.DDDDD */
++		(void)sprintf( str, &quot;%3.6lf&quot;, f);
++		return str;
++	}
++	fmin = modf( f, &amp;fdeg) * 60;
++	deg = (int)fdeg;
++	fsec = modf( fmin, &amp;fmin);
++	min = (int)fmin;
++	sec = (int)(fsec * 10000.0);
++
++	if ( d_ddmm == type ) {
++		/* DD MM.MMMM */
++		(void)sprintf( str, &quot;%3d %02d.%04d'&quot;, deg, min, sec);
++		return str;
++	}
++	/* else DD MM SS.SSS */
++	fdsec = modf( fsec * 60, &amp;fsec);
++	sec = (int)fsec;
++	dsec = (int)(fdsec * 10000.0);
++	(void)sprintf( str, &quot;%3d %02d' %02d.%03d\&quot;&quot;, deg, min, sec, dsec);
++
++	return str;
++
++}
++
++
+ /* This gets called once for each new sentence. */
+ static void update_panel(struct gps_data_t *gpsdata, 
+ 			 char *message,
+@@ -85,6 +125,9 @@
+ {
+     int i;
+     int newstate;
++    char *s;
++    enum d_str_type d_type = d_ddmmss;
++    //enum d_str_type d_type = d_dd;
+ 
+     /* This is for the satellite status display.  Lifted almost verbatim
+        from xgps.c. */
+@@ -112,16 +155,18 @@
+ 
+     /* Fill in the latitude. */
+     (void)wmove(datawin, 2,17);
+-    if (gpsdata-&gt;fix.mode &gt;= MODE_2D)
+-	(void)wprintw(datawin,&quot;%lf %c     &quot;, fabs(gpsdata-&gt;fix.latitude), (gpsdata-&gt;fix.latitude &lt; 0) ? 'S' : 'N');
+-    else
++    if (gpsdata-&gt;fix.mode &gt;= MODE_2D) {
++        s = d_to_str(d_type,  fabs(gpsdata-&gt;fix.latitude));
++	(void)wprintw(datawin,&quot;%s %c     &quot;, s, (gpsdata-&gt;fix.latitude &lt; 0) ? 'S' : 'N');
++    } else
+ 	(void)wprintw(datawin,&quot;n/a         &quot;);
+ 
+     /* Fill in the longitude. */
+     (void)wmove(datawin, 3,17);
+-    if (gpsdata-&gt;fix.mode &gt;= MODE_2D)
+-	(void)wprintw(datawin,&quot;%lf %c     &quot;, fabs(gpsdata-&gt;fix.longitude), (gpsdata-&gt;fix.longitude &lt; 0) ? 'W' : 'E');
+-    else
++    if (gpsdata-&gt;fix.mode &gt;= MODE_2D) {
++        s = d_to_str(d_type,  fabs(gpsdata-&gt;fix.longitude));
++	(void)wprintw(datawin,&quot;%s %c     &quot;, s, (gpsdata-&gt;fix.longitude &lt; 0) ? 'W' : 'E');
++    } else
+ 	(void)wprintw(datawin,&quot;n/a         &quot;);
+ 
+     /* Fill in the altitude. */
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003014.html">[Gpsd-dev] Early detection of device types
+</A></li>
+	<LI>Next message: <A HREF="003016.html">[Gpsd-dev] DD MM SS.SSS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3015">[ date ]</a>
+              <a href="thread.html#3015">[ thread ]</a>
+              <a href="subject.html#3015">[ subject ]</a>
+              <a href="author.html#3015">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

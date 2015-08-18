@@ -1,0 +1,89 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] leap second
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20leap%20second&In-Reply-To=%3C12178.213.84.187.156.1136110390.squirrel%40webmail.xs4all.nl%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="003161.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] leap second</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20leap%20second&In-Reply-To=%3C12178.213.84.187.156.1136110390.squirrel%40webmail.xs4all.nl%3E"
+       TITLE="[Gpsd-dev] leap second">gpsd at xs4all.nl
+       </A><BR>
+    <I>Sun Jan  1 11:13:10 CET 2006</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="003161.html">[Gpsd-dev] Re: leap second
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3160">[ date ]</a>
+              <a href="thread.html#3160">[ thread ]</a>
+              <a href="subject.html#3160">[ subject ]</a>
+              <a href="author.html#3160">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>First, all the best for everyone in 2006.
+
+Well, did anyone notice problems with the leap second last night?
+I monitored some NTP servers and there were quite many that were not aware
+of the phenomenon and just treated it as a sudden 1-second time jump.  So
+they lost lock and feverishly tried to lock on eachother, sometimes
+jumping back and forth a couple of times.  Looking now, it seems to have
+stabilized again but there probably still are timeservers that are one
+second off.
+
+My own system has a DCF77 receiver besides gpsd locking, so it was
+informed of the change (DCF77 sends a leap second warning beforehand and
+ntpd uses this warning to neatly step through this leapsecond).
+So, I could not really test how gpsd would live through the change with
+only gpsd as a time reference.
+However, both my Trimble and Jupiter receivers were still on-time in gpsd
+after the leap second, so the leap_seconds data was processed correctly.
+
+This may be different for SiRF receivers (depending on the firmware version).
+You may now see a 1-second offset between your system time and the GPS
+receiver, or between your system time and that of the rest of the world.
+
+As I noted before, the offset in timebase.h should be changed from 13 to 14.
+The START_SUBFRAME value is also not completely correct (should be
+1136073600) but that does not matter too much.
+
+Anyway, the code that uses the subframe data is only run once.  So when
+you have a SiRF receiver in binary mode, you probably at least need to
+restart gpsd to get correct time again.
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="003161.html">[Gpsd-dev] Re: leap second
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3160">[ date ]</a>
+              <a href="thread.html#3160">[ thread ]</a>
+              <a href="subject.html#3160">[ subject ]</a>
+              <a href="author.html#3160">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

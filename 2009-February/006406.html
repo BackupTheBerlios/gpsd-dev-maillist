@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Now *that's* bulletproofing!
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Now%20%2Athat%27s%2A%20bulletproofing%21&In-Reply-To=%3C20090218170952.36AC7830225%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006405.html">
+   <LINK REL="Next"  HREF="006407.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Now *that's* bulletproofing!</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Now%20%2Athat%27s%2A%20bulletproofing%21&In-Reply-To=%3C20090218170952.36AC7830225%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Now *that's* bulletproofing!">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Wed Feb 18 18:09:52 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006405.html">[Gpsd-dev] [Gpsd-users] sirfmon becomes gpsmon
+</A></li>
+        <LI>Next message: <A HREF="006407.html">[Gpsd-dev] Guidance for potential gpsmon hackers
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6406">[ date ]</a>
+              <a href="thread.html#6406">[ thread ]</a>
+              <a href="subject.html#6406">[ subject ]</a>
+              <a href="author.html#6406">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I found a bug in our NMEA parsing this morning.  It seems our field
+parser has been silently ignoring the final, *-terminated field of
+NME sentences just before the checksum.
+
+Upon discovering this, I immediately checked out all our NMEA parsing
+to find out what pieces of data we had been dropping.  Turns out the
+final fields in NMEA sentences tend to be blank extension fields - the
+only one we might actually use is VDOP in the GSA sentence, which the
+GPSD parser has been reporting a spurious 0.00 for regardless of
+actual value.
+
+Now for the entertaining part.  Because I'm a paranoid git, I long ago
+put in place logic to reject DOP values of 0 as spurious. And because
+I'm a twitchy perfectionist about what constitutes a proper PVT report,
+I wrote some matrix algebra to compute unsupplied DOPs from the
+skyview, so we can supply error estimates even if the GPS does not.
+
+Result: Fixing the parser didn't break a single one of our
+regression tests.
+
+Now, *that's* bulletproofing!
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+&quot;I hold it, that a little rebellion, now and then, is a good thing, and as 
+necessary in the political world as storms in the physical.&quot;
+	-- Thomas Jefferson, Letter to James Madison, January 30, 1787
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006405.html">[Gpsd-dev] [Gpsd-users] sirfmon becomes gpsmon
+</A></li>
+	<LI>Next message: <A HREF="006407.html">[Gpsd-dev] Guidance for potential gpsmon hackers
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6406">[ date ]</a>
+              <a href="thread.html#6406">[ thread ]</a>
+              <a href="subject.html#6406">[ subject ]</a>
+              <a href="author.html#6406">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

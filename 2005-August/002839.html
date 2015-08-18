@@ -1,0 +1,133 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: PPS
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20PPS&In-Reply-To=%3C87u0i2ucry.fsf%40bonnet.wsrcc.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002835.html">
+   <LINK REL="Next"  HREF="002841.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: PPS</H1>
+    <B>Wolfgang S. Rupprecht</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20PPS&In-Reply-To=%3C87u0i2ucry.fsf%40bonnet.wsrcc.com%3E"
+       TITLE="[Gpsd-dev] Re: PPS">wolfgang+gnus20050806 at dailyplanet.dontspam.wsrcc.com
+       </A><BR>
+    <I>Sat Aug  6 20:43:29 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002835.html">[Gpsd-dev] Re: PPS
+</A></li>
+        <LI>Next message: <A HREF="002841.html">[Gpsd-dev] Re: PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2839">[ date ]</a>
+              <a href="thread.html#2839">[ thread ]</a>
+              <a href="subject.html#2839">[ subject ]</a>
+              <a href="author.html#2839">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;&gt;<i> Surprisingly, the serial-only time from the units (once corrected for
+</I>&gt;&gt;<i> their sawtooth clock slip) is quite good.  The problem is just that
+</I>&gt;&gt;<i> garmin didn't document how to get the GPS's estimate of the clock skew
+</I>&gt;&gt;<i> out of their gps's and that information hasn't been reverse engineered
+</I>&gt;&gt;<i> for too many different units.  The GPS's of course know their own
+</I>&gt;&gt;<i> clock skew to much better than 2 seconds or else they wouldn't be able
+</I>&gt;&gt;<i> to calculate their position to less than a lunar-radius.
+</I>&gt;<i>
+</I>&gt;<i> The receiver does not need to keep time to find a solution when it has
+</I>&gt;<i> enough channels.  Very early receivers hopped between satellites and
+</I>&gt;<i> needed a very stable clock to make consequtive measurements that could
+</I>&gt;<i> later be related to eachother, but a receiver less than 5 years old just
+</I>&gt;<i> has 12 channels and measures them all in parallel.  With 4 or more
+</I>&gt;<i> satellites in view a position plus time can be calculated from that.
+</I>
+That was what I though I was saying, or at least though I was
+saying. ;-) The highly accurate time knowledge the receiver has does
+have to come from the fact that it has just solved for (x_pos, y_pos,
+z_pos, time).  As an example I tried to point out that the receiver's
+clock time is obviously not being used for the position solution since
+the time error is enough to account for a sphere who's surface is past
+where the moon orbits.  I thought that was a pretty graphical example
+of why the clock obviously wasn't being used for anything of value.  ;-)
+
+&gt;<i> In other receiver's documentation one can read that the clock is kept with
+</I>&gt;<i> a millisecond and reset when it deviates more, and that also clearly does
+</I>&gt;<i> not mean that the accuracy of position is similar to 1ms of light travel.
+</I>
+This might be a good thing to put in the list of supported devices.
+It might help steer folks to the better receivers.
+
+&gt;<i> I still think the main problem is that timestamps in messages are not an
+</I>&gt;<i> indication of current time, but are time-of-fix.  Yet it is attempted to
+</I>&gt;<i> treat them as current time.
+</I>
+Some GPS's also seem to project the solution forward in time, I assume
+to try to hide the fact that they are really running on anemic little
+CPU's.  There was aviation engineer testing real gps's by driving
+endless loops around the perimeter of airport runways.  Seems that
+quite a few gps's had &quot;funnies&quot; around the time of the right angle
+turns consistent with them projecting their positions forward and only
+later realizing that the user had just turned by 90 degrees.
+
+I'm pretty sure the garmins do this, at least some of the time.  You
+can hold your hand over their antenna and watch the solution being
+projected for the next 30 seconds before it decides to stop the bluff.
+
+I'm pretty sure my motorola oncore also projects the solution into the
+future.  It has the position solution (with the current time) ready
+much too quickly after the full second comes around.  This is a GPS
+that only has enough horse-power to do 1 hz position solutions.  One
+would assume it is using most of a second of CPU time to generate this
+solution.
+
+&gt;<i> Because GPS receivers run multitasking kernels, and the different
+</I>&gt;<i> processes often are not tightly locked to another, you can see slipping
+</I>&gt;<i> delays between generation of data and shipping it to the serial port.  Add
+</I>&gt;<i> to that the queueing and transmission delays over a slow serial port and
+</I>&gt;<i> you get the situation that the data received in the PC can be over one
+</I>&gt;<i> second old even when there is no more than a single stored position that
+</I>&gt;<i> is calculated and shipped every second.
+</I>
+Sure.  This is something you have to keep in mind.  It would also be
+good to do a quick sanity check to see the extent of this slippage.
+Graphing the &quot;gps_time - ntp_time&quot; for a while will quickly show one
+how good a certain gps is.
+
+-wolfgang
+-- 
+Wolfgang S. Rupprecht                <A HREF="http://www.wsrcc.com/wolfgang/">http://www.wsrcc.com/wolfgang/</A>
+      Microsoft Vista - because &quot;Virus Installer&quot; was too long.
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002835.html">[Gpsd-dev] Re: PPS
+</A></li>
+	<LI>Next message: <A HREF="002841.html">[Gpsd-dev] Re: PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2839">[ date ]</a>
+              <a href="thread.html#2839">[ thread ]</a>
+              <a href="subject.html#2839">[ subject ]</a>
+              <a href="author.html#2839">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

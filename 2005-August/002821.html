@@ -1,0 +1,171 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] PPS
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS&In-Reply-To=%3C13859.213.84.187.156.1123271152.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002809.html">
+   <LINK REL="Next"  HREF="002828.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] PPS</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS&In-Reply-To=%3C13859.213.84.187.156.1123271152.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] PPS">gpsd at xs4all.nl
+       </A><BR>
+    <I>Fri Aug  5 21:45:52 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002809.html">[Gpsd-dev] PPS
+</A></li>
+        <LI>Next message: <A HREF="002828.html">[Gpsd-dev] PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2821">[ date ]</a>
+              <a href="thread.html#2821">[ thread ]</a>
+              <a href="subject.html#2821">[ subject ]</a>
+              <a href="author.html#2821">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> Hey, it was broken, totally, in my case.  When I asked about a fix,
+</I>&gt;<i> no one had one.
+</I>
+I must have missed that message.  I read this list but I might miss
+something especially when it is buried somewhere in a larger message.
+
+
+&gt;&gt;<i> Moving constants to timebase.h is a good idea, but it won't solve the
+</I>&gt;&gt;<i> problem in your case.  For that, the extra functionality of a table of
+</I>&gt;&gt;<i> receiver types and time offsets is required.
+</I>&gt;<i>
+</I>&gt;<i> I was under the impression that he only wanted comments in that file
+</I>&gt;<i> for now?  Got a better place to put a table of observations?
+</I>
+Well that table certainly does not belong there.
+I think we need some place where a default offset can be stored (maybe per
+protocol but it would need to be copied to the session) and it should be
+possble to overwrite it when a known receiver is detected or a better
+value is passed somehow.
+Currently the code uses constant values.  Replacing them with #defines
+from a .h file will not improve anything other than readability.  For a
+real improvement we need a variable that can be tuned.
+
+
+&gt;&gt;<i> For your own testing, you can modify the 0.675 in drivers.c until your
+</I>&gt;&gt;<i> message time is in sync with your PPS time, or at least is well within
+</I>&gt;&gt;<i> 400ms of it.
+</I>&gt;<i>
+</I>&gt;<i> Now THAT is new info.  I had not noticed that.  That changes some things.
+</I>&gt;<i>
+</I>&gt;<i> When, as just a test, I remove your 0.675 offset I see that my offset
+</I>&gt;<i> is really 1.077 Sec.  Talk about being 1 Sec off.
+</I>
+This is similar to Zodiac/Jupiter receivers.  It probably consists of
+about a second of lag between the fix calculation and the output process,
+plus some 77ms of delay because of the serial link.
+
+
+&gt;<i> I doubt it is easier for the user to change the fudge in the code and
+</I>&gt;<i> recompile than to change the fudge in the ntp.conf and restart ntpd.
+</I>
+I don't agree with that.   Large userbases of Linux systems download
+or purchase binary distributions and never compile from source.  They
+can edit a configuration file (maybe via some GUI), but they do not edit
+and compile source.
+
+&gt;<i> If we can, and I doubt we can, figure out the fudge automatically, then
+</I>&gt;<i> it belongs in our code.  If we can not IMHO the fudge belongs where the
+</I>&gt;<i> the ntpd admin expects it.  That respects the principle of least surprise.
+</I>
+The fudge between a message time and reasonably correct real time can
+be handled this way, but not between message time and PPS time, because
+NTP does not see this information and we cannot readback the fudge values
+from NTP via the shm structure.
+Looking at the system time instead of the message time is not a good idea
+as I have explained before.
+
+
+&gt;<i> Just trying to cover all the possible solutions.  Until we have a working
+</I>&gt;<i> solution we need to look at all the possibilities.  Nothing so far is
+</I>&gt;<i> even close to 500mS.
+</I>
+This problem is specific to your use of NMEA.
+NMEA is not a suitable protocol for this purpose, imho.
+
+&gt;<i>
+</I>&gt;&gt;<i> So, we need to apply some fudge factor to bring all known GPS receivers
+</I>&gt;&gt;<i> to
+</I>&gt;&gt;<i> within a few hundred milliseconds of correct time (the 400 already was
+</I>&gt;&gt;<i> the
+</I>&gt;&gt;<i> highest I wanted to go, other implementations of PPS locking recommend
+</I>&gt;&gt;<i> not
+</I>&gt;&gt;<i> to go higher than 250).
+</I>&gt;<i>
+</I>&gt;<i> Because of the ambiguity of which second, I do not see how the old
+</I>&gt;<i> solution
+</I>&gt;<i> would prevent locking on the wrong second.  By your own admission some
+</I>&gt;<i> GPS take 1.5 seconds to output the time.  Subtract your fudge of 0.675 and
+</I>&gt;<i> we end up within the old 400mS window.  Viola, the old code locks on to
+</I>&gt;<i> the wrong second.
+</I>
+Before I implemented time support in gpsd, I wrote software to handle
+this standalone, and I studied the matter.  I decided that I needed to
+use binary protcol.  Even then, it usually wanders, but remains within
+usable tolerances to use PPS to lock to the correct second.
+I have also seen others remark that they could not get really reliable
+results with NMEA, for example users of Jupiter receivers report that
+sometimes the delay jumps up or down by one second (suggesting the
+independent processes of fix and serial output have slipped enough to have
+one result more or less in the pipeline).
+
+My implementation in gpsd was first for SiRF, then Zodiac, then TSIP.
+Someone else added the call for NMEA and reported that timesync now also
+works on NMEA, but I think he was overly optimistic.
+On the other hand, it is of course better than wristwatch time.
+
+Now that you combine that with accurate PPS output, the fault shows up.
+
+
+&gt;<i> Well, in my case, when we settle this, I am going to try to get binary
+</I>&gt;<i> protocol on the serial garmin.  Wanna bet the fudge factor is within 10%
+</I>&gt;<i> of the NMEA one for the same device?  OTOH, I expect half the jitter.
+</I>
+It depends on whether the Garmin binary protocol is any good.
+Check if they support some message that claims to report correct time,
+with  reference to PPS, instead of merely containing a timestamp of
+measurement.
+On my Trimble receiver it works very well.
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002809.html">[Gpsd-dev] PPS
+</A></li>
+	<LI>Next message: <A HREF="002828.html">[Gpsd-dev] PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2821">[ date ]</a>
+              <a href="thread.html#2821">[ thread ]</a>
+              <a href="subject.html#2821">[ subject ]</a>
+              <a href="author.html#2821">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

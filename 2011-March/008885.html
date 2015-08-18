@@ -1,0 +1,169 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [ntp:hackers] ntpd shm changes
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20ntpd%20shm%20changes&In-Reply-To=%3Calpine.DEB.1.10.1103181954080.9755%40org-pc51.fy.chalmers.se%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008884.html">
+   <LINK REL="Next"  HREF="008886.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [ntp:hackers] ntpd shm changes</H1>
+    <B>H&#229;kan Johansson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20ntpd%20shm%20changes&In-Reply-To=%3Calpine.DEB.1.10.1103181954080.9755%40org-pc51.fy.chalmers.se%3E"
+       TITLE="[Gpsd-dev] [ntp:hackers] ntpd shm changes">f96hajo at chalmers.se
+       </A><BR>
+    <I>Sat Mar 19 00:31:40 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008884.html">[Gpsd-dev] ntpd shm changes
+</A></li>
+        <LI>Next message: <A HREF="008886.html">[Gpsd-dev] [ntp:hackers] ntpd shm changes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8885">[ date ]</a>
+              <a href="thread.html#8885">[ thread ]</a>
+              <a href="subject.html#8885">[ subject ]</a>
+              <a href="author.html#8885">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+On Fri, 18 Mar 2011, Dave Hart wrote:
+
+&gt;<i> [cross-posted to <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">hackers at ntp</A> and gpsd-dev@ by Dave Hart]
+</I>&gt;<i>
+</I>&gt;<i> Bruce Lilly has done some work to develop a POSIX named shared memory
+</I>&gt;<i> alternative to ntpd's refclock_shm.c / driver 28, which uses SysV shm
+</I>&gt;<i> &quot;named&quot; using 32 bits, currently including the ascii for NTP (or ntp)
+</I>&gt;<i> and a unit digit.  See &quot;new driver development&quot; thread.  [1]
+</I>&gt;<i>
+</I>&gt;<i> If ntpd is to grow the flavors of shared memory it understands to
+</I>&gt;<i> include POSIX named shm, which would require a new driver or an
+</I>&gt;<i> extension of the current refclock_shm.c, I think we should take the
+</I>&gt;<i> opportunity presented to clean up the shared memory interface
+</I>&gt;<i> contract.  We could use the existing layout but since it requires new
+</I>&gt;<i> code in ntpd and producers like gpsd to move to the different shm
+</I>&gt;<i> namespace, there's no existing code to offended by a reshuffling of
+</I>&gt;<i> layout and/or protocol.
+</I>&gt;<i>
+</I>&gt;<i> Today's mode 1 approach is pretty good.  As I mentioned on questions@
+</I>&gt;<i> I would prefer fixed sizes so the interface is resilient in the face
+</I>&gt;<i> of a 64-bit ntpd and a 32-bit gpsd or vice-versa.
+</I>
+Yes, please.  Not having a fixed layout has hit us in the wild before:
+
+<A HREF="http://lists.berlios.de/pipermail/gpsd-users/2009-November/004058.html">http://lists.berlios.de/pipermail/gpsd-users/2009-November/004058.html</A>
+
+When anyhow at it, I'd advocate using a fixed endianess as well.  Network 
+order, for htonl and ntohl.  Perhaps never useful on a single machine, but 
+who knows?
+
+&gt;<i> Additionally, I noticed the comments in our driver are one-sided,
+</I>&gt;<i> describing only instructions for ntpd's interaction with the shared
+</I>&gt;<i> memory without spelling out the writer's contract.  Harlan raised a
+</I>&gt;<i> concern about writers getting it wrong, and it took me a few guesses
+</I>&gt;<i> to infer the right steps for a writer before resorting to gpsd source
+</I>&gt;<i> code to to confirm.  In short, writers increment count, then the
+</I>&gt;<i> payload data, then increment count again, then set valid.  Readers
+</I>&gt;<i> fail if valid is zero, otherwise store count, copy payload, compare
+</I>&gt;<i> count, fail if they don't match.  Whether count matches or not, valid
+</I>&gt;<i> is cleared.
+</I>
+As ntpshm stands right now, both valid and count are needed. Note how gpsd 
+also clears valid before the first count update, avoids the race pointed 
+out by tz.  (Missing in gpsd is memory barriers for SMP.)
+
+<A HREF="../2009-November/007006.html">http://lists.berlios.de/pipermail/gpsd-dev/2009-November/007006.html</A>
+
+&gt;<i> I'm not sure valid is achieving anything.  Readers don't read when
+</I>&gt;<i> it's zero, but that seems redundant to me with the count checking.
+</I>&gt;<i> Also I don't like the reader resetting valid to 0 -- that shuts down
+</I>&gt;<i> the possibility of multiple readers, and for what gain?
+</I>
+Probably to avoid using the same sample twice?  But this can be checked by 
+either count, or the time-stamp itself.  I also cannot see anything 
+improved by having the reader clear valid.
+
+&gt;<i> valid is
+</I>&gt;<i> cleared even when the reader abandoned the attempt because it was
+</I>&gt;<i> mid-update, which seems particularly ill-advised to me.
+</I>&gt;<i>
+</I>&gt;<i> There are missing volatile qualifiers, as far as I see, the shared
+</I>&gt;<i> memory should be accessed solely through volatile pointers, as it is
+</I>&gt;<i> being modified by code outside the scope of the compiler's
+</I>&gt;<i> optimizations.
+</I>&gt;<i>
+</I>&gt;<i> To facilitate correctness and avoid duplication of code, I'd like to
+</I>&gt;<i> see public header file lay out the structure and provide inline code
+</I>&gt;<i> for producer and consumer.  That would be eased by having not just one
+</I>&gt;<i> structure, but a payload structure used by the producer and consumer
+</I>&gt;<i> and a container structure with mode, count, and if needed, valid along
+</I>&gt;<i> with an embedded payload struct.
+</I>&gt;<i>
+</I>&gt;<i> Do you believe we need both valid and count?  Can you think of other
+</I>&gt;<i> changes or extensions that might be an improvement in some way?
+</I>
+One could use only count, if one in addition says that an odd count means 
+'being updated' and an even count 'is valid'.  To allow for a previous 
+crash during update, the increment before the update would ensure the 
+count to be odd.
+
+count++;
+count |= 1;
+... do updating ...
+count++;
+
+--
+
+Also nice would be if the consumer (ntpd) would write some information of 
+its current status (stratum, active source, ... - basically what is in a 
+NTP network packet) to also allow the interface to be used for alternative 
+transmission methods, such as PPS-like over a serial line.
+
+Cheers,
+H&#229;kan
+
+&gt;<i>
+</I>&gt;<i> Thanks for your time,
+</I>&gt;<i> Dave Hart
+</I>&gt;<i>
+</I>&gt;<i> [1]
+</I>&gt;<i> <A HREF="http://lists.ntp.org/pipermail/questions/2011-March/thread.html#28910">http://lists.ntp.org/pipermail/questions/2011-March/thread.html#28910</A>
+</I>&gt;<i> or
+</I>&gt;<i> <A HREF="http://groups.google.com/group/comp.protocols.time.ntp/browse_thread/thread/72b460de0c825044?hl=en#">http://groups.google.com/group/comp.protocols.time.ntp/browse_thread/thread/72b460de0c825044?hl=en#</A>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> hackers mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">hackers at lists.ntp.org</A>
+</I>&gt;<i> <A HREF="http://lists.ntp.org/listinfo/hackers">http://lists.ntp.org/listinfo/hackers</A>
+</I>&gt;<i>
+</I></PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008884.html">[Gpsd-dev] ntpd shm changes
+</A></li>
+	<LI>Next message: <A HREF="008886.html">[Gpsd-dev] [ntp:hackers] ntpd shm changes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8885">[ date ]</a>
+              <a href="thread.html#8885">[ thread ]</a>
+              <a href="subject.html#8885">[ subject ]</a>
+              <a href="author.html#8885">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

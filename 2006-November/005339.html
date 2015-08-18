@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Big patch coming, unless somebody says boo
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Big%20patch%20coming%2C%20unless%20somebody%20says%20boo&In-Reply-To=%3C20061130071859.GA22042%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005336.html">
+   <LINK REL="Next"  HREF="005341.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Big patch coming, unless somebody says boo</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Big%20patch%20coming%2C%20unless%20somebody%20says%20boo&In-Reply-To=%3C20061130071859.GA22042%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Big patch coming, unless somebody says boo">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Nov 30 08:18:59 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005336.html">[Gpsd-dev] Big patch coming, unless somebody says boo
+</A></li>
+        <LI>Next message: <A HREF="005341.html">[Gpsd-dev] Big patch coming, unless somebody says boo
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5339">[ date ]</a>
+              <a href="thread.html#5339">[ thread ]</a>
+              <a href="subject.html#5339">[ subject ]</a>
+              <a href="author.html#5339">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Chris Kuethe &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">chris.kuethe at gmail.com</A>&gt;:
+&gt;<i> &gt;The goal, as you probably conjectured, is to make adding new
+</I>&gt;<i> &gt;regression tests less of a pain in the tuchus. To that end, I've
+</I>&gt;<i> &gt;decided I don't want to maintain two packet sniffers (one in C and one
+</I>&gt;<i> &gt;in Python) anymore.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;So I'm going to disentangle the C packet sniffer from the rest of the code
+</I>&gt;<i> &gt;and figure out some way to glue it into gpsfake.  This patch is the first
+</I>&gt;<i> &gt;(and most difficult) step in the process.
+</I>&gt;<i> 
+</I>&gt;<i> And since the C sniffer is the one that gets way more use, we may as
+</I>&gt;<i> well try reuse it (python bindings) ... right?
+</I>
+Exactly.  Equally to the point, we want to be *certain* that gpsfake 
+is packetizing data streams the same way the daemon would.  Best way
+to guarantee that is to have them use the same sniffer mode.
+
+&gt;<i> Indeed, adding protocols to gpsfake is a pain. I think you might want
+</I>&gt;<i> to revisit the format. For my local playback engine, i just have
+</I>&gt;<i> (optionally) timestamped hexdumps.
+</I>
+Hmmm...that's not a bad idea.  Let's revisit that after 2.34 ships.
+I don't want to use hex for NMEA variants, losing the readability 
+would be sad, but a little conditional logic would take care of that.
+
+&gt;<i>                  It's protocol-independent and
+</I>&gt;<i> allows me to preserve timing characteristics (if necessary, which so
+</I>&gt;<i> far it isn't). 
+</I>
+Agreed, so far it isn't.  But I like the idea of preserving that info, if
+possible.
+
+&gt;<i> &gt;Yeah?  Show me the script :-).
+</I>&gt;<i> 
+</I>&gt;<i> script sent via private mail. anyone else who wants a copy can have
+</I>&gt;<i> one, it's just a bunch of nested loops to set up the --enable and
+</I>&gt;<i> --disable flags...
+</I>
+Got it.  Haven't run it yet, but I will.  I'll probably polish it a bit
+and put it in the repo, too.  Good tool for developers to have handy.
+
+&gt;<i>                             This'll get right painful when we get
+</I>&gt;<i> up to 13 or 14 drivers and that's looking like a very real possibility
+</I>&gt;<i> in the near term.
+</I>
+2^n combinatorial explosions are indeed a bitch that way, yes.
+
+&gt;<i> &gt;I hope figuring out why the TSIP driver seems to start ignoring the
+</I>&gt;<i> &gt;stuff gpsfake throws at it is on the list somewhere.  And if you can
+</I>&gt;<i> &gt;determine that instead it's gpsfake that is somehow screwing up, that
+</I>&gt;<i> &gt;would be useful too.
+</I>&gt;<i> 
+</I>&gt;<i> Knee-jerk reaction, it's gpsfake - this doesn't happen reading from a
+</I>&gt;<i> fifo or a real gps. Knee-jerk reaction, it's the daemon. it's job is
+</I>&gt;<i> to process packets, and quite frankly, it ain't.
+</I>
+I'm wondering vaguely about timing problems in gpsfake's internal threading.
+ 
+&gt;<i> Are we sure that gpsfake isn't subtly corrupting things
+</I>&gt;<i> (byte-stuffing?). Is the tty being naughty?
+</I>
+I'm not certain of either of these.  To be investigated.  Actually, since
+it's up to Gary to fix the Garmin stuff, I'd say this is priority one for
+you and me.
+ 
+&gt;<i> How badly do you want 100% test coverage prior to release?
+</I>
+It would be nice, but if Gary gets the Garmin stuff working I have
+enough confidence in the code as it is to ship it.
+
+I do want us to get the Trimble regression tests right, though, and that
+meanst fixing the no-see-Trimble-packets problem,
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005336.html">[Gpsd-dev] Big patch coming, unless somebody says boo
+</A></li>
+	<LI>Next message: <A HREF="005341.html">[Gpsd-dev] Big patch coming, unless somebody says boo
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5339">[ date ]</a>
+              <a href="thread.html#5339">[ thread ]</a>
+              <a href="subject.html#5339">[ subject ]</a>
+              <a href="author.html#5339">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

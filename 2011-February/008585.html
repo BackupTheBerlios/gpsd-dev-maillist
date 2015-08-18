@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] regression test report - recent code
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20regression%20test%20report%20-%20recent%20code&In-Reply-To=%3C20110223231739.GA4333%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008580.html">
+   <LINK REL="Next"  HREF="008586.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] regression test report - recent code</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20regression%20test%20report%20-%20recent%20code&In-Reply-To=%3C20110223231739.GA4333%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] regression test report - recent code">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Feb 24 00:17:39 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008580.html">[Gpsd-dev] regression test report - recent code
+</A></li>
+        <LI>Next message: <A HREF="008586.html">[Gpsd-dev] regression test report - recent code
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8585">[ date ]</a>
+              <a href="thread.html#8585">[ thread ]</a>
+              <a href="subject.html#8585">[ subject ]</a>
+              <a href="author.html#8585">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;:
+&gt;<i> 
+</I>&gt;<i> Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; writes:
+</I>&gt;<i> 
+</I>&gt;<i> &gt; Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;:
+</I>&gt;<i> &gt;&gt; Now only ac12_binary fails (it has never passed).
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; It's time we solved this. Can you pin down which fields of which sentences
+</I>&gt;<i> &gt; are differing?  And remind me of your platform...endianness, word width, OS.
+</I>&gt;<i> 
+</I>&gt;<i> NetBSD-5, i386.  gcc 4.1.3.   So little endian, ILP32, very normal.
+</I>&gt;<i> 
+</I>&gt;<i> result of 'gmake check' with --text added to diff (otherwise you get
+</I>&gt;<i> &quot;it's different&quot;) is at:
+</I>&gt;<i> 
+</I>&gt;<i> <A HREF="http://www.lexort.com/gpsd/ac12_failure">http://www.lexort.com/gpsd/ac12_failure</A>
+</I>&gt;<i> 
+</I>&gt;<i> It's way too binary to paste into mail.
+</I>&gt;<i> 
+</I>&gt;<i> Basically two sentences are missing
+</I>&gt;<i> 
+</I>&gt;<i> $PASHR,PBN,....[binary crud]
+</I>&gt;<i> 
+</I>&gt;<i> $PASHR,MCA,
+</I>&gt;<i> 
+</I>&gt;<i> The failure was identical 3 times in a row.
+</I>
+Yeah.  OK, the missing sentences are exactly those abortions with binary data
+embedded in them.  That can't be coincidence.   Something is preventing them
+from being passed through to output by gpsfake.
+
+I'm thinking this is a platform-dependent glitch in the packet sniffer.  It
+doesn't show up anywhere but regression testing because the daemon doesn't 
+actually use those packets for anything.
+
+There's an obvious fix - teach the lexer about these pacckets, rather than
+having it treat them as noise.  That would complicate the sniffer to no good
+purpose, though.  I'll try to think of a simpler workaround.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 190 bytes
+Desc: Digital signature
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110223/c06ee597/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110223/c06ee597/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008580.html">[Gpsd-dev] regression test report - recent code
+</A></li>
+	<LI>Next message: <A HREF="008586.html">[Gpsd-dev] regression test report - recent code
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8585">[ date ]</a>
+              <a href="thread.html#8585">[ thread ]</a>
+              <a href="subject.html#8585">[ subject ]</a>
+              <a href="author.html#8585">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

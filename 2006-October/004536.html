@@ -1,0 +1,150 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] refactoring
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20refactoring&In-Reply-To=%3C91981b3e0610131344j1d2174c2v545638e723c2cf0a%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004535.html">
+   <LINK REL="Next"  HREF="004537.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] refactoring</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20refactoring&In-Reply-To=%3C91981b3e0610131344j1d2174c2v545638e723c2cf0a%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] refactoring">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Fri Oct 13 22:44:44 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004535.html">[Gpsd-dev] refactoring
+</A></li>
+        <LI>Next message: <A HREF="004537.html">[Gpsd-dev] refactoring
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4536">[ date ]</a>
+              <a href="thread.html#4536">[ thread ]</a>
+              <a href="subject.html#4536">[ subject ]</a>
+              <a href="author.html#4536">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 10/13/06, Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt; wrote:
+&gt;<i> &gt; - protocol switchers
+</I>&gt;<i>
+</I>&gt;<i> This is a bit more problematic.
+</I>
+No kidding. I'm thinking of the &quot;synchronize protocol and baud rate&quot;
+feature of SiRFdemo, or my equivalent sirftool which just spams the
+device with control messages that would, under reasonable
+circumstances, have the effect you're after.
+
+Using SiRF as an example, I build the speed/protocol message for NMEA
+and binary, and then spew that at the receiver at each supported
+speed. Hopefully it works. For what its worth, my tool with my timings
+works better than the SiRF tool.
+
+This is the same approach I am taking with my itrax3 - send it the
+requisite control messages at each speed and hope it works.
+
+&gt;<i> &gt; i could entertain the concept of a unified front end
+</I>&gt;<i> &gt; ./gpsctl -t /dev/tty00
+</I>&gt;<i> &gt;     try probe the device. good for testing the device probes.
+</I>
+&gt;<i> Well, see, there is the rub.  The reason I created garmintool was to
+</I>&gt;<i> get out from under the big probe thing in gpsd.  gpsd is meant to be
+</I>&gt;<i> zero config and autodetect everything.  But that makes the probe
+</I>&gt;<i> loop big/ugly/slow and hard to modfify.
+</I>
+this is a great way to test that big/ugly/slow probe mechanism. Or
+develop a better one. The problem with using the current probe is that
+it tries really hard to do autodetection, and the various supported
+speeds make that difficult. I chould define probe behaviour to require
+the speed to be specified.
+
+For the moment, I have a detector that takes less than 1 second to
+determine the speed and protocol of an itrax receiver running at 4800
+- 230400.
+
+Reconfiguring a SiRF takes a bit longer because I do tcdrain after
+every write and then wait a bit for the receiver to parse it. Still,
+in 2 or 3 seconds you've got your receiver set up just the way you
+like it.
+
+&gt;<i> I created garmintool because I did not see an easy way to integrate
+</I>&gt;<i> the protocol changing in packet.c without substantial effort and
+</I>&gt;<i> risk for breakage of other parts I can not test.
+</I>
+I applaud your tact and prudence.
+
+&gt;<i> One documented justification for sirfmon is that is uses a different
+</I>&gt;<i> set of routines that can be compared against those in gpsd for
+</I>&gt;<i> testing.
+</I>
+It's designed to be a sanity check on the data decode, but it's port
+handling is a bit primitive.
+
+&gt;<i> If these 3 modules are integrated in to one then there will be confusion
+</I>&gt;<i> since the capabilites and support for each cevice is very different.
+</I>&gt;<i> gpsd is to support the commonality with zero config and the separate
+</I>&gt;<i> tools support the quirks for the advanced user.
+</I>
+Right. The daemon is intended to be zero config. I'm all for that. The
+associated data tools get it pretty right, too.
+
+I see sirfmon or sirfproto or garmintool or itraxctl as configuration
+tools for advanced users. A large part of what they'd be used for
+(speed and protocol) is common to all of them, so that could be a
+maybe migrate to a separate front end.
+
+&gt;<i> OTOH, having a nice single front end for folks to use would be a
+</I>&gt;<i> good thing.
+</I>&gt;<i>
+</I>&gt;<i> So I see problems and opportunites.  If the gpsctl was mostly a
+</I>&gt;<i> wrapper around standard, but separate, device specific modules then
+</I>&gt;<i> I could support this.
+</I>
+I think that's where I'm headed. Some standard serial stuff, some
+common getopt glue, a generic dispatcher, and then some protocol
+specific modules to compute the nmea and binary control messages that
+the receiver gets spammed with. :)
+
+Once I get my itrax tool working, I'll refactor it and my sirf tool
+into a more generic ... &quot;protocol droid&quot;.
+
+Thanks for the input.
+
+CK
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004535.html">[Gpsd-dev] refactoring
+</A></li>
+	<LI>Next message: <A HREF="004537.html">[Gpsd-dev] refactoring
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4536">[ date ]</a>
+              <a href="thread.html#4536">[ thread ]</a>
+              <a href="subject.html#4536">[ subject ]</a>
+              <a href="author.html#4536">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

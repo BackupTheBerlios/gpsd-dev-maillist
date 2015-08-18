@@ -1,0 +1,92 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] ntpshm.c PPS bad usec reference
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntpshm.c%20PPS%20bad%20usec%20reference&In-Reply-To=%3C20091104113427.GA3791%40localhost%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006974.html">
+   <LINK REL="Next"  HREF="006976.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] ntpshm.c PPS bad usec reference</H1>
+    <B>Miroslav Lichvar</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntpshm.c%20PPS%20bad%20usec%20reference&In-Reply-To=%3C20091104113427.GA3791%40localhost%3E"
+       TITLE="[Gpsd-dev] ntpshm.c PPS bad usec reference">mlichvar at redhat.com
+       </A><BR>
+    <I>Wed Nov  4 12:34:27 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006974.html">[Gpsd-dev] ntpshm.c PPS bad usec reference
+</A></li>
+        <LI>Next message: <A HREF="006976.html">[Gpsd-dev] ntpshm.c PPS bad usec reference
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6975">[ date ]</a>
+              <a href="thread.html#6975">[ thread ]</a>
+              <a href="subject.html#6975">[ subject ]</a>
+              <a href="author.html#6975">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Wed, Nov 04, 2009 at 07:19:31AM +0100, H&#229;kan Johansson wrote:
+&gt;<i> At rev 5997, ntpshm for PPS went bad.  The entire idea of a PPS
+</I>&gt;<i> pulse is that the reference is the point with usec = 0 (or possible
+</I>&gt;<i> an even multiple of the PPS period).  The assignment
+</I>&gt;<i> 
+</I>&gt;<i> shmTimeP-&gt;clockTimeStampUSec = usecs;
+</I>&gt;<i> 
+</I>&gt;<i> is the culprit. 
+</I>
+Yes, the usecs value should be always 0 unless the PPS signal has
+frequency higher than 1 Hz. It's computed from
+shmTime-&gt;clockTimeStampUSec which should be the time decoded from the
+last received message. Most GPSs don't seem to even report anything
+below seconds, so I'm wondering where does it come from.
+
+What values do you see there? What kind of GPS unit is it?
+
+&gt;<i> On a side note:  I think the calculation of the precision, using the
+</I>&gt;<i> variable offset has issues.  As one in ntpd can fudge an additional
+</I>&gt;<i> offset of the reported times, when the system clock is driven
+</I>&gt;<i> towards that, we will never approach a zero difference, and
+</I>&gt;<i> therefore always report a 'bad' precision.  I think a precision
+</I>&gt;<i> estimate need to be based on the jitter (which would require some
+</I>&gt;<i> history...), and not on any absolute offset.
+</I>
+I think measuring jitter in gpsd would require that no other
+application is controling the local clock. Using a fixed value like
+-20 should be good enough.
+
+-- 
+Miroslav Lichvar
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006974.html">[Gpsd-dev] ntpshm.c PPS bad usec reference
+</A></li>
+	<LI>Next message: <A HREF="006976.html">[Gpsd-dev] ntpshm.c PPS bad usec reference
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6975">[ date ]</a>
+              <a href="thread.html#6975">[ thread ]</a>
+              <a href="subject.html#6975">[ subject ]</a>
+              <a href="author.html#6975">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

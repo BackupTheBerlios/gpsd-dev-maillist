@@ -1,0 +1,167 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] building gpsd-2.3 on debian (gpsprobe)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20building%20gpsd-2.3%20on%20debian%20%28gpsprobe%29&In-Reply-To=%3C20041110115441.436a3ab2.hamish_nospam%40yahoo.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000320.html">
+   <LINK REL="Next"  HREF="000324.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] building gpsd-2.3 on debian (gpsprobe)</H1>
+    <B>Hamish</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20building%20gpsd-2.3%20on%20debian%20%28gpsprobe%29&In-Reply-To=%3C20041110115441.436a3ab2.hamish_nospam%40yahoo.com%3E"
+       TITLE="[Gpsd-dev] building gpsd-2.3 on debian (gpsprobe)">hamish_nospam at yahoo.com
+       </A><BR>
+    <I>Tue Nov  9 23:54:41 CET 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000320.html">[Gpsd-dev] building gpsd-2.3 on debian (gpsprobe)
+</A></li>
+        <LI>Next message: <A HREF="000324.html">[Gpsd-dev] building gpsd-2.3 on debian (gpsprobe)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#323">[ date ]</a>
+              <a href="thread.html#323">[ thread ]</a>
+              <a href="subject.html#323">[ subject ]</a>
+              <a href="author.html#323">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> &gt; [Garmin 48  NMEA 183 v2.0 @ 4800 baud]
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; $ ./gpsprobe
+</I>&gt;<i> &gt; Waiting for /dev/gps......(0.00 sec) acquired.
+</I>&gt;<i> &gt; Gathering 100 sentences will probably take about 33 seconds.
+</I>&gt;<i> &gt; Looking for first fix...Traceback (most recent call last):
+</I>&gt;<i> &gt;   File &quot;./gpsprobe&quot;, line 137, in ?
+</I>&gt;<i> &gt;     status = dev.poll()
+</I>&gt;<i> &gt;   File &quot;/usr/src/gpsd-2.3/gpsd.py&quot;, line 314, in poll
+</I>&gt;<i> &gt;     self.devtype.parser.handler(self.ttyfp, self.raw_hook)
+</I>&gt;<i> &gt;   File &quot;/usr/src/gpsd-2.3/gpsd.py&quot;, line 200, in handler
+</I>&gt;<i> &gt;     self.handle_line(linebuf[:-2])
+</I>&gt;<i> &gt;   File &quot;/usr/src/gpsd-2.3/gpsd.py&quot;, line 192, in handle_line
+</I>&gt;<i> &gt;     NMEA.__dict__['process'+words[0]](self, words[1:])
+</I>&gt;<i> &gt;   File &quot;/usr/src/gpsd-2.3/gpsd.py&quot;, line 123, in processGPGSA
+</I>&gt;<i> &gt;     self.data.vdop = float(words[16])
+</I>&gt;<i> &gt; ValueError: empty string for float()
+</I>&gt;<i> 
+</I>&gt;<i> It looks like the Garmin can sometime return empty fields in a GPGSA.
+</I>&gt;<i> I've added guard code to gpsd.py to cope with this.
+</I>
+
+Now GPGGA complains: 
+
+$ ./gpsprobe
+Waiting for /dev/gps......(0.00 sec) acquired.
+Gathering 100 sentences will probably take about 33 seconds.
+Looking for first fix...Traceback (most recent call last):
+  File &quot;./gpsprobe&quot;, line 136, in ?
+    status = dev.poll()
+  File &quot;/usr/src/gpsd-2.3/gpsd.py&quot;, line 319, in poll
+    self.devtype.parser.handler(self.ttyfp, self.raw_hook)
+  File &quot;/usr/src/gpsd-2.3/gpsd.py&quot;, line 205, in handler
+    self.handle_line(linebuf[:-2])
+  File &quot;/usr/src/gpsd-2.3/gpsd.py&quot;, line 197, in handle_line
+    NMEA.__dict__['process'+words[0]](self, words[1:])
+  File &quot;/usr/src/gpsd-2.3/gpsd.py&quot;, line 113, in processGPGGA
+    self.__do_lat_lon(words[1:])
+  File &quot;/usr/src/gpsd-2.3/gpsd.py&quot;, line 33, in __do_lat_lon
+    if words[0][-1] == 'N':
+IndexError: string index out of range
+
+
+just switched on GPS, no lock:
+
+$PGRME,,M,,M,,M*00
+$GPGLL,,,,,222053,*54
+$PGRMZ,,,*7E
+$PGRMM,WGS 84*06
+$GPBOD,,T,,M,,*47
+$GPRTE,1,1,c,0,B,A*04
+$GPWPL,4550.822,S,17030.074,E,B*1E
+$GPRMC,222054,V,,,,,,,091104,,*3F
+$GPRMB,V,,,,,,,,,,,,V*66
+$GPGGA,222055,,,,,0,00,,,M,,M,,*64
+$GPGSA,A,1,,,,,,,,,,,,,,,*1E
+$GPGSV,3,1,11,05,08,341,00,06,65,250,41,10,68,111,42,16,06,209,00*75
+$GPGSV,3,2,11,17,53,113,00,18,01,320,00,21,25,265,00,24,24,100,00*76
+$GPGSV,3,3,11,26,19,031,35,29,24,037,00,30,25,316,00,,,,*48
+
+
+It works after the GPS is locked on and the fields are filled.
+
+
+
+&gt;<i> &gt; NMEA 183 v2.0 seems to be a requirement.
+</I>&gt;<i> 
+</I>&gt;<i> Would you please look at the Hardware page and compose an entry for
+</I>&gt;<i> the Garmin 48?  It should include a note that NMEA 183 v2.0 needs
+</I>&gt;<i> to be selected.
+</I>
+
+&lt;tr&gt;
+&lt;td&gt;Garmin 48&lt;/td&gt;
+&lt;td&gt;Excellent&lt;/td&gt;
+&lt;td&gt;Garmin&lt;/td&gt;
+&lt;td&gt;RS-232&lt;/td&gt;
+&lt;td&gt;&lt;a href=&quot;<A HREF="http://www.garmin.com">http://www.garmin.com</A>&quot;&gt;Garmin&lt;/a&gt;&lt;/td&gt;
+&lt;td align='center'&gt;n&lt;/td&gt;
+&lt;td&gt;2.3&lt;/td&gt;
+&lt;td&gt;2.0&lt;/td&gt;
+&lt;td&gt;
+PGRME, GPGLL, PGRMZ, PGRMM, GPBOD, GPRTE, GPWPL, 
+GPRMC, GPRMB, GPGGA, GPGSA, GPGSV, GPGSV, GPGSV
+&lt;/td&gt;
+&lt;td&gt;
+Garmin 12XL and 45 are nearly identical and should work as well.&lt;BR&gt;
+NMEA mode must be set to 183 v2.0.&lt;BR&gt;
+Details on Garmin's proprietary protocol can be found
+&lt;a href=&quot;<A HREF="http://www.garmin.com/support/commProtocol.html">http://www.garmin.com/support/commProtocol.html</A>&quot;&gt;here&lt;/a&gt;.
+&lt;/td&gt;
+&lt;/tr&gt;
+
+
+hardware.html --
+
+&quot;Recommendation&quot;: unit or compatibility? 
+ G48 unit: Excellent
+ compatibility: was excellent with gpsd v1, just testing with v2.3 now.
+
+&quot;Works with&quot;: a bit terse about that it is refering to
+
+
+
+
+Hamish
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000320.html">[Gpsd-dev] building gpsd-2.3 on debian (gpsprobe)
+</A></li>
+	<LI>Next message: <A HREF="000324.html">[Gpsd-dev] building gpsd-2.3 on debian (gpsprobe)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#323">[ date ]</a>
+              <a href="thread.html#323">[ thread ]</a>
+              <a href="subject.html#323">[ subject ]</a>
+              <a href="author.html#323">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] How should the python bindings work?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20How%20should%20the%20python%20bindings%20work%3F&In-Reply-To=%3C20041224152617.GA16225%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000370.html">
+   <LINK REL="Next"  HREF="000382.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] How should the python bindings work?</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20How%20should%20the%20python%20bindings%20work%3F&In-Reply-To=%3C20041224152617.GA16225%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] How should the python bindings work?">esr at thyrsus.com
+       </A><BR>
+    <I>Fri Dec 24 16:26:17 CET 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000370.html">[Gpsd-dev] How should the python bindings work?
+</A></li>
+        <LI>Next message: <A HREF="000382.html">[Gpsd-dev] How should the python bindings work?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#373">[ date ]</a>
+              <a href="thread.html#373">[ thread ]</a>
+              <a href="subject.html#373">[ subject ]</a>
+              <a href="author.html#373">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Petter Reinholdtsen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">pere at hungry.com</A>&gt;:
+&gt;<i> 
+</I>&gt;<i> I'm trying to use the python bindings to connect to gpsd, but it fail.
+</I>&gt;<i> This is a test program triggering the problem:
+</I>&gt;<i> 
+</I>&gt;<i>   #!/usr/bin/env python
+</I>&gt;<i>   import gps, time
+</I>&gt;<i>   session = gps.gps()
+</I>&gt;<i>   session.query(&quot;w+x\n&quot;)
+</I>&gt;<i>   while True:
+</I>&gt;<i>       session.poll()
+</I>&gt;<i>       time.sleep(1)
+</I>&gt;<i> 
+</I>&gt;<i> The 'w+x' command return several lines of output, and the program
+</I>&gt;<i> crashes with this error message:
+</I>&gt;<i> 
+</I>&gt;<i>   Traceback (most recent call last):
+</I>&gt;<i>     File &quot;./test.py&quot;, line 8, in ?
+</I>&gt;<i>       session.query(&quot;w+x\n&quot;)
+</I>&gt;<i>     File &quot;/skole/tjener/home0/pere/src/openstreetmapsvn/gpsdsvn/trunk/gps.py&quot;, line 258, in query
+</I>&gt;<i>       return self.poll()
+</I>&gt;<i>     File &quot;/skole/tjener/home0/pere/src/openstreetmapsvn/gpsdsvn/trunk/gps.py&quot;, line 253, in poll
+</I>&gt;<i>       return self.__unpack(self.sock.recv(1024))
+</I>&gt;<i>     File &quot;/skole/tjener/home0/pere/src/openstreetmapsvn/gpsdsvn/trunk/gps.py&quot;, line 210, in __unpack
+</I>&gt;<i>       i1 = int(data)
+</I>&gt;<i>   ValueError: invalid literal for int(): 0
+</I>&gt;<i>   GPSD
+</I>&gt;<i> 
+</I>&gt;<i> Notice how the data content is &quot;0\nGPSD&quot;, and the cast to 'int' fail.
+</I>&gt;<i> Is this supposed to work, or am I used the python bindings wrong?
+</I>&gt;<i> 
+</I>&gt;<i> This problem make the Python interface almost useless to me. :(
+</I>
+That's very strange.  When the GPS is offline, the response to 
+session.query(&quot;w+x\n&quot;) should look like this:
+
+GPSD,W=1,X=0
+
+or when it's online like this:
+
+GPSD,W=1,X=1
+
+And when I do the same sequence you did...
+
+Python 2.3.4 (#1, Oct 26 2004, 16:42:40)
+[GCC 3.4.2 20041017 (Red Hat 3.4.2-6.fc3)] on linux2
+Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
+&gt;&gt;&gt;<i> import gps, time
+</I>&gt;&gt;&gt;<i> session = gps.gps()
+</I>&gt;&gt;&gt;<i> session.query(&quot;w+x\n&quot;)
+</I>False
+&gt;&gt;&gt;<i>
+</I>
+...I get a good result.  So the first thing to do is try to figure out 
+uneder what circumstabnes the client can get &quot;0\nGPSD&quot; as a response
+right at startup.
+
+I have just checked in to the SVN repository a small change that gives
+the gps class initializer a third 'verbose' argument.  When that is 1,
+the poll method will dump its incoming data to stderr.  Try using that
+to see exactly what the client sees on each poll.
+-- 
+
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000370.html">[Gpsd-dev] How should the python bindings work?
+</A></li>
+	<LI>Next message: <A HREF="000382.html">[Gpsd-dev] How should the python bindings work?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#373">[ date ]</a>
+              <a href="thread.html#373">[ thread ]</a>
+              <a href="subject.html#373">[ subject ]</a>
+              <a href="author.html#373">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

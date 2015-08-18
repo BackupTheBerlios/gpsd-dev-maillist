@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Wait versus nowait
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Wait%20versus%20nowait&In-Reply-To=%3C20090319225222.GB9738%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006610.html">
+   <LINK REL="Next"  HREF="006616.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Wait versus nowait</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Wait%20versus%20nowait&In-Reply-To=%3C20090319225222.GB9738%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Wait versus nowait">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Mar 19 23:52:22 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006610.html">[Gpsd-dev] Wait versus nowait
+</A></li>
+        <LI>Next message: <A HREF="006616.html">[Gpsd-dev] Wait versus nowait
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6614">[ date ]</a>
+              <a href="thread.html#6614">[ thread ]</a>
+              <a href="subject.html#6614">[ subject ]</a>
+              <a href="author.html#6614">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Lukasz Stelmach &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">stlman at poczta.fm</A>&gt;:
+&gt;<i> There are several ways to configure a programme:
+</I>&gt;<i> 
+</I>&gt;<i> 1. Compiletime - there could be a configure option that determines
+</I>&gt;<i> the hardcoded default and the command lines available (and visible
+</I>&gt;<i> in the help message).
+</I>
+No.  We'll pick the *right* default, once we figure out what it is.
+Much as I love the Unix tradition, I will not succumb to the Unix
+disease of lazily avoiding design decisions with excessive
+configurability.
+ 
+&gt;<i> 2. Configuration file - n/a as yet (AFAIK?)
+</I>
+*Hell* no.  gpsd (actually, the combination of gpsd and our hotplug
+scripts) is meant to be zero-configuration - to autoconfigure itself by 
+doing discovery on its environment.  The second I add a config file, 
+it will become two bad things:
+
+(1) Something users have to futz with to get things working.
+
+(2) An excuse for lazy developers to duck making autoconfiguration work.
+
+That's why I won't do it.  Either failure would be poison; both together
+would be a crash landing with no survivors.
+
+&gt;<i> 3. Environment variable - same as above.
+</I>
+With the same issues.
+
+&gt;<i> 4. Command line option
+</I>
+And the same issues again.  We've added exactly *one* command-line
+option in the last five years (-b), and I kicked and screamed about
+that, and I only swallowed it because there seems to be no way to
+detect which devices are Bluetooth and might have broken firmware that
+will go outright catatonic on us if we try to configure it.
+
+You're new here, but some of our old-timers can porobably use these reminders.
+
+&gt;<i>                                     However, as I wrote before
+</I>&gt;<i> gpsd opens the device at startup, even when in &quot;wait&quot; mode, to detect
+</I>&gt;<i> the receiver.
+</I>
+Yeah, I know.  That's needed for a couple of reasons:
+
+(1) First, we need to know when something that looks like a GPS is not
+actually one, so we avoid camping on the sucker and eating packets 
+that should go elsewhere.  Like, what if it's a USB HID?  Blame the
+USB standards guys for not having a GPS device class, and/or the
+vendors for pumping out cheap reference designs that present the USB ID 
+of a USB-to-serial chip without giving the hotplug system a frickin' clue
+what's behind it.
+
+(2) Second, we need to know what kinds of data sources are available
+so we can match clients looking for GPS information to devices
+providing it - or clients looking for RTCM to devices providing it, or
+(soon) clients looking for AIVDM to devices providing it. 
+
+&gt;<i>  IMHO this should be delayed until the first client
+</I>&gt;<i> connects. There could be a configuration file that fully describes
+</I>&gt;<i> the unit and makes the detection unnecessary. There might be a tool,
+</I>&gt;<i> using the same detection code, to build such a configuration file.
+</I>
+No configuration file.  *Ever*.  Stupid idea, anyway, in the
+age of hotplug.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006610.html">[Gpsd-dev] Wait versus nowait
+</A></li>
+	<LI>Next message: <A HREF="006616.html">[Gpsd-dev] Wait versus nowait
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6614">[ date ]</a>
+              <a href="thread.html#6614">[ thread ]</a>
+              <a href="subject.html#6614">[ subject ]</a>
+              <a href="author.html#6614">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

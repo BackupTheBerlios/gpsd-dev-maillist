@@ -1,0 +1,109 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPSD Protocol Inconsistencies
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3CAANLkTi%3Djy2GtmuX8C66eQGskT4pM2pbTLGm467jszm_e%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008917.html">
+   <LINK REL="Next"  HREF="008909.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPSD Protocol Inconsistencies</H1>
+    <B>Jon Schlueter</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3CAANLkTi%3Djy2GtmuX8C66eQGskT4pM2pbTLGm467jszm_e%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] GPSD Protocol Inconsistencies">jon.schlueter at gmail.com
+       </A><BR>
+    <I>Sun Mar 20 19:40:58 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008917.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+        <LI>Next message: <A HREF="008909.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8907">[ date ]</a>
+              <a href="thread.html#8907">[ thread ]</a>
+              <a href="subject.html#8907">[ subject ]</a>
+              <a href="author.html#8907">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sat, Mar 19, 2011 at 2:31 PM, tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt; wrote:
+&gt;<i> GPGGA does have the number of satellites used, but the logs still show
+</I>&gt;<i> alt=nan with 5 satellites. &#160;Maybe you could use this being 3 (less
+</I>&gt;<i> than 4) to determine 2d v.s. 3d.
+</I>&gt;<i> If not,
+</I>
+That might be true that the GPS doesn't have a solutions for altitude yet
+even with 5 satellites that it is tracking.
+
+&gt;<i>
+</I>&gt;<i> Algorithm might be:
+</I>&gt;<i>
+</I>&gt;<i> 1. Determine the complete timestamp sentence set.
+</I>&gt;<i>
+</I>&gt;<i> 2. Determine the first sentence in the set.
+</I>&gt;<i>
+</I>&gt;<i> 3. Use the first sentence to determine the last sentence in the set.
+</I>&gt;<i> This will be a problem - my Venus GPS only does GPGSA every second,
+</I>&gt;<i> but RMC/GGA at the higher rates.
+</I>
+Do we have a log from your unit in the regression tests yet?
+it would be interesting to be able to look at the behavior as well as test
+any changes/proposed changes against a decent set of Data and edge cases
+
+&gt;<i> 4. upon receiving the last sentence in the set, evaluate all the data
+</I>&gt;<i> (including the validity of altitude) and emit the report.
+</I>
+NMEA Strings that are parsed for Time
+  * processGPRMC (merge_hhmmss, merge_ddmmyy, register_fractional_time )
+  * processGPGLL (merge_hhmmss, register_fractional_time)
+  * processGPGGA (merge_hhmmss, register_fractional_time)
+  * processGPGST (register_fractional_time)
+  * processGPGBS (register_fractional_time,
+  * processGPZDA (merge_hhmmss, set year/month/day in session)
+  * processPASHR (merge_hhmmss, register_fractional_time)
+
+end-of-cycle detector is found and documented here
+driver_nmea.c:1139
+
+It uses a loose set of logic to gate emitting date when it is bad and emit
+it when the date/time is valid.
+
+are there holes/issues you see with current implementation and time?
+
+Thanks for the input, and hope the pointers into the code help answer
+some of your questions.
+
+Jon
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008917.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+	<LI>Next message: <A HREF="008909.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8907">[ date ]</a>
+              <a href="thread.html#8907">[ thread ]</a>
+              <a href="subject.html#8907">[ subject ]</a>
+              <a href="author.html#8907">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

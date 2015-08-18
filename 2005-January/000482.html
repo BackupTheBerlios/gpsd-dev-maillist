@@ -1,0 +1,505 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Are the &quot;used&quot; flags updated correctly?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Are%20the%20%22used%22%20flags%20updated%20correctly%3F&In-Reply-To=%3C20050108155145.GD2479%40saruman.uio.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000481.html">
+   <LINK REL="Next"  HREF="000483.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Are the &quot;used&quot; flags updated correctly?</H1>
+    <B>Petter Reinholdtsen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Are%20the%20%22used%22%20flags%20updated%20correctly%3F&In-Reply-To=%3C20050108155145.GD2479%40saruman.uio.no%3E"
+       TITLE="[Gpsd-dev] Are the &quot;used&quot; flags updated correctly?">pere at hungry.com
+       </A><BR>
+    <I>Sat Jan  8 16:51:45 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000481.html">[Gpsd-dev] Are the &quot;used&quot; flags updated correctly?
+</A></li>
+        <LI>Next message: <A HREF="000483.html">[Gpsd-dev] Are the &quot;used&quot; flags updated correctly?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#482">[ date ]</a>
+              <a href="thread.html#482">[ thread ]</a>
+              <a href="subject.html#482">[ subject ]</a>
+              <a href="author.html#482">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>[Eric S. Raymond]
+&gt;<i> I don't have a patch against the current head, e.g. with the recent
+</I>&gt;<i> GSV changes.  If you'll send one, I'll look it over.
+</I>
+Ah.  Here it is.
+-------------- next part --------------
+Index: nmea_parse.c
+===================================================================
+--- nmea_parse.c	(revision 1296)
++++ nmea_parse.c	(working copy)
+@@ -13,54 +13,32 @@
+  *
+  **************************************************************************/
+ 
+-static char *field(char *sentence, short fn)
+-/* return the nth comma-delimited field from the sentence */
+-{
+-    static char result[100];
+-    char c, *p = sentence;
+-    unsigned int i; int n = fn;
+-
+-    while (n-- &gt; 0) {
+-        while ((c = *p++) != ',' &amp;&amp; c != '\0')
+-	    continue;
+-	if (c == '\0' &amp;&amp; n &gt;= 0)
+-	    return &quot;&quot;;
+-    }
+-    strncpy(result, p, sizeof(result)-1);
+-    p = result;
+-    i = 0;
+-    while (*p &amp;&amp; *p != ',' &amp;&amp; *p != '*' &amp;&amp; *p != '\r' &amp;&amp; ++i &lt; sizeof(result))
+-	p++;
+-    *p = '\0';
+-    return result;
+-}
+-
+-static void do_lat_lon(char *sentence, int begin, struct gps_data_t *out)
++static void do_lat_lon(char *field[], struct gps_data_t *out)
+ /* process a pair of latitude/longitude fields starting at field index BEGIN */
+ {
+     double lat, lon, d, m;
+     char str[20], *p;
+     int updated = 0;
+ 
+-    if (*(p = field(sentence, begin + 0)) != '\0') {
++    if (*(p = field[0]) != '\0') {
+ 	strncpy(str, p, 20);
+ 	sscanf(p, &quot;%lf&quot;, &amp;lat);
+ 	m = 100.0 * modf(lat / 100.0, &amp;d);
+ 	lat = d + m / 60.0;
+-	p = field(sentence, begin + 1);
++	p = field[1];
+ 	if (*p == 'S')
+ 	    lat = -lat;
+ 	if (out-&gt;latitude != lat)
+ 	    out-&gt;latitude = lat;
+ 	updated++;
+     }
+-    if (*(p = field(sentence, begin + 2)) != '\0') {
++    if (*(p = field[2]) != '\0') {
+ 	strncpy(str, p, 20);
+ 	sscanf(p, &quot;%lf&quot;, &amp;lon);
+ 	m = 100.0 * modf(lon / 100.0, &amp;d);
+ 	lon = d + m / 60.0;
+ 
+-	p = field(sentence, begin + 3);
++	p = field[3];
+ 	if (*p == 'W')
+ 	    lon = -lon;
+ 	if (out-&gt;longitude != lon)
+@@ -72,24 +50,24 @@
+     REFRESH(out-&gt;latlon_stamp);
+ }
+ 
+-static int update_field_i(char *sentence, int fld, int *dest)
++static int update_field_i(char *field, int *dest)
+ /* update an integer-valued field */
+ {
+     int tmp, changed;
+ 
+-    tmp = atoi(field(sentence, fld));
++    tmp = atoi(field);
+     changed = (tmp != *dest);
+     *dest = tmp;
+     return changed;
+ }
+ 
+-static int update_field_f(char *sentence, int fld, double *dest)
++static int update_field_f(char *field, double *dest)
+ /* update a float-valued field */
+ {
+     int changed;
+     double tmp;
+ 
+-    tmp = atof(field(sentence, fld));
++    tmp = atof(field);
+     changed = (tmp != *dest);
+     *dest = tmp;
+     return changed;
+@@ -157,7 +135,7 @@
+  *
+  **************************************************************************/
+ 
+-static void processGPRMC(char *sentence, struct gps_data_t *out)
++static void processGPRMC(int count, char *field[], struct gps_data_t *out)
+ /* Recommend Minimum Specific GPS/TRANSIT Data */
+ {
+     /*
+@@ -175,18 +153,23 @@
+ 
+      * SiRF chipsets don't return either Mode Indicator or magnetic variation.
+      */
+-    if (!strcmp(field(sentence, 2), &quot;A&quot;)) {
+-	merge_ddmmyy(field(sentence, 9), out);
+-	merge_hhmmss(field(sentence, 1), out);
+-	do_lat_lon(sentence, 3, out);
+-	out-&gt;speed_stamp.changed = update_field_f(sentence, 7, &amp;out-&gt;speed);
++
++    if (count &lt;= 9) {
++        return;
++    }
++
++    if (!strcmp(field[2], &quot;A&quot;)) {
++	merge_ddmmyy(field[9], out);
++	merge_hhmmss(field[1], out);
++	do_lat_lon(&amp;field[3], out);
++	out-&gt;speed_stamp.changed = update_field_f(field[7], &amp;out-&gt;speed);
+ 	REFRESH(out-&gt;speed_stamp);
+-	out-&gt;track_stamp.changed = update_field_f(sentence, 8, &amp;out-&gt;track);
++	out-&gt;track_stamp.changed = update_field_f(field[8], &amp;out-&gt;track);
+ 	REFRESH(out-&gt;track_stamp);
+     }
+ }
+ 
+-static void processGPGLL(char *sentence, struct gps_data_t *out)
++static void processGPGLL(int c UNUSED, char *field[], struct gps_data_t *out)
+ /* Geographic position - Latitude, Longitude */
+ {
+     /* Introduced in NMEA 3.0.  Here are the fields:
+@@ -208,14 +191,14 @@
+      * SiRF chipsets don't return the Mode Indicator.
+      * This code copes gracefully with both quirks.
+      */
+-    char *status = field(sentence, 7);
++    char *status = field[7];
+ 
+-    if (!strcmp(field(sentence, 6), &quot;A&quot;) &amp;&amp; status[0] != 'N') {
++    if (!strcmp(field[6], &quot;A&quot;) &amp;&amp; status[0] != 'N') {
+ 	int newstatus = out-&gt;status;
+ 
+-	do_lat_lon(sentence, 1, out);
++	do_lat_lon(&amp;field[1], out);
+ 	fake_mmddyyyy(out);
+-	merge_hhmmss(field(sentence, 5), out);
++	merge_hhmmss(field[5], out);
+ 	if (status[0] == 'D')
+ 	    newstatus = STATUS_DGPS_FIX;	/* differential */
+ 	else
+@@ -227,7 +210,7 @@
+     }
+ }
+ 
+-static void processGPVTG(char *sentence, struct gps_data_t *out)
++static void processGPVTG(int c UNUSED, char *field[], struct gps_data_t *out)
+ /* Track Made Good and Ground Speed */
+ {
+     /* There are two variants of GPVTG.  One looks like this:
+@@ -253,16 +236,16 @@
+ 
+      * which means we want to extract field 5.  We cope with both.
+      */
+-    out-&gt;track_stamp.changed = update_field_f(sentence, 1, &amp;out-&gt;track);;
++    out-&gt;track_stamp.changed = update_field_f(field[1], &amp;out-&gt;track);;
+     REFRESH(out-&gt;track_stamp);
+-    if (field(sentence, 2)[0] == 'T')
+-	out-&gt;speed_stamp.changed = update_field_f(sentence, 5, &amp;out-&gt;speed);
++    if (field[2][0] == 'T')
++	out-&gt;speed_stamp.changed = update_field_f(field[5], &amp;out-&gt;speed);
+     else
+-	out-&gt;speed_stamp.changed = update_field_f(sentence, 3, &amp;out-&gt;speed);
++	out-&gt;speed_stamp.changed = update_field_f(field[3], &amp;out-&gt;speed);
+     REFRESH(out-&gt;speed_stamp);
+ }
+ 
+-static void processGPGGA(char *sentence, struct gps_data_t *out)
++static void processGPGGA(int c UNUSED, char *field[], struct gps_data_t *out)
+ /* Global Positioning System Fix Data */
+ {
+     /*
+@@ -279,17 +262,17 @@
+            (empty field) time in seconds since last DGPS update
+            (empty field) DGPS station ID number (0000-1023)
+     */
+-    out-&gt;status_stamp.changed = update_field_i(sentence, 6, &amp;out-&gt;status);
++    out-&gt;status_stamp.changed = update_field_i(field[6], &amp;out-&gt;status);
+     REFRESH(out-&gt;status_stamp);
+     gpsd_report(3, &quot;GPGGA sets status %d\n&quot;, out-&gt;status);
+     if (out-&gt;status &gt; STATUS_NO_FIX) {
+ 	char	*altitude;
+ 
+ 	fake_mmddyyyy(out);
+-	merge_hhmmss(field(sentence, 1), out);
+-	do_lat_lon(sentence, 2, out);
+-        out-&gt;satellites_used = atoi(field(sentence, 7));
+-	altitude = field(sentence, 9);
++	merge_hhmmss(field[1], out);
++	do_lat_lon(&amp;field[2], out);
++        out-&gt;satellites_used = atoi(field[7]);
++	altitude = field[9];
+ 	/*
+ 	 * SiRF chipsets up to version 2.2 report a null altitude field.
+ 	 * See &lt;<A HREF="http://www.sirf.com/Downloads/Technical/apnt0033.pdf">http://www.sirf.com/Downloads/Technical/apnt0033.pdf</A>&gt;.
+@@ -311,7 +294,7 @@
+     }
+ }
+ 
+-static void processGPGSA(char *sentence, struct gps_data_t *out)
++static void processGPGSA(int c UNUSED, char *field[], struct gps_data_t *out)
+ /* GPS DOP and Active Satellites */
+ {
+     /*
+@@ -328,17 +311,17 @@
+      */
+     int i, changed = 0;
+     
+-    out-&gt;mode_stamp.changed = update_field_i(sentence, 2, &amp;out-&gt;mode);
++    out-&gt;mode_stamp.changed = update_field_i(field[2], &amp;out-&gt;mode);
+     REFRESH(out-&gt;mode_stamp);
+     gpsd_report(3, &quot;GPGSA sets mode %d\n&quot;, out-&gt;mode);
+-    changed |= update_field_f(sentence, 15, &amp;out-&gt;pdop);
+-    changed |= update_field_f(sentence, 16, &amp;out-&gt;hdop);
+-    changed |= update_field_f(sentence, 17, &amp;out-&gt;vdop);
++    changed |= update_field_f(field[15], &amp;out-&gt;pdop);
++    changed |= update_field_f(field[16], &amp;out-&gt;hdop);
++    changed |= update_field_f(field[17], &amp;out-&gt;vdop);
+     for (i = 0; i &lt; MAXCHANNELS; i++)
+ 	out-&gt;used[i] = 0;
+     out-&gt;satellites_used = 0;
+     for (i = 0; i &lt; MAXCHANNELS; i++) {
+-        out-&gt;used[i] = atoi(field(sentence, i+3));
++        out-&gt;used[i] = atoi(field[i+3]);
+         if (out-&gt;used[i] &gt; 0)
+                 out-&gt;satellites_used++;
+     }
+@@ -368,7 +351,7 @@
+     return 0;
+ }
+ 
+-static void processGPGSV(char *sentence, struct gps_data_t *out)
++static void processGPGSV(int count, char *field[], struct gps_data_t *out)
+ /* GPS Satellites in View */
+ {
+     /*
+@@ -384,9 +367,12 @@
+                 There my be up to three GSV sentences in a data packet
+      */
+     int changed, fldnum;
++    if (count &lt;= 3) {
++        return;
++    }
+ 
+-    out-&gt;await = atoi(field(sentence, 1));
+-    if (sscanf(field(sentence, 2), &quot;%d&quot;, &amp;out-&gt;part) &lt; 1)
++    out-&gt;await = atoi(field[1]);
++    if (sscanf(field[2], &quot;%d&quot;, &amp;out-&gt;part) &lt; 1)
+         return;
+     else if (out-&gt;part == 1)
+     {
+@@ -399,10 +385,10 @@
+ 
+     changed = 0;
+     for (fldnum = 4; fldnum &lt; 20; ) {
+-	changed |= update_field_i(sentence, fldnum++, &amp;out-&gt;PRN[out-&gt;satellites]);
+-	changed |= update_field_i(sentence, fldnum++, &amp;out-&gt;elevation[out-&gt;satellites]);
+-	changed |= update_field_i(sentence, fldnum++, &amp;out-&gt;azimuth[out-&gt;satellites]);
+-	changed |= update_field_i(sentence, fldnum++, &amp;out-&gt;ss[out-&gt;satellites]);
++	changed |= update_field_i(field[fldnum++], &amp;out-&gt;PRN[out-&gt;satellites]);
++	changed |= update_field_i(field[fldnum++], &amp;out-&gt;elevation[out-&gt;satellites]);
++	changed |= update_field_i(field[fldnum++], &amp;out-&gt;azimuth[out-&gt;satellites]);
++	changed |= update_field_i(field[fldnum++], &amp;out-&gt;ss[out-&gt;satellites]);
+ 	if (!out-&gt;PRN[out-&gt;satellites])
+ 	    break;
+ 	else
+@@ -421,6 +407,79 @@
+     }
+ }
+ 
++/* Based on code from roadmap NMEA parsing code. */
++static void processPGRMM (int count, char *field[],
++			  struct gps_data_t *out UNUSED)
++{
++    struct {
++        char  datum[256];
++    } pgrmm;
++
++    if (count &lt;= 1) {
++        return;
++    }
++
++    strncpy (pgrmm.datum, field[1], sizeof(pgrmm.datum));
++}
++
++
++/* Based on code from roadmap NMEA parsing code. */
++static int decode_numeric (char *value, int unit)
++{
++    int result;
++
++    if (strchr (value, '.') != NULL) {
++       result = (int) (atof(value) * unit);
++    } else {
++       result = atoi (value) * unit;
++    }
++    return result;
++}
++
++
++/* Based on code from roadmap NMEA parsing code. */
++static char *pgrme_unit (const char *original)
++{
++    if (strcasecmp (original, &quot;M&quot;) == 0) {
++        return &quot;cm&quot;;
++    }
++
++    gpsd_report(1, &quot;unknown distance unit '%s'&quot;, original);
++    return &quot;??&quot;;
++}
++
++/* Based on code from roadmap NMEA parsing code. */
++static void processPGRME (int count, char *field[],
++			  struct gps_data_t *out UNUSED)
++{
++    struct {
++       int   horizontal;
++       char  horizontal_unit[4];
++       int   vertical;
++       char  vertical_unit[4];
++       int   three_dimensions;
++       char  three_dimensions_unit[4];
++    } pgrme;
++    
++    if (count &lt;= 6) {
++       return;
++    }
++
++    pgrme.horizontal = decode_numeric (field[1], 100);
++    strcpy (pgrme.horizontal_unit, pgrme_unit (field[2]));
++
++    pgrme.vertical = decode_numeric (field[3], 100);
++    strcpy (pgrme.vertical_unit, pgrme_unit (field[4]));
++
++    pgrme.three_dimensions = decode_numeric (field[5], 100);
++    strcpy (pgrme.three_dimensions_unit, pgrme_unit (field[6]));
++}
++
++static void processIgnored (int count UNUSED, char *field[] UNUSED,
++			    struct gps_data_t *out UNUSED)
++{
++}
++
+ static short nmea_checksum(char *sentence)
+ /* is the checksum on the specified sentence good? */
+ {
+@@ -450,29 +509,61 @@
+     sprintf(p, &quot;%02X\r\n&quot;, sum);
+ }
+ 
++typedef void (*nmea_decoder) (int count, char *f[], struct gps_data_t *out);
++#define NMEA_PHRASE( s, d ) { s, d }
++static struct {
++    char *name;
++    nmea_decoder decoder;
++} nmea_phrase[] = {
++    NMEA_PHRASE(&quot;GPRMC&quot;, processGPRMC),
++    NMEA_PHRASE(&quot;GPGGA&quot;, processGPGGA),
++    NMEA_PHRASE(&quot;GPGLL&quot;, processGPGLL), /* Not supported by roadmap */
++    NMEA_PHRASE(&quot;GPVTG&quot;, processGPVTG), /* Not supported by roadmap */
++    NMEA_PHRASE(&quot;GPGSA&quot;, processGPGSA),
++    NMEA_PHRASE(&quot;GPGSV&quot;, processGPGSV),
++
++    NMEA_PHRASE(&quot;PRWIZCH&quot;, processIgnored),
++
++    /* Garmin extensions: */
++    NMEA_PHRASE(&quot;PGRME&quot;, processPGRME),
++    NMEA_PHRASE(&quot;PGRMM&quot;, processPGRMM),
++};
++
+ int nmea_parse(char *sentence, struct gps_data_t *outdata)
+ /* parse an NMEA sentence, unpack it into a session structure */
+ {
+-    if (nmea_checksum(sentence+1)) {
+-	if (PREFIX(&quot;$GPRMC&quot;, sentence)) {
+-	    processGPRMC(sentence, outdata);
+-	} else if (PREFIX(&quot;$GPGGA&quot;, sentence)) {
+-	    processGPGGA(sentence, outdata);
+-	} else if (PREFIX(&quot;$GPGLL&quot;, sentence)) {
+-	    processGPGLL(sentence, outdata);
+-	} else if (PREFIX(&quot;$GPVTG&quot;, sentence)) {
+-	    processGPVTG(sentence, outdata);
+-	} else if (PREFIX(&quot;$GPGSA&quot;, sentence)) {
+-	    processGPGSA(sentence, outdata);
+-	} else if (PREFIX(&quot;$GPGSV&quot;, sentence)) {
+-	    processGPGSV(sentence, outdata);
+-	} else if (PREFIX(&quot;$PRWIZCH&quot;, sentence)) {
+-	    /* do nothing */;
+-	} else
+-	    return -1;
+-    } else
+-        gpsd_report(1, &quot;Bad NMEA checksum: '%s'\n&quot;, sentence);
+-    return 0;
++    int retval = -1;
++    unsigned int i;
++    int count;
++    char *p, *s;
++    char *field[80];
++
++    if ( ! nmea_checksum(sentence+1)) {
++      gpsd_report(1, &quot;Bad NMEA checksum: '%s'\n&quot;, sentence);
++      return 0;
++    }
++
++    /*
++     * Split the sentence on every comma, making a list of arguments to pass
++     * to the phrase parsers.
++     */
++    s = strdup(sentence); /* make a copy before we edit it. */
++    for (i = 0, p = s; p != NULL &amp;&amp; *p != 0; ++i, p = strchr (p, ',')) {
++	*p = 0;
++	field[i] = ++p;
++    }
++    count = i;
++
++    for (i = 0; i &lt; sizeof(nmea_phrase)/sizeof(nmea_phrase[0]); ++i) {
++        if (0 == strcmp(nmea_phrase[i].name, field[0]) &amp;&amp;
++	    nmea_phrase[i].decoder) {
++	    (nmea_phrase[i].decoder)(count, field, outdata);
++	    retval = 0;
++	    break;
++	}
++    }
++    free(s);
++    return retval;
+ }
+ 
+ void nmea_send(int fd, const char *fmt, ... )
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000481.html">[Gpsd-dev] Are the &quot;used&quot; flags updated correctly?
+</A></li>
+	<LI>Next message: <A HREF="000483.html">[Gpsd-dev] Are the &quot;used&quot; flags updated correctly?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#482">[ date ]</a>
+              <a href="thread.html#482">[ thread ]</a>
+              <a href="subject.html#482">[ subject ]</a>
+              <a href="author.html#482">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

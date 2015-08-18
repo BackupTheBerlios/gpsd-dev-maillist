@@ -1,0 +1,91 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] Restrict the barrier() function to x86 and x86_64
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Restrict%20the%20barrier%28%29%20function%20to%20x86%20and%0A%20x86_64&In-Reply-To=%3C4D91B086.2030105%40tmsw.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009173.html">
+   <LINK REL="Next"  HREF="009191.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] Restrict the barrier() function to x86 and x86_64</H1>
+    <B>Terje Mathisen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Restrict%20the%20barrier%28%29%20function%20to%20x86%20and%0A%20x86_64&In-Reply-To=%3C4D91B086.2030105%40tmsw.no%3E"
+       TITLE="[Gpsd-dev] [PATCH] Restrict the barrier() function to x86 and x86_64">terje at tmsw.no
+       </A><BR>
+    <I>Tue Mar 29 12:12:22 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009173.html">[Gpsd-dev] [PATCH] Restrict the barrier() function to x86 and x86_64
+</A></li>
+        <LI>Next message: <A HREF="009191.html">[Gpsd-dev] [PATCH] Restrict the barrier() function to x86 and x86_64
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9175">[ date ]</a>
+              <a href="thread.html#9175">[ thread ]</a>
+              <a href="subject.html#9175">[ subject ]</a>
+              <a href="author.html#9175">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Eric Raymond wrote:
+&gt;<i> Actually I'd love to do what tz suggested, go with __sync_synchronize() and
+</I>&gt;<i> throw the problem back in GCC's lap.  Except somewhere I read an allegation
+</I>&gt;<i> that there's a relevant bug affecting GCC&lt;  4.4.  This may be it:
+</I>&gt;<i>
+</I>&gt;<i> <A HREF="http://gcc.gnu.org/bugzilla/show_bug.cgi?id=36793">http://gcc.gnu.org/bugzilla/show_bug.cgi?id=36793</A>
+</I>&gt;<i>
+</I>&gt;<i> It seems to be addressing our case exactly, if I'm understanding it
+</I>&gt;<i> correctly.
+</I>
+Yes and no:
+
+Intel do have *FENCE opcodes on later x86/x64 cpus, but these have been 
+added to handle the case where you have weakly ordered memory, i.e. 
+typically in hw device drivers.
+
+For our usage, with regular malloc() memory, the only thing we're really 
+looking for is a hint to the compiler/optimizer to not move load/store 
+operations across the desired barrier location, and this is what 
+__sync_synchronize() should do.
+
+The effect of _ReadWriteBarrier() on the Microsoft compiler is exactly 
+analogous. I.e. this is not a problem for anthing in the x86 camp, but 
+we really need to check what gcc does on any other 
+significant/interesting architecture.
+
+Terje
+-- 
+- &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Terje at tmsw.no</A>&gt;
+&quot;almost all programming can be viewed as an exercise in caching&quot;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009173.html">[Gpsd-dev] [PATCH] Restrict the barrier() function to x86 and x86_64
+</A></li>
+	<LI>Next message: <A HREF="009191.html">[Gpsd-dev] [PATCH] Restrict the barrier() function to x86 and x86_64
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9175">[ date ]</a>
+              <a href="thread.html#9175">[ thread ]</a>
+              <a href="subject.html#9175">[ subject ]</a>
+              <a href="author.html#9175">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

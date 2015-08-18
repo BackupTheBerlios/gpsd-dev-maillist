@@ -1,0 +1,82 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH 2/5] Bumping up gps_mask_t from &quot;unsigned int&quot; to &quot;uint64_t&quot; to allow more bits (i.e. NOISE_SET)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%202/5%5D%20Bumping%20up%20gps_mask_t%20from%20%22unsigned%0A%20int%22%20to%20%22uint64_t%22%20to%20allow%20more%20bits%20%28i.e.%20NOISE_SET%29&In-Reply-To=%3C20110126000636.GA31491%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008534.html">
+   <LINK REL="Next"  HREF="008508.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH 2/5] Bumping up gps_mask_t from &quot;unsigned int&quot; to &quot;uint64_t&quot; to allow more bits (i.e. NOISE_SET)</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%202/5%5D%20Bumping%20up%20gps_mask_t%20from%20%22unsigned%0A%20int%22%20to%20%22uint64_t%22%20to%20allow%20more%20bits%20%28i.e.%20NOISE_SET%29&In-Reply-To=%3C20110126000636.GA31491%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] [PATCH 2/5] Bumping up gps_mask_t from &quot;unsigned int&quot; to &quot;uint64_t&quot; to allow more bits (i.e. NOISE_SET)">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Jan 26 01:06:36 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008534.html">[Gpsd-dev] [PATCH 2/5] Bumping up gps_mask_t from &quot;unsigned	int&quot; to &quot;uint64_t&quot; to allow more bits (i.e. NOISE_SET)
+</A></li>
+        <LI>Next message: <A HREF="008508.html">[Gpsd-dev] [PATCH 3/5] Adding GPGST parsing code to NEMA driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8535">[ date ]</a>
+              <a href="thread.html#8535">[ thread ]</a>
+              <a href="subject.html#8535">[ subject ]</a>
+              <a href="author.html#8535">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Roderick Medina &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">rmedina at ticom-geo.com</A>&gt;:
+&gt;<i> How do you make sure that things like DATA_IS are also 64 bit? I just
+</I>&gt;<i> tried this manually on my system and though you can get the raw numeric
+</I>&gt;<i> constants to be 64 bit by changing the &quot;u&quot; suffix to &quot;llu&quot;, DATA_IS
+</I>&gt;<i> continues to default to 32 bit despite being an OR-ing of 64 bit
+</I>&gt;<i> constants (I don't know the syntax to force DATA_IS to be 64 bit). In
+</I>&gt;<i> practice, the top bits get chopped off in gpsd.c when something does
+</I>&gt;<i> math against DATA_IS such as &quot;changed &amp; DATA_IS&quot;. I suppose that doesn't
+</I>&gt;<i> affect anyone until you put something in the higher bits that you want
+</I>&gt;<i> included by DATA_IS.
+</I>
+DATA_IS is a macro, ~(ONLINE_IS|PACKET_IS|CLEAR_IS|REPORT_IS).  If any of
+the components is 64 bits, the result of | should be promoted to that size
+by the compiler.
+
+I'm more concerned abot the fact that the llu suffix seems to be the closest 
+thing to &quot;force this constant to 64 bits&quot;.  If we ever bump into a compiler
+for which long long is 32 bits and it doesn't check literals for overfkow,
+bad things could happen.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008534.html">[Gpsd-dev] [PATCH 2/5] Bumping up gps_mask_t from &quot;unsigned	int&quot; to &quot;uint64_t&quot; to allow more bits (i.e. NOISE_SET)
+</A></li>
+	<LI>Next message: <A HREF="008508.html">[Gpsd-dev] [PATCH 3/5] Adding GPGST parsing code to NEMA driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8535">[ date ]</a>
+              <a href="thread.html#8535">[ thread ]</a>
+              <a href="subject.html#8535">[ subject ]</a>
+              <a href="author.html#8535">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

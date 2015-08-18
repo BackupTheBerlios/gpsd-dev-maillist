@@ -1,0 +1,395 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Correct etiquette about gpsd patches
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Correct%20etiquette%20about%20gpsd%20patches&In-Reply-To=%3CPine.LNX.4.63.0508061911290.29695%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002837.html">
+   <LINK REL="Next"  HREF="002869.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Correct etiquette about gpsd patches</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Correct%20etiquette%20about%20gpsd%20patches&In-Reply-To=%3CPine.LNX.4.63.0508061911290.29695%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] Correct etiquette about gpsd patches">gem at rellim.com
+       </A><BR>
+    <I>Sun Aug  7 09:17:26 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002837.html">[Gpsd-dev] Correct etiquette about gpsd patches
+</A></li>
+        <LI>Next message: <A HREF="002869.html">[Gpsd-dev] Correct etiquette about gpsd patches
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2842">[ date ]</a>
+              <a href="thread.html#2842">[ thread ]</a>
+              <a href="subject.html#2842">[ subject ]</a>
+              <a href="author.html#2842">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Rob!
+
+Note:  Curts has a fix to the new serial driver.  That fixes the GPGSV
+problems with the garmin, bluetooth and likely other GPS.  With that
+patch the fudge I need has changed to a much more reasonable 120 mS.
+
+On Sat, 6 Aug 2005, Rob Janssen wrote:
+
+&gt;<i> I did not miss the message that you changed things, but when I had seen
+</I>&gt;<i> that first message I could have come up with changing that 0.675 instead
+</I>&gt;<i> of the max offset, and we could have discussed ways of tuning that value
+</I>&gt;<i> without getting upset about unwarranted changes to ntpshm.c
+</I>&gt;<i>
+</I>If you want every code you download to always work, then skip the SVN.
+SVN is for trying things out.  I refuse to worry about all the times
+Eric, or anyone else breaks my code, as long as we get it right for
+each release.
+
+&gt;<i> &gt; OK, pick a place.  I really do not care where it is.  If it can be
+</I>&gt;<i> &gt; automatic then great, if it has to be manual, then that is OK.  You
+</I>&gt;<i> &gt; choose.
+</I>&gt;<i>
+</I>&gt;<i> I think the value has to be in one of the dynamic datastructures.
+</I>
+I agree.  If several GPS are hooked up, they likely will need different
+fudges, assuming zero is not acceptable to all.
+
+&gt;<i> But I am not jumping to a solution yet as I realize that there may be two
+</I>&gt;<i> different offsets we want to set for a binary protocol: one for the
+</I>&gt;<i> timestamp info that is available in all protocols, and one for the
+</I>&gt;<i> dedicated PPS message that is available in some protocols but usually not
+</I>&gt;<i> in all versions of it.
+</I>
+Never seen the dedicated PPS thing.  All yours.
+
+My guess is that the offset is not related much to protocol, but to
+model number.  We have learned over and over again that saying NMEA is
+little guarantee of anything.  Even in the Garmin line I expect the
+CPU used vary in speed and therefore the fudge.
+
+If we can come up for a fudge per model that might work, with a default.
+
+&gt;<i> &gt; Who needs the fudge after the ntpd has the correct time?  Either the
+</I>&gt;<i> &gt; PPS lines up on the 'true' time unit, or it does not.
+</I>&gt;<i>
+</I>&gt;<i> You keep missing the chicken-and-egg issue that you have when trying to
+</I>&gt;<i> sync to PPS when not yet being locked to some absolute time info.  You
+</I>&gt;<i> cannot make PPS lock onto true time unless you know what that is, and when
+</I>&gt;<i> only an unknown NMEA GPS receiver is connected you don't know that.  And
+</I>&gt;<i> when you are not locked you cannot know the offset of message time
+</I>&gt;<i> relative to PPS.
+</I>
+First of all, please get off the &quot;NMEA is bad&quot; kick.  It may be, but the
+problem is way more generic than that.  I am doing garmin binary as well
+as NMEA and that has exactly the same issue and similar jitter.
+
+I used to work for a company that made Calibration lab equipment.  They
+got bought out by Phillips, you have heard of Phillips?  I very much
+appreciate the Chicken/Egg aspects of metrology.  There are really
+very, very, few absolute constants.  The few that do exist are so hard
+to measure that we always have to leave it up to others to hold the
+standard to which we agree on.
+
+Before you place faith in any precision instrument you compare it to
+another precision instrument and then either calculate a calibration
+factor, or you assume the worst case measurement is good enough for your
+purposes.
+
+If all someone needs is a second or two accuracy, then the basic gps
+serial time is much more than sufficient.  The digital clocks at my kids
+school wander +/- 5minutes.  They would love this accuracy.  When my
+brother wants to practice with his sextant in the middle of the Atlantic
+he would kill for +/- 1Sec accuracy.
+
+If someone needs a stable clock (say 1uS jitter) yet absolute accuracy
+(+/- 1 Sec) is not critical, then PPS with gps serial is more than
+adequate.
+
+If someone really needs a 1uS accuracy, then he is not the average Joe
+and can afford the one time calibration of the PPS to GPS serial time
+and then save the fudge for all time.  Given the reports we constantly
+get of GPS that compute the GPS/UTC time offset wrong it is clear folks
+know how to do that.
+
+&gt;<i> The only reasonable way to make ntpd lock to correct time, is to first let
+</I>&gt;<i> it lock to an absolute source (the message time), and when it is within a
+</I>&gt;<i> reasonable difference of that source let it then lock to PPS.  This is
+</I>&gt;<i> done in ntpshm.c by withholding PPS info to ntpd until ntpd has set the
+</I>&gt;<i> system time to within 400ms of the received PPS.
+</I>
+Does not seem to me there is a way to avoid this problem without knowing
+the fudge in advance.  My lowest fudge is 0.050mS.  Your largest is 1.5
+S.  Without knowing the proper fudge how can the current code tell the
+difference between an arbitrary GPS with a fudge of 0.050 S one one of
+1.050 S?  My new GPS has a fudge of 0.120 S.  How does it tell that from a
+fudge of 1.120 S?
+
+We have three ways of knowing the fudge:
+	The user can calculate it himself using ntpd and another time source.
+	The GPS can provide it, as yours does.
+	gpsd can supply a table, in code or documentation, of known values.
+
+One thing I can do is to set a fudge of zero in just the garmin NMEA.
+The garmin binary would be left at zero.  The only samples of garmin we
+have would then easily pull in with a 400mS PUT_MAX_OFFSET.  Other NMEA,
+other binary, and yours would be untouched for now.
+
+When someone steps forward with a GPS that needs a non-zero fudge we acn
+try to jam it in a driver for that GPS.
+
+&gt;<i> As you cannot readback
+</I>&gt;<i> the fudge that ntpd applies, there is no easy way to tell the offset that
+</I>&gt;<i> ntpd still has between system clock and message time.  So we check the
+</I>&gt;<i> offset on our end, which does not include the ntpd fudge.
+</I>
+Chicken and Egg again.  ntpd only applies a fudge that we ask it to.
+
+If the ntp fudge is the right one, then who cares?  The PPS lines up
+just right and we accept it as valid.  If the ntp fudge lines up wrong,
+then the user shot himself in the foot and the fix is in his ntp.conf,
+not the gpsd code.
+
+&gt;<i> When this offset check is not made or is too broad, ntpd may lock to the
+</I>&gt;<i> PPS clock without having correct time, and it will sync nicely on UTC
+</I>&gt;<i> seconds interval but may be one or more seconds off.  This I consider
+</I>&gt;<i> unacceptable.
+</I>
+I agree that is unacceptable.  Otherwise I would not care about PPS.  I
+do not agree that your solution prevents it.
+
+&gt;<i> &gt;&gt; This problem is specific to your use of NMEA.
+</I>&gt;<i> &gt;&gt; NMEA is not a suitable protocol for this purpose, imho.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Ah, wrong.  I'll bet $20 that when I get the garmin binary working that
+</I>&gt;<i> &gt; the offset is similar to the same garmin in NMEA mode.
+</I>&gt;<i>
+</I>&gt;<i> You seem to assume that binary mode is just a different way to package the
+</I>&gt;<i> info that you already have in NMEA mode.  That is not true, at least not
+</I>&gt;<i> for the binary modes I have investigated.
+</I>
+Well, I refer you to the Garmin docs then:
+
+<A HREF="http://www.garmin.com/support/commProtocol.html">http://www.garmin.com/support/commProtocol.html</A>
+
+The NMEA data and the Garmin data are virtually identical.  The changes
+can be summarized as:
+	fixed length vs. variable length
+	one sentence for all PVT data vs. instead of spread over several
+	once sentence for all SAT data vs. instead of spread over several
+	binary data vs. ascis encoded data
+
+&gt;<i> Binary modes (maybe better referred to as manufacturer-specific modes)
+</I>&gt;<i> usually provide more information than NMEA, and when you are lucky there
+</I>&gt;<i> are special messages that tell you the current time instead of a
+</I>&gt;<i> time-of-fix.
+</I>
+Well, in this case my luck is bad.  OTOH, the garmin firmware is
+approved for use in manned flight by numerous goverments at Mach 1.  So
+I have a lot of trust that it does what I want well.  What I want is
+just PVT.  The PPS gives me accuracy to 1uS and that is good enough for
+me.
+
+&gt;<i> &gt; Either way I
+</I>&gt;<i> &gt; need an offset different than yours.  Unless my garmin binary is 675mS
+</I>&gt;<i> &gt; +/- 400mS the current code will fail.  That has zero to do with protocol.
+</I>&gt;<i> &gt; The issue is probably the CPU time in the GPS to calculate the position,
+</I>&gt;<i> &gt; not the time to output an NMEA sentence.
+</I>&gt;<i>
+</I>&gt;<i> The main issue, as I explain for the last time now, is the way internal
+</I>&gt;<i> tasks in the receiver operate asynchronously.
+</I>
+That would be jitter, not offset.  I have NO jitter problems, I have an
+offset problem.  The offset from GPS sentence to PPS is very stable with
+a LONG TERM value of (+/- 10mS).  My measured offset would be no problem
+if the gpsd code was not adding a 675mS offset and then complaining
+my offset from PPS is more than 400mS!
+
+&gt;<i> You have some task that
+</I>&gt;<i> takes the correlator output and calculates a fix, that indeed takes some
+</I>&gt;<i> time, and this fix is stored.  Another task checks what output you want in
+</I>&gt;<i> what intervals, and it ships out messages.  Finally there is some output
+</I>&gt;<i> ringbuffer that gets emptied by an interrupt handler.   Together those
+</I>&gt;<i> activities delay the fix data, and whether this delay is constant depends
+</I>&gt;<i> on how the tasks are synchronized.
+</I>
+I have no doubt this is a problem in many GPS.   Just becasue some GPS
+are sub-optimal does not mean we do not use the good ones.  8 months with
+the GPS-18/USB proves to me it does not have the problem.  Not solving
+some problems because you can not solve them all is not a good way to
+approach this.
+
+&gt;<i> &gt;&gt; I have also seen others remark that they could not get really reliable
+</I>&gt;<i> &gt;&gt; results with NMEA, for example users of Jupiter receivers report that
+</I>&gt;<i> &gt;&gt; sometimes the delay jumps up or down by one second (suggesting the
+</I>&gt;<i> &gt;&gt; independent processes of fix and serial output have slipped enough to
+</I>&gt;<i> &gt;&gt; have
+</I>&gt;<i> &gt;&gt; one result more or less in the pipeline).
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; We may, or may not, be able to solve the Jupiter, but a simple way to
+</I>&gt;<i> &gt; change offset will solve my problem.
+</I>&gt;<i>
+</I>&gt;<i> I find it strange that you care only about fixing your own problem and not
+</I>&gt;<i> what problems others have, because before you entered the scene the
+</I>&gt;<i> problem was already solved for someone else (not me, I do not use NMEA!),
+</I>&gt;<i> and you start to pull things around anyway.
+</I>
+Well then you misunderstand.  I certainly do not intend to break any
+other GPS.  It is still experimentally unproven that changeing the lock
+range from 400mS to 500mS has had a bad effect on anything in real life.
+Nothing is released and this is just SVN HEAD.  So you can tone down the
+drama a bit.  I consider fixing my case a stepping stone to fixing more
+and more cases.
+
+&gt;<i> I think the quick solution to your problem is well known by now, you can
+</I>&gt;<i> just change everything back to the way it was and modify the offset in
+</I>&gt;<i> drivers.c locally, and then we can think about a solution that works for
+</I>&gt;<i> more than one receiver.
+</I>
+Well we KNOW that the simple drivers.c change you suggest WILL break things
+for whoever wanted the 0.675 so let's pass on that idea.  We both want
+a more general fix.
+
+&gt;<i> &gt;&gt; Check if they support some message that claims to report correct time,
+</I>&gt;<i> &gt;&gt; with  reference to PPS, instead of merely containing a timestamp of
+</I>&gt;<i> &gt;&gt; measurement.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Do not have that from sentence, but as long as I can get it within a
+</I>&gt;<i> &gt; second
+</I>&gt;<i> &gt; it does not matter at all.
+</I>
+&gt;<i> Apparently the Garmin protocol is not that great.
+</I>&gt;<i> But when you implement it and put the 1-second offset there, there is no
+</I>&gt;<i> need to change the value in drivers.c
+</I>
+Except for all those people other than me that also want this to work
+and do not have a Garmin.  Let's work on a general fix for everyone.
+
+&gt;<i> &gt; Fine, have it your way, you pick.  Come up with a way that I get a fudge
+</I>&gt;<i> &gt; of 1.077 and you have a fudge of 0.675.  We KNOW that those values work
+</I>&gt;<i> &gt; very well for each of us.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Your choice, one or all of:
+</I>&gt;<i> &gt; 	ntpd.conf
+</I>&gt;<i> &gt; 	gpsd.conf
+</I>&gt;<i> &gt; 	environment var
+</I>&gt;<i> &gt; 	sentence decoding
+</I>&gt;<i> &gt; 	#define
+</I>&gt;<i> &gt; 	command line switch
+</I>&gt;<i> &gt; 	automagic
+</I>&gt;<i> &gt; 	other
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Pick one.  I do not care.  (Eric might.)  The only thing NOT acceptable is
+</I>&gt;<i> &gt; leaving in a magic number that only works for your favorite brand and
+</I>&gt;<i> &gt; not for my favorite brand or someone else's favorite brand.
+</I>&gt;<i>
+</I>&gt;<i> I agree with you that configuration is required, but that is a dead
+</I>&gt;<i> end because Eric does not want it.
+</I>
+Please notice the ntpd.conf above.  That is a manual configuration that
+must be done in any case before gpsd can be used with ntpd.conf.  Any reason
+not to put it there?
+
+&gt;<i> As automatic methods are no solution in this case, we need something like
+</I>&gt;<i> a file or commandline arg.  ./configure parameter would be possible, but I
+</I>&gt;<i> think it is worse.
+</I>&gt;<i> Remember that gpsd may drive more than one receiver so some simple
+</I>&gt;<i> implementations may not really cut it.
+</I>
+I could live with a command line arg.  As we get experience we could learn
+enough to make something automatic.  Not sure Eric would like that long
+term either.  I am not happy about having the required addition to
+ntp.conf AND another one somewhere else.  If the default was zero that
+wold work for me.
+
+We could also graft another variable in to the gps_type_t for the fudge
+for that gps type.  Dunno about you, but I can figure out how to ID
+the GPS that I can test for.  There are a lot of IDs in the code now.
+
+That also solves the multiple GPS problems since the fudge is adjacent to
+the rest of the specific GPS info.  The data in the structure can be
+static for those that can be reliably dynamic.
+
+&gt;<i> &gt; Pick something easy, and I'll code it if you want.  Otherwise send me
+</I>&gt;<i> &gt; patches and I'll svn them in.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Just two requirements:
+</I>&gt;<i> &gt; 	I see fudge of 1.077, you see 0.675.
+</I>&gt;<i> &gt; 	We do it before Eric gets back.
+</I>&gt;<i>
+</I>&gt;<i> Let me re-iterate that I have not put the NMEA timesync in, and while I do
+</I>&gt;<i> not remember if I put the 0.675 in on someone else's request or if someone
+</I>&gt;<i> put it there, I certainly have no receiver that requires that value.
+</I>
+Well I do not care either, if we can put a model specific fudge in
+gps_type_t.  For at least a while that gives us enough flexibility to
+handle many GPS.  As we get more than the small data set we have we
+can come up with improvements.
+
+&gt;<i> If it helps you, you can put 0.8 or 1.0 there until we find a real
+</I>&gt;<i> solution,
+</I>
+Well, now it looks like I only need a 0.120mS fudge.  Given  +/- 400mS
+PUT_MAX_OFFSET any fudge from 0 to about 400mS works for me.
+
+The garmin binary code has zero fudge and that works fine.  When I force
+the Garmin NMEA to zero that works fine.
+
+Give me a random fudge and it will work 80% of the time.  :-)
+
+&gt;<i> or just declare that gpsd will not be able to timesync on NMEA
+</I>&gt;<i> receivers.
+</I>
+Well maybe it doesn't work for you, but it works great for me, with the
+PPS I am getting 0.002 mS jitter from ntpq!  Without PPS it is still
+better than 5 mS.  That is better than I get from time.windows.com
+over TCP/IP.  Just because some GPS are so crappy this does not work
+perfectly does not mean we should not support the ones that do work.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.1 (GNU/Linux)
+
+iD8DBQFC9bWJ8KZibdeR3qURAt24AKDlQkJpocZhxARfO8qiZBE7067LAwCg1UBE
+MUfcajY9BXiX/ojyoBdfCtE=
+=jmyG
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002837.html">[Gpsd-dev] Correct etiquette about gpsd patches
+</A></li>
+	<LI>Next message: <A HREF="002869.html">[Gpsd-dev] Correct etiquette about gpsd patches
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2842">[ date ]</a>
+              <a href="thread.html#2842">[ thread ]</a>
+              <a href="subject.html#2842">[ subject ]</a>
+              <a href="author.html#2842">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

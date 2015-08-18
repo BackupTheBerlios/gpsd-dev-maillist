@@ -1,0 +1,155 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] bug in the fixed speed code ?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20bug%20in%20the%20fixed%20speed%20code%20%3F&In-Reply-To=%3C91981b3e0607070718laa4c4d0s5e36ee46b3ae7cef%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003943.html">
+   <LINK REL="Next"  HREF="003945.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] bug in the fixed speed code ?</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20bug%20in%20the%20fixed%20speed%20code%20%3F&In-Reply-To=%3C91981b3e0607070718laa4c4d0s5e36ee46b3ae7cef%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] bug in the fixed speed code ?">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Fri Jul  7 16:18:30 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003943.html">[Gpsd-dev] bug in the fixed speed code ?
+</A></li>
+        <LI>Next message: <A HREF="003945.html">[Gpsd-dev] bug in gpsd-2.33/zodiac.c:50
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3944">[ date ]</a>
+              <a href="thread.html#3944">[ thread ]</a>
+              <a href="subject.html#3944">[ subject ]</a>
+              <a href="author.html#3944">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hm. Right then. I guess I've got a few things I need to look at. Good catch.
+
+CK
+
+On 7/7/06, Raphael Jacquot &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">sxpert at esitcom.org</A>&gt; wrote:
+&gt;<i> -----BEGIN PGP SIGNED MESSAGE-----
+</I>&gt;<i> Hash: SHA1
+</I>&gt;<i>
+</I>&gt;<i> I downloaded svn this morning (12:30 CEST) and tried the fixed speed
+</I>&gt;<i> option on my carpc and it fails miserably..
+</I>&gt;<i>
+</I>&gt;<i> here's the configure command:
+</I>&gt;<i> ./configure --prefix=/usr --enable-dbus --enable-fixed-port-speed=4800
+</I>&gt;<i>
+</I>&gt;<i> and the result...
+</I>&gt;<i> carpc gpsd # gpsd -n -N -D 3 /dev/ttyS0
+</I>&gt;<i> gpsd: launching (Version 2.33)
+</I>&gt;<i> gpsd: listening on port 2947
+</I>&gt;<i> gpsd: successfully connected to the DBUS system bus
+</I>&gt;<i> gpsd: running with effective group ID 0
+</I>&gt;<i> gpsd: running with effective user ID 0
+</I>&gt;<i> gpsd: opening GPS data source at '/dev/ttyS0'
+</I>&gt;<i> gpsd: no probe matched...
+</I>&gt;<i> gpsd: speed 0, 8N1
+</I>&gt;<i> gpsd: gpsd_activate: opened GPS (5)
+</I>&gt;<i> gpsd: packet sniff finds type -1
+</I>&gt;<i> gpsd: packet sniff finds type -1
+</I>&gt;<i> {...}
+</I>&gt;<i> gpsd: packet sniff finds type -1
+</I>&gt;<i> gpsd: packet sniff finds type -1
+</I>&gt;<i> gpsd: speed 4800, 7N2
+</I>&gt;<i> gpsd: packet sniff finds type -1
+</I>&gt;<i> gpsd: packet sniff finds type -1
+</I>&gt;<i> {...}
+</I>&gt;<i> gpsd: packet sniff finds type -1
+</I>&gt;<i> gpsd: packet sniffer failed to sync up
+</I>&gt;<i> gpsd: closing GPS=/dev/ttyS0 (5)
+</I>&gt;<i> Segmentation fault
+</I>&gt;<i> carpc gpsd #
+</I>&gt;<i>
+</I>&gt;<i> compiling without the option appears to work with the following:
+</I>&gt;<i>
+</I>&gt;<i> carpc gpsd # gpsd -n -N -D 3 /dev/ttyS0
+</I>&gt;<i> gpsd: launching (Version 2.33)
+</I>&gt;<i> gpsd: listening on port 2947
+</I>&gt;<i> gpsd: successfully connected to the DBUS system bus
+</I>&gt;<i> gpsd: running with effective group ID 0
+</I>&gt;<i> gpsd: running with effective user ID 0
+</I>&gt;<i> gpsd: opening GPS data source at '/dev/ttyS0'
+</I>&gt;<i> gpsd: no probe matched...
+</I>&gt;<i> gpsd: speed 0, 8N1
+</I>&gt;<i> gpsd: gpsd_activate: opened GPS (5)
+</I>&gt;<i> gpsd: packet sniff finds type -1
+</I>&gt;<i> {...}
+</I>&gt;<i> gpsd: packet sniff finds type -1
+</I>&gt;<i> gpsd: packet sniff finds type -1
+</I>&gt;<i> gpsd: speed 4800, 8N1
+</I>&gt;<i> gpsd: packet sniff finds type -1
+</I>&gt;<i> gpsd: packet sniff finds type -1
+</I>&gt;<i> {...}
+</I>&gt;<i> gpsd: packet sniff finds type -1
+</I>&gt;<i> gpsd: packet sniff finds type 0
+</I>&gt;<i> gpsd: Selecting Generic NMEA driver...
+</I>&gt;<i> gpsd: =&gt; GPS: $PFEC,GPint,GSA01,DTM00,ZDA01,RMC01,GLL00,VTG00,GSV05*3B\x0d
+</I>&gt;<i> gpsd: =&gt; GPS: @NC10151010\x0d
+</I>&gt;<i> gpsd: =&gt; GPS: $PMOTG,ZDA,1*2F\x0d
+</I>&gt;<i> gpsd: =&gt; GPS: $PGRMCE*0E\x0d
+</I>&gt;<i> gpsd: =&gt; GPS: $PSRF105,1*3E\x0d
+</I>&gt;<i> gpsd: =&gt; GPS: $PFST*11\x0d
+</I>&gt;<i> gpsd: &lt;= GPS: $GPRMC,103444,V,4207.1110,N,00807.0361,E,,,070706,000.7,E,N*0F
+</I>&gt;<i> gpsd: &lt;= GPS: $GPGGA,103444,4207.1110,N,00807.0361,E,0,00,,,M,,M,,*50
+</I>&gt;<i> gpsd: GPGGA sets status 0
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> perhaps we should start the hunting with 4800 bps, which is supposedly
+</I>&gt;<i> the default speed for NMEA. besides, speed of 0,8,n,1 appears rather
+</I>&gt;<i> useless...
+</I>&gt;<i> -----BEGIN PGP SIGNATURE-----
+</I>&gt;<i> Version: GnuPG v1.4.4-ecc0.1.6 (GNU/Linux)
+</I>&gt;<i> Comment: Using GnuPG with Mozilla - <A HREF="http://enigmail.mozdev.org">http://enigmail.mozdev.org</A>
+</I>&gt;<i>
+</I>&gt;<i> iD8DBQFErjkLXqd/7Teiu2oRAjP8AKCWYogRj1Vz+R4PqT2wYMziXM5hwQCgl4/5
+</I>&gt;<i> 4vLJqzH3ZQttec3vODbrm5o=
+</I>&gt;<i> =My7w
+</I>&gt;<i> -----END PGP SIGNATURE-----
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="http://lists.berlios.de/mailman/listinfo/gpsd-dev">http://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003943.html">[Gpsd-dev] bug in the fixed speed code ?
+</A></li>
+	<LI>Next message: <A HREF="003945.html">[Gpsd-dev] bug in gpsd-2.33/zodiac.c:50
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3944">[ date ]</a>
+              <a href="thread.html#3944">[ thread ]</a>
+              <a href="subject.html#3944">[ subject ]</a>
+              <a href="author.html#3944">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

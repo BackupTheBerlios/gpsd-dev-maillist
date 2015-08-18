@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] more about time
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20more%20about%20time&In-Reply-To=%3C10132.213.84.187.156.1158516272.squirrel%40webmail.xs4all.nl%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004356.html">
+   <LINK REL="Next"  HREF="004358.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] more about time</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20more%20about%20time&In-Reply-To=%3C10132.213.84.187.156.1158516272.squirrel%40webmail.xs4all.nl%3E"
+       TITLE="[Gpsd-dev] more about time">gpsd at xs4all.nl
+       </A><BR>
+    <I>Sun Sep 17 20:04:32 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004356.html">[Gpsd-dev] [PATCH] Fix 'J' command with multiple gpsd clients
+</A></li>
+        <LI>Next message: <A HREF="004358.html">[Gpsd-dev] more about time
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4355">[ date ]</a>
+              <a href="thread.html#4355">[ thread ]</a>
+              <a href="subject.html#4355">[ subject ]</a>
+              <a href="author.html#4355">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>More about the ntp-pps handling and time in general:
+
+We have only a single TIME_SET flag that indicates that some form of TIME
+has been retrieved from the message and stored.
+The NMEA time handling in drivers.c (which I did not add) uses this
+indicator to put the time field into the NTP shared memory structure.
+Later, an extra check was made to ensure that only differing values are
+put there, to avoid confusing ntpd with storing the same value several
+times.
+
+The problems with this approach are manyfold.
+The timefield in NMEA messages usually is a &quot;time of fix&quot;, not the current
+time.  There is an unknown amount of delay between the fix and the output
+of the sentences.  This was compensated by adding-in an offset value,
+empirically determined to be 675 ms.  However, this varies a lot between
+receivers and thus causes system clock offsets, and PPS locking issues.
+
+Most protocols provide separate messages that have the current time, as
+opposed to the timestamp of the last computed fix.  However, this feature
+was usually added only as an update in a later version of the protocol.
+The SiRF driver, to which I added the ntp support myself, keeps an eye on
+what kind of time messages it receives, and tries to use the ones that are
+of better quality (but not always available).  With newer receivers it
+will use the message 52/0x34 PPS time, which (when I understand the specs)
+is trying to output a more accurate current time rather than a
+time-of-fix.
+
+I think the time handling for NMEA messages should be ripped out of
+drivers.c and moved into nmea_parse.c, and handled in a way similar to
+what is going on in the SiRF driver.  I.e. use ZDA time when that is
+available, hopefully that corresponds better to real time (anyone knows if
+the ZDA time is real time vs time of last fix?).
+
+Separate from this, it would be good to decrease the auto-added offset
+when this is warranted by the average offset exposed by currently used
+receivers.  I cannot help with that, as I only have old stuff.
+
+Rob
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004356.html">[Gpsd-dev] [PATCH] Fix 'J' command with multiple gpsd clients
+</A></li>
+	<LI>Next message: <A HREF="004358.html">[Gpsd-dev] more about time
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4355">[ date ]</a>
+              <a href="thread.html#4355">[ thread ]</a>
+              <a href="subject.html#4355">[ subject ]</a>
+              <a href="author.html#4355">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

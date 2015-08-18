@@ -1,0 +1,156 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] The evil goto, considered occasionally helpful
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20The%20evil%20goto%2C%20considered%20occasionally%20helpful&In-Reply-To=%3C20061126194418.GA23737%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005311.html">
+   <LINK REL="Next"  HREF="005313.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] The evil goto, considered occasionally helpful</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20The%20evil%20goto%2C%20considered%20occasionally%20helpful&In-Reply-To=%3C20061126194418.GA23737%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] The evil goto, considered occasionally helpful">esr at thyrsus.com
+       </A><BR>
+    <I>Sun Nov 26 20:44:18 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005311.html">[Gpsd-dev] SVN 4003 - Confusing output from driver probing code
+</A></li>
+        <LI>Next message: <A HREF="005313.html">[Gpsd-dev] The evil goto, considered occasionally helpful
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5312">[ date ]</a>
+              <a href="thread.html#5312">[ thread ]</a>
+              <a href="subject.html#5312">[ subject ]</a>
+              <a href="author.html#5312">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Mick Durkin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mick.durkin at saunalahti.fi</A>&gt;:
+&gt;<i> So this is a case where we are allowed to jump out of the for() loop because 
+</I>&gt;<i> we got a result before finishing? I wouldn't have proposed that because of 
+</I>&gt;<i> all the dire warnings about the evil &quot;goto&quot;.
+</I>&gt;<i>
+</I>&gt;<i> I realise there is a place for the construct (as mentioned by the Great 
+</I>&gt;<i> Prophets K&amp;R), but my nuts are not large enough to suggest using it yet!
+</I>
+I've been writing C code for 24 years, which means that while there
+are people more expert in the language out there, you would have to
+work fairly hard to find them.  My nuts are more than large enough to
+use a goto when appropriate. :-)
+
+The taboo against goto arose in an earlier age, one I myself am just
+barely old enough to remember.  At that time, in the late 1960s,
+programming and programming language design were both crude and
+primitive arts.  Programmers tended to think in assembler even when
+they weren't writing in it; they wrote huge ugly impenetrable blocks
+of code laced with forward and backward gotos.
+
+Edsger Dijkstra noticed this was a bad idea. In 1968 he wrote a paper called
+&quot;Go To Considered harmful&quot;.  You can read it here:
+&lt;<A HREF="http://www.acm.org/classics/oct95/">http://www.acm.org/classics/oct95/</A>&gt;.  And you should, it's a classic.
+ 
+Bear in mind as you read that we hadn't really figured out
+modularization yet; Unix itself wasn't invented until a year later,
+and much of the discipline today's programmers absorb through their
+pores about writing programs as loosely-coupled small subroutines
+had not yet evolved.
+
+Dijkstra advocated the banning of gotos as a way to force programmers
+to write in a more comprehensible way.  This was a worthy proposal,
+which programmers of a certain age (including myself and Gary Miller)
+received as wisdom in the 1970s and came to obey religiously, if only
+because it allowed us to feel a bit superior to our unenlightened
+forebears.
+
+But the last sentence of Dijkstra's paper contains an important
+qualification: &quot;The exercise to translate an arbitrary flow diagram
+more or less mechanically into a jump-less one, however, is not to be
+recommended. Then the resulting flow diagram cannot be expected to be
+more transparent than the original one.&quot;
+
+In other words, Dijkstra himself admits there are times when the
+structured, &quot;jumpless&quot; version of a program is harder to read than the
+version with goto statements in it.  When that happens, the taboo
+against gotos has become harmful rather than helpful.
+
+The mavens of modern C style (which includes me, in a minor way) have
+broadly agreed on a set of heuristics for when goto is appropriate,
+and which are less restrictive than Dijkstra's taboo.  Here they are.
+
+1. The goto backward is always forbidden.  It's just too confusing,
+and situations where you might think you need it are better handled with
+a looping construct or setjmp/longjmp.  
+
+2. gotos that could be trivially expressed in more structured ways,
+e.g., by a return statement or a while or for loop, are also always
+forbidden.
+
+3. The goto forward is permitted under specific circumstances, only
+when the code with goto is easier to read than the version without it.
+
+4. As a general rule, *never* code a goto forward if the target is more
+than about 20 lines down; otherwise you lose the property that the 
+goto and its target can be seen and understood as a unit even in a 
+small editing window.
+
+5. For gotos of less than 20 lines span, the evilness of the goto is 
+inversely proportional to span length.  A goto that skips one or two
+lines may be considered harmless; one that skips ten lines should
+be viewed with deep suspicion.
+
+6. A good sign that you *should* use a goto is when you find yourself
+certing lots of silly flag variables and if-statements for which the
+only purpose is to terminate a loop construct or switch-based state
+machine.
+
+7. Breaking out of deeply-nested loops is one circumstance in which the
+goto is permitted.  (This is undoubtedly the most common one.)
+
+8. The code pattern that would be expressed by a Python for/else is
+another circumstance in which the goto is permitted.  That is, if
+you want to execute a code snippet only if the loop terminates
+normally, it is permitted for the inner loop code to goto a target
+just past the snippet.  But see rules 4 and 5 on the snippet length.
+
+9. Jumping forward across cases in a switch/case block is permitted,
+and may be good style in certain hand-coded implementations of
+deterministic finite-state automata.
+
+10. Remember the meta-rule: use goto only when it *increases* the
+clarity and concision of the program.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005311.html">[Gpsd-dev] SVN 4003 - Confusing output from driver probing code
+</A></li>
+	<LI>Next message: <A HREF="005313.html">[Gpsd-dev] The evil goto, considered occasionally helpful
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5312">[ date ]</a>
+              <a href="thread.html#5312">[ thread ]</a>
+              <a href="subject.html#5312">[ subject ]</a>
+              <a href="author.html#5312">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

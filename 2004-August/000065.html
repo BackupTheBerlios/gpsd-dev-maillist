@@ -1,0 +1,177 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] blocked client eventually stalls gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20blocked%20client%20eventually%20stalls%20gpsd&In-Reply-To=%3C20040827042728.GA26637%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000061.html">
+   <LINK REL="Next"  HREF="000068.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] blocked client eventually stalls gpsd</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20blocked%20client%20eventually%20stalls%20gpsd&In-Reply-To=%3C20040827042728.GA26637%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] blocked client eventually stalls gpsd">esr at thyrsus.com
+       </A><BR>
+    <I>Fri Aug 27 06:27:28 CEST 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000061.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+        <LI>Next message: <A HREF="000068.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#65">[ date ]</a>
+              <a href="thread.html#65">[ thread ]</a>
+              <a href="subject.html#65">[ subject ]</a>
+              <a href="author.html#65">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rich Gibson &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">rich at testingrange.com</A>&gt;:
+&gt;<i> If the API documentation says 'the online flag reports whether or not the 
+</I>&gt;<i> GPS is online' then the application writer will trust that to be true.  
+</I>
+At present the flag is not documented, so there is no such assertion.
+You seem to be spinning up an awful lot of disputation about something that
+does not, in fact, exist.
+ 
+&gt;<i> This is true without the online flag.  Exposing the online flag encourges 
+</I>&gt;<i> it to be used in troublesome ways.
+</I>
+What ways would those be? Spin me a scenario, please.
+ 
+&gt;<i> This is sort of my whole point in a nutshell.  gpsd does not actually know 
+</I>&gt;<i> if the GPS is 'online.'  Your logic is that it is online if we receive 
+</I>&gt;<i> data before the expiration of the online timeout.  But that is simply an 
+</I>&gt;<i> inference.
+</I>
+That's right.  It's an inference in the same sense that we infer the
+continued existence of a GPS at the other end of the wire (actually,
+it's the *same* inference as that one).  Making such inferences is not
+bad interface design; it is, in fact, necessary.  What can be bad is
+when you destructively substitute an inference for actual data, which
+nobody has proposed doing in this case.
+ 
+Your error (or one of your errors, anyway) is that you have seized on
+the &quot;inference&quot; part and forgotten the &quot;destructive&quot; part.  Inferences
+that are lossless aren't a problem; if the logic used to generate them
+doesn't match your causal analysis, you just ignore them.  In this
+particular case, if you have causal reason to believe the online flag
+is unreliable, you ignore it.
+
+It's the *lossy* inferences, like when a policy about timeouts steps
+on the mode bit, that are a problem.
+
+&gt;<i> Suddenly your GPS is 200-300 feet away from your gpsd (or _much much_ 
+</I>&gt;<i> further.  That unit is running in the 2.4 ghz band.  I'm running 802.11b 
+</I>&gt;<i> 8+ miles in that band, I'm betting one could get 20 miles with a 
+</I>&gt;<i> modified version of that 'SMiRF' transceiver).
+</I>
+I'm not seeing a point here yet.  Do you think you're going to get 
+whole-packet dropouts in this setup?
+
+&gt;<i> Interesting point.  If one limits gpsd to GPS units connected to PC's with 
+</I>&gt;<i> a 'few feet' of cable you might even be making a compelling case.  But 
+</I>&gt;<i> then, you couldn't use this Bluetooth GPS:
+</I>&gt;<i> 
+</I>&gt;<i> <A HREF="http://www.socketcom.com/product/GP0804-405.asp">http://www.socketcom.com/product/GP0804-405.asp</A>
+</I>&gt;<i> 
+</I>&gt;<i> Where are the 'wires' you speak of?
+</I>
+OK, channel fault,  The logic still applies.  As long as the link to the
+wireless is good enough to not have whole-packet dropouts, the online
+flag is still reliable and still useful.  Physical wire is not necessary
+for this condition to be true, as was obvious to me and I presume is
+to you as well.
+ 
+&gt;<i> &gt; &gt; The GPS is sending data to GPSD.  Sometimes that process fails for some 
+</I>&gt;<i> &gt; &gt; reason.  Did the GPS just go offline?  GPSD doesn't have enough 
+</I>&gt;<i> &gt; &gt; information to know.
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; I'm not sure I even understand this assertion.  It seems to mean that you 
+</I>&gt;<i> &gt; are using the word &quot;offline&quot; in some special way I am unfamiliar with.
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; Usually, when people say a device is &quot;offline&quot;, they're simply
+</I>&gt;<i> &gt; describing it as being incommunicado -- in fact, as *not having sent
+</I>&gt;<i> &gt; data at an expected time*.  There isn't any causal hypothesis implied
+</I>&gt;<i> &gt; about whether the device has failed internally, or there's a wire
+</I>&gt;<i> &gt; fault.  At most, the term usually implies that the speaker thinks the
+</I>&gt;<i> &gt; machine at *this* end of the wire is not the problem.
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; This seems to me to fit my use of the term &quot;offline&quot; exactly.  It's
+</I>&gt;<i> &gt; not an interpretation, it's an direct observable -- we have continuously
+</I>&gt;<i> &gt; failed to receive data at times when the GPS was expected to send it.
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; So, what does the word 'offline' mean when you use it?
+</I>&gt;<i> 
+</I>&gt;<i> Interesting straw man argument deleted.
+</I>
+Actually, interesting non-straw-man argument neither deleted nor answered.
+I'm still waiting to hear a definition of &quot;offline&quot; other than &quot;did not
+send an expected signal at an expected time&quot;, which is precisely what
+the online flag conveys.
+ 
+&gt;<i> How is deciding what 'offline' means different from imposing your own
+</I>&gt;<i> policy and preconceptions?
+</I>
+That's easy. Because it doesn't step on or lose any of the lower-level
+data used to make the inference.
+
+&gt;<i> You have the proven false preconception that the GPS unit is connected 
+</I>&gt;<i> with a short length of wire.  What other false preconceptions do you have?
+</I>
+My &quot;preconception&quot; had nothing to do with physical wire, it's was that
+the channel is not lossy at a level that loses entire sentence groups.
+I think you understood this.  Fight nice, please.
+
+&gt;<i> &gt; gpsd's job is mechanism -- getting the data to applications in a useful 
+</I>&gt;<i> &gt; form. The application's job is policy -- deciding what to do with it.
+</I>&gt;<i>
+</I>&gt;<i> But the online/offline status doesn't come from the device, it is created
+</I>&gt;<i> by the demon.
+</I>
+So are the latitudes and longitudes in the position information.
+
+Oh, you don't see how?  Look in nmea_parse and you'll see that their
+representation gets hacked by gpsd is they passs through, from an odd 
+hybrid degrees-and-minutes format to pure decimal degrees.
+
+&quot;But wait!&quot; I hear you protest.  &quot;gpsd didn't create that data, it was
+translated from state changes on the wire to the GPS!&quot;
+
+Well, the same is true of the online flag.  Lossless inference in both
+cases.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000061.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+	<LI>Next message: <A HREF="000068.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#65">[ date ]</a>
+              <a href="thread.html#65">[ thread ]</a>
+              <a href="subject.html#65">[ subject ]</a>
+              <a href="author.html#65">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

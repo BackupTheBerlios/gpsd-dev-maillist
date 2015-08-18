@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] More fixes...
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20More%20fixes...&In-Reply-To=%3C21137.213.84.187.156.1114896034.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001500.html">
+   <LINK REL="Next"  HREF="001504.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] More fixes...</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20More%20fixes...&In-Reply-To=%3C21137.213.84.187.156.1114896034.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] More fixes...">gpsd at xs4all.nl
+       </A><BR>
+    <I>Sat Apr 30 23:20:34 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001500.html">[Gpsd-dev] More fixes...
+</A></li>
+        <LI>Next message: <A HREF="001504.html">[Gpsd-dev] More fixes...
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1503">[ date ]</a>
+              <a href="thread.html#1503">[ thread ]</a>
+              <a href="subject.html#1503">[ subject ]</a>
+              <a href="author.html#1503">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;&gt;<i> I think it will often work with RS232-connected receivers, but not with
+</I>&gt;&gt;<i> USB.  But maybe things turn out better than that.
+</I>&gt;<i>
+</I>&gt;<i> I am not aware of any retail GPS with PPS output.  Would like to
+</I>&gt;<i> find a cheap one.  With the buffering and time slotting in USB high speed
+</I>&gt;<i> hubs I would wonder how good a pulse you could get over USB.
+</I>
+Locally a surplus receiver module has been sold cheap.  This is the
+typical OEM module, a PCB slighly smaller than a credit card with antenna
+connector and a header with serial signals.  It has PPS and 10 kHz.
+Kits were sold with this module and an extra board with power supply and
+RS232 converter.
+It is a &quot;Rockwell Jupiter&quot; module.  Works with NMEA and a binary mode.
+ntpd supports it directly.
+Unfortunately it now seems to be out of stock.  See <A HREF="http://gpskit.nl">http://gpskit.nl</A>
+
+&gt;&gt;<i> I am using an OEM GPS module (uBlox) connected to COM1 with home-made
+</I>&gt;&gt;<i> RS232 converter and powersupply.  The offset and jitter reported by NTP
+</I>&gt;&gt;<i> usually is within about 0.5ms
+</I>&gt;&gt;<i> Could even be better with kernel support.
+</I>&gt;<i>
+</I>&gt;<i> The Garmin GPS-18 only comes with PPS as a special order with no
+</I>&gt;<i> connectors.  They claim their PPS is 1uS accurate.  Bizarrely they
+</I>&gt;<i> output 0-5V and call it &quot;mostly RS-232 compatible&quot;.  Not exactly legal
+</I>&gt;<i> RS-232 but one can often get away with that.
+</I>
+0-5V should normally be OK.  What can be confusing is the polarity.  RS232
+drivers normally invert, so when they are omitted the signal is often
+reverse polarity, and the software must account for this or else it is
+looking at the wrong edge of the pulse.
+RS232 risetime is going to be the limiting factor.  The receiver itself
+usually is accurate to 100ns.  Apparently Garmin take some extra margin.
+
+To keep the clock really accurate, a kernel service is required that
+samples the system time inside the interrupt service routine that is
+called when the status line changes.  In earlier kernels (around 2.0/2.2)
+there was an easily applied patch that allowed this, and I think there
+also has been a kernel module to do it.  But I can no longer locate it for
+recent kernels.
+
+What I have now is a user-process level handler.  It waits for the line to
+change (there is an ioctl for that) and then gets the system time and puts
+it in shared memory for ntpd.  Quality of the result depends on how
+quickly the user process gets scheduled.  It runs at high priority and
+with some special scheduling settings.
+
+When the system is lightly loaded you get something like this:
+     remote           refid      st t when poll reach   delay   offset 
+jitter
+==============================================================================
+*SHM(0)          .GPS0.           0 l   13   16  377    0.000   -0.008  
+0.003
+
+i.e. much better than 0.5ms.  More like 10us.
+during heavy load this sometimes increases a little, but I don't see more
+than 0.5ms for the offset (jitter is less).
+
+Unfortunately the ioctl is unfriendly: it requires a separate thread as
+you cannot wait both on a select and on this ioctl in a single thread.
+But gpsd is not keeping the line open all the time, and the thread has to
+co-operate with that.  This makes implementation a bit more complex than
+necessary.
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001500.html">[Gpsd-dev] More fixes...
+</A></li>
+	<LI>Next message: <A HREF="001504.html">[Gpsd-dev] More fixes...
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1503">[ date ]</a>
+              <a href="thread.html#1503">[ thread ]</a>
+              <a href="subject.html#1503">[ subject ]</a>
+              <a href="author.html#1503">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

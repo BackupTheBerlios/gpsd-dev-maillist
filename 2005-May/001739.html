@@ -1,0 +1,96 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd callback and c++ patch
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20callback%20and%20c%2B%2B%20patch&In-Reply-To=%3C428BA31F.9040706%40fastwebnet.it%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001706.html">
+   <LINK REL="Next"  HREF="001786.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd callback and c++ patch</H1>
+    <B>Alfredo Pironti</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20callback%20and%20c%2B%2B%20patch&In-Reply-To=%3C428BA31F.9040706%40fastwebnet.it%3E"
+       TITLE="[Gpsd-dev] gpsd callback and c++ patch">alfredio at fastwebnet.it
+       </A><BR>
+    <I>Wed May 18 22:18:39 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001706.html">[Gpsd-dev] gpsd callback and c++ patch
+</A></li>
+        <LI>Next message: <A HREF="001786.html">[Gpsd-dev] gpsd callback and c++ patch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1739">[ date ]</a>
+              <a href="thread.html#1739">[ thread ]</a>
+              <a href="subject.html#1739">[ subject ]</a>
+              <a href="author.html#1739">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi all,
+I repatched.
+This patch apply on a pristine 2.24.
+
+Changelog:
+- added documentation: now it is said that only one callback at time is 
+possible.
+- make gps_set_callback() more robust: if invoked twice switch to a new 
+callback (thanks to Amaury Jacquot)
+- the gps_poll() return value is no more modified (this gives backward 
+compatibility)
+- removed superfluous prototype
+- poll_gpsd() now returns NULL. See below
+- added a simple C++ test program. See below
+
+poll_gpsd() returns NULL: this solution may be agreeable by everyone, I 
+hope. In fact a thread return value is only used by pthread_join(), but 
+this function is never used in gpsd (but note that if gps_poll() fails 
+the thread still *must* return).
+
+C++ test program: this program will test the libgpsmm library and, in 
+cascade, also the libgps new functions. Don't expect anything 
+spectacular: it sets a callback, then sleeps. The callback will do the 
+rest. Then the main program wakes up, deletes the callback and sleep 
+again to make sure the callback is deleted. Stop :-) oh, well... patches 
+are welcome!
+
+Cheers,
+Alfredo
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: gpsd-2.24_callback.patch
+Type: text/x-patch
+Size: 17566 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20050518/4642ec48/attachment.bin">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20050518/4642ec48/attachment.bin</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001706.html">[Gpsd-dev] gpsd callback and c++ patch
+</A></li>
+	<LI>Next message: <A HREF="001786.html">[Gpsd-dev] gpsd callback and c++ patch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1739">[ date ]</a>
+              <a href="thread.html#1739">[ thread ]</a>
+              <a href="subject.html#1739">[ subject ]</a>
+              <a href="author.html#1739">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

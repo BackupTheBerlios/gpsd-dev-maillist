@@ -1,0 +1,139 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Preliminary Screenshots for Gtk2 Version of 'xgps'
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Preliminary%20Screenshots%20for%20Gtk2%20Version%20of%20%27xgps%27&In-Reply-To=%3C91981b3e0611131820j699bc93dw67dc2993f7ed9d23%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005226.html">
+   <LINK REL="Next"  HREF="005232.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Preliminary Screenshots for Gtk2 Version of 'xgps'</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Preliminary%20Screenshots%20for%20Gtk2%20Version%20of%20%27xgps%27&In-Reply-To=%3C91981b3e0611131820j699bc93dw67dc2993f7ed9d23%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Preliminary Screenshots for Gtk2 Version of 'xgps'">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Tue Nov 14 03:20:54 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005226.html">[Gpsd-dev] Preliminary Screenshots for Gtk2 Version of 'xgps'
+</A></li>
+        <LI>Next message: <A HREF="005232.html">[Gpsd-dev] Preliminary Screenshots for Gtk2 Version of 'xgps'
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5230">[ date ]</a>
+              <a href="thread.html#5230">[ thread ]</a>
+              <a href="subject.html#5230">[ subject ]</a>
+              <a href="author.html#5230">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 11/13/06, Marr &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">marr99 at highstream.net</A>&gt; wrote:
+&gt;<i> If I decide to implement that, I need you guys to tell me _exactly_ what you
+</I>&gt;<i> want. It means agreeing among yourselves on the answers to, as a minimum,
+</I>&gt;<i> these questions, all pertaining to just the graphical portion of the
+</I>&gt;<i> satellite display:
+</I>
+My implementation of a grapher-thingy should give you some answers,
+but it's probably better if I answer in full sentences.
+
+&gt;<i>    - Should SNR (in dB) be displayed at all? If so, should the text be
+</I>&gt;<i> colorized to indicate any SNR threshold(s)? If so, how?
+</I>
+Relative signal strength is more important than absolute; poor, fair,
+good and excellent. I'd have to go digging through my reference
+directory to find the source, but one of the specs says 35dB is good,
+and it looks like most timing receivers want at least one signal over
+40dB.
+
+I'm not sure text should be colourized unless it enhances readability
+or is significantly informative.
+
+And relative position - with some choice gridlines - was more
+important than precise coordinates.
+
+&gt;<i>    - What should be the iconic representation of the satellite? A circle? If
+</I>&gt;<i> so, what radius? Filled or unfilled (or dependent on &quot;in use&quot;)?
+</I>
+The centroid of the icon should be located at the satellite's
+position. I prefer symmetric icons
+
+Circles were easier to draw and rescale in gd than triangles. Maybe up
+or down triangles?
+
+I chose 8 or 12 pixel circles because they were big enough to be
+clearly seen but didn't clutter the display. And they were small
+enough to suggest a precise point, rather than a fairly large region
+of space.
+
+Hollow seemed like a good way to indicate &quot;there's something there,
+but it doesn't matter; this PRN is not used in the navigation
+solution&quot;.
+
+&gt;<i>    - What color should the circle be? Based on SNR? Based on &quot;in use&quot;? Based
+</I>&gt;<i> on PRN (e.g. WAAS are different, like Kuethe's site)? If SNR-based, how many
+</I>&gt;<i> colors and what colors? If based on &quot;in use&quot;, what 2 colors? Same question if
+</I>&gt;<i> PRN-based.
+</I>
+IIRC, SiRFdemo uses green, red and blue. Green is tracked and used,
+red is untracked and unused, blue is tracked but unused. And SBAS PRNs
+are cyan.
+
+It seemed unfair to mark the SBAS PRNs as unused or used on the same
+criteria as the regular NAVSTAR PRNs.
+
+There are a couple of non-obvious colours: blue if it's low elevation
+(&lt;10) and orange (SBAS). I thought those were nice to see, but they
+are wholly unecessary. Low elevation satellites will probably have
+marginal signal anyway, and most people won't care that SBAS doesn't
+transmit a ranging code. SBAS should probably be marked as used or
+unused based on the fix quality (DGPS or not), as that's what our
+users probably care about.
+
+&gt;<i>    - If the circle does not encompass the text, where should the PRN text be
+</I>&gt;<i> drawn? In what color(s)? Where should the SNR be displayed? Both in the same
+</I>&gt;<i> block? One above and one below the circle?
+</I>
+Simple black-and-white is clear and authoritative. Text very close to
+the icon suggested the link.
+
+I'll reiterate: I'm not asking for you to draw a protractor, or to
+format the sky like a floppy disk, but I found that a few radials and
+elevation lines helped me to grok the satellite positions far more
+than a table of numbers.
+
+CK
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005226.html">[Gpsd-dev] Preliminary Screenshots for Gtk2 Version of 'xgps'
+</A></li>
+	<LI>Next message: <A HREF="005232.html">[Gpsd-dev] Preliminary Screenshots for Gtk2 Version of 'xgps'
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5230">[ date ]</a>
+              <a href="thread.html#5230">[ thread ]</a>
+              <a href="subject.html#5230">[ subject ]</a>
+              <a href="author.html#5230">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

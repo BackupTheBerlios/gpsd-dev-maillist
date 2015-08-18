@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] git master fails to build on NetBSD
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20git%20master%20fails%20to%20build%20on%20NetBSD&In-Reply-To=%3Calpine.LNX.1.00.1012052150470.21738%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008262.html">
+   <LINK REL="Next"  HREF="008268.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] git master fails to build on NetBSD</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20git%20master%20fails%20to%20build%20on%20NetBSD&In-Reply-To=%3Calpine.LNX.1.00.1012052150470.21738%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] git master fails to build on NetBSD">gem at rellim.com
+       </A><BR>
+    <I>Mon Dec  6 06:51:37 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008262.html">[Gpsd-dev] git master fails to build on NetBSD
+</A></li>
+        <LI>Next message: <A HREF="008268.html">[Gpsd-dev] git master fails to build on NetBSD
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8266">[ date ]</a>
+              <a href="thread.html#8266">[ thread ]</a>
+              <a href="subject.html#8266">[ subject ]</a>
+              <a href="author.html#8266">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Greg!
+
+I can't believe there is not a ton of endianness code already on gpsd.  How
+has this problem been solved for the other drivers?
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 109 NW Wilmington Ave., Suite E, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+
+On Sun, 5 Dec 2010, Greg Troxel wrote:
+
+&gt;<i> Date: Sun, 05 Dec 2010 20:09:27 -0500
+</I>&gt;<i> From: Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;
+</I>&gt;<i> Reply-To: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> To: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> Subject: [Gpsd-dev] git master fails to build on NetBSD
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> git master fails to build.  The commit below doesn't build, but the
+</I>&gt;<i> parent does:
+</I>&gt;<i>
+</I>&gt;<i>   commit 2cea75335f1dc70301f07b374cbe9d8183c6d284
+</I>&gt;<i>   Author: Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;
+</I>&gt;<i>   Date:   Thu Dec 2 17:28:35 2010 -0800
+</I>&gt;<i>
+</I>&gt;<i>       Fix endianess issues in Garmin binary driver.
+</I>&gt;<i>
+</I>&gt;<i>       This fix works for me, but I have no way to test  on a beg endian
+</I>&gt;<i>       CPU.  So it might fix Bug# 17358, submitted by fdirosa
+</I>&gt;<i>
+</I>&gt;<i> The issue is the use of 'endian.h'.  The following commit (unpushed)
+</I>&gt;<i> fixes it.  Is that ok on other systems?  If not perhaps Gary or someone
+</I>&gt;<i> else can autoconfize tests for various headers, and I'm not sure what to
+</I>&gt;<i> do on systems that don't have le16toh.
+</I>&gt;<i>
+</I>&gt;<i> commit 6c5d1ebdc821bede2526cedf30a0c630b9d357e6
+</I>&gt;<i> Author: Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;
+</I>&gt;<i> Date:   Sun Dec 5 20:07:40 2010 -0500
+</I>&gt;<i>
+</I>&gt;<i>     Use &lt;sys/endian.h&gt;.
+</I>&gt;<i>
+</I>&gt;<i>     Use &lt;sys/endian.h&gt; rather than &lt;endian.h&gt;, to fix build on NetBSD.
+</I>&gt;<i>     Probably this should be searched for with autoconf, and POSIX
+</I>&gt;<i>     specifications consulted.  I can't find any reference in POSIX to
+</I>&gt;<i>     le16toh and friends or the endian.h header.
+</I>&gt;<i>
+</I>&gt;<i> diff --git a/driver_garmin.c b/driver_garmin.c
+</I>&gt;<i> index 5073c7b..bb209ed 100644
+</I>&gt;<i> --- a/driver_garmin.c
+</I>&gt;<i> +++ b/driver_garmin.c
+</I>&gt;<i> @@ -80,7 +80,7 @@
+</I>&gt;<i>  #define __USE_POSIX199309 1
+</I>&gt;<i>
+</I>&gt;<i>  #include &lt;math.h&gt;
+</I>&gt;<i> -#include &lt;endian.h&gt;  /* handle endianess */
+</I>&gt;<i> +#include &lt;sys/endian.h&gt;  /* handle endianess */
+</I>&gt;<i>
+</I>&gt;<i>  #include &lt;string.h&gt;
+</I>&gt;<i>  #ifndef S_SPLINT_S
+</I>&gt;<i>
+</I>-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFM/HnzBmnRqz71OvMRAjkRAJ0UuUH8CJvEvyCVOG7IpwL4YH051wCg2vM4
+7YnxajRbV+E649GJX2Bm8Lg=
+=tXno
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008262.html">[Gpsd-dev] git master fails to build on NetBSD
+</A></li>
+	<LI>Next message: <A HREF="008268.html">[Gpsd-dev] git master fails to build on NetBSD
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8266">[ date ]</a>
+              <a href="thread.html#8266">[ thread ]</a>
+              <a href="subject.html#8266">[ subject ]</a>
+              <a href="author.html#8266">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

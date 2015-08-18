@@ -1,0 +1,166 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: Slightly off-topic: TIGER
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20Slightly%20off-topic%3A%20TIGER&In-Reply-To=%3C200510262333.56915.marr%40flex.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003119.html">
+   <LINK REL="Next"  HREF="003121.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: Slightly off-topic: TIGER</H1>
+    <B>Marr</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20Slightly%20off-topic%3A%20TIGER&In-Reply-To=%3C200510262333.56915.marr%40flex.com%3E"
+       TITLE="[Gpsd-dev] Re: Slightly off-topic: TIGER">marr at flex.com
+       </A><BR>
+    <I>Thu Oct 27 05:33:56 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003119.html">[Gpsd-dev] Re: Slightly off-topic: TIGER
+</A></li>
+        <LI>Next message: <A HREF="003121.html">[Gpsd-dev] Re: Slightly off-topic: TIGER
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3120">[ date ]</a>
+              <a href="thread.html#3120">[ thread ]</a>
+              <a href="subject.html#3120">[ subject ]</a>
+              <a href="author.html#3120">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Tuesday 25 October 2005 10:59pm, TGS wrote:
+&gt;<i> Also, it should be noted that the Tiger data does not do one way
+</I>&gt;<i> street information.
+</I>
+Greetings all,
+
+I've been quietly monitoring this discussion with great interest and this post 
+finally motivated me to inject my 2 cents... :^)
+
+After using the U.S. Census Bureau (USCB) TIGER/Line data for a couple of 
+years now for a GNU/Linux road map application, I've come up with an 
+incomplete list of several things that I'd like to improve upon or append to 
+that dataset:
+
+(1) a flag to indicate that a road is &quot;1-way&quot;
+
+This would obviously be useful for routing algorithms and also to better 
+identify proper freeway exit ramps.
+
+(2) an indicator of road quality -- &quot;paved&quot;, &quot;unimproved&quot; (e.g. gravel), or 
+&quot;unknown&quot; (as opposed to assuming that all roads are paved)
+
+This is also useful for routing, especially in rural areas.
+
+(3) a flag to indicate that a road is a toll road (turnpike, etc)
+
+I've used the &quot;Tpke&quot; suffix of the TIGER/Line data's road name to decide 
+whether to colorize roads like a toll road, but there are several errors 
+(both &quot;false positive&quot; and &quot;false negative&quot;) by using this simplistic 
+approach. A flag associated with each line (&quot;TLID&quot; in the TIGER/Line 
+vernacular) would be more conclusive.
+
+(4) a flag to indicate that a road is an underpass or overpass
+
+There is a provision for this in the TIGER/Line dataset (Record Type &quot;U&quot;), but 
+to my knowledge, no U.S. county/parish data have been released with that 
+record type yet.
+
+(5) (obviously) a way to correct the many database errors like:
+
+   (A) erroneous CFCCs (Census Feature Class Code -- e.g. wrong road code, 
+like when a freeway code shows up for a line [road] in the middle of a simple 
+2-lane road -- don't laugh, it happens!)
+
+   (B) improperly positioned or missing roads (of course, there are loads of 
+examples of this problem, but they seem to be getting cleaned up with new 
+releases of TIGER/Line)
+
+   (C) missing or erroneous 'street address' ranges for a given line (road)
+
+Some of the simple things (like erroneous CFCCs) would ideally be handled by 
+submitting the corrections directly to the USCB, but I've never pursued that 
+route so I don't know how feasible that would be or how responsive the folks 
+at the USCB would be in incorporating the fixes. One of these days, I will 
+try that.
+
+Like many others, I've considered that the most logical thing to do might be 
+to have a database of post-processing changes/enhancements to be used against 
+the base TIGER/Line database. I agree with Gary Miller's assertion that &quot;A 
+community collection of database corrections would also be nice.&quot;
+
+I'd love to see someone or some company initiate such a &quot;TIGER/Line updates 
+database&quot; project. I'd gladly contribute as many fixes as I could. I just 
+don't know how/if such a thing would get started, but I hope it does. 
+
+Is there anyone on this list who could host such a database? Maybe this is a 
+candidate for a SourceForge (or Berlios?) project -- are there any SF 
+projects currently which are basically just a big database?
+
+Getting into the nitty-gritty details a bit more, I've decided that you cannot 
+really use (just) the TLID (TIGER/Line ID) to associate changes with the 
+lines because the USCB could change those line IDs at any time. You really 
+need a database that keeps track of the start/end lat/lon of the line (and 
+maybe the TLID too as a crude cross-check, assuming it won't change 
+frequently), to ensure that the change/enhancement you're applying really 
+applies to _that_ line. Alternatively, you could go back and run an automated 
+re-check of your database of corrections with each new TIGER/Line database 
+release and have human intervention for discrepancies.
+
+What would be really nice (and maybe a good starting point) to have is a 
+specification/standardization of the format (XML-based?) for corrections to 
+TIGER/Line data. That way, anyone could use _any_ compatible application to 
+generate corrections/enhancements to the TIGER/Line data as long as the final 
+output was in the standard &quot;database correction&quot; format. Does that make 
+sense? Are there better ways to accomplish this?  Just &quot;brainstorming&quot; 
+here....
+
+On a related vein, it would be nice to have a database of U.S. freeway exits. 
+I've looked in the past but always came up empty. This would be another great 
+&quot;community database&quot; to have available. It might be somewhat &quot;automatable&quot; 
+given that the TIGER/Line data has a dedicated CFCC ('A63') for &quot;Access ramp, 
+the portion of a road that forms a cloverleaf or limited-access interchange&quot;, 
+but I've never attempted to automate it and we'd still need a database of the 
+actual exit numbers to associate with the road interchange's lat/lon. Again, 
+it would be great to develop and agree upon a standardized format for this 
+data.
+
+Sorry that this is getting so far off-topic for the GPSD mailing list, but 
+like Gary Miller said, I don't really know where else to raise/discuss this 
+issue. If anyone has a suggestion on where us TIGER/Line data users can go to 
+hash this out, I'm all ears. :^)
+
+Looking forward to other people's thoughts on this whole topic....
+
+Bill Marr
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003119.html">[Gpsd-dev] Re: Slightly off-topic: TIGER
+</A></li>
+	<LI>Next message: <A HREF="003121.html">[Gpsd-dev] Re: Slightly off-topic: TIGER
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3120">[ date ]</a>
+              <a href="thread.html#3120">[ thread ]</a>
+              <a href="subject.html#3120">[ subject ]</a>
+              <a href="author.html#3120">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

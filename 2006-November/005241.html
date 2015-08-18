@@ -1,0 +1,104 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] SVN 3885 will not compile with --disable-reconfigure
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20SVN%203885%20will%20not%20compile%20with%20--disable-reconfigure&In-Reply-To=%3C200611141807.28081.mick.durkin%40saunalahti.fi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005239.html">
+   <LINK REL="Next"  HREF="005242.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] SVN 3885 will not compile with --disable-reconfigure</H1>
+    <B>Mick Durkin</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20SVN%203885%20will%20not%20compile%20with%20--disable-reconfigure&In-Reply-To=%3C200611141807.28081.mick.durkin%40saunalahti.fi%3E"
+       TITLE="[Gpsd-dev] SVN 3885 will not compile with --disable-reconfigure">mick.durkin at saunalahti.fi
+       </A><BR>
+    <I>Tue Nov 14 17:07:28 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005239.html">[Gpsd-dev] Update for &quot;writing-a-driver.xml&quot;
+</A></li>
+        <LI>Next message: <A HREF="005242.html">[Gpsd-dev] SVN 3885 will not compile with --disable-reconfigure
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5241">[ date ]</a>
+              <a href="thread.html#5241">[ thread ]</a>
+              <a href="subject.html#5241">[ subject ]</a>
+              <a href="author.html#5241">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+I downloaded a fresh copy of SVN 3885 and found that when I try to compile 
+with the --disable-reconfigure option, I get an error in &quot;drivers.c&quot; as 
+below.
+
+=============================
+ 
+gcc -DHAVE_CONFIG_H -I. -I. -I. -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -MT 
+drivers.lo -MD -MP -MF .deps/drivers.Tpo -c 
+drivers.c  -fPIC -DPIC -o .libs/drivers.o
+drivers.c:337: error: expected identifier or '(' before '}' token
+make[1]: *** [drivers.lo] Error 1
+make[1]: Leaving directory `/home/mick/Software/gpsd/trunk'
+make: *** [all] Error 2
+
+===========================
+
+Looks like the #endif is in the wrong place (before the closing &quot;}&quot; ). This 
+diff allows compilation to proceed.
+
+========================
+
+--- drivers.c~	2006-11-14 17:57:05.000000000 +0200
++++ drivers.c	2006-11-14 18:01:18.000000000 +0200
+@@ -333,8 +333,8 @@
+     (void)nmea_send(session-&gt;gpsdata.gps_fd, &quot;$PSRF103,05,00,00,01&quot;); /* no 
+VTG */
+     (void)nmea_send(session-&gt;gpsdata.gps_fd, &quot;$PSRF103,01,00,00,01&quot;); /* no 
+GLL */
+ #endif /* BINARY_ENABLE */
+-#endif /* ALLOW_RECONFIGURE */
+ }
++#endif /* ALLOW_RECONFIGURE */
+ 
+ 
+ static struct gps_type_t sirf_nmea = {
+
+===========================================
+
+Regards
+
+Mick
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005239.html">[Gpsd-dev] Update for &quot;writing-a-driver.xml&quot;
+</A></li>
+	<LI>Next message: <A HREF="005242.html">[Gpsd-dev] SVN 3885 will not compile with --disable-reconfigure
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5241">[ date ]</a>
+              <a href="thread.html#5241">[ thread ]</a>
+              <a href="subject.html#5241">[ subject ]</a>
+              <a href="author.html#5241">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

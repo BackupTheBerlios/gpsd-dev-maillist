@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Garmin binary
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Garmin%20binary&In-Reply-To=%3CPine.LNX.4.64.0609242339100.12879%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004402.html">
+   <LINK REL="Next"  HREF="004422.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Garmin binary</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Garmin%20binary&In-Reply-To=%3CPine.LNX.4.64.0609242339100.12879%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] Garmin binary">gem at rellim.com
+       </A><BR>
+    <I>Mon Sep 25 09:00:46 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004402.html">[Gpsd-dev] contact
+</A></li>
+        <LI>Next message: <A HREF="004422.html">[Gpsd-dev] Garmin binary
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4408">[ date ]</a>
+              <a href="thread.html#4408">[ thread ]</a>
+              <a href="subject.html#4408">[ subject ]</a>
+              <a href="author.html#4408">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo All!
+
+I just added some debug messages to the garmin driver for packet length
+problems.  Garmin binary packets are fixed length and here is how
+each cycle should look:
+
+	read(64) -&gt; get 64
+	read(64) -&gt; get 32
+		Now have a complete 96 byte SAT packet
+	read(64) -&gt; get 64
+	read(64) -&gt; get 12
+		Now have a complete 76 byte PVT packet
+
+	long pause for next cycle, then repeat.
+
+Just for fun I added a 300mS delay in the middle of the packet getter
+loop and now I too see packets that are too long.  So the people that
+see this likely have much slower machines than mine.  All my test ones
+are in the 3GHz+ range.  I know all the Core Duos are much slower.  This
+is a real bummer as it proves the data from the kernel can be FUBAR.
+
+Not sure which kernel version broke this.  In any case I have to change
+from the packet mode to the streaming mode and that will take some code.
+
+Instead of nice neat packets I have to turn on DLE/ETX processing and
+scan a byte stream.  Ugh.
+
+While looking at the code noticed an endianness problem and fixed it.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFFF36h8KZibdeR3qURAqdmAKCQIrpyNUK0iN7nWJjrmUmMOXXkTwCeL7+w
+lmARCwzKzj8cZ5oY2a6t4rE=
+=hOeC
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004402.html">[Gpsd-dev] contact
+</A></li>
+	<LI>Next message: <A HREF="004422.html">[Gpsd-dev] Garmin binary
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4408">[ date ]</a>
+              <a href="thread.html#4408">[ thread ]</a>
+              <a href="subject.html#4408">[ subject ]</a>
+              <a href="author.html#4408">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

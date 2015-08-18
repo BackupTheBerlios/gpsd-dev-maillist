@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Debugging the interaction with the Leadtek 9534
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Debugging%20the%20interaction%20with%20the%20Leadtek%209534&In-Reply-To=%3C200502072348.j17NmPe9027727%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000611.html">
+   <LINK REL="Next"  HREF="000616.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Debugging the interaction with the Leadtek 9534</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Debugging%20the%20interaction%20with%20the%20Leadtek%209534&In-Reply-To=%3C200502072348.j17NmPe9027727%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Debugging the interaction with the Leadtek 9534">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Tue Feb  8 00:48:25 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000611.html">[Gpsd-dev] The web site has been redesigned
+</A></li>
+        <LI>Next message: <A HREF="000616.html">[Gpsd-dev] Re: Debugging the interaction with the Leadtek 9534
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#614">[ date ]</a>
+              <a href="thread.html#614">[ thread ]</a>
+              <a href="subject.html#614">[ subject ]</a>
+              <a href="author.html#614">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>The SVN repository version of gpsprobe has a new feature
+that may help.  Rather than communicating at a fixed 4800bps,
+it now hunts through baud rates 4800, 9600, 19200, and 38400,
+sampling the serial data stream looking for either &quot;$GP&quot; or the
+leader bits \xa0\xa2 of a SiRF binary protocol packet.
+
+So, if you point it at the Leadtek it will probably tell you what
+we need to know, the actual baud rate it's using.
+
+Assuming the SiRF-binary detection logic works, and tells us what
+we're expecting, the next step will be to wire gpsprobe so that it
+sends a SiRF mode-switch command to take the device to NMEA mode.
+
+Once that's done and working, it will be trivial to add a driver
+to gpsd that can read from the device.  All the driver will have to do
+is ship the right initialization string and drop back to NMEA.
+
+Note for the future: this is gpsprobe's job.  That program isn't just
+a demo of the gpsd.py library, it's intended to be a discovery tool
+that can make sense out of any GPS's behavior.  The correct response
+to bug reports like Arne's is to soup up gpsprobe until it can
+automatically recognize this week's flavor of weird protocol.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+It would be thought a hard government that should tax its people one tenth 
+part.	-- Benjamin Franklin
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000611.html">[Gpsd-dev] The web site has been redesigned
+</A></li>
+	<LI>Next message: <A HREF="000616.html">[Gpsd-dev] Re: Debugging the interaction with the Leadtek 9534
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#614">[ date ]</a>
+              <a href="thread.html#614">[ thread ]</a>
+              <a href="subject.html#614">[ subject ]</a>
+              <a href="author.html#614">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,124 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] PPS poll (proof-of-concept)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS%20poll%20%28proof-of-concept%29&In-Reply-To=%3Calpine.DEB.1.10.0911291939450.5651%40org-pc51.fy.chalmers.se%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007163.html">
+   <LINK REL="Next"  HREF="007165.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] PPS poll (proof-of-concept)</H1>
+    <B>H&#229;kan Johansson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS%20poll%20%28proof-of-concept%29&In-Reply-To=%3Calpine.DEB.1.10.0911291939450.5651%40org-pc51.fy.chalmers.se%3E"
+       TITLE="[Gpsd-dev] PPS poll (proof-of-concept)">f96hajo at chalmers.se
+       </A><BR>
+    <I>Sun Nov 29 20:23:15 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007163.html">[Gpsd-dev] [Gpsd-commit-watch] r6606 - trunk
+</A></li>
+        <LI>Next message: <A HREF="007165.html">[Gpsd-dev] PPS poll (proof-of-concept)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7164">[ date ]</a>
+              <a href="thread.html#7164">[ thread ]</a>
+              <a href="subject.html#7164">[ subject ]</a>
+              <a href="author.html#7164">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+The attached patch examines the possibility of polling for PPS signals 
+instead of waiting for their interrupts.  The purpose is to get rid of the 
+(unknown) latency from the actual PPS signal on the serial pin until we 
+reach user-space and the gettimeofday() call after ioctl(TIOCMIWAIT) 
+inside gpsd_ppsmonitor().  I've measured the latency with a scope on a 2.4 
+GHz Athlon64 to be ~20 us (by toggling an output pin before doing the 
+gettimeofday(); the toggling as such was ~1 us).  Measured in other ways, 
+the latency on a 2.0 GHz Athlon looked like 25 us, and on a 800 MHz VIA 
+Nehemiah it is 38 us.
+
+The active part of the code is a tight poll loop calling gettimeofday() 
+and ioctl(TIOCMGET) waiting for the state change.  By using the previous 
+detected state changes (initally from the TIOCMIWAIT processing), the time 
+of the next occurrence is estimated, and a usleep() is issued to not waste 
+CPU and let gpsd_ppsmonitor wake up just in time to start polling before 
+the interesting pulse is expected.
+
+The oversleep by usleep() is taken into account, to (most often) not miss 
+the change.  With the new higher resultion timing on Linux (since 
+somewhere between 2.6.18 and 2.6.26) this is quite exact, down to about 5 
+us jitter and a 25 us constant (the VIA CPU).
+
+To not be hit by the CPU dealing with the actual interrupt from the serial 
+pin, the time of the PPS pulse is taken from the previous gettimeofday() 
+call in the poll loop which was surrounded by no state change reported by 
+ioctl(TIOCMGET), and extrapolated one poll cycle forward in time.  I.e. 
+extrapolated to the time of the gettimeofday() call surrounded by the 
+state change.  On the MHz 800 VIA CPU, the poll cycle is about 4 us.  On 
+the 2.0 GHz Athlon, it looks like 1.5 us.
+
+The time of a poll cycle is determined by measuring the time of 8 cycles 
+(to avoid measuring just 1 or 2 us on faster CPUs), and the polling is 
+started approximately 25-30 cycles before the estimated pulse.  Thus, the 
+polling should cost about 100us/s = 0.01% CPU load.  If no pulse is seen 
+within 1 ms, it gives up on that pulse.
+
+The code is not yet tested on a module which gives just a 1 us pulses 
+('invisible').  I've seen that those can be detected in this way in dry 
+tests, but not with 100% efficiency.  In general, whenever pulses are 
+missed by the polling, gpsd_ppsmonitor() goes back to do irq wait, and 
+will eventually try to find the pulse again.  This likely need some better 
+handling to deal with invisibles.
+
+A related thing is what to do when gpsd_ppsmonitor() (temporarily) goes 
+back to interrupt wait mode.  Then, the latency will be added to the 
+measured values, leading to bad data in ntpshm_pps().  One solution is to 
+also actually determine the latency.  This can be done, but will be sort 
+of messy.  Another solution would be to not send irq waited 
+data to ntpshm_pps(), and only use that for regaining lock, after pulses 
+were lost.
+
+Definately not suggested for commit, but am curious for comments, tests 
+etc.
+
+Cheers,
+H&#229;kan
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: poll_pps.diff
+Type: text/x-diff
+Size: 8521 bytes
+Desc: 
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091129/8c9d2400/attachment.diff">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091129/8c9d2400/attachment.diff</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007163.html">[Gpsd-dev] [Gpsd-commit-watch] r6606 - trunk
+</A></li>
+	<LI>Next message: <A HREF="007165.html">[Gpsd-dev] PPS poll (proof-of-concept)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7164">[ date ]</a>
+              <a href="thread.html#7164">[ thread ]</a>
+              <a href="subject.html#7164">[ subject ]</a>
+              <a href="author.html#7164">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

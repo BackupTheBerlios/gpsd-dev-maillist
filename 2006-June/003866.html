@@ -1,0 +1,197 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Last 2 or 3 versions of gpsd, NMEA mode don't work well for Kismac, cgps or xgps
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Last%202%20or%203%20versions%20of%20gpsd%2C%20NMEA%20mode%20don%27t%20work%0A%20well%20for%20Kismac%2C%20cgps%20or%20xgps&In-Reply-To=%3Cp06230950c0b7f2f01756%40%5B192.168.11.10%5D%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003861.html">
+   <LINK REL="Next"  HREF="003868.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Last 2 or 3 versions of gpsd, NMEA mode don't work well for Kismac, cgps or xgps</H1>
+    <B>Robin L Darroch</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Last%202%20or%203%20versions%20of%20gpsd%2C%20NMEA%20mode%20don%27t%20work%0A%20well%20for%20Kismac%2C%20cgps%20or%20xgps&In-Reply-To=%3Cp06230950c0b7f2f01756%40%5B192.168.11.10%5D%3E"
+       TITLE="[Gpsd-dev] Last 2 or 3 versions of gpsd, NMEA mode don't work well for Kismac, cgps or xgps">robin at spade-men.com
+       </A><BR>
+    <I>Fri Jun 16 07:51:28 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003861.html">[Gpsd-dev] Last 2 or 3 versions of gpsd, NMEA mode don't work well for Kismac, cgps or xgps
+</A></li>
+        <LI>Next message: <A HREF="003868.html">[Gpsd-dev] Last 2 or 3 versions of gpsd, NMEA mode don't work well for Kismac, cgps or xgps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3866">[ date ]</a>
+              <a href="thread.html#3866">[ thread ]</a>
+              <a href="subject.html#3866">[ subject ]</a>
+              <a href="author.html#3866">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Frank,
+
+The answer to your question(s) comes in three parts:
+
+1) Since you're on Mac OS X, it's possible that your GPS presents as 
+not just one but two devices in the /dev directory and - here's the 
+important part - they may be handled differently.  For example, my 
+GPS shows up as
+
+/dev/tty.usbserial  AND
+/dev/cu.usbserial
+
+If I start gpsd or sirfmon using /dev/tty.usbserial, it's not 
+reliably able to change between NMEA and SiRF binary modes... 
+however, using /dev/cu.usbserial, it seems to work every time.  Also 
+note that only one client (the one from which you're issuing the 
+command) can be connected for an N=0 or N=1 command to complete 
+successfully.
+
+2) The problem with GPSd and NMEA devices is a known issue with the 
+existing buffering logic (you can read all about it in the HACKING 
+file), but for the moment the lead developer has elected to keep the 
+logic as is (changes to that logic could cause problems for 
+data-loggers, since an NMEA device could cause GPSd to return two 
+sequential O responses with the same timestamp but two different 
+values for a given parameter... not an issue for most &quot;user level&quot; 
+clients, but could cause a problem for something that requires 
+one-to-one matching).  That said, I'm waiting on him to approve and 
+commit a patch to make the buffering logic a compile-time option, so 
+that users with NMEA devices that prefer the (generally more 
+user-friendly) &quot;never-clear&quot; buffering logic can build that in.  I've 
+attached the patch to this message (if you're happy building from an 
+SVN repository and applying patches).  The patch is against revision 
+3339.
+
+3) Since you're on a Mac, if you don't want the hassles of the above, 
+feel free to download and use my Universal Binary build of gpsd - 
+configured with never-clear buffering logic.  It works perfectly with 
+KisMAC (which, incidentally, sends a compound query to GPSd when it 
+needs data), and every other client I've had a chance to test with it 
+(gpsdrive, cgps, xgps, gps2geX, and one I'm working on right now). 
+You can download my binary release from 
+<A HREF="http://www.grandhighwizard.net/gpsdx.html">http://www.grandhighwizard.net/gpsdx.html</A>
+
+Incidentally, if you decide to go with SVN+patch, you should be right 
+with the defaults, but check the summary at the end of the 
+./configure - it should indicate that Clear at Start of Cycle is set 
+to &quot;NO&quot;... if in doubt, use the --disable-casoc switch with 
+./configure.
+
+Cheers,
+Robin
+
+At 20:08 -0400 14/6/06, Frank Nicholas wrote:
+&gt;<i>I'm using a GlobalSat BT-318, Bluetooth GPS.  I reported on it in 
+</I>&gt;<i>Vol 1, #180, 4/8/05, of the Dev List.
+</I>&gt;<i>Mfr's. Site: 
+</I>&gt;<i><A HREF="http://www.globalsat.com.tw/english/products_detail.php?main_id=21&amp;p_id=107">http://www.globalsat.com.tw/english/products_detail.php?main_id=21&amp;p_id=107</A>
+</I>&gt;<i>
+</I>&gt;<i>It's a Sirf II receiver, that defaults to NMEA.  gpsd has NEVER been 
+</I>&gt;<i>able to detect or switch it to Sirf II, even-though the Palm &amp; 
+</I>&gt;<i>Windows utilities are able to.  gpsd always detects it as a NMEA 
+</I>&gt;<i>receiver.  First, if there's anything I can do to help that change, 
+</I>&gt;<i>PLEASE let me know.  I'm willing to even loan it out, if need be, 
+</I>&gt;<i>for testing, etc.  I think I would have better results with it in 
+</I>&gt;<i>Sirf mode.
+</I>&gt;<i>
+</I>&gt;<i>Kismac (an open source Mac Wardriving application) often reports no 
+</I>&gt;<i>fix, or incorrect data (typically 1-2 seconds behind).  I don't know 
+</I>&gt;<i>what commands it is using to get data from gpsd, but am wiling to 
+</I>&gt;<i>look at the source code, if need be.
+</I>&gt;<i>
+</I>&gt;<i>'cgps' &amp; 'xgps' are not consistent between the two.  cgps flashes a 
+</I>&gt;<i>fix &amp; location once per second, then no fix or location, until the 
+</I>&gt;<i>next second.  It was tough to catch the fix for the screenshot. 
+</I>&gt;<i>xgps has a constant location &amp; NO fix, but flashes 3D Fix &amp; no 
+</I>&gt;<i>location, once per second.  I have screenshots of this, linked 
+</I>&gt;<i>below.  I would have expected cgps &amp; xgps to produce the same 
+</I>&gt;<i>results....
+</I>&gt;<i>
+</I>&gt;<i>I've tested with a Mac tool called GPSUtility that talks to the 
+</I>&gt;<i>receiver in NMEA.  It has a constant location &amp; fix.  It also has an 
+</I>&gt;<i>output window, showing what it's receiving from the receiver.  Note 
+</I>&gt;<i>that the output from the receiver is probably set to what gpsd 
+</I>&gt;<i>configured.  gpsd had been run, and I'm assuming it set what 
+</I>&gt;<i>statements/info the GPS would spit out in NMEA mode.
+</I>&gt;<i>
+</I>&gt;<i>I've included links to screenshots of cgps, xgps &amp; GPSUtility.  I've 
+</I>&gt;<i>also included the text output of gpsd &amp; GPSUtility, when running.  
+</I>&gt;<i>The GPS is stationary on a window sill, during these tests.
+</I>&gt;<i>
+</I>&gt;<i><A HREF="http://www.mactundra.com/gps/cgps_No_fix.png">http://www.mactundra.com/gps/cgps_No_fix.png</A>
+</I>&gt;<i><A HREF="http://www.mactundra.com/gps/cgps_fix.png">http://www.mactundra.com/gps/cgps_fix.png</A>
+</I>&gt;<i><A HREF="http://www.mactundra.com/gps/xgps_fix.png">http://www.mactundra.com/gps/xgps_fix.png</A>
+</I>&gt;<i><A HREF="http://www.mactundra.com/gps/xgps_No_fix.png">http://www.mactundra.com/gps/xgps_No_fix.png</A>
+</I>&gt;<i><A HREF="http://www.mactundra.com/gps/gpsd.txt.bz2">http://www.mactundra.com/gps/gpsd.txt.bz2</A>
+</I>&gt;<i><A HREF="http://www.mactundra.com/gps/GPSUtility.png">http://www.mactundra.com/gps/GPSUtility.png</A>
+</I>&gt;<i><A HREF="http://www.mactundra.com/gps/GPSUtility.txt">http://www.mactundra.com/gps/GPSUtility.txt</A>
+</I>&gt;<i>
+</I>&gt;<i>I'm able to easily build the released tarballs.  I can checkout SVN, 
+</I>&gt;<i>but the autogen.sh script doesn't work for me (build environment 
+</I>&gt;<i>issues).  I'm willing to run whatever tests or logs that will help 
+</I>&gt;<i>in resolving this.  I'm also willing to patch the release tarballs, 
+</I>&gt;<i>to try updates in SVN.
+</I>&gt;<i>
+</I>&gt;<i>Ultimately, I'd like for gpsd to change it to Sirf mode, even if I 
+</I>&gt;<i>have to pass a command to gpsd to make that happen.  This happening 
+</I>&gt;<i>automatically would be GREAT.  Before that happens, there appears to 
+</I>&gt;<i>be something wrong with either what the GPS is giving gpsd, in NMEA 
+</I>&gt;<i>mode, or the way gpsd is interpreting the NMEA received from the GPS.
+</I>&gt;<i>
+</I>&gt;<i>BTW - The GPS retains mode (NMEA/Sirf), as long as it has power.  
+</I>&gt;<i>It's normal installation is in a vehicle, and it only has power when 
+</I>&gt;<i>I flip a power switch.  The mode will default back to NMEA, without 
+</I>&gt;<i>power for a few minutes.  I don't recall if I've set the GPS to 
+</I>&gt;<i>Sirf, and then tried to use it with gpsd.
+</I>&gt;<i>
+</I>&gt;<i>Thanks for taking the time to read through this.  Let me know what I can do!
+</I>&gt;<i>
+</I>&gt;<i>_______________________________________________
+</I>&gt;<i>Gpsd-dev mailing list
+</I>&gt;<i><A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i><A HREF="http://lists.berlios.de/mailman/listinfo/gpsd-dev">http://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>
+
+-- 
+
+-------------------------------------------------------------------------
+  Robin L. Darroch - PO Box 2715, South Hedland WA 6722 - +61 421 503 966
+       <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at darroch.id.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at nyca.org.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: CaSoC-compile.patch
+Type: application/octet-stream
+Size: 3692 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20060616/d8e75dd6/attachment.obj">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20060616/d8e75dd6/attachment.obj</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003861.html">[Gpsd-dev] Last 2 or 3 versions of gpsd, NMEA mode don't work well for Kismac, cgps or xgps
+</A></li>
+	<LI>Next message: <A HREF="003868.html">[Gpsd-dev] Last 2 or 3 versions of gpsd, NMEA mode don't work well for Kismac, cgps or xgps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3866">[ date ]</a>
+              <a href="thread.html#3866">[ thread ]</a>
+              <a href="subject.html#3866">[ subject ]</a>
+              <a href="author.html#3866">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

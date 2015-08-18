@@ -1,0 +1,137 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] FreeBSD porting problems of gpsd-3.0
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20FreeBSD%20porting%20problems%20of%20gpsd-3.0&In-Reply-To=%3C20110825111828.GB62480%40hades.panopticon%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009453.html">
+   <LINK REL="Next"  HREF="009458.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] FreeBSD porting problems of gpsd-3.0</H1>
+    <B>Dmitry Marakasov</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20FreeBSD%20porting%20problems%20of%20gpsd-3.0&In-Reply-To=%3C20110825111828.GB62480%40hades.panopticon%3E"
+       TITLE="[Gpsd-dev] FreeBSD porting problems of gpsd-3.0">amdmi3 at amdmi3.ru
+       </A><BR>
+    <I>Thu Aug 25 13:18:28 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009453.html">[Gpsd-dev] FreeBSD porting problems of gpsd-3.0
+</A></li>
+        <LI>Next message: <A HREF="009458.html">[Gpsd-dev] FreeBSD porting problems of gpsd-3.0
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9457">[ date ]</a>
+              <a href="thread.html#9457">[ thread ]</a>
+              <a href="subject.html#9457">[ subject ]</a>
+              <a href="author.html#9457">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>* Bernd Zeimetz (<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">bernd at bzed.de</A>) wrote:
+&gt;<i> Hi,
+</I>&gt;<i> 
+</I>&gt;<i> &gt; 3. As I understand pydistutils (setup.py) is called right from
+</I>&gt;<i> &gt; SCons. Normally, when some port (for example, of some python module)
+</I>&gt;<i> &gt; uses pydistutils, it provides setup.py with certain arguments, for
+</I>&gt;<i> &gt; example, -c -O1 so python bytecode files (.pyc, .pyo) are created.
+</I>&gt;<i> &gt; Obviously this can't be done in this case.
+</I>&gt;<i> 
+</I>&gt;<i> Could you show me some examples of options you pass to setup.py? -c -O1 sound
+</I>&gt;<i> more like gcc options which should not be passed to setup.py bu instead the
+</I>&gt;<i> system's distutils/setuptools install should know how to compile the files properly.
+</I>
+Maybe I've been a bit mistaken. Here's how it's called on install phase:
+
+/usr/local/bin/python2.7 setup.py easy_install -O 1 -N -S /usr/local/lib/python2.7/site-packages  -d /usr/local/lib/python2.7/site-packages  -s /usr/local/bin /async/work/pool/ports/devel/py-dateutil/work/python-dateutil-1.5/dist/python_dateutil-1.5-py2.7.egg
+
+&gt;<i> &gt; This results in only *.py files installed, so if some python program
+</I>&gt;<i> &gt; which uses `gps' module is run by root user, python will create
+</I>&gt;<i> &gt; .pyc/.pyo files on its own, polluting system directory and making a
+</I>&gt;<i> &gt; port unable to deinstall cleanly.
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; I've solved this with calling python from a port after the installation
+</I>&gt;<i> &gt; to create the bytecode.
+</I>&gt;<i> 
+</I>&gt;<i> Good catch, byte compiled files should be installed - and if not needed, removed
+</I>&gt;<i> by the packager instead the other way round.
+</I>&gt;<i> I'll fix that.
+</I>
+Thanks, I honestly have no idea how to do this, especially if setup.py
+is removed (which may not be the best idea, see my letter to esr)
+
+&gt;<i> &gt; 8. Last but not least, the only problem I couldn't solve is dbus
+</I>&gt;<i> &gt; support. On FreeBSD dbus is installed from the ports, so pkg-config
+</I>&gt;<i> &gt; knows about it. However gpsd doesn't build with dbus_export=yes:
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; cc -o ais_json.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -Wimplicit-function-declaration -D_GNU_SOURCE -O2 -pipe -fno-strict-aliasing -O2 -fPIC ais_json.c
+</I>&gt;<i> &gt; In file included from ais_json.c:18:
+</I>&gt;<i> &gt; gpsd.h:979:23: error: dbus/dbus.h: No such file or directory
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; looks like SCons doesn't take cflags from pkgconfig at all, and I
+</I>&gt;<i> &gt; couldn't figure out how to make it do so.
+</I>&gt;<i> 
+</I>&gt;<i> Can't reproduce that here, scons properly adds
+</I>&gt;<i> -I/usr/include/dbus-1.0 -I/usr/lib/x86_64-linux-gnu/dbus-1.0/include
+</I>&gt;<i> from the dbus .pc files.
+</I>&gt;<i> Could you please send me the .pc files from your dbus installation?
+</I>
+--- dbus-1.pc begins here ---
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+system_bus_default_address=unix:path=/var/run/dbus/system_bus_socket
+sysconfdir=/usr/local/etc
+session_bus_services_dir=/usr/local/share/dbus-1/services
+system_bus_services_dir=/usr/local/share/dbus-1/system-services
+interfaces_dir=/usr/local/share/dbus-1/interfaces
+daemondir=/usr/local/bin
+
+Name: dbus
+Description: Free desktop message bus
+Version: 1.4.6
+Libs: -L${libdir} -ldbus-1 -pthread 
+Cflags: -I${includedir}/dbus-1.0 -I${includedir}/dbus-1.0/include
+--- dbus-1.pc ends here ---
+
+that looks correct, however there still are no flags passed to compiler:
+
+cc -o geoid.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -pipe -fno-strict-aliasing -fPIC geoid.c
+In file included from geoid.c:12:
+gpsd.h:984:23: error: dbus/dbus.h: No such file or directory
+
+-- 
+Dmitry Marakasov   .   55B5 0596 FF1E 8D84 5F56  9510 D35A 80DD F9D2 F77D
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">amdmi3 at amdmi3.ru</A>  ..:  jabber: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">amdmi3 at jabber.ru</A>    <A HREF="http://www.amdmi3.ru">http://www.amdmi3.ru</A>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009453.html">[Gpsd-dev] FreeBSD porting problems of gpsd-3.0
+</A></li>
+	<LI>Next message: <A HREF="009458.html">[Gpsd-dev] FreeBSD porting problems of gpsd-3.0
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9457">[ date ]</a>
+              <a href="thread.html#9457">[ thread ]</a>
+              <a href="subject.html#9457">[ subject ]</a>
+              <a href="author.html#9457">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

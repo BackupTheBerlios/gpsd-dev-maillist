@@ -1,0 +1,340 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Fedora Packaging Patches
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Fedora%20Packaging%20Patches&In-Reply-To=%3C4C31DEDD.9010508%40bzed.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008003.html">
+   <LINK REL="Next"  HREF="008004.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Fedora Packaging Patches</H1>
+    <B>Bernd Zeimetz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Fedora%20Packaging%20Patches&In-Reply-To=%3C4C31DEDD.9010508%40bzed.de%3E"
+       TITLE="[Gpsd-dev] Fedora Packaging Patches">bernd at bzed.de
+       </A><BR>
+    <I>Mon Jul  5 15:32:13 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008003.html">[Gpsd-dev] Fedora Packaging Patches
+</A></li>
+        <LI>Next message: <A HREF="008004.html">[Gpsd-dev] Fedora Packaging Patches
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8002">[ date ]</a>
+              <a href="thread.html#8002">[ thread ]</a>
+              <a href="subject.html#8002">[ subject ]</a>
+              <a href="author.html#8002">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+here are a few more comments :)
+
+
+&gt;<i> 
+</I>&gt;<i> gpsd-mrdvt92-dist-rpm.patch.txt
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> diff --git a/Makefile.am b/Makefile.am
+</I>&gt;<i> index c6ccca4..c4f233d 100644
+</I>&gt;<i> --- a/Makefile.am
+</I>&gt;<i> +++ b/Makefile.am
+</I>&gt;<i> @@ -529,7 +529,7 @@ XML = \
+</I>&gt;<i>  	srec.xml
+</I>&gt;<i>  
+</I>&gt;<i>  # Note: packaging/gpsd.spec is generated, but it needs to be in the
+</I>&gt;<i> -# tarball in order for 'make diat-rpm' to work.  The BUILT_SOURCES
+</I>&gt;<i> +# tarball in order for 'make dist-rpm' to work.  The BUILT_SOURCES
+</I>&gt;<i>  # files are here in order to minimize build dependencies for package
+</I>&gt;<i>  # builders who never alter anything, especially the Python dependency.
+</I>&gt;<i>  # Also note that the test and gps directories are here rather than
+</I>&gt;<i> @@ -571,10 +571,13 @@ EXTRA_DIST = \
+</I>&gt;<i>  	libgps.pc.in \
+</I>&gt;<i>  	libgpsd.pc.in \
+</I>&gt;<i>  	gpscap.ini \
+</I>&gt;<i> -	packaging/gpsd.spec \
+</I>&gt;<i>  	packaging/etc_default_gpsd \
+</I>&gt;<i> -	packaging/etc_init.d_gpsd \
+</I>&gt;<i> -	packaging/etc_init.d_gpsd_rpm \
+</I>&gt;<i> +	packaging/gpsd.spec \
+</I>&gt;<i> +	packaging/gpsd.init \
+</I>&gt;<i> +	packaging/gpsd.sysconfig \
+</I>&gt;<i> +	packaging/xgps.desktop \
+</I>&gt;<i> +	packaging/xgpsspeed.desktop \
+</I>&gt;<i> +	packaging/gpsd-logo.png \
+</I>&gt;<i>  	do-tests \
+</I>&gt;<i>  	regress-driver \
+</I>&gt;<i>  	$(PYTHONSCRIPTS_DIST) \
+</I>
+
+
+&gt;<i> diff --git a/libQgpsmm/libQgpsmm.pro b/libQgpsmm/libQgpsmm.pro
+</I>&gt;<i> index 7cd9bf0..029b292 100644
+</I>&gt;<i> --- a/libQgpsmm/libQgpsmm.pro
+</I>&gt;<i> +++ b/libQgpsmm/libQgpsmm.pro
+</I>
+[...]
+should be handled in a better way in git.
+
+
+&gt;<i> diff --git a/packaging/etc_init.d_gpsd_rpm b/packaging/etc_init.d_gpsd_rpm
+</I>&gt;<i> deleted file mode 100644
+</I>&gt;<i> index 46cbe8a..0000000
+</I>&gt;<i> --- a/packaging/etc_init.d_gpsd_rpm
+</I>&gt;<i> +++ /dev/null
+</I>
+
+&gt;<i> diff --git a/packaging/gpsd.init b/packaging/gpsd.init
+</I>&gt;<i> new file mode 100644
+</I>&gt;<i> index 0000000..85fab36
+</I>&gt;<i> --- /dev/null
+</I>&gt;<i> +++ b/packaging/gpsd.init
+</I>&gt;<i> @@ -0,0 +1,93 @@
+</I>&gt;<i> +#!/bin/sh
+</I>&gt;<i> +#
+</I>&gt;<i> +# gpsd Service daemon for mediating access to a GPS
+</I>&gt;<i> +#
+</I>&gt;<i> +# chkconfig:   - 44 66
+</I>&gt;<i> +# description: gpsd is a service daemon that mediates access to a GPS sensor \
+</I>&gt;<i> +#              connected to the host computer by serial or USB interface, \
+</I>&gt;<i> +#              making its data on the location/course/velocity of the sensor \
+</I>&gt;<i> +#              available to be queried on TCP port 2947 of the host computer.
+</I>&gt;<i> +# processname: gpsd
+</I>&gt;<i> +# pidfile:     /var/run/gpsd.pid
+</I>&gt;<i> +
+</I>&gt;<i> +# <A HREF="http://fedoraproject.org/wiki/FCNewInit/Initscripts">http://fedoraproject.org/wiki/FCNewInit/Initscripts</A>
+</I>&gt;<i> +### BEGIN INIT INFO
+</I>&gt;<i> +# Provides: gpsd
+</I>&gt;<i> +# Required-Start: network
+</I>&gt;<i> +# Required-Stop: network
+</I>&gt;<i> +# Should-Start: 
+</I>&gt;<i> +# Should-Stop: 
+</I>&gt;<i> +# Default-Start: 
+</I>&gt;<i> +# Default-Stop: 
+</I>&gt;<i> +# Short-Description: Service daemon for mediating access to a GPS
+</I>&gt;<i> +# Description: gpsd is a service daemon that mediates access to a GPS sensor
+</I>&gt;<i> +#	connected to the host computer by serial or USB interface, making its
+</I>&gt;<i> +#	data on the location/course/velocity of the sensor available to be
+</I>&gt;<i> +#	queried on TCP port 2947 of the host computer.
+</I>&gt;<i> +### END INIT INFO
+</I>&gt;<i> +
+</I>&gt;<i> +# Source function library.
+</I>&gt;<i> +. /etc/rc.d/init.d/functions
+</I>&gt;<i> +
+</I>&gt;<i> +exec=&quot;/usr/sbin/gpsd&quot;
+</I>&gt;<i> +prog=$(basename $exec)
+</I>&gt;<i> +PIDFILE=/var/run/gpsd.pid
+</I>&gt;<i> +CONTROL_SOCKET=/var/run/gpsd.sock
+</I>&gt;<i> +
+</I>&gt;<i> +[ -e /etc/sysconfig/$prog ] &amp;&amp; . /etc/sysconfig/$prog
+</I>&gt;<i> +: ${OPTIONS:=-n}
+</I>&gt;<i> +: ${DEVICE:=/dev/ttyUSB0}
+</I>&gt;<i> +
+</I>&gt;<i> +lockfile=/var/lock/subsys/$prog
+</I>&gt;<i> +
+</I>&gt;<i> +start() {
+</I>&gt;<i> +    [ &quot;$EUID&quot; != &quot;0&quot; ] &amp;&amp; exit 4
+</I>&gt;<i> +    echo -n $&quot;Starting $prog: &quot;
+</I>&gt;<i> +    daemon $exec -P $PIDFILE -F $CONTROL_SOCKET $OPTIONS $DEVICE
+</I>&gt;<i> +    retval=$?
+</I>&gt;<i> +    echo
+</I>&gt;<i> +    [ $retval -eq 0 ] &amp;&amp; touch $lockfile
+</I>&gt;<i> +    return $retval
+</I>&gt;<i> +}
+</I>&gt;<i> +
+</I>&gt;<i> +stop() {
+</I>&gt;<i> +    [ &quot;$EUID&quot; != &quot;0&quot; ] &amp;&amp; exit 4
+</I>&gt;<i> +    echo -n $&quot;Stopping $prog: &quot;
+</I>&gt;<i> +    killproc $prog
+</I>&gt;<i> +    retval=$?
+</I>&gt;<i> +    echo
+</I>&gt;<i> +    [ $retval -eq 0 ] &amp;&amp; rm -f $lockfile
+</I>&gt;<i> +    return $retval
+</I>&gt;<i> +}
+</I>&gt;<i> +
+</I>&gt;<i> +restart() {
+</I>&gt;<i> +    stop
+</I>&gt;<i> +    start
+</I>&gt;<i> +}
+</I>&gt;<i> +
+</I>&gt;<i> +case &quot;$1&quot; in
+</I>&gt;<i> +    start|stop|restart)
+</I>&gt;<i> +        $1
+</I>&gt;<i> +        ;;
+</I>&gt;<i> +    force-reload)
+</I>&gt;<i> +        restart
+</I>&gt;<i> +        ;;
+</I>&gt;<i> +    status)
+</I>&gt;<i> +        status $prog
+</I>&gt;<i> +        ;;
+</I>&gt;<i> +    try-restart|condrestart)
+</I>&gt;<i> +        if status $prog &gt;/dev/null ; then
+</I>&gt;<i> +            restart
+</I>&gt;<i> +        fi
+</I>&gt;<i> +	;;
+</I>&gt;<i> +    reload)
+</I>&gt;<i> +        status $prog &gt;/dev/null || exit 7
+</I>&gt;<i> +        # If config can be reloaded without restarting, implement it here,
+</I>&gt;<i> +        # remove the &quot;exit&quot;, and add &quot;reload&quot; to the usage message below.
+</I>&gt;<i> +        action $&quot;Service $prog does not support the reload action: &quot; /bin/false
+</I>&gt;<i> +        exit 3
+</I>&gt;<i> +        ;;
+</I>&gt;<i> +    *)
+</I>&gt;<i> +        echo $&quot;Usage: $0 {start|stop|status|restart|try-restart|force-reload}&quot;
+</I>&gt;<i> +        exit 2
+</I>&gt;<i> +esac
+</I>
+
+Looking at your patch it seems that you've tried to merge the init file for rpm
+and debian based systems. Unfortu nately your new init script won't work on
+Debian - we'll need two different scripts I guess.
+
+
+
+&gt;<i> diff --git a/packaging/gpsd.spec.in b/packaging/gpsd.spec.in
+</I>&gt;<i> index f441a77..0b705d5 100644
+</I>&gt;<i> --- a/packaging/gpsd.spec.in
+</I>&gt;<i> +++ b/packaging/gpsd.spec.in
+</I>&gt;<i> @@ -1,17 +1,26 @@
+</I>&gt;<i> -%define pkgconfig_version 0.12
+</I>&gt;<i> +%{!?python_sitearch: %global python_sitearch %(%{__python} -c &quot;from distutils.sysconfig import get_python_lib; print get_python_lib(1)&quot;)}
+</I>&gt;<i>  
+</I>&gt;<i>  Name: gpsd
+</I>&gt;<i> -Summary: Service daemon for mediating access to a GPS
+</I>&gt;<i>  Version: @VERSION@
+</I>&gt;<i> -Release: 1
+</I>&gt;<i> -License: BSD
+</I>&gt;<i> +Release: 3%{?dist}
+</I>&gt;<i> +Summary: Service daemon for mediating access to a GPS
+</I>&gt;<i> +
+</I>&gt;<i>  Group: System Environment/Daemons
+</I>&gt;<i> +License: BSD
+</I>&gt;<i>  URL: <A HREF="http://developer.berlios.de/projects/gpsd/">http://developer.berlios.de/projects/gpsd/</A>
+</I>&gt;<i> -Source0: %{name}-%{version}.tar.gz
+</I>&gt;<i> -BuildRequires: ncurses-devel gcc libxslt python
+</I>&gt;<i> -BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+</I>&gt;<i> -Prereq: /sbin/chkconfig
+</I>&gt;<i> -#Destinations: mailto:<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-announce at lists.berlios.de</A>, mailto:<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-users at lists.berlios.de</A>, mailto:<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> +Source0: <A HREF="http://download.berlios.de/gpsd/%{name">http://download.berlios.de/gpsd/%{name</A>}-%{version}.tar.gz
+</I>&gt;<i> +BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+</I>&gt;<i> +
+</I>&gt;<i> +BuildRequires: dbus-devel dbus-glib-devel ncurses-devel xmlto python-devel
+</I>&gt;<i> +BuildRequires: libXaw-devel desktop-file-utils
+</I>&gt;<i> +BuildRequires: qt-devel
+</I>&gt;<i> +
+</I>&gt;<i> +Requires: udev
+</I>&gt;<i> +Requires(post): /sbin/ldconfig
+</I>&gt;<i> +Requires(post): /sbin/chkconfig
+</I>&gt;<i> +Requires(preun): initscripts
+</I>&gt;<i> +Requires(preun): /sbin/chkconfig
+</I>&gt;<i> +Requires(postun): /sbin/ldconfig
+</I>&gt;<i>  
+</I>&gt;<i>  %description 
+</I>&gt;<i>  gpsd is a service daemon that mediates access to a GPS sensor
+</I>&gt;<i> @@ -21,32 +30,32 @@ queried on TCP port 2947 of the host computer.  With gpsd, multiple
+</I>&gt;<i>  GPS client applications (such as navigational and wardriving software)
+</I>&gt;<i>  can share access to a GPS without contention or loss of data.  Also,
+</I>&gt;<i>  gpsd responds to queries with a format that is substantially easier to
+</I>&gt;<i> -parse than NMEA 0183.  A client library is provided for applications.
+</I>&gt;<i> -
+</I>&gt;<i> -After installing this RPM, gpsd will automatically connect to USB
+</I>&gt;<i> -GPSes when they are plugged in and requires no configuration.  For
+</I>&gt;<i> -serial GPSes, you will need to start gpsd by hand.  Once connected,
+</I>&gt;<i> -the daemon automatically discovers the correct baudrate, stop bits,
+</I>&gt;<i> -and protocol. The daemon will be quiescent when there are no
+</I>&gt;<i> -clients asking for location information, and copes gracefully when the
+</I>&gt;<i> -GPS is unplugged and replugged.
+</I>&gt;<i> +parse than NMEA 0183.  
+</I>&gt;<i>  
+</I>&gt;<i>  %package devel
+</I>&gt;<i>  Summary: Client libraries in C and Python for talking to a running gpsd or GPS
+</I>&gt;<i>  Group: Development/Libraries
+</I>&gt;<i> -BuildRequires: pkgconfig &gt;= %{pkgconfig_version}
+</I>&gt;<i> -Requires: gpsd
+</I>&gt;<i> +Requires: %{name} = %{version}-%{release}
+</I>&gt;<i> +Requires: pkgconfig
+</I>&gt;<i>  
+</I>&gt;<i>  %description devel
+</I>&gt;<i> -This package provides C header files for the gpsd shared libraries
+</I>&gt;<i> -that manage access to a GPS for applications; also Python modules.
+</I>&gt;<i> -You will need to have gpsd installed for it to work.
+</I>&gt;<i> +This package provides C header files and python modules for the gpsd shared 
+</I>&gt;<i> +libraries that manage access to a GPS for applications
+</I>&gt;<i> +
+</I>&gt;<i> +%package qt
+</I>&gt;<i> +Summary: Qt Client libraries for talking to a running gpsd or GPS
+</I>&gt;<i> +Group: Development/Libraries
+</I>&gt;<i> +Requires: %{name} = %{version}-%{release}
+</I>&gt;<i> +Requires: qt
+</I>&gt;<i> +Requires: pkgconfig
+</I>&gt;<i> +
+</I>&gt;<i> +%description qt
+</I>&gt;<i> +This package provides Qt shared libraries that manage access to a GPS
+</I>&gt;<i> +for Qt applications
+</I>&gt;<i>  
+</I>&gt;<i>  %package clients
+</I>&gt;<i> -Summary: Clients for gpsd with an X interface
+</I>&gt;<i> +Summary: Clients for gpsd
+</I>&gt;<i>  Group: Applications/System
+</I>&gt;<i> -BuildRequires: pygtk
+</I>&gt;<i> -BuildRequires: libXaw-devel
+</I>
+With the patch from todya it also needs cairo.
+
+[..]
+
+I'm not sure how Fedora handles and supports various Pyhton versions. At least I
+could imagine that it would make sense for you to ship the python extensions and
+modules in a package on their own. In Debian I build the extensions for all
+Python versions which are supported in the release, 2.5 and 2.6 now.
+
+The following packages are being built in Debian:
+Package: gpsd (includes the daemon)
+Package: gpsd-dbg (debug symbols for all binaries and python debug interpreter
+build)
+Package: gpsd-clients (gpxlogger and friends)
+Package: python-gps (python modules and extensions)
+Package: libgps19 (libgps itself)
+Package: libgps-dev (development headers)
+
+There'll be a libqgpsmm19 package starting with the next upload.
+
+
+-- 
+ Bernd Zeimetz                            Debian GNU/Linux Developer
+ <A HREF="http://bzed.de">http://bzed.de</A>                                <A HREF="http://www.debian.org">http://www.debian.org</A>
+ GPG Fingerprints: 06C8 C9A2 EAAD E37E 5B2C BE93 067A AD04 C93B FF79
+                   ECA1 E3F2 8E11 2432 D485 DD95 EB36 171A 6FF9 435F
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008003.html">[Gpsd-dev] Fedora Packaging Patches
+</A></li>
+	<LI>Next message: <A HREF="008004.html">[Gpsd-dev] Fedora Packaging Patches
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8002">[ date ]</a>
+              <a href="thread.html#8002">[ thread ]</a>
+              <a href="subject.html#8002">[ subject ]</a>
+              <a href="author.html#8002">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

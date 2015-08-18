@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] Restrict the barrier() function to x86 and x86_64
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Restrict%20the%20barrier%28%29%20function%20to%20x86%20and%0A%20x86_64&In-Reply-To=%3C20110329095328.GA28717%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009171.html">
+   <LINK REL="Next"  HREF="009175.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] Restrict the barrier() function to x86 and x86_64</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Restrict%20the%20barrier%28%29%20function%20to%20x86%20and%0A%20x86_64&In-Reply-To=%3C20110329095328.GA28717%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] [PATCH] Restrict the barrier() function to x86 and x86_64">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Mar 29 11:53:28 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009171.html">[Gpsd-dev] [PATCH] Restrict the barrier() function to x86 and x86_64
+</A></li>
+        <LI>Next message: <A HREF="009175.html">[Gpsd-dev] [PATCH] Restrict the barrier() function to x86 and x86_64
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9173">[ date ]</a>
+              <a href="thread.html#9173">[ thread ]</a>
+              <a href="subject.html#9173">[ subject ]</a>
+              <a href="author.html#9173">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>H&#229;kan Johansson &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">f96hajo at chalmers.se</A>&gt;:
+&gt;<i> 
+</I>&gt;<i> &gt;static /*@unused@*/ inline void barrier(void) {
+</I>&gt;<i> &gt;-#ifdef __GNUC__
+</I>&gt;<i> &gt;-#ifndef S_SPLINT_S
+</I>&gt;<i> &gt;+#if defined(__GNUC__)
+</I>&gt;<i> &gt;+    #if defined(__i386__) || defined(__x86_64__)
+</I>&gt;<i> &gt;+	#ifndef S_SPLINT_S
+</I>&gt;<i> &gt;	asm volatile(&quot;sfence&quot;);
+</I>&gt;<i> &gt;-#endif /* S_SPLINT_S */
+</I>&gt;<i> &gt;+	#endif /* S_SPLINT_S */
+</I>&gt;<i> &gt;+    #endif /* __i386__ || __x86_64__ */
+</I>&gt;<i> &gt;#endif /* __GNUC__ */
+</I>&gt;<i> &gt;}
+</I>&gt;<i> 
+</I>&gt;<i> As far as I understood the manuals, 'sfence' is only thr write
+</I>&gt;<i> barrier, while 'lfence' is the read part.  'mfence' would be the
+</I>&gt;<i> combined?
+</I>
+There's a manual?  I've been googling for documentation with no success.
+Where did you find it?
+
+I found the page describing GCC __sync_synchronize() and friends; it's
+asm volatile(&quot;[sml]fence&quot;) I can't seem to find anything on.
+
+Also, I'm not sure what the utility of a read-lock would be.  Is this
+what we want on the read side of the algorithm (libgps_shm.c)?
+
+&gt;<i> Also, all these are only available when SSE is available, so would
+</I>&gt;<i> make e.g. an 486 indigest?  As we do not execute the barrier codes
+</I>&gt;<i> too often, perhaps go the locked add way, as in the linux kernel, an
+</I>&gt;<i> access to the top of the stack:
+</I>&gt;<i> 
+</I>&gt;<i> lock; addl $0,0(%%esp)
+</I>
+I'm not nearly as worried about portability to the 486 as I am to ARM,
+and maybe to a lesser extent MIPS and AVR32.  
+
+I'm also not worried about the tiny time differences between the
+instruction for read-lock, write-lock, and both-lock - our application
+is simply not going to hit these instructions very often, and I'd
+rather have robust correctness than shave off a few microseconds in a risky
+way.
+
+Actually I'd love to do what tz suggested, go with __sync_synchronize() and
+throw the problem back in GCC's lap.  Except somewhere I read an allegation
+that there's a relevant bug affecting GCC &lt; 4.4.  This may be it:
+
+<A HREF="http://gcc.gnu.org/bugzilla/show_bug.cgi?id=36793">http://gcc.gnu.org/bugzilla/show_bug.cgi?id=36793</A>
+
+It seems to be addressing our case exactly, if I'm understanding it
+correctly.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009171.html">[Gpsd-dev] [PATCH] Restrict the barrier() function to x86 and x86_64
+</A></li>
+	<LI>Next message: <A HREF="009175.html">[Gpsd-dev] [PATCH] Restrict the barrier() function to x86 and x86_64
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9173">[ date ]</a>
+              <a href="thread.html#9173">[ thread ]</a>
+              <a href="subject.html#9173">[ subject ]</a>
+              <a href="author.html#9173">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,195 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] UBX driver
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20UBX%20driver&In-Reply-To=%3C20061220160440.61E2BCF0C2%40mail.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005463.html">
+   <LINK REL="Next"  HREF="005472.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] UBX driver</H1>
+    <B>Ali Utku Selen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20UBX%20driver&In-Reply-To=%3C20061220160440.61E2BCF0C2%40mail.berlios.de%3E"
+       TITLE="[Gpsd-dev] UBX driver">selenau at kentkart.com.tr
+       </A><BR>
+    <I>Wed Dec 20 17:03:18 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005463.html">[Gpsd-dev] gpsd and carputer and wifi
+</A></li>
+        <LI>Next message: <A HREF="005472.html">[Gpsd-dev] UBX driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5471">[ date ]</a>
+              <a href="thread.html#5471">[ thread ]</a>
+              <a href="subject.html#5471">[ subject ]</a>
+              <a href="author.html#5471">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+ 
+
+For the past few days, I'm playing with Andreas Stricker's UBX patch over
+gpsd 2.34 and confused enough to ask a few questions, just now. Sorry if I'm
+late :).
+
+ 
+
+uBlox provides 2 protocols with my antaris 4 based lea-4s. One is NMEA, the
+other is UBX. You folks told me NMEA causes &quot;fix/no fix&quot; problems and UBX
+will be better to use (at least that was what I understood). But u-blox
+manual says it has a few proprietary message additions to NMEA grouped under
+PUBX, which you already documented under NMEA page in gpsd home page. Are
+messages under PUBX category not enough for gpsd to behave well? There are 4
+messages and they look appropriate enough. If this feature is feasible, than
+doesn't it mean the device actually supports 3 protocols (NMEA, NMEA+ublox
+proprietary extensions, UBX) and gpsd should support both extended NMEA and
+UBX? 
+
+ 
+
+I asked for my hw. tech. friend here to build me a stand alone usb gps to
+use with desktop pc and used u-blox's test program under windows. I disabled
+all messages except PUBX group and test program was green all the time with
+just those messages.
+
+ 
+
+So I am waiting for your expertise...
+
+ 
+
+Andy:
+
+&gt;&gt;<i>PS: can you send your progress to gpsd-dev list? If I find some minutes to
+</I>spend with coding I may help a bit.
+
+ 
+
+Until today, only thing I've got was an embedded arm board which is directly
+connected to ublox's (default) NMEA serial port. So I've to play a few mode
+switch tricks. My plan is below. Now I've got a test equipment and I plan to
+diagonose incoming and outgoing messages on windows with orginal ublox
+program. Then if plan works, only thing we need is decoding UBX structs into
+gpsd then it should be done.(?)
+
+ 
+
+&lt;plan&gt;
+
+ 
+
+drivers.c -&gt; nmea_probe_subtype 
+
+ 
+
+#ifdef UBX_ENABLE
+
+    case 5:
+
+        (void)nmea_send(session-&gt;gpsdata.gps_fd,
+
+                  &quot;$PUBX,04&quot;);
+
+        break;
+
+#endif /* UBX_ENABLE */
+
+ 
+
+ubx.c -&gt; ubx_binary 
+
+ 
+
+.trigger          = &quot;$PUBX,04,&quot;,
+
+.probe_subtype    = ubx_probe_subtype,
+
+ 
+
+static void ubx_probe_subtype(struct gps_device_t *session, unsigned int seq
+UNUSED)
+
+{
+
+    if (seq == 0) {
+
+        gpsd_report(LOG_WARN, &quot;ubx_probe_subtype\n&quot;);
+
+        (void)nmea_send(session-&gt;gpsdata.gps_fd, nmea_switchToUBX);
+
+    }
+
+} 
+
+ 
+
+static void ubx_switcher(struct gps_device_t *session, int mode)
+
+{
+
+    gpsd_report(LOG_WARN, &quot;ubx_switcher %d - %s\n&quot;, mode,
+mode?&quot;binary&quot;:&quot;NMEA&quot;);
+
+    if (mode == 0) {
+
+        /* NMEA */
+
+        (void)nmea_send(session-&gt;gpsdata.gps_fd, nmea_switchToNMEA);
+
+    } else {
+
+        /* binary */
+
+        (void)nmea_send(session-&gt;gpsdata.gps_fd, nmea_switchToUBX);
+
+    }
+
+}
+
+ 
+
+Then the rest of the work depends on Andy's nav-sol func.
+
+ 
+
+&lt;end of plan&gt;
+
+ 
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20061220/1407ccb2/attachment.html">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20061220/1407ccb2/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005463.html">[Gpsd-dev] gpsd and carputer and wifi
+</A></li>
+	<LI>Next message: <A HREF="005472.html">[Gpsd-dev] UBX driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5471">[ date ]</a>
+              <a href="thread.html#5471">[ thread ]</a>
+              <a href="subject.html#5471">[ subject ]</a>
+              <a href="author.html#5471">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

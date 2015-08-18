@@ -1,0 +1,315 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] More cgps updates
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20More%20cgps%20updates&In-Reply-To=%3C20050917043113.GC3513%40www.gritch.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003059.html">
+   <LINK REL="Next"  HREF="003061.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] More cgps updates</H1>
+    <B>Jeff Francis</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20More%20cgps%20updates&In-Reply-To=%3C20050917043113.GC3513%40www.gritch.org%3E"
+       TITLE="[Gpsd-dev] More cgps updates">jeff at gritch.org
+       </A><BR>
+    <I>Sat Sep 17 06:31:13 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003059.html">[Gpsd-dev] More cgps updates
+</A></li>
+        <LI>Next message: <A HREF="003061.html">[Gpsd-dev] More cgps updates
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3060">[ date ]</a>
+              <a href="thread.html#3060">[ thread ]</a>
+              <a href="subject.html#3060">[ subject ]</a>
+              <a href="author.html#3060">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>  Ok, better diff attached.
+
+On Fri, Sep 16, 2005 at 10:13:35PM -0700, Remco Treffkorn wrote:
+&gt;<i> On Friday 16 September 2005 20:19, Jeff Francis wrote:
+</I>&gt;<i> &gt;   I've attached the complete cgps.c file rather than diffs, as I
+</I>&gt;<i> &gt; re-indented the whole program to the emacs defaults I normally use
+</I>&gt;<i> &gt; without thinking.  A &quot;space-insensitive&quot; diff should strain out the
+</I>&gt;<i> &gt; new stuff, if only the changes are desired.
+</I>&gt;<i> 
+</I>&gt;<i> Sorry, I currently don't have the time to do that. If anybody here is 
+</I>&gt;<i> interested in this change, maybe they will...
+</I>&gt;<i> 
+</I>&gt;<i> -- 
+</I>&gt;<i> Remco Treffkorn (RT445)
+</I>&gt;<i> HAM DC2XT
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="http://lists.berlios.de/mailman/listinfo/gpsd-dev">http://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>
+-- 
++--------------------------+---------------------------------------------+
+|<i>   Jeff Francis - N0GQ    | &quot;When people forget God, tyrants forge      |
+</I>|<i> Snohomish, WA USA, Earth |  their chains; a corrputed public           |
+</I>|<i>     <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>      |  conscience is incompatible with freedom.&quot;  |
+</I>|<i>  <A HREF="http://www.gritch.org">http://www.gritch.org</A>   |                         -- Patrick Henry    |
+</I>+--------------------------+---------------------------------------------+
+-------------- next part --------------
+--- cgps.c	2005-09-16 21:27:46.000000000 -0700
++++ cgps.c.new	2005-09-16 21:27:35.000000000 -0700
+@@ -52,9 +52,10 @@
+ static char *altunits = &quot;ft&quot;;
+ static char *speedunits = &quot;mph&quot;;
+ 
+-static WINDOW *datawin, *satellites, *messages, *command;
++static WINDOW *datawin, *satellites, *messages, *command, *status;
+ 
+ int silent_flag=0;
++int ops_flag=0;
+ 
+ /* Function to call when we're all done.  Does a bit of clean-up. */
+ static void die(int sig UNUSED) 
+@@ -108,7 +109,7 @@
+ 	}
+     }
+   
+-    /* TODO: Make this work. */
++  /* Print time/date. */
+     (void)wmove(datawin, 1,17);
+     if (isnan(gpsdata-&gt;fix.time)==0) {
+ 	char scr[128];
+@@ -153,63 +154,86 @@
+     else
+ 	(void)wprintw(datawin,&quot;n/a         &quot;);
+ 
+-    /* Fill in the estimated horizontal position error. */
++  /* Fill in the rate of climb. */
+     (void)wmove(datawin, 7,17);
++  if (gpsdata-&gt;fix.mode == MODE_3D &amp;&amp; isnan(gpsdata-&gt;fix.climb)==0)
++    (void)wprintw(datawin,&quot;%.1f %s/min     &quot;
++		  , gpsdata-&gt;fix.climb * altfactor * 60, altunits);
++  else
++    (void)wprintw(datawin,&quot;n/a         &quot;);
++  
++  /* Fill in the estimated horizontal position error. */
++  (void)wmove(datawin, 9,22);
+     if (isnan(gpsdata-&gt;fix.eph)==0)
+-	(void)wprintw(datawin,&quot;%d %s     &quot;, (int) (gpsdata-&gt;fix.eph * altfactor), altunits);
++    (void)wprintw(datawin,&quot;+/- %d %s     &quot;, (int) (gpsdata-&gt;fix.eph * altfactor), altunits);
+     else
+ 	(void)wprintw(datawin,&quot;n/a         &quot;);
+ 
+     /* Fill in the estimated vertical position error. */
+-    (void)wmove(datawin, 8,17);
++  (void)wmove(datawin, 10,22);
+     if (isnan(gpsdata-&gt;fix.epv)==0)
+-	(void)wprintw(datawin,&quot;%d %s     &quot;, (int)(gpsdata-&gt;fix.epv * altfactor), altunits);
++    (void)wprintw(datawin,&quot;+/- %d %s     &quot;, (int)(gpsdata-&gt;fix.epv * altfactor), altunits);
+     else
+ 	(void)wprintw(datawin,&quot;n/a         &quot;);
+ 
+-    /* Fill in the rate of climb. */
+-    (void)wmove(datawin, 9,17);
+-    if (gpsdata-&gt;fix.mode == MODE_3D &amp;&amp; isnan(gpsdata-&gt;fix.climb)==0)
+-	(void)wprintw(datawin,&quot;%.1f %s/min     &quot;
+-	    , gpsdata-&gt;fix.climb * altfactor * 60, altunits);
++  /* Fill in the estimated track error. */
++  (void)wmove(datawin, 11,22);
++  if (isnan(gpsdata-&gt;fix.epd)==0)
++    (void)wprintw(datawin,&quot;+/- %.1f deg     &quot;, (gpsdata-&gt;fix.epd));
+     else
+ 	(void)wprintw(datawin,&quot;n/a         &quot;);
+   
+-    /* Fill in the GPS status */
+-    (void)wmove(datawin, 10,17);
++  /* Fill in the estimated speed error. */
++  (void)wmove(datawin, 12,22);
++  if (isnan(gpsdata-&gt;fix.eps)==0)
++    (void)wprintw(datawin,&quot;+/- %d %s     &quot;, (int)(gpsdata-&gt;fix.eps * speedfactor), speedunits);
++  else
++    (void)wprintw(datawin,&quot;n/a            &quot;);
++
++  /* Fill in the GPS status and the time since the last state change. */
++  (void)wmove(status, 1,10);
+     if (gpsdata-&gt;online == 0) {
+ 	newstate = 0;
+-	(void)wprintw(datawin,&quot;OFFLINE          &quot;);
++    (void)wprintw(status,&quot;OFFLINE          &quot;);
+     } else {
+ 	newstate = gpsdata-&gt;fix.mode;
+ 	switch (gpsdata-&gt;fix.mode) {
+ 	case MODE_2D:
+-	    (void)wprintw(datawin,&quot;2D %sFIX     &quot;,(gpsdata-&gt;status==STATUS_DGPS_FIX)?&quot;DIFF &quot;:&quot;&quot;);
++      (void)wprintw(status,&quot;2D %sFIX (%d secs)   &quot;,(gpsdata-&gt;status==STATUS_DGPS_FIX)?&quot;DIFF &quot;:&quot;&quot;, (int) (time(NULL) - timer));
+ 	    break;
+ 	case MODE_3D:
+-	    (void)wprintw(datawin,&quot;3D %sFIX     &quot;,(gpsdata-&gt;status==STATUS_DGPS_FIX)?&quot;DIFF &quot;:&quot;&quot;);
++      (void)wprintw(status,&quot;3D %sFIX (%d secs)   &quot;,(gpsdata-&gt;status==STATUS_DGPS_FIX)?&quot;DIFF &quot;:&quot;&quot;, (int) (time(NULL) - timer));
+ 	    break;
+ 	default:
+-	    (void)wprintw(datawin,&quot;NO FIX               &quot;);
++      (void)wprintw(status,&quot;NO FIX (%d secs)     &quot;, (int) (time(NULL) - timer));
+ 	    break;
+ 	}
+     }
+ 
+-    /* Fill in the time since the last state change. */
+-    if (newstate != state) {
+-	timer = time(NULL);
+-	state = newstate;
+-    }
+-    (void)wmove(datawin, 11,17);
+-    (void)wprintw(datawin,&quot;%d secs          &quot;, (int) (time(NULL) - timer));
+-
+     /* Be quiet if the user requests silence. */
+     if(silent_flag==0) {
+       (void)wprintw(messages, &quot;%s\n&quot;, message);
+     }
+ 
+-    /* Update the screen. */
++  /* Update the screen.  This is admittedly not an optimal hack, and
++     is for fixing the screen flashing when using NMEA data sources.
++     We're watching for a GPGSA sentence in order to refresh the data
++     window.  There is a small race condition here (ie, data
++     structures can update before the refresh happens), but this
++     rarely happens, and it doesn't matter much if it does (ie, can't
++     corrupt anything important).  There's probably a cleaner way to
++     do this, but it's better than the annoying flashing. */
++  if((ops_flag==0) || (strstr(message,&quot;GSA&quot;)!=NULL)) {
+     (void)wrefresh(datawin);
++
++    /* Reset the timer if the state has changed. */
++    if (newstate != state) {
++      timer = time(NULL);
++      state = newstate;
++    }
++  }
++
++  (void)wrefresh(status);
+     (void)wrefresh(satellites);
+     (void)wrefresh(messages);
+     (void)wrefresh(command);
+@@ -218,15 +242,16 @@
+ static void usage( char *prog) 
+ {
+ 	    (void)fprintf(stderr, 
+-&quot;Usage: %s [-h] [-v] [-V] [-l {d|m|s}] [server[:port:[device]]]\n\n&quot;
+-&quot;  -h          Show this help, then exit\n&quot;
+-&quot;  -v          Show version, then exit\n&quot;
+-&quot;  -V          Show version, then exit\n&quot;
+-&quot;  -s          Be silent (don't print raw dgps data)\n&quot;
+-&quot;  -l {d|m|s}  Select lat/lon format\n&quot;
+-&quot;                d = DD.dddddd\n&quot;
+-&quot;                m = DD MM.mmmm'\n&quot;
+-&quot;                s = DD MM' SS.sss\&quot;\n&quot;
++		&quot;Usage: %s [-h] [-v] [-V] [-l {d|m|s}] [server[:port:[device]]]\n\n&quot;
++		&quot;  -h          Show this help, then exit\n&quot;
++		&quot;  -v          Show version, then exit\n&quot;
++		&quot;  -V          Show version, then exit\n&quot;
++		&quot;  -s          Be silent (don't print raw dgps data)\n&quot;
++		&quot;  -o          Fix screen flash for NMEA (experimental)\n&quot;
++		&quot;  -l {d|m|s}  Select lat/lon format\n&quot;
++		&quot;                d = DD.dddddd\n&quot;
++		&quot;                m = DD MM.mmmm'\n&quot;
++		&quot;                s = DD MM' SS.sss\&quot;\n&quot;
+                 , prog);
+ 
+ 	    exit(1);
+@@ -244,8 +269,11 @@
+     int data;
+ 
+     /* Process the options.  Print help if requested. */
+-    while ((option = getopt(argc, argv, &quot;hvl:s&quot;)) != -1) {
++  while ((option = getopt(argc, argv, &quot;hvl:so&quot;)) != -1) {
+ 	switch (option) {
++    case 'o':
++      ops_flag=1;
++      break;
+ 	case 's':
+ 	  silent_flag=1;
+ 	  break;
+@@ -358,6 +386,7 @@
+     datawin    = newwin(15, 45, 1, 0);
+     satellites = newwin(15, 35, 1, 45);
+     command    = newwin(3,  45,  16, 0);
++  status     = newwin(3,  35,  16, 45);
+     messages   = newwin(0,  0,  19, 0);
+     /*@ +onlytrans @*/
+     (void)scrollok(messages, true);
+@@ -374,16 +403,18 @@
+     (void)mvwprintw(datawin, 4,5, &quot;Altitude:&quot;);
+     (void)mvwprintw(datawin, 5,5, &quot;Speed:&quot;);
+     (void)mvwprintw(datawin, 6,5, &quot;Heading:&quot;);
+-    (void)mvwprintw(datawin, 7,5, &quot;HPE:&quot;);
+-    (void)mvwprintw(datawin, 8,5, &quot;VPE:&quot;);
+-    (void)mvwprintw(datawin, 9,5, &quot;Climb:&quot;);
+-    (void)mvwprintw(datawin, 10,5, &quot;Status:&quot;);
+-    (void)mvwprintw(datawin, 11,5, &quot;Change:&quot;);
++  (void)mvwprintw(datawin, 7,5, &quot;Climb:&quot;);
++  (void)mvwprintw(datawin, 9,5, &quot;Horizontal Err:&quot;);
++  (void)mvwprintw(datawin, 10,5, &quot;Vertical Err:&quot;);
++  (void)mvwprintw(datawin, 11,5, &quot;Course Err:&quot;);
++  (void)mvwprintw(datawin, 12,5, &quot;Speed Err:&quot;);
++  (void)mvwprintw(status, 1,1, &quot;Status:&quot;);
+     (void)wborder(datawin, 0, 0, 0, 0, 0, 0, 0, 0);
+     (void)mvwprintw(satellites, 1,1, &quot;PRN:   Elev:  Azim:  SNR:  Used:&quot;);
+     (void)wborder(satellites, 0, 0, 0, 0, 0, 0, 0, 0);
+     (void)mvwprintw(command, 1,1, &quot;Command:  &quot;);
+     (void)wborder(command, 0, 0, 0, 0, 0, 0, 0, 0);
++  (void)wborder(status, 0, 0, 0, 0, 0, 0, 0, 0);
+ 
+ 
+     /* Here's where updates go. */
+@@ -438,6 +469,15 @@
+ 	  die(0);
+ 	  break;
+ 
++      /* Toggle &quot;once per second&quot; update. */
++    case 'o':
++      if(ops_flag==0) {
++	ops_flag=1;
++      } else {
++	ops_flag=0;
++      }
++      break;
++
+ 	  /* Toggle spewage of raw gpsd data. */
+ 	case 's':
+ 	  if(silent_flag==0) {
+@@ -459,4 +499,3 @@
+     }
+  
+ }
+-
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003059.html">[Gpsd-dev] More cgps updates
+</A></li>
+	<LI>Next message: <A HREF="003061.html">[Gpsd-dev] More cgps updates
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3060">[ date ]</a>
+              <a href="thread.html#3060">[ thread ]</a>
+              <a href="subject.html#3060">[ subject ]</a>
+              <a href="author.html#3060">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

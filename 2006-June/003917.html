@@ -1,0 +1,118 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Changing USB - GPS baud rates
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Changing%20USB%20-%20GPS%20baud%20rates&In-Reply-To=%3C377DE843-A15F-4926-876C-7B6399D53FD6%40qwest.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003892.html">
+   <LINK REL="Next"  HREF="003873.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Changing USB - GPS baud rates</H1>
+    <B>Dan Oetting</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Changing%20USB%20-%20GPS%20baud%20rates&In-Reply-To=%3C377DE843-A15F-4926-876C-7B6399D53FD6%40qwest.net%3E"
+       TITLE="[Gpsd-dev] Changing USB - GPS baud rates">dan_oetting at qwest.net
+       </A><BR>
+    <I>Mon Jun 19 04:31:50 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003892.html">[Gpsd-dev] Changing USB - GPS baud rates
+</A></li>
+        <LI>Next message: <A HREF="003873.html">[Gpsd-dev] small bug in cgps report
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3917">[ date ]</a>
+              <a href="thread.html#3917">[ thread ]</a>
+              <a href="subject.html#3917">[ subject ]</a>
+              <a href="author.html#3917">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Jun 17, 2006, at 12:45 PM, Eric S. Raymond wrote:
+
+&gt;&gt;<i> The current 50ms fixed delay works if only the change speed command
+</I>&gt;&gt;<i> can be in the output buffer at the time and the current UART speed is
+</I>&gt;&gt;<i> not slower than the default.
+</I>&gt;<i>
+</I>&gt;<i> Have you actually seen this break?
+</I>
+I haven't tried. But based on:
+&gt;&gt;&gt;<i>  &quot;A 50ms delay between the $PSRF send and the baud change seems  
+</I>&gt;&gt;&gt;<i> to do the trick.&quot;
+</I>I would guess that this hasn't been thoroughly tested. What if the  
+GPS was set to 300 baud before the change? 50ms isn't enough time to  
+push out 2 bytes. At 4800 baud you would get to send 24 bytes. The  
+first example of a $PSRF command I found was &quot;  
+$PSRF100,0,9600,8,1,0*0C&quot; (exactly 24 bytes if you don't count the  
+&lt;CR&gt; which also needs to be sent before the transmit baud rate  
+changes). How long is the command that GPSD sends out?
+
+Even if you recompute the delay based on the current baud rate and  
+the length of the transmitted command, there is still the possibility  
+that the transmit buffer is already full. If for instance,  
+differential input is being sent to the GPS, you would not know how  
+long it will be before your command even enters the queue.
+
+Since you can't know for certain when the command will be sent I was  
+suggesting the alternate strategy of waiting for feedback that the  
+command was processed. That feedback comes in the form of a change in  
+baud rate of the received data.
+
+&gt;<i> Your proposed solutions all involve complicating the autobauding logic
+</I>&gt;<i> a lot.  That makes me nervous; I'd rather stick with techniques that
+</I>&gt;<i> are simple, stupid, robust, and don't entroduce new feature  
+</I>&gt;<i> dependencies
+</I>&gt;<i> and edge cases.
+</I>
+Cautious is good but don't be paranoid. The autobaud detection looks  
+like just another protocol detection. Whenever the receiver has to  
+hunt for a recognized protocol it should also be hunting for the  
+signatures that indicate the baud rate is wrong (proper care can be  
+taken to prevent changing the baud rate before the protocol can be  
+detected and insure that all expected baud rates would have been  
+detected before giving up). Even if by a fluke we miss the correct  
+baud rate all is not lost because if there is no signature that the  
+baud rate should be lower and a valid protocol cannot be decoded then  
+the correct baud rate must be higher so we step up and try again.
+
+The world isn't perfect and we should expect that the baud rate of  
+the GPS receiver could become different than what  GPSd had  
+previously locked onto. It could be the user manually changing the  
+baud rate, a power interruption or firmware glitch resetting the GPS  
+to it's defaults or the GPS missing the command to change baud rates.  
+Being robust includes the ability to handle these unusual situations  
+by reinitiating the hunt for the new rate when the receiver finds  
+itself lost.
+
+-- Dan Oetting
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003892.html">[Gpsd-dev] Changing USB - GPS baud rates
+</A></li>
+	<LI>Next message: <A HREF="003873.html">[Gpsd-dev] small bug in cgps report
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3917">[ date ]</a>
+              <a href="thread.html#3917">[ thread ]</a>
+              <a href="subject.html#3917">[ subject ]</a>
+              <a href="author.html#3917">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

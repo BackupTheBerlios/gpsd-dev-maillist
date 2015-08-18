@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] The state of RTCM2 and RTCM3
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20The%20state%20of%20RTCM2%20and%20RTCM3&In-Reply-To=%3C4D6F9E74.8020602%40googlemail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008657.html">
+   <LINK REL="Next"  HREF="008659.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] The state of RTCM2 and RTCM3</H1>
+    <B>Andre Naujoks</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20The%20state%20of%20RTCM2%20and%20RTCM3&In-Reply-To=%3C4D6F9E74.8020602%40googlemail.com%3E"
+       TITLE="[Gpsd-dev] The state of RTCM2 and RTCM3">nautsch2 at googlemail.com
+       </A><BR>
+    <I>Thu Mar  3 14:58:12 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008657.html">[Gpsd-dev] The state of RTCM2 and RTCM3
+</A></li>
+        <LI>Next message: <A HREF="008659.html">[Gpsd-dev] The state of RTCM2 and RTCM3
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8658">[ date ]</a>
+              <a href="thread.html#8658">[ thread ]</a>
+              <a href="subject.html#8658">[ subject ]</a>
+              <a href="author.html#8658">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Am 03.03.2011 14:19, schrieb Michael Cook:
+&gt;<i> On 3/3/2011 7:37 AM, Andre Naujoks wrote:
+</I>&gt;&gt;<i> diff --git a/net_gnss_dispatch.c b/net_gnss_dispatch.c
+</I>&gt;&gt;<i> index 1f12d01..a6326cc 100644
+</I>&gt;&gt;<i> --- a/net_gnss_dispatch.c
+</I>&gt;&gt;<i> +++ b/net_gnss_dispatch.c
+</I>&gt;&gt;<i> @@ -33,6 +33,7 @@ int netgnss_uri_open(struct gps_device_t *dev, char
+</I>&gt;&gt;<i> *netgnss_service)
+</I>&gt;&gt;<i>   {
+</I>&gt;&gt;<i>   #ifdef NTRIP_ENABLE
+</I>&gt;&gt;<i>       if (strncmp(netgnss_service, NETGNSS_NTRIP,
+</I>&gt;&gt;<i> strlen(NETGNSS_NTRIP)) == 0)
+</I>&gt;&gt;<i> +       dev-&gt;ntrip.conn_state = ntrip_conn_init;
+</I>&gt;&gt;<i>          return ntrip_open(dev, netgnss_service + strlen(NETGNSS_NTRIP));
+</I>&gt;&gt;<i>   #endif
+</I>&gt;<i> 
+</I>&gt;<i> We probably want some curly braces there, no?
+</I>
+Probably.
+
+That is the reason, why I normally do it this way:
+
+<A HREF="http://en.wikipedia.org/wiki/Otbs#Variant:_1TBS">http://en.wikipedia.org/wiki/Otbs#Variant:_1TBS</A>
+
+The other way just begs for stupid mistakes like mine there.
+
+
+
+diff --git a/net_gnss_dispatch.c b/net_gnss_dispatch.c
+index 1f12d01..c20b461 100644
+--- a/net_gnss_dispatch.c
++++ b/net_gnss_dispatch.c
+@@ -32,8 +32,10 @@ int netgnss_uri_open(struct gps_device_t *dev, char *netgnss_service)
+ /* open a connection to a DGNSS service */
+ {
+ #ifdef NTRIP_ENABLE
+-    if (strncmp(netgnss_service, NETGNSS_NTRIP, strlen(NETGNSS_NTRIP)) == 0)
++    if (strncmp(netgnss_service, NETGNSS_NTRIP, strlen(NETGNSS_NTRIP)) == 0) {
++       dev-&gt;ntrip.conn_state = ntrip_conn_init;
+        return ntrip_open(dev, netgnss_service + strlen(NETGNSS_NTRIP));
++    }
+ #endif
+
+     if (strncmp(netgnss_service, NETGNSS_DGPSIP, strlen(NETGNSS_DGPSIP)) == 0)
+
+
+&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008657.html">[Gpsd-dev] The state of RTCM2 and RTCM3
+</A></li>
+	<LI>Next message: <A HREF="008659.html">[Gpsd-dev] The state of RTCM2 and RTCM3
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8658">[ date ]</a>
+              <a href="thread.html#8658">[ thread ]</a>
+              <a href="subject.html#8658">[ subject ]</a>
+              <a href="author.html#8658">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

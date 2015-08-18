@@ -1,0 +1,84 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] blocked client eventually stalls gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20blocked%20client%20eventually%20stalls%20gpsd&In-Reply-To=%3C20040825144530.GA25479%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000029.html">
+   <LINK REL="Next"  HREF="000043.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] blocked client eventually stalls gpsd</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20blocked%20client%20eventually%20stalls%20gpsd&In-Reply-To=%3C20040825144530.GA25479%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] blocked client eventually stalls gpsd">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Aug 25 16:45:30 CEST 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000029.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+        <LI>Next message: <A HREF="000043.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#32">[ date ]</a>
+              <a href="thread.html#32">[ thread ]</a>
+              <a href="subject.html#32">[ subject ]</a>
+              <a href="author.html#32">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>James Cameron &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">quozl at us.netrek.org</A>&gt;:
+&gt;<i> Yet another method might be an SIOCOUTQ ioctl() per tcp(7) to get the
+</I>&gt;<i> size of the unacknowledged output queue for the client.  In conjunction
+</I>&gt;<i> with a SO_SNDBUF setsockopt() and some heuristic like &quot;things haven't
+</I>&gt;<i> got better for a while&quot;, we might slow and drop the connection.
+</I>
+I like this approach best of your alternatives.  Keeps the design simpler.
+Yes, we could manage our own buffers, but such code is notoriously bug-prone.
+I think, in this kind of application, it's better to kiss off badly-behaved 
+clients than to risk introducing bugs that might mess up well-behaved clients.
+
+(My reasoning is based partly on the fact that GPS information has a short
+shelf life. If a client does't pick it up within minutes, it's probably 
+useless *to that client*.)
+ 
+&gt;<i> Is it a problem worth fixing?  It only matters for NMEA and watch mode.
+</I>
+It's a simple enough patch,  I think it can all be done inside 
+gpsd.c:raw_hook.
+
+Good catch!
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000029.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+	<LI>Next message: <A HREF="000043.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#32">[ date ]</a>
+              <a href="thread.html#32">[ thread ]</a>
+              <a href="subject.html#32">[ subject ]</a>
+              <a href="author.html#32">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

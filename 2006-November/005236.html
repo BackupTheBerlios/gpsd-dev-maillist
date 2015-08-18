@@ -1,0 +1,124 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Restoring GPS settings on session end
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Restoring%20GPS%20settings%20on%20session%20end&In-Reply-To=%3CAA41CC7D-8DD7-4636-A75E-DE64FB177A97%40nicholasfamilycentral.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005233.html">
+   <LINK REL="Next"  HREF="005238.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Restoring GPS settings on session end</H1>
+    <B>Frank Nicholas</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Restoring%20GPS%20settings%20on%20session%20end&In-Reply-To=%3CAA41CC7D-8DD7-4636-A75E-DE64FB177A97%40nicholasfamilycentral.com%3E"
+       TITLE="[Gpsd-dev] Restoring GPS settings on session end">frank at nicholasfamilycentral.com
+       </A><BR>
+    <I>Tue Nov 14 12:13:26 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005233.html">[Gpsd-dev] Preliminary Screenshots for Gtk2 Version of 'xgps'
+</A></li>
+        <LI>Next message: <A HREF="005238.html">[Gpsd-dev] Restoring GPS settings on session end
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5236">[ date ]</a>
+              <a href="thread.html#5236">[ thread ]</a>
+              <a href="subject.html#5236">[ subject ]</a>
+              <a href="author.html#5236">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I may be speaking a little ignorantly here.  I haven't looked at the  
+gpsctl code or features it supported.  I thought the former gpsctl  
+tools (stand alone) were used to change GPS modes (NMEA, Binary,  
+etc.), turn certain statements on/off &amp; twiddle miscellaneous GPS flags.
+
+Scenario:
+gpsd starts &amp; records various information about the GPS state/config  
+at startup
+user wants to set the GPS to a state/config, after leaving gpsd, that  
+is different than when starting gpsd
+gpsctl is used, or raw mode commands are sent to the GPS via gpsd, to  
+change state/config
+the state/config that is changed, is one that gpsd recorded and  
+twiddled with at startup
+gpsd is exited, and the GPS state/config is restored to the way it  
+was at startup
+user has NO way to leave GPS in a state different than it was started  
+with gpsd (for the state/config info gpsd records &amp; restores)
+
+When the gpsctl tools were separate, the user could leave the GPS in  
+any state they wanted, at any time.
+
+Maybe I'm missing something here....
+
+On Nov 14, 2006, at 12:14 AM, <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev-request at lists.berlios.de</A> wrote:
+
+&gt;<i> Date: Mon, 13 Nov 2006 21:53:43 -0500
+</I>&gt;<i> From: &quot;Eric S. Raymond&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt;
+</I>&gt;<i> Subject: Re: [Gpsd-dev] Restoring GPS settings on session end
+</I>&gt;<i> To: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> Message-ID: &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">20061114025343.GA3071 at thyrsus.com</A>&gt;
+</I>&gt;<i> Content-Type: text/plain; charset=us-ascii
+</I>&gt;<i>
+</I>&gt;<i> Frank Nicholas &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">frank at nicholasfamilycentral.com</A>&gt;:
+</I>&gt;&gt;<i> Will restoring the settings conflict with some of the intended uses
+</I>&gt;&gt;<i> of the gpsctl tool?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> With the gpsctl tool using gpsd to change the settings of the gps,
+</I>&gt;&gt;<i> and now gpsd is restoring the original settings on exit, we will be
+</I>&gt;&gt;<i> nullifying the effects of changes made with gpsctl.
+</I>&gt;<i>
+</I>&gt;<i> No.  Configuration is guarded by the context structure's configure- 
+</I>&gt;<i> enable
+</I>&gt;<i> field.
+</I>&gt;<i>
+</I>&gt;<i> gpsd sets this, and gets both configuration and restoration.
+</I>&gt;<i> gpsctrl does not, and thus doesn't configure, and thus does not
+</I>&gt;<i> set driver-state flags that enable the restore logic in the wrapup
+</I>&gt;<i> methods.
+</I>&gt;<i>
+</I>&gt;<i> Your question does suggest that it might be wise to split the present
+</I>&gt;<i> wrapup() method into deconfigure() and wrapup(), and have the  
+</I>&gt;<i> deconfigure()
+</I>&gt;<i> call explicitly guarded.  That would fireclose some logic errors that
+</I>&gt;<i> driver writers might otherwise stumble into (failing to guard the
+</I>&gt;<i> deconfigures properly).
+</I>&gt;<i>
+</I>&gt;<i> Thanks for prodding me about this.
+</I>&gt;<i> -- 
+</I>&gt;<i> 		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+</I>&gt;<i>
+</I>&gt;<i>
+</I>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005233.html">[Gpsd-dev] Preliminary Screenshots for Gtk2 Version of 'xgps'
+</A></li>
+	<LI>Next message: <A HREF="005238.html">[Gpsd-dev] Restoring GPS settings on session end
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5236">[ date ]</a>
+              <a href="thread.html#5236">[ thread ]</a>
+              <a href="subject.html#5236">[ subject ]</a>
+              <a href="author.html#5236">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

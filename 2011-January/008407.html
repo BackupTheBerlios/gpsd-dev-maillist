@@ -1,0 +1,131 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Almanac
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Almanac&In-Reply-To=%3C841v4vm51l.fsf%40sauna.l.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008404.html">
+   <LINK REL="Next"  HREF="008402.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Almanac</H1>
+    <B>Timo Juhani Lindfors</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Almanac&In-Reply-To=%3C841v4vm51l.fsf%40sauna.l.org%3E"
+       TITLE="[Gpsd-dev] Almanac">timo.lindfors at iki.fi
+       </A><BR>
+    <I>Sun Jan  2 21:20:06 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008404.html">[Gpsd-dev] Almanac
+</A></li>
+        <LI>Next message: <A HREF="008402.html">[Gpsd-dev] Almanac
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8407">[ date ]</a>
+              <a href="thread.html#8407">[ thread ]</a>
+              <a href="subject.html#8407">[ subject ]</a>
+              <a href="author.html#8407">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; writes:
+&gt;<i> We'll need to know the detailed control sequence for uploading an almanac is.
+</I>
+See the discussion about UBX protocol on this list (specs and header
+file from u-blox).
+
+&gt;<i>From fso-ogsmd source code it seems that the strategy goes as follows:
+</I>
+1) Configure GPS to request aiding data on startup:
+
+self.send(&quot;CFG-MSG&quot;, 3, {&quot;Class&quot; : CLIDPAIR[&quot;AID-REQ&quot;][0] , &quot;MsgID&quot; : CLIDPAIR[&quot;AID-REQ&quot;][1] , &quot;Rate&quot;: 1 })
+
+2) When GPS asks for AID-DATA feed it with all available information:
+
+def handle_AID_DATA( self, data ):
+    pos = self.aidingData.get(&quot;position&quot;, {})
+
+    # Let's just try with 3km here and see how well this goes
+    pacc = 300000 # in cm (3 km)
+
+    # GPS week number
+    # FIXME: The Global Positioning System (GPS) epoch is January 6, 1980 UTC.
+    epoch = datetime(1980, 1, 6)
+    now = datetime.utcnow()
+
+    gpstime = (now - epoch)
+
+    # Week number
+    wn = gpstime.days / 7
+
+    try:
+        leapsecs = self.aidingData[&quot;hui&quot;][&quot;UTC_LS&quot;]
+    except:
+        # If we don't have current leap seconds yet assume 14 seconds.
+        leapsecs = 14
+
+    # GPS time of week
+    towdelta = gpstime - timedelta(weeks=wn)
+    tow = (towdelta.days * 86400 + towdelta.seconds + leapsecs) * 1000
+
+    # Time accuracy needs to be changed, because the RTC is imprecise
+    tacc = 60000 # in ms (1 minute)
+
+    # We don't want the position to be valid if we don't know it
+    if pos:
+        flags = 0x03
+    else:
+        flags = 0x02
+
+    # Feed gps with ephemeris
+    if self.aidingData.get( &quot;ephemeris&quot;, {} ):
+        for k, a in self.aidingData[&quot;ephemeris&quot;].iteritems():
+            logger.debug(&quot;Loaded ephemeris for SV %d&quot; % a[&quot;SVID&quot;])
+            self.send(&quot;AID-EPH&quot;, 104, a);
+
+    # Feed GPS with position and time
+    self.send(&quot;AID-INI&quot;, 48, {&quot;X&quot; : pos.get(&quot;x&quot;, 0) , &quot;Y&quot; : pos.get(&quot;y&quot;, 0) , &quot;Z&quot; : pos.get(&quot;z&quot;, 0), \
+              &quot;POSACC&quot; : pacc, &quot;TM_CFG&quot; : 0 , &quot;WN&quot; : wn , &quot;TOW&quot; : tow , &quot;TOW_NS&quot; : 0 , \
+              &quot;TACC_MS&quot; : tacc , &quot;TACC_NS&quot; : 0 , &quot;CLKD&quot; : 0 , &quot;CLKDACC&quot; : 0 , &quot;FLAGS&quot; : flags })
+
+    if self.aidingData.get( &quot;hui&quot;, {} ):
+        self.send(&quot;AID-HUI&quot;, 72, self.aidingData[&quot;hui&quot;])
+
+    # Feed gps with almanac
+    if self.aidingData.get( &quot;almanac&quot;, {} ):
+        for k, a in self.aidingData[&quot;almanac&quot;].iteritems():
+            logger.debug(&quot;Loaded almanac for SV %d&quot; % a[&quot;SVID&quot;])
+            self.send(&quot;AID-ALM&quot;, 40, a);
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008404.html">[Gpsd-dev] Almanac
+</A></li>
+	<LI>Next message: <A HREF="008402.html">[Gpsd-dev] Almanac
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8407">[ date ]</a>
+              <a href="thread.html#8407">[ thread ]</a>
+              <a href="subject.html#8407">[ subject ]</a>
+              <a href="author.html#8407">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

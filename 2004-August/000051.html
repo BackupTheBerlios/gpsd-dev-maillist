@@ -1,0 +1,111 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] blocked client eventually stalls gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20blocked%20client%20eventually%20stalls%20gpsd&In-Reply-To=%3C20040826202648.GA17948%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000050.html">
+   <LINK REL="Next"  HREF="000054.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] blocked client eventually stalls gpsd</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20blocked%20client%20eventually%20stalls%20gpsd&In-Reply-To=%3C20040826202648.GA17948%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] blocked client eventually stalls gpsd">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Aug 26 22:26:48 CEST 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000050.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+        <LI>Next message: <A HREF="000054.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#51">[ date ]</a>
+              <a href="thread.html#51">[ thread ]</a>
+              <a href="subject.html#51">[ subject ]</a>
+              <a href="author.html#51">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Remco Treffkorn &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>&gt;:
+&gt;<i> A gps that has lost fix is still 'online'. You get correct information from 
+</I>&gt;<i> it. It tells you that it lost the fix, and gives you probably the LKG 
+</I>&gt;<i> position.
+</I>
+If LKG = &quot;last known good&quot;, then yes.
+
+&gt;<i> If you pull the serial connector out from the gps it has become
+</I>&gt;<i> 'offline'. You get no information from the gps any more, although it
+</I>&gt;<i> still might have a fix.  In that case we should indicate 'no fix'
+</I>&gt;<i> and just repeat the old data.
+</I>
+Current behavior is to not change the mode at all.  Instead, if the
+application cares about the age of the fix, it can check the
+timestamp.
+
+&gt;<i> The 'online' vs. 'offline' state is just internal to gpsd, and should not be 
+</I>&gt;<i> client visible. The client only needs to know that the current position is 
+</I>&gt;<i> old and not reliable.
+</I>
+I disagree.  The whole reason I implemented offline detection was to
+be client-visible, so the client can inform the user.  It usually
+means &quot;Duh.  You forgot to plug in your GPS sensor.&quot;  Remember, I'm a
+laptop user with a USB GPS mouse, not a meteorologist hardwiring an
+instrument package for weather balloons (or whatever).
+
+If the application wants to make a decision about whether the fix is too old
+to be reliable, it can look at the timestamp.
+
+If gpsd were to step on the mode because it thinks the fix information
+is stale, or because the GPS is offline, it would actually be
+*destroying* information -- that is, the fact that the last fix was
+actually good is now lost.   
+
+The better way is to hand the application a bundle consisting of the
+fix, the time of fix, and the current online/offline status, and let
+the *application* decide what those bits mean.
+
+The design principle here is that, when you're writing a data
+translator like gpsd, getting between the user and the data --
+imposing your own policy and preconceptions -- is wrong.
+
+gpsd's job is mechanism -- getting the data to applications in a useful form.
+The application's job is policy -- deciding what to do with it.
+
+Timing out stale information is not mechanism, it's policy.  It's not gpsd's 
+job, it's the application's.  And this is why I ripped out all the staleness 
+checks in gpsd. 
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000050.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+	<LI>Next message: <A HREF="000054.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#51">[ date ]</a>
+              <a href="thread.html#51">[ thread ]</a>
+              <a href="subject.html#51">[ subject ]</a>
+              <a href="author.html#51">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

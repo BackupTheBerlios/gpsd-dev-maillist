@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [ntp:hackers] ntpd shm changes
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20ntpd%20shm%20changes&In-Reply-To=%3CAANLkTinL42GPrMg68vrz7ku9afWA0Xvrtwp%2B%2BMTWjRrU%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008886.html">
+   <LINK REL="Next"  HREF="008888.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [ntp:hackers] ntpd shm changes</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20ntpd%20shm%20changes&In-Reply-To=%3CAANLkTinL42GPrMg68vrz7ku9afWA0Xvrtwp%2B%2BMTWjRrU%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [ntp:hackers] ntpd shm changes">thomas at mich.com
+       </A><BR>
+    <I>Sat Mar 19 04:38:20 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008886.html">[Gpsd-dev] [ntp:hackers] ntpd shm changes
+</A></li>
+        <LI>Next message: <A HREF="008888.html">[Gpsd-dev] [ntp:hackers] ntpd shm changes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8887">[ date ]</a>
+              <a href="thread.html#8887">[ thread ]</a>
+              <a href="subject.html#8887">[ subject ]</a>
+              <a href="author.html#8887">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>2011/3/18 Dave Hart &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">hart at ntp.org</A>&gt;:
+&gt;<i> 2011/3/18 H&#229;kan Johansson &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">f96hajo at chalmers.se</A>&gt;:
+</I>&gt;&gt;<i> On Fri, 18 Mar 2011, Dave Hart wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> [cross-posted to <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">hackers at ntp</A> and gpsd-dev@ by Dave Hart]
+</I>
+&gt;&gt;<i> As ntpshm stands right now, both valid and count are needed. Note how gpsd
+</I>&gt;&gt;<i> also clears valid before the first count update, avoids the race pointed out
+</I>&gt;&gt;<i> by tz. &#160;(Missing in gpsd is memory barriers for SMP.)
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> <A HREF="../2009-November/007006.html">http://lists.berlios.de/pipermail/gpsd-dev/2009-November/007006.html</A>
+</I>&gt;<i>
+</I>&gt;<i> Thank you for pointing that out, Hakan. &#160;The version of gpsd source I
+</I>&gt;<i> glanced at did not clear valid.
+</I>&gt;<i>
+</I>&gt;<i> I am not suggesting changing the interpretation or protocol of mode 0
+</I>&gt;<i> or mode 1, but in an imaginary mode 2 with volatile keywords on all
+</I>&gt;<i> the shm members, I think we can safely share the memory relying only
+</I>&gt;<i> on 32-bit operations on count being atomic.
+</I>
+Does this fix the problem on a multicore machine?
+
+NTPD - reads valid as 1
+           sets valid to 0 - GPSD
+NTPD - reads count once.
+           some other work - GPSD
+NTPD - reads count again, (are equal)
+           increment count - GPSD
+NTPD - housekeeping
+           begins update writing - GPSD
+NTPD - reads half-changed values.
+...
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008886.html">[Gpsd-dev] [ntp:hackers] ntpd shm changes
+</A></li>
+	<LI>Next message: <A HREF="008888.html">[Gpsd-dev] [ntp:hackers] ntpd shm changes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8887">[ date ]</a>
+              <a href="thread.html#8887">[ thread ]</a>
+              <a href="subject.html#8887">[ subject ]</a>
+              <a href="author.html#8887">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

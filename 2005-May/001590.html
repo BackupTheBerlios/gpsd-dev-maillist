@@ -1,0 +1,90 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Zodiac driver?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Zodiac%20driver%3F&In-Reply-To=%3C21017.213.84.187.156.1115514573.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001613.html">
+   <LINK REL="Next"  HREF="001592.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Zodiac driver?</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Zodiac%20driver%3F&In-Reply-To=%3C21017.213.84.187.156.1115514573.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] Zodiac driver?">gpsd at xs4all.nl
+       </A><BR>
+    <I>Sun May  8 03:09:33 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001613.html">[Gpsd-dev] Other Strange things...
+</A></li>
+        <LI>Next message: <A HREF="001592.html">[Gpsd-dev] Zodiac driver?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1590">[ date ]</a>
+              <a href="thread.html#1590">[ thread ]</a>
+              <a href="subject.html#1590">[ subject ]</a>
+              <a href="author.html#1590">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Has the Zodiac driver been recently tested?
+I connected a Rockwell Jupiter receiver.  It works OK in NMEA mode.
+When switched to binary mode (Zodiac) it is not recognized anymore.
+
+There seems to be a problem with the sniffer state machine.
+I patched it like this:
+
+--- trunk/packet.c      2005-05-06 10:33:03.000000000 +0200
++++ ./packet.c  2005-05-08 02:56:31.706270827 +0200
+@@ -141,6 +141,10 @@
+         else if (c == 'E')
+            session-&gt;packet_state = EARTHA_1;
+ #endif /* EARTHMATE_ENABLE */
++#ifdef ZODIAC_ENABLE
++       else if (c == 0xff)
++           session-&gt;packet_state = ZODIAC_LEADER_1;
++#endif /* ZODIAC_ENABLE */
+        break;
+     case NMEA_DOLLAR:
+        if (c == 'G')
+
+(how else could it get in ZODIAC_EXPECTED state and pickup the 0xff byte?)
+
+Now it recognizes the packets but in debug 6 gpsd quickly prints:
+
+gpsd: Header checksum 0x7a19 expecting 0x2d
+
+Then it segfaults.
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001613.html">[Gpsd-dev] Other Strange things...
+</A></li>
+	<LI>Next message: <A HREF="001592.html">[Gpsd-dev] Zodiac driver?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1590">[ date ]</a>
+              <a href="thread.html#1590">[ thread ]</a>
+              <a href="subject.html#1590">[ subject ]</a>
+              <a href="author.html#1590">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

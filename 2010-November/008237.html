@@ -1,0 +1,190 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH 2/2] Ported libgpsmm to major-version 5.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%202/2%5D%20Ported%20libgpsmm%20to%20major-version%205.&In-Reply-To=%3C1289284729-17451-3-git-send-email-gpsd%40meta-dynamic.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008236.html">
+   <LINK REL="Next"  HREF="008239.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH 2/2] Ported libgpsmm to major-version 5.</H1>
+    <B>David Favro</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%202/2%5D%20Ported%20libgpsmm%20to%20major-version%205.&In-Reply-To=%3C1289284729-17451-3-git-send-email-gpsd%40meta-dynamic.com%3E"
+       TITLE="[Gpsd-dev] [PATCH 2/2] Ported libgpsmm to major-version 5.">gpsd at meta-dynamic.com
+       </A><BR>
+    <I>Tue Nov  9 07:38:49 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008236.html">[Gpsd-dev] [PATCH 1/2] Bring gps_read()'s return-code in sync with	its manual entry.
+</A></li>
+        <LI>Next message: <A HREF="008239.html">[Gpsd-dev] Additional patch for libgpsmm major-version 5
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8237">[ date ]</a>
+              <a href="thread.html#8237">[ thread ]</a>
+              <a href="subject.html#8237">[ subject ]</a>
+              <a href="author.html#8237">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>It had been completely non-functional since change in parameters to gps_open().
+
+Signed-off-by: David Favro &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at meta-dynamic.com</A>&gt;
+---
+ libgpsmm.cpp |   38 ++++++++++++++++++++++++++------------
+ libgpsmm.h   |   10 ++++++++--
+ 2 files changed, 34 insertions(+), 14 deletions(-)
+
+diff --git a/libgpsmm.cpp b/libgpsmm.cpp
+index b03db6e..0ca6590 100644
+--- a/libgpsmm.cpp
++++ b/libgpsmm.cpp
+@@ -10,15 +10,28 @@
+ #include &quot;gpsd_config.h&quot;
+ #include &quot;libgpsmm.h&quot;
+ 
+-gpsmm::gpsmm() : gps_data(0) { gps_data = NULL; }
++
++gpsmm::gpsmm() :
++		#if GPSD_API_MAJOR_VERSION &lt; 5
++			gps_data(0),
++		#endif
++			to_user(0)
++	{
++	}
++
+ 
+ struct gps_data_t* gpsmm::open(void) {
+ 	return open(&quot;localhost&quot;,DEFAULT_GPSD_PORT);
+ }
+ 
+ struct gps_data_t* gpsmm::open(const char *host, const char *port) {
+-  gps_open(host,port, gps_data);
+-	if (gps_data==NULL) { //connection not opened
++	#if GPSD_API_MAJOR_VERSION &lt; 5
++		gps_data = gps_open( host, port );
++		const bool err = (gps_data==NULL); //connection not opened
++	#else
++		const bool err = (gps_open(host, port, gps_data()) != 0);
++	#endif
++	if ( err ) {
+ 		return NULL;
+ 	}
+ 	else { //connection succesfully opened
+@@ -28,7 +41,7 @@ struct gps_data_t* gpsmm::open(const char *host, const char *port) {
+ }
+ 
+ struct gps_data_t* gpsmm::stream(int flags) {
+-  if (gps_stream(gps_data,flags, NULL)==-1) {
++  if (gps_stream(gps_data(),flags, NULL)==-1) {
+ 		return NULL;
+ 	}
+ 	else {
+@@ -37,7 +50,7 @@ struct gps_data_t* gpsmm::stream(int flags) {
+ }
+ 
+ struct gps_data_t* gpsmm::send(const char *request) {
+-	if (gps_send(gps_data,request)==-1) {
++	if (gps_send(gps_data(),request)==-1) {
+ 		return NULL;
+ 	}
+ 	else {
+@@ -46,8 +59,9 @@ struct gps_data_t* gpsmm::send(const char *request) {
+ }
+ 
+ struct gps_data_t* gpsmm::read(void) {
+-	if (gps_read(gps_data)&lt;=0) {
+-		// we return null if there was a read() error or connection is cloed by gpsd
++	if (gps_read(gps_data())&lt;=0) {
++		// we return null if there was a read() error, if no data was ready in
++		// POLL_NOBLOCK mode, or if the connection is closed by gpsd
+ 		return NULL;
+ 	}
+ 	else {
+@@ -56,15 +70,15 @@ struct gps_data_t* gpsmm::read(void) {
+ }
+ 
+ int gpsmm::close(void) {
+-	return gps_close(gps_data);
++	return gps_close(gps_data());
+ }
+ 
+ bool gpsmm::waiting(void) {
+-	return gps_waiting(gps_data);
++	return gps_waiting(gps_data());
+ }
+ 
+ void gpsmm::clear_fix(void) {
+-	gps_clear_fix(&amp;(gps_data-&gt;fix));
++	gps_clear_fix(&amp;(gps_data()-&gt;fix));
+ }
+ 
+ void gpsmm::enable_debug(int level, FILE *fp) {
+@@ -74,8 +88,8 @@ void gpsmm::enable_debug(int level, FILE *fp) {
+ }
+ 
+ gpsmm::~gpsmm() {
+-	if (gps_data!=NULL) {
+-		gps_close(gps_data);
++	if (gps_data()!=NULL) {
++		gps_close(gps_data());
+ 		delete to_user;
+ 	}
+ }
+diff --git a/libgpsmm.h b/libgpsmm.h
+index 9b41d98..ab57a28 100644
+--- a/libgpsmm.h
++++ b/libgpsmm.h
+@@ -30,9 +30,15 @@ class LIBQGPSMMSHARED_EXPORT gpsmm {
+ 		void clear_fix(void);
+ 		void enable_debug(int, FILE*);
+ 	private:
+-		struct gps_data_t *gps_data;
+ 		struct gps_data_t *to_user;	//we return the user a copy of the internal structure. This way she can modify it without
+ 						//integrity loss for the entire class
+-		struct gps_data_t* backup(void) { *to_user=*gps_data; return to_user;}; //return the backup copy
++		#if GPSD_API_MAJOR_VERSION &lt; 5
++		    struct gps_data_t *_gps_data;
++		    struct gps_data_t * gps_data() { return _gps_data; }
++		#else
++		    struct gps_data_t _gps_data;
++		    struct gps_data_t * gps_data() { return &amp;_gps_data; }
++		#endif
++		struct gps_data_t* backup(void) { *to_user=*gps_data(); return to_user;}; //return the backup copy
+ };
+ #endif // _GPSD_GPSMM_H_
+-- 
+1.7.0.4
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008236.html">[Gpsd-dev] [PATCH 1/2] Bring gps_read()'s return-code in sync with	its manual entry.
+</A></li>
+	<LI>Next message: <A HREF="008239.html">[Gpsd-dev] Additional patch for libgpsmm major-version 5
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8237">[ date ]</a>
+              <a href="thread.html#8237">[ thread ]</a>
+              <a href="subject.html#8237">[ subject ]</a>
+              <a href="author.html#8237">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

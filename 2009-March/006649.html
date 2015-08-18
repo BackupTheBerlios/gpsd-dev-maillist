@@ -1,0 +1,247 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-commit-watch] r5430 - in trunk: . www
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20r5430%20-%20in%20trunk%3A%20.%20www&In-Reply-To=%3C35f7d2d60903201152u2079b275l86855ff23e9c0eb1%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006627.html">
+   <LINK REL="Next"  HREF="006652.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-commit-watch] r5430 - in trunk: . www</H1>
+    <B>Jeff Francis&#8482;</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20r5430%20-%20in%20trunk%3A%20.%20www&In-Reply-To=%3C35f7d2d60903201152u2079b275l86855ff23e9c0eb1%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [Gpsd-commit-watch] r5430 - in trunk: . www">jeff at gritch.org
+       </A><BR>
+    <I>Fri Mar 20 19:52:37 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006627.html">[Gpsd-dev] Patch of Makefile.am fixes Mac OS X X11 build	errors...
+</A></li>
+        <LI>Next message: <A HREF="006652.html">[Gpsd-dev] [Gpsd-commit-watch] r5430 - in trunk: . www
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6649">[ date ]</a>
+              <a href="thread.html#6649">[ thread ]</a>
+              <a href="subject.html#6649">[ subject ]</a>
+              <a href="author.html#6649">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>  FYI, this patch broke Garmin Serial Binary.  5429 works, 5430 (and all
+newer) just endlessly spews:
+
+gpsd: =&gt; GPS:
+245047524d432c412c2c3130302c2c2c2c2c2c412c2c312c322c312c33302a34420d0a
+gpsd: Garmin Serial packet seen when NMEA expected.
+gpsd: switch_driver(Garmin Serial) called...
+gpsd: Reconfiguring for Garmin Serial...
+
+
+
+
+
+
+On Mon, Mar 9, 2009 at 1:21 PM, esr at BerliOS &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at mail.berlios.de</A>&gt; wrote:
+
+&gt;<i> Author: esr
+</I>&gt;<i> Date: 2009-03-09 21:21:38 +0100 (Mon, 09 Mar 2009)
+</I>&gt;<i> New Revision: 5430
+</I>&gt;<i>
+</I>&gt;<i> Modified:
+</I>&gt;<i>   trunk/drivers.c
+</I>&gt;<i>   trunk/www/writing-a-driver.xml
+</I>&gt;<i> Log:
+</I>&gt;<i> More driver-interface simplification.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Modified: trunk/drivers.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- trunk/drivers.c     2009-03-09 19:54:00 UTC (rev 5429)
+</I>&gt;<i> +++ trunk/drivers.c     2009-03-09 20:21:38 UTC (rev 5430)
+</I>&gt;<i> @@ -41,70 +41,34 @@
+</I>&gt;<i>  {
+</I>&gt;<i>     if (session-&gt;packet.type == COMMENT_PACKET) {
+</I>&gt;<i>        return 0;
+</I>&gt;<i> -    } else if (session-&gt;packet.type == SIRF_PACKET) {
+</I>&gt;<i> -       gpsd_report(LOG_WARN, &quot;SiRF packet seen when NMEA expected.\n&quot;);
+</I>&gt;<i> -#ifdef SIRF_ENABLE
+</I>&gt;<i> -       (void)gpsd_switch_driver(session, &quot;SiRF binary&quot;);
+</I>&gt;<i> -       return sirf_parse(session, session-&gt;packet.outbuffer,
+</I>&gt;<i> session-&gt;packet.outbuflen);
+</I>&gt;<i> -#else
+</I>&gt;<i> +    } else if (session-&gt;packet.type != NMEA_PACKET) {
+</I>&gt;<i> +       const struct gps_type_t **dp;
+</I>&gt;<i> +
+</I>&gt;<i> +       for (dp = gpsd_drivers; *dp; dp++) {
+</I>&gt;<i> +           if (session-&gt;packet.type == (*dp)-&gt;packet_type) {
+</I>&gt;<i> +               gpsd_report(LOG_WARN, &quot;%s packet seen when NMEA
+</I>&gt;<i> expected.\n&quot;,
+</I>&gt;<i> +                           (*dp)-&gt;type_name);
+</I>&gt;<i> +               gpsd_switch_driver(session, (*dp)-&gt;type_name);
+</I>&gt;<i> +               return (*dp)-&gt;parse_packet(session);
+</I>&gt;<i> +           }
+</I>&gt;<i> +       }
+</I>&gt;<i>        return 0;
+</I>&gt;<i> -#endif /* SIRF_ENABLE */
+</I>&gt;<i> -    } else if (session-&gt;packet.type == EVERMORE_PACKET) {
+</I>&gt;<i> -       gpsd_report(LOG_WARN, &quot;EverMore packet seen when NMEA
+</I>&gt;<i> expected.\n&quot;);
+</I>&gt;<i> -#ifdef EVERMORE_ENABLE
+</I>&gt;<i> -       (void)gpsd_switch_driver(session, &quot;EverMore binary&quot;);
+</I>&gt;<i> -       return evermore_parse(session, session-&gt;packet.outbuffer,
+</I>&gt;<i> session-&gt;packet.outbuflen);
+</I>&gt;<i> -#else
+</I>&gt;<i> -       return 0;
+</I>&gt;<i> -#endif /* EVERMORE_ENABLE */
+</I>&gt;<i> -    } else if (session-&gt;packet.type == NAVCOM_PACKET) {
+</I>&gt;<i> -  gpsd_report(LOG_WARN, &quot;Navcom packet seen when NMEA expected.\n&quot;);
+</I>&gt;<i> -#ifdef NAVCOM_ENABLE
+</I>&gt;<i> -       (void)gpsd_switch_driver(session, &quot;Navcom binary&quot;);
+</I>&gt;<i> -       return navcom_parse(session, session-&gt;packet.outbuffer,
+</I>&gt;<i> session-&gt;packet.outbuflen);
+</I>&gt;<i> -#else
+</I>&gt;<i> -       return 0;
+</I>&gt;<i> -#endif /* NAVCOM_ENABLE */
+</I>&gt;<i> -} else if (session-&gt;packet.type == GARMIN_PACKET) {
+</I>&gt;<i> -       gpsd_report(LOG_WARN, &quot;Garmin packet seen when NMEA expected.\n&quot;);
+</I>&gt;<i> -#ifdef GARMIN_ENABLE
+</I>&gt;<i> -       /* we might never see a trigger, have this as a backstop */
+</I>&gt;<i> -       (void)gpsd_switch_driver(session, &quot;Garmin Serial binary&quot;);
+</I>&gt;<i> -       return garmin_ser_parse(session);
+</I>&gt;<i> -#else
+</I>&gt;<i> -       return 0;
+</I>&gt;<i> -#endif /* GARMIN_ENABLE */
+</I>&gt;<i> -    } else if (session-&gt;packet.type == UBX_PACKET) {
+</I>&gt;<i> -       gpsd_report(LOG_WARN, &quot;UBX packet seen when NMEA expected.\n&quot;);
+</I>&gt;<i> -#ifdef UBX_ENABLE
+</I>&gt;<i> -       (void)gpsd_switch_driver(session, &quot;uBlox UBX binary&quot;);
+</I>&gt;<i> -       return ubx_parse(session, session-&gt;packet.outbuffer,
+</I>&gt;<i> session-&gt;packet.outbuflen);
+</I>&gt;<i> -#else
+</I>&gt;<i> -       return 0;
+</I>&gt;<i> -#endif /* UBX_ENABLE */
+</I>&gt;<i> -    } else if (session-&gt;packet.type == NMEA_PACKET) {
+</I>&gt;<i> +    } else /* session-&gt;packet.type == NMEA_PACKET) */ {
+</I>&gt;<i>        gps_mask_t st = 0;
+</I>&gt;<i>  #ifdef GARMINTXT_ENABLE
+</I>&gt;<i>        if (session-&gt;packet.outbuflen &gt;= 56) {
+</I>&gt;<i> -               if ((char) *session-&gt;packet.outbuffer == '@') {
+</I>&gt;<i> +           if ((char) *session-&gt;packet.outbuffer == '@') {
+</I>&gt;<i>                /* Garmin Simple Text packet received; it starts with '@' is
+</I>&gt;<i> terminated with \r\n and has length 57 bytes */
+</I>&gt;<i> -                       (void)gpsd_switch_driver(session, &quot;Garmin Simple
+</I>&gt;<i> Text&quot;);
+</I>&gt;<i> -                       return garmintxt_parse(session);
+</I>&gt;<i> -               }
+</I>&gt;<i> +               (void)gpsd_switch_driver(session, &quot;Garmin Simple Text&quot;);
+</I>&gt;<i> +               return garmintxt_parse(session);
+</I>&gt;<i> +           }
+</I>&gt;<i>        }
+</I>&gt;<i>  #endif /* GARMINTXT_ENABLE */
+</I>&gt;<i>
+</I>&gt;<i> -#ifdef AIVDM_ENABLE
+</I>&gt;<i> -       if (strncmp((char *)session-&gt;packet.outbuffer, &quot;!AIVDM&quot;, 6)==0) {
+</I>&gt;<i> -           (void)gpsd_switch_driver(session, &quot;AIVDM&quot;);
+</I>&gt;<i> -           return aivdm_parse(session);
+</I>&gt;<i> -       }
+</I>&gt;<i> -#endif /* AIVDM_ENABLE */
+</I>&gt;<i> -
+</I>&gt;<i>  #ifdef OCEANSERVER_ENABLE
+</I>&gt;<i>        if (strncmp((char *)session-&gt;packet.outbuffer, &quot;$C&quot;, 2)==0 ||
+</I>&gt;<i> strncmp((char *)session-&gt;packet.outbuffer, &quot;$OHPR&quot;, 5)==0) {
+</I>&gt;<i> -               (void)gpsd_switch_driver(session, &quot;OceanServer Digital
+</I>&gt;<i> Compas OS5000&quot;);
+</I>&gt;<i> -               return  1;
+</I>&gt;<i> +           (void)gpsd_switch_driver(session, &quot;OceanServer Digital Compas
+</I>&gt;<i> OS5000&quot;);
+</I>&gt;<i> +           return  1;
+</I>&gt;<i>        }
+</I>&gt;<i>  #endif /* OCEANSERVER_ENABLE */
+</I>&gt;<i>
+</I>&gt;<i> @@ -144,8 +108,7 @@
+</I>&gt;<i>        }
+</I>&gt;<i>  #endif /* NTPSHM_ENABLE */
+</I>&gt;<i>        return st;
+</I>&gt;<i> -    } else
+</I>&gt;<i> -       return 0;
+</I>&gt;<i> +    }
+</I>&gt;<i>  }
+</I>&gt;<i>
+</I>&gt;<i>  static void nmea_probe_subtype(struct gps_device_t *session, unsigned int
+</I>&gt;<i> seq)
+</I>&gt;<i>
+</I>&gt;<i> Modified: trunk/www/writing-a-driver.xml
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- trunk/www/writing-a-driver.xml      2009-03-09 19:54:00 UTC (rev 5429)
+</I>&gt;<i> +++ trunk/www/writing-a-driver.xml      2009-03-09 20:21:38 UTC (rev 5430)
+</I>&gt;<i> @@ -444,17 +444,18 @@
+</I>&gt;<i>  some basic stuff for the NMEA driver and tries to wake up many of the
+</I>&gt;<i>  other drivers. It needed four small modifications to integrate my
+</I>&gt;<i>  code. The first was a copy of an existing entry in the generic NMEA
+</I>&gt;<i> -handler &lt;quote&gt;&lt;function&gt;nmea_parse_input&lt;/function&gt;&lt;/quote&gt; to generate
+</I>&gt;<i> -a debug error if one of my packets was detected when the NMEA driver
+</I>&gt;<i> -had been selected and switch to my driver instead. The second was a
+</I>&gt;<i> -pointer to simple command to send a Jupiter-T specific string to the
+</I>&gt;<i> -GPS at detection time to test if it is a Jupiter-T in &lt;quote&gt;
+</I>&gt;<i> +handler &lt;quote&gt;&lt;function&gt;nmea_parse_input&lt;/function&gt;&lt;/quote&gt; to
+</I>&gt;<i> +generate a debug error if one of my packets was detected when the NMEA
+</I>&gt;<i> +driver had been selected and switch to my driver instead (this is no
+</I>&gt;<i> +longer needed in versions beyond 2,38). The second was a pointer to
+</I>&gt;<i> +simple command to send a Jupiter-T specific string to the GPS at
+</I>&gt;<i> +detection time to test if it is a Jupiter-T in &lt;quote&gt;
+</I>&gt;<i>  &lt;function&gt;nmea_initializer&lt;/function&gt;&lt;/quote&gt;. If it returns the right
+</I>&gt;<i>  answer (in my case, the manufacturer's PROM header), then the packet
+</I>&gt;<i>  sniffer should see this and select my driver. The third was a
+</I>&gt;<i>  (copied/modified) declaration entry in the list of structs known to
+</I>&gt;<i> -&lt;application&gt;gpsd&lt;/application&gt; which is located immediately before and
+</I>&gt;<i> -is used by the fourth location,
+</I>&gt;<i> +&lt;application&gt;gpsd&lt;/application&gt; which is located immediately before
+</I>&gt;<i> +and is used by the fourth location,
+</I>&gt;<i>  &lt;quote&gt;
+</I>&gt;<i>  &lt;userinput&gt;*gpsd_driver_array[]&lt;/userinput&gt;&lt;/quote&gt;, to
+</I>&gt;<i>  give the address of the entry point table in my driver.&lt;/para&gt;
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-commit-watch mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-commit-watch at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-commit-watch">https://lists.berlios.de/mailman/listinfo/gpsd-commit-watch</A>
+</I>&gt;<i>
+</I>
+
+
+-- 
+-=jeff=-
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090320/2d06d1fe/attachment.html">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090320/2d06d1fe/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006627.html">[Gpsd-dev] Patch of Makefile.am fixes Mac OS X X11 build	errors...
+</A></li>
+	<LI>Next message: <A HREF="006652.html">[Gpsd-dev] [Gpsd-commit-watch] r5430 - in trunk: . www
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6649">[ date ]</a>
+              <a href="thread.html#6649">[ thread ]</a>
+              <a href="subject.html#6649">[ subject ]</a>
+              <a href="author.html#6649">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

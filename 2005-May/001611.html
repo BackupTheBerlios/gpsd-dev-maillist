@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] endless loop, 100% cpu
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20endless%20loop%2C%20100%25%20cpu&In-Reply-To=%3C15611.213.84.187.156.1115626867.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001610.html">
+   <LINK REL="Next"  HREF="001612.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] endless loop, 100% cpu</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20endless%20loop%2C%20100%25%20cpu&In-Reply-To=%3C15611.213.84.187.156.1115626867.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] endless loop, 100% cpu">gpsd at xs4all.nl
+       </A><BR>
+    <I>Mon May  9 10:21:07 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001610.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+        <LI>Next message: <A HREF="001612.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1611">[ date ]</a>
+              <a href="thread.html#1611">[ thread ]</a>
+              <a href="subject.html#1611">[ subject ]</a>
+              <a href="author.html#1611">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+</I>&gt;&gt;<i> One thing I noticed is when the state machine finds an error and goes
+</I>&gt;&gt;<i> back
+</I>&gt;&gt;<i> to GROUND_STATE, the caller only removes 1 character instead of all data
+</I>&gt;&gt;<i> that lead to the error condition.   This could result in a loop under
+</I>&gt;&gt;<i> some
+</I>&gt;&gt;<i> conditions.
+</I>&gt;<i>
+</I>&gt;<i> What conditions are those?
+</I>
+Well, the problem I had with zodiac was that it would not get in sync
+easily because the FF byte that triggers recognition of this data type can
+also easily occur in the packet itself.
+Later I found that part of the reason was that at the end of the packet
+the state machine remained in ZODIAC_RECOGNIZED state and from there it
+would not handle an immediately following packet, so it always alternated
+between recognizing packet and skipping the next one via error handling,
+requiring to sync up again.
+I fixed that, but by then I already had made the header recognition more
+robust (only accepting headers with valid checksum as base for reading
+data).
+
+I can understand the motivation behind having a sliding window wherein
+packets are recognized even after an initial error in sync, but understand
+that this also means that a packet with checksum error will be completely
+scanned for possible packet beginnings, which is (was) a little risky with
+Zodiac packets because they contain a &quot;length&quot; field for the remaining
+data.
+That means that a misrecognized packet header could lead to read-ahead of
+a lot of data.
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001610.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+	<LI>Next message: <A HREF="001612.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1611">[ date ]</a>
+              <a href="thread.html#1611">[ thread ]</a>
+              <a href="subject.html#1611">[ subject ]</a>
+              <a href="author.html#1611">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,95 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Single-writer/many-reader consistency
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3C4D8F4BAA.7050101%40tmsw.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009132.html">
+   <LINK REL="Next"  HREF="009137.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Single-writer/many-reader consistency</H1>
+    <B>Terje Mathisen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3C4D8F4BAA.7050101%40tmsw.no%3E"
+       TITLE="[Gpsd-dev] Single-writer/many-reader consistency">terje at tmsw.no
+       </A><BR>
+    <I>Sun Mar 27 16:37:30 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009132.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+        <LI>Next message: <A HREF="009137.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9136">[ date ]</a>
+              <a href="thread.html#9136">[ thread ]</a>
+              <a href="subject.html#9136">[ subject ]</a>
+              <a href="author.html#9136">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>tz wrote:
+&gt;<i> It also turns out that any stores have to be perceived by other
+</I>&gt;<i> processors in the order they were made by any processor (It doesn't
+</I>&gt;<i> guarantee the order two processors writing to the same space will get
+</I>&gt;<i> to it, but it does guarantee the order of the stores will be perceived
+</I>&gt;<i> the same across all processors)
+</I>&gt;<i>
+</I>&gt;<i> Basically, writes (stores) are serialized.
+</I>&gt;<i>
+</I>&gt;<i> 8.2.3.7
+</I>&gt;<i> Stores Are Seen in a Consistent Order by Other Processors
+</I>&gt;<i> As noted in Section 8.2.3.5, the memory-ordering model allows stores by two
+</I>&gt;<i> processors to be seen in different orders by those two processors.
+</I>&gt;<i> However, any two
+</I>&gt;<i> stores must appear to execute in the same order to all processors
+</I>&gt;<i> other than those performing the stores.
+</I>
+This is x86 Total Store Order (TSO) which is amongst the strongest 
+cross-cpu guarantees on any architecture.
+
+As we've been discussing, other architectures, with DEC Alpha as the 
+worst (?) offender basically doesn't enforce any ordering at all without 
+at least a barrier between the two stores.
+
+This is probably also why gcc on x86 seems to make the __sync_* 
+operation a No-Op: What it really does is to be an optimizer barrier, so 
+that neither stores nor loads can be moved across the sync location.
+
+Terje
+
+
+-- 
+- &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Terje at tmsw.no</A>&gt;
+&quot;almost all programming can be viewed as an exercise in caching&quot;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009132.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+	<LI>Next message: <A HREF="009137.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9136">[ date ]</a>
+              <a href="thread.html#9136">[ thread ]</a>
+              <a href="subject.html#9136">[ subject ]</a>
+              <a href="author.html#9136">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

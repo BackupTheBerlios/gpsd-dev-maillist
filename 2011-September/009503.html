@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Installing to a prefix?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Installing%20to%20a%20prefix%3F&In-Reply-To=%3C4E6A3F85.8030103%40wildgooses.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009496.html">
+   <LINK REL="Next"  HREF="009505.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Installing to a prefix?</H1>
+    <B>Ed W</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Installing%20to%20a%20prefix%3F&In-Reply-To=%3C4E6A3F85.8030103%40wildgooses.com%3E"
+       TITLE="[Gpsd-dev] Installing to a prefix?">lists at wildgooses.com
+       </A><BR>
+    <I>Fri Sep  9 18:32:05 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009496.html">[Gpsd-dev] Installing to a prefix?
+</A></li>
+        <LI>Next message: <A HREF="009505.html">[Gpsd-dev] Installing to a prefix?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9503">[ date ]</a>
+              <a href="thread.html#9503">[ thread ]</a>
+              <a href="subject.html#9503">[ subject ]</a>
+              <a href="author.html#9503">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi
+
+&gt;<i> I've added a 'strip' option to the build recipe.  It defaults to on.
+</I>
+Oops, answered previous email before reading this - many thanks
+
+&gt;<i> An rpath is a search path for shared libraries.  The path the build
+</I>&gt;<i> library sets is indeed insecure, including the build diorectory (this
+</I>&gt;<i> is required to support our test set) but this is supposed to be fixed
+</I>&gt;<i> at binary installation time if you have chrpath(1) available. Perhaps
+</I>&gt;<i> you don't, or the build recipe can't find it.
+</I>
+This doesn't seem to be working for me.  I installed chrpath (wasn't
+installed before), I can see it executing, but I still get an error. 
+What tool can I use to check the rpath..?
+
+Snippets from the build log below:
+
+
+chrpath -r &quot;/var/tmp/portage/sci-geosciences/gpsd-3.1/image//usr//lib&quot;
+&quot;/var/tmp/portage/sci-geosciences/gpsd-3.1/image/usr/bin/gpsctl&quot;
+...
+chrpath -r &quot;/var/tmp/portage/sci-geosciences/gpsd-3.1/image//usr//lib&quot;
+&quot;/var/tmp/portage/sci-geosciences/gpsd-3.1/image/usr/bin/gpsmon&quot;
+
+...
+
+Auto fixing rpaths for
+/var/tmp/portage/sci-geosciences/gpsd-3.1/image/usr/bin/gpsctl
+Auto fixing rpaths for
+/var/tmp/portage/sci-geosciences/gpsd-3.1/image/usr/bin/gpsmon
+...
+ * QA Notice: The following files contain insecure RUNPATHs
+...
+ *   /var/tmp/portage/sci-geosciences/gpsd-3.1/image/usr/bin/gpsctl
+ *   /var/tmp/portage/sci-geosciences/gpsd-3.1/image/usr/bin/gpsmon
+
+
+
+Seems like the problem here is that it's &quot;chrpath&quot;ing to my DESTDIR
+install location and not to the non prefixed path?
+
+The install command used looked something like:
+    DESTDIR=&quot;${D}&quot; STRIP=&quot;/bin/true&quot; scons prefix=&quot;/usr/&quot; install || die
+
+Where ${D} is the .../image/ path in the logs above
+
+
+Thanks
+
+Ed W
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009496.html">[Gpsd-dev] Installing to a prefix?
+</A></li>
+	<LI>Next message: <A HREF="009505.html">[Gpsd-dev] Installing to a prefix?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9503">[ date ]</a>
+              <a href="thread.html#9503">[ thread ]</a>
+              <a href="subject.html#9503">[ subject ]</a>
+              <a href="author.html#9503">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,111 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] SVN 3934 Change to gpsd.c- Clarifiation please
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20SVN%203934%20Change%20to%20gpsd.c-%20Clarifiation%20please&In-Reply-To=%3C20061124091736.GA6516%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005299.html">
+   <LINK REL="Next"  HREF="005303.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] SVN 3934 Change to gpsd.c- Clarifiation please</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20SVN%203934%20Change%20to%20gpsd.c-%20Clarifiation%20please&In-Reply-To=%3C20061124091736.GA6516%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] SVN 3934 Change to gpsd.c- Clarifiation please">esr at thyrsus.com
+       </A><BR>
+    <I>Fri Nov 24 10:17:36 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005299.html">[Gpsd-dev] SVN 3934 Change to gpsd.c- Clarifiation please
+</A></li>
+        <LI>Next message: <A HREF="005303.html">[Gpsd-dev] SVN 3934 Change to gpsd.c- Clarifiation please
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5302">[ date ]</a>
+              <a href="thread.html#5302">[ thread ]</a>
+              <a href="subject.html#5302">[ subject ]</a>
+              <a href="author.html#5302">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Mick Durkin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mick.durkin at saunalahti.fi</A>&gt;:
+&gt;<i> I am not sure if I misunderstand things, but I noticed that my driver no 
+</I>&gt;<i> longer gets asked to probe for its device at start up when running SVN 3959. 
+</I>&gt;<i> I as a sanity check, I enabled the Garmin driver which I know also has a 
+</I>&gt;<i> probe facility and this also doesn't respond.
+</I>&gt;<i> 
+</I>&gt;<i> I traced the code and it seems the mod to gpsd.c in SVN 3934 changed
+</I>&gt;<i> things. I confirmed this by backing out the change; I swapped
+</I>&gt;<i> gpsd_open() back to gpsd_activate(). This call has an additional
+</I>&gt;<i> parameter now, but that was the only other change needed. After
+</I>&gt;<i> that, the probes reappeared.
+</I>
+That's not a good fix.
+
+I think you're seeing some effect of the change in 3929 (yes, I got
+your correction) which moves some initialization logic, because we're trying
+to arrange things so that gpsd undoes its configuration changes to a
+device when it releases the device.
+
+The probe_detect fuctions should still be being called from gpsd_activate().
+Here's the code in svn head:
+
+int gpsd_activate(struct gps_device_t *session, bool reconfigurable)
+/* acquire a connection to the GPS device */
+{
+#if defined(PPS_ENABLE) &amp;&amp; defined(TIOCMIWAIT)
+    pthread_t pt;
+#endif /* PPS_ENABLE */
+
+    if (gpsd_open(session) &lt; 0)
+	return -1;
+    else {
+#ifdef NON_NMEA_ENABLE
+	struct gps_type_t **dp;
+
+	/*@ -mustfreeonly @*/
+	for (dp = gpsd_drivers; *dp; dp++) {
+	    (void)tcflush(session-&gt;gpsdata.gps_fd, TCIOFLUSH);  /* toss stale data */
+	    if ((*dp)-&gt;probe_detect!=NULL &amp;&amp; (*dp)-&gt;probe_detect(session)!=0) {
+		gpsd_report(LOG_PROG, &quot;probe found %s driver...\n&quot;, (*dp)-&gt;typename);
+		session-&gt;device_type = *dp;
+	    }
+ 	}
+	/*@ +mustfreeonly @*/
+	gpsd_report(LOG_PROG, &quot;no probe matched...\n&quot;);
+
+If you don't see one of those messages at -D3, something very wacky is
+going on.  Is it possible that you have NON_NMEA_ENABLE undefined?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005299.html">[Gpsd-dev] SVN 3934 Change to gpsd.c- Clarifiation please
+</A></li>
+	<LI>Next message: <A HREF="005303.html">[Gpsd-dev] SVN 3934 Change to gpsd.c- Clarifiation please
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5302">[ date ]</a>
+              <a href="thread.html#5302">[ thread ]</a>
+              <a href="subject.html#5302">[ subject ]</a>
+              <a href="author.html#5302">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

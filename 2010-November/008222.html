@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] setting oncore timing parameters with gpsctl
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20setting%20oncore%20timing%20parameters%20with%20gpsctl&In-Reply-To=%3Calpine.DEB.1.10.1011012044360.10497%40org-pc51.fy.chalmers.se%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008221.html">
+   <LINK REL="Next"  HREF="008223.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] setting oncore timing parameters with gpsctl</H1>
+    <B>H&#229;kan Johansson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20setting%20oncore%20timing%20parameters%20with%20gpsctl&In-Reply-To=%3Calpine.DEB.1.10.1011012044360.10497%40org-pc51.fy.chalmers.se%3E"
+       TITLE="[Gpsd-dev] setting oncore timing parameters with gpsctl">f96hajo at chalmers.se
+       </A><BR>
+    <I>Mon Nov  1 21:09:32 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008221.html">[Gpsd-dev] setting oncore timing parameters with gpsctl
+</A></li>
+        <LI>Next message: <A HREF="008223.html">[Gpsd-dev] setting oncore timing parameters with gpsctl
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8222">[ date ]</a>
+              <a href="thread.html#8222">[ thread ]</a>
+              <a href="subject.html#8222">[ subject ]</a>
+              <a href="author.html#8222">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+On Mon, 1 Nov 2010, Miroslav Lichvar wrote:
+
+&gt;<i> On Sat, Oct 30, 2010 at 01:11:17PM +0200, H&#229;kan Johansson wrote:
+</I>&gt;&gt;<i> The attached patch adds an option -y opt=val to gpsctl for setting a
+</I>&gt;&gt;<i> few device-specific parameters for motorola oncore devices.
+</I>&gt;<i>
+</I>&gt;<i> Nice. Beside the sawtooth correction, do you know which features gpsd
+</I>&gt;<i> is now missing to match the ntpd oncore driver? The refclock_oncore.c
+</I>&gt;<i> file has 120K, so I'm wondering what does it all do.
+</I>
+Looking at it quickly, quite some of code is infrastructure things, 
+that I guess are repeated for many of the refclock drivers...
+
+Pending leap-seconds handling.  (which gpsd does not pass along anyhow)
+
+Oncore M12 handling is definately missing in gpsd.
+
+Except for that, I do not find any more (timing-critical) options in the 
+manuals either.  PPS cable delay can as well be handled in ntpd/chronyd, 
+and with the no-config nature of gpsd, it is easier to have options 
+there.. :-)
+
+&gt;<i> A cool feature (which ntpd will probably never support due to internal
+</I>&gt;<i> timer limitations) would be support for the 100PPS mode. This could
+</I>&gt;<i> reduce the jitter 10-fold, possibly below 30 ns with the typical 1us
+</I>&gt;<i> serial port jitter and 16s polling interval. The delay would have to
+</I>&gt;<i> be known and compensated to reach such absolute accuracy, but it could
+</I>&gt;<i> be still useful to synchronize machines with identical hw/sw.
+</I>
+I'm not so sure about the 100 PPS precision.  See
+
+<A HREF="http://www.leapsecond.com/pages/vp/heater.htm">http://www.leapsecond.com/pages/vp/heater.htm</A> 
+<A HREF="http://www.leapsecond.com/pages/vp/sawtooth.htm">http://www.leapsecond.com/pages/vp/sawtooth.htm</A>
+
+The sawtooth correction is only specified for the pulse marking the top of 
+the second, so the other pulses are probably not so easy to interrogate 
+for precision data.  (perhaps by interpolating between top-of-the-second 
+pulses and figuring out the internal rules for 100 PPS stamping)
+
+It would also be some trickery (fun, though) to pick out the correct 
+top-of-the-second pulse of the 100 PPS pulses.  More would probably be 
+gained by fixing the saw-tooth correction.  My oncores are however sitting 
+on the CTS pin, so have only us accuracy...
+
+Cheers,
+H&#229;kan
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008221.html">[Gpsd-dev] setting oncore timing parameters with gpsctl
+</A></li>
+	<LI>Next message: <A HREF="008223.html">[Gpsd-dev] setting oncore timing parameters with gpsctl
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8222">[ date ]</a>
+              <a href="thread.html#8222">[ thread ]</a>
+              <a href="subject.html#8222">[ subject ]</a>
+              <a href="author.html#8222">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

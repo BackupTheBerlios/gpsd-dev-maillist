@@ -1,0 +1,179 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Using the GPSD native interface in RoadMap - a case study 8-}
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Using%20the%20GPSD%20native%20interface%20in%20RoadMap%20-%20a%20case%20study%208-%7D&In-Reply-To=%3C20050711172945.GA25821%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002405.html">
+   <LINK REL="Next"  HREF="002436.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Using the GPSD native interface in RoadMap - a case study 8-}</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Using%20the%20GPSD%20native%20interface%20in%20RoadMap%20-%20a%20case%20study%208-%7D&In-Reply-To=%3C20050711172945.GA25821%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Using the GPSD native interface in RoadMap - a case study 8-}">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Jul 11 19:29:45 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002405.html">[Gpsd-dev] Using the GPSD native interface in RoadMap - a case study 8-}
+</A></li>
+        <LI>Next message: <A HREF="002436.html">[Gpsd-dev] Using the GPSD native interface in RoadMap - a case study 8-}
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2428">[ date ]</a>
+              <a href="thread.html#2428">[ thread ]</a>
+              <a href="subject.html#2428">[ subject ]</a>
+              <a href="author.html#2428">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Pascal F. Martin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">pascal.martin at cox.net</A>&gt;:
+&gt;<i> This has been a very frustrating experience, and I feel the need to
+</I>&gt;<i> share it and get some advices. I expect to get somewhat burned in the
+</I>&gt;<i> process :-).
+</I>
+The only thing I will criticize is that you didn't complain sooner so we could
+fix your problems before you got so frustrated ;-).
+ 
+&gt;<i> At first, following the recommendation from the documentation and
+</I>&gt;<i> from Eric, I wrote a version that uses libgps. After some (minimal :-)
+</I>&gt;<i> refactoring of RoadMap, I got a version that compiled. However it
+</I>&gt;<i> never worked: the gps was always declared as not
+</I>&gt;<i> &quot;online&quot;. Understanding what happens is quite difficult, since the
+</I>&gt;<i> documentation reads: &quot;gpsd_query() [...] updates parts of the GPS-data
+</I>&gt;<i> structure that correspond to data changed since the last call&quot;. What
+</I>&gt;<i> data is changed by what response is not really obvious (at least to
+</I>&gt;<i> me).
+</I>
+That's why there is a 'valid' flag in the structure.  The bits in that get
+set whenever a field changes -- you clear them when you like, so you can
+track changes at any granularity you like.  This is explained in detail 
+on the libgps(3) manual page, but evidently that explanation was not good
+enough.  Can you recommend a change that would documentation clarify it?
+
+&gt;<i> Thus I looked at the gpsd web site for examples, and I found a very
+</I>&gt;<i> different code: I changed my code to reflect it. It did not compile.
+</I>&gt;<i> 
+</I>&gt;<i> What happens is that I use debain &quot;testing&quot;, which provides gpsd
+</I>&gt;<i> 2.13. The web site describes the latest, 2.28 (available in Debian
+</I>&gt;<i> &quot;unstable&quot;). In between these two versions, the &quot;public&quot; API was
+</I>&gt;<i> changed and has become incompatible with the previous versions. Maybe
+</I>&gt;<i> the version number should have been changed to 3.0 to reflect such a
+</I>&gt;<i> major change?
+</I>
+I bump the major-number part of the shared-library version whenever the
+API changes incompatibly.  If that isn't sufficient, I am willing to listen
+to an explanation of why.
+
+The call structure of the API has been pretty stable and is unlikely to
+change often in the future.  The size and arrangement of members in the
+public structures has been less stable than I would like; much of this
+had to do with adding capabilities like multi-session.  I think that's 
+under control now -- a last key step was turning the driver-specific storage
+into a union so that adding drivers won't make the structure change size
+any more (unless we get one that needs more than the 4K of storage the
+Garmin driver reserves for its packet buffer).
+
+&gt;<i> Now I am in a bind: if I use 2.28, many Debian users may be screwed
+</I>&gt;<i> up (RoadMap is not yet available in Debian, so users may have to
+</I>&gt;<i> recompile it). I am not too excited running after a moving target,
+</I>&gt;<i> either: if the interface became incompatible once, it will likely
+</I>&gt;<i> happen again.
+</I>
+While I can't absolutely rule that out, it is far less likely in the
+future than it has been over the last year.  Multi-session and
+automatic baud-rate/protocol discovery are in place now, and the
+O response works.  The daemon is feature-complete.  Future development
+is more likely to involve adding GPS-device drivers than anything visible
+at the client-API level.
+
+By the way, you should know that it is partly because of the pitch you made
+to me at FUDCon that a lot of these changes have been happening.  I had been
+moving toward automatic baud rate and protocol discovery, but your 
+emphasis on zero configuration as an important feature for nontechnical
+users moved it to the top of my agenda.  So some of this instability
+is of your own making.  Not that that is a bad thing!
+
+&gt;<i> Wondering what to do, I checked GpsDrive, which uses the raw NMEA
+</I>&gt;<i> interface, and kismet, which decodes the gpsd protocol
+</I>&gt;<i> itself. Checking some more, it appears that the protocol is in fact
+</I>&gt;<i> much more stable than libgps. So far, it seems to have been compatible
+</I>&gt;<i> from one version to the next.
+</I>
+I've gone to a lot of effort to make it that way.  But in the long term
+you shouldn't count on GPSD protocol to be the stable part.   See the
+remarks on the O response below.
+
+&gt;<i> My conclusion is that the only sane solution for an application like
+</I>&gt;<i> RoadMap is to follow in the footstep of giants like GpsDrive or
+</I>&gt;<i> kismet. Since these applications are critical to many people,
+</I>&gt;<i> introducing an incompatibility that would impact either one is less
+</I>&gt;<i> likely to happen. As I did not find any significant application using
+</I>&gt;<i> libgps, except for those provided with gpsd itself, I feel it is much
+</I>&gt;<i> safer for me to stay away from it. In addition, this makes RoadMap
+</I>&gt;<i> simpler to compile: it will not depend on gpsd libraries. The less
+</I>&gt;<i> dependencies, the better.
+</I>
+Bad, bad idea.  It will mean there are multiple protcol decoders, rather
+than just one in the libgps library itself.  
+
+&gt;<i> OK: changing the design again, I decided I had no other choice but use the 'w' command. It is actually a lot simpler. But then RoadMap became much more unstable. This is because gpsd 2.13 does not send a consistent data set each time:
+</I>&gt;<i> 
+</I>&gt;<i> GPSD,P=33.811350 -118.351417,D=2005-07-11T23:04:05Z
+</I>&gt;<i> GPSD,P=33.811350 -118.351417,D=2002-10-26T23:04:07Z,T=91.800000,V=0.000000,S=1,M=2
+</I>&gt;<i> GPSD,P=33.811333 -118.351417,D=2005-07-11T23:04:07Z,A=30.900000,S=1,M=2
+</I>&gt;<i> GPSD,Q=4 7.200000 3.100000 6.500000,M=3
+</I>&gt;<i> GPSD,Y=8:7 44 197 48 1:8 67 65 48 1:11 18 88 35 0:26 25 313 0 0:27 47 104 0 0:28 66 325 44 1:29 34 306 39 1:31 9 40 0 0:
+</I>&gt;<i> GPSD,P=33.811333 -118.351417,D=2005-07-11T23:04:07Z
+</I>&gt;<i> GPSD,P=33.811350 -118.351433,D=2002-10-26T23:04:09Z,T=91.800000,V=0.000000,S=1,M=2
+</I>&gt;<i> GPSD,P=33.811350 -118.351433,D=2005-07-11T23:04:09Z,A=30.600000,S=1,M=2
+</I>&gt;<i> GPSD,Q=4 7.300000 3.100000 6.600000,M=3
+</I>&gt;<i> GPSD,Y=8:7 44 197 46 1:8 67 65 48 1:11 18 88 34 0:26 25 313 0 0:27 47 104 0 0:28 66 325 44 1:29 34 306 39 1:31 9 40 0 0:
+</I>&gt;<i> GPSD,P=33.811350 -118.351433,D=2005-07-11T23:04:09Z
+</I>&gt;<i> GPSD,P=33.811333 -118.351433,D=2002-10-26T23:04:11Z,T=91.800000,V=0.000000,S=1,M=2
+</I>&gt;<i> 
+</I>&gt;<i> Note that the position and the mode are not always there... Remember that this is gpsd 2.13: it is possible this has been fixed since then. But I am now obligated to handle incomplete feeds, like in NMEA.
+</I>
+This is why the 'W' command in more recent versions returns 'O' responses.
+And that in turn is why you should not be decoding the protocol youself!
+
+&gt;<i> BTW, I do have one question: gpsd manipulates most data as
+</I>&gt;<i> double. It now performs some error estimation logic (dop()). Did
+</I>&gt;<i> someone checked how much CPU this takes on an ARM, like on a PDA (the
+</I>&gt;<i> ARM has no floating point hardware)?
+</I>
+No.  I would welcome such a benchmark.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002405.html">[Gpsd-dev] Using the GPSD native interface in RoadMap - a case study 8-}
+</A></li>
+	<LI>Next message: <A HREF="002436.html">[Gpsd-dev] Using the GPSD native interface in RoadMap - a case study 8-}
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2428">[ date ]</a>
+              <a href="thread.html#2428">[ thread ]</a>
+              <a href="subject.html#2428">[ subject ]</a>
+              <a href="author.html#2428">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

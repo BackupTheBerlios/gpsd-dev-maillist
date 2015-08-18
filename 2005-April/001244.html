@@ -1,0 +1,94 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] result of trying svn version
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20result%20of%20trying%20svn%20version&In-Reply-To=%3C6259.213.84.187.156.1112775476.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001254.html">
+   <LINK REL="Next"  HREF="001245.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] result of trying svn version</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20result%20of%20trying%20svn%20version&In-Reply-To=%3C6259.213.84.187.156.1112775476.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] result of trying svn version">gpsd at xs4all.nl
+       </A><BR>
+    <I>Wed Apr  6 10:17:56 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001254.html">[Gpsd-dev] Re: (no subject)
+</A></li>
+        <LI>Next message: <A HREF="001245.html">[Gpsd-dev] result of trying svn version
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1244">[ date ]</a>
+              <a href="thread.html#1244">[ thread ]</a>
+              <a href="subject.html#1244">[ subject ]</a>
+              <a href="author.html#1244">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I have compiled and started the current version from svn.
+
+There seems to be an issue with the ecef_to_wgs84fix calculation.
+The calculated altitude is wrong, I think the wgs84_separation has the
+wrong sign.  When I change the addition of wgs84_separation into
+subtraction, the result here (52N 5E) is OK.
+
+There also is an issue that I have observed ever since writing sirf.c
+(what is now called sirfmon.c) and using it on my receiver:
+My uBlox receiver outputs both x/y/z and lat/lon/alt.
+The latter is output in a manufacturer-defined packet (0x62).
+
+In my sirf.c I have been displaying both, one normal and one bold, at the
+same position.  One can often see the fields toggle between two values
+because the results are not exactly the same (I think due to rounding).
+But now, there is a bigger difference: 0x02 packets calculate altitude
+above mean sea level, and the 0x62 packet has altitude above the wgs84
+geoid.
+So the output shown on the screen toggles between two values differing
+about 45m.
+
+I temporarily switched off the writing of lat/lon/alt in the packet 0x62
+handling to better see the calculated altitude, but I wonder what the
+general handling of this problem should be.
+Maybe there should be more than one &quot;fix&quot; structure per receiver?
+(but how to access them from the TCP socket?)
+Or a single receiver could consist of 1 or more &quot;logical&quot; receivers that
+can return different data?
+Or maybe I should just forget about the data returned in packet 0x62, as
+now seems to have happened to the 0x29 packet data?
+
+Rob
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001254.html">[Gpsd-dev] Re: (no subject)
+</A></li>
+	<LI>Next message: <A HREF="001245.html">[Gpsd-dev] result of trying svn version
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1244">[ date ]</a>
+              <a href="thread.html#1244">[ thread ]</a>
+              <a href="subject.html#1244">[ subject ]</a>
+              <a href="author.html#1244">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,172 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] ntp-pps
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntp-pps&In-Reply-To=%3CPine.LNX.4.64.0609231924580.19017%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004391.html">
+   <LINK REL="Next"  HREF="004412.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] ntp-pps</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntp-pps&In-Reply-To=%3CPine.LNX.4.64.0609231924580.19017%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] ntp-pps">gem at rellim.com
+       </A><BR>
+    <I>Sun Sep 24 05:12:31 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004391.html">[Gpsd-dev] ntp-pps
+</A></li>
+        <LI>Next message: <A HREF="004412.html">[Gpsd-dev] ntp-pps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4393">[ date ]</a>
+              <a href="thread.html#4393">[ thread ]</a>
+              <a href="subject.html#4393">[ subject ]</a>
+              <a href="author.html#4393">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Rob!
+
+On Sat, 23 Sep 2006, Rob Janssen wrote:
+
+&gt;<i> Ok let's try with 0.400 and see if there are any users that drop off at
+</I>&gt;<i> the other end (because their offset is much more than 0.675)
+</I>&gt;<i> Hopefully not.
+</I>
+Commited.
+
+&gt;<i> &gt; I would rather remove the assumption of 0.125, 0.675, or any other value
+</I>&gt;<i> &gt; from the code.  You want to keep assumptions in the code.
+</I>&gt;<i>
+</I>&gt;<i> No.  I would want to put them in a configfile.  But as I have explained,
+</I>&gt;<i> Eric does not want that.  So that is why I put them in the code.  I don't
+</I>&gt;<i> want that, nor do I think it is a good solution.
+</I>
+We both agree on that.  See below for another idea.
+
+&gt;<i> I would rather count &quot;GPS-18/LVC&quot; as one case, and all the other NMEA
+</I>&gt;<i> receivers each as other cases.  Of course, when many users of the same
+</I>&gt;<i> receiver use the same code, they might get the same results.  But what
+</I>&gt;<i> about users of other receivers?
+</I>
+I guess you missed the messages from Tim Cwik earlier this week.  He
+has a Garmin GPS-18/LVC running at 4800 baud.  His real offset from
+PPS to NMEA time worked out to 0.525.  So you see it is more to do
+with baud rate than model #.
+
+Maybe we can come up with a baud adjustment to adjust a starting guess
+offset.  How about 600mS at 4800bps, 375ms at 9600 150mS at 19200 and
+above?
+
+&gt;<i> &gt; And .500 will not work for me.  That only give me a .025 lock range!
+</I>&gt;<i> &gt; (0.500 - 0.400 = 0.100 lock edge, and ideally I am at 0.125, so a 0.025
+</I>&gt;<i> &gt; lock range).
+</I>&gt;<i>
+</I>&gt;<i> Even with a 25ms range there should be no problem, as ntpd will keep the
+</I>&gt;<i> time well within such a tolerance.  Only when your receiver sometimes has
+</I>&gt;<i> 100ms offset, it will go out of range.  But that would only confirm my
+</I>&gt;<i> standpoint that NMEA messages are not really suitable for time sync, as
+</I>&gt;<i> their offset from the real time is too variable.
+</I>
+I do not agree with your reasoning here.  Make the generous assumption
+that the NMEA wanders +/- 100mS. in a random walk. gpsd would lock out
+all pulses from -100 to -25mS of the PPS, about 1/3 of them. ntpd would
+thnpe note the PPS as unreliable and knock it off the list.
+
+We have got to get the NMEA time to stay in the not locked out window
+for the PPS.
+
+&gt;<i> &gt;&gt; As I have said before, NMEA is unsuitable for time sync.  But people
+</I>&gt;<i> &gt;&gt; keep
+</I>&gt;<i> &gt;&gt; trying.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; You dispute my 0.019ppm?
+</I>&gt;<i>
+</I>&gt;<i> 0.019 ms you mean?
+</I>
+No. 0.019ppm.  Or, since you missed it when I sent it to this list earlier
+this week.  After a few more days settling I got down t0 0.009 ppm.
+Here is my &quot;ntpdc -c sysinfo&quot;:
+
+ntpdc&gt; sysinfo
+system peer:          SHM(1)
+system peer mode:     client
+leap indicator:       00
+stratum:              1
+precision:            -20
+root distance:        0.00000 s
+root dispersion:      0.00056 s
+reference ID:         [GPS1]
+reference time:       c8b819d0.535be5d9  Sun, Sep 17 2006 12:00:32.325
+system flags:         bclient auth monitor ntp kernel stats
+jitter:               0.000000 s
+stability:            0.009 ppm
+broadcastdelay:       0.007996 s
+authdelay:            0.000002 s
+
+Notice the 0.009 ppm stability!
+
+&gt;<i> No way you are getting that with NMEA!
+</I>
+With pps of course, but only after I can keep the PPS in the NMEA lockout
+window.
+
+&gt;<i> You are using PPS pulses, that is an entirely different mechanism running
+</I>&gt;<i> in parallel with the clunky NMEA method that we have difficulty getting
+</I>&gt;<i> within 500 ms for everybody...
+</I>
+And there you have the problem, which is why we are trying to find a
+solution for the window.  We get the right second with NMEA and let
+PPS pull in the rest of the ay.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFFFfej8KZibdeR3qURAoG9AKDj1Ms3ryQXIRVmmQ6rJzLxMBxBbgCeNPxs
+nqVHhiamkWD0dibvl56lXAg=
+=ANYJ
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004391.html">[Gpsd-dev] ntp-pps
+</A></li>
+	<LI>Next message: <A HREF="004412.html">[Gpsd-dev] ntp-pps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4393">[ date ]</a>
+              <a href="thread.html#4393">[ thread ]</a>
+              <a href="subject.html#4393">[ subject ]</a>
+              <a href="author.html#4393">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

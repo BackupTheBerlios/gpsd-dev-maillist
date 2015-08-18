@@ -1,0 +1,156 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: SiRF-II binary has some curious holes in its capabilities.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20SiRF-II%20binary%20has%20some%20curious%20holes%20in%20its%20capabilities.&In-Reply-To=%3C20050301214910.GA27832%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000757.html">
+   <LINK REL="Next"  HREF="000759.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: SiRF-II binary has some curious holes in its capabilities.</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20SiRF-II%20binary%20has%20some%20curious%20holes%20in%20its%20capabilities.&In-Reply-To=%3C20050301214910.GA27832%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Re: SiRF-II binary has some curious holes in its capabilities.">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Mar  1 22:49:10 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000757.html">[Gpsd-dev] Re: SiRF-II binary has some curious holes in its capabilities.
+</A></li>
+        <LI>Next message: <A HREF="000759.html">[Gpsd-dev] Re: SiRF-II binary has some curious holes in its capabilities.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#758">[ date ]</a>
+              <a href="thread.html#758">[ thread ]</a>
+              <a href="subject.html#758">[ subject ]</a>
+              <a href="author.html#758">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Chris Kuethe &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">ckuethe at ualberta.ca</A>&gt;:
+&gt;<i> Looking at my web logs, I see what appears to be Eric's machine asking for
+</I>&gt;<i> the PDF (educated guess at the ISP, and the only linux machine to connect
+</I>&gt;<i> at that time) at 0942h and 0947h. The pdf was updated at 0915h. Maybe his
+</I>&gt;<i> ISP has some insane transparent webcache that spoofs the requesting box on
+</I>&gt;<i> the way out and traps everything on the way in... I've survived worse nets
+</I>&gt;<i> than that...
+</I>
+Those times sound right; I did try to retrieve it twice, about 5 minutes
+apart.  The IP address was probably 66.92.53.140.
+
+In other news, attempting to interpret packet 41 is not going well.  Here
+are messages from my latest run:
+
+gpsd: GNI payload length 91: 290000000001200ef1a1e600000000000000000000000017dcd1fed2fc7e19000030ff00003e38000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+gpsd: NAV Type: 00
+gpsd: Status = 0, mode = 1
+gpsd: GPS Week: 288  TOW: 250716646
+gpsd: UTC: 1985-08-12T01:26:6.460
+
+The ID and payload length match the docs, but that's the end of the happiness.
+Note the obviously wrong GPS week value.  The UTC date isn't from the UTC 
+fields but computed from week/TOW value.
+
+Here's the code that is trying to crack this thing -- getb/getw/getl
+have the obvious semantics:
+
+	/*
+	 * Many versions of the SiRF protocol manual don't document 
+	 * this sentence at all.  Those that do may incorrectly
+	 * describe UTC Day, Hour, Minute, Second as 2-byte quantities,
+	 * not 1-byte. Chris Kuethe, our SiRF expert, tells us:
+	 *
+	 * The Geodetic Navigation packet (0x29) was not fully
+	 * implemented in firmware prior to version 2.3.2. So for
+	 * anyone running 231.000.000 or earlier (including ES,
+	 * SiRFDRive, XTrac trains) you won't get UTC time. I don't
+	 * know what's broken in firmwares before 2.3.1...
+	 *
+	 * I don't see any indication in any of my material that PDOP,
+	 * GDOP or VDOP are output. There are quantities called
+	 * Estimated {Horizontal Position, Vertical Position, Time,
+	 * Horizonal Velocity} Error, but those are apparently only
+	 * valid when SiRFDRive is active.
+	 *
+	 * (SiRFdrive is their Dead Reckoning augmented firmware. It
+	 * allows you to feed odometer ticks, gyro and possibly 
+	 * accelerometer inputs to the chip to allow it to continue 
+	 * to navigate in the absence of satellite information, and 
+	 * to improve fixes when you do have satellites.)
+	 */
+	buf2[0] = '\0';
+	for (i = 0; i &lt; len-4; i++)
+	    sprintf(buf2+strlen(buf2), &quot;%02x&quot;, buf[i]);
+	gpsd_report(1, &quot;GNI payload length %d: %s\n&quot;, len, buf2);
+	session-&gt;gNMEAdata.status = STATUS_NO_FIX;
+	session-&gt;gNMEAdata.mode = MODE_NO_FIX;
+	if (!getw(1)) {		/* check for valid navigation status */
+	    st = getw(3);
+	    gpsd_report(3, &quot;NAV Type: %02x\n&quot;, st);
+	    if (st &amp; 0x80)
+		session-&gt;gNMEAdata.status = STATUS_DGPS_FIX;
+	    else if (st &amp; 0x06)
+		session-&gt;gNMEAdata.status = STATUS_FIX;
+	    REFRESH(session-&gt;gNMEAdata.status_stamp);
+	    if (st &amp; 0x03)
+		session-&gt;gNMEAdata.mode = MODE_3D;
+	    else if (st &amp; 0x06)
+		session-&gt;gNMEAdata.mode = MODE_2D;
+	    REFRESH(session-&gt;gNMEAdata.mode_stamp);
+	}
+	gpsd_report(1, &quot;Status = %d, mode = %d\n&quot;, session-&gt;gNMEAdata.status, session-&gt;gNMEAdata.mode);
+	/* compute UTC from extended GPS time */
+	gpsd_report(3, &quot;GPS Week: %d  TOW: %d\n&quot;, getw(5), getl(7));
+	fixtime = GPS_EPOCH + (getw(5) * SECS_PER_WEEK) + getl(7)/100.00;
+	intfixtime = (int)fixtime;
+	when = localtime(&amp;intfixtime);
+	session-&gt;year = when-&gt;tm_year;
+	session-&gt;month = when-&gt;tm_mon + 1;
+	session-&gt;day = when-&gt;tm_mday;
+	session-&gt;hours = when-&gt;tm_hour;
+	session-&gt;minutes = when-&gt;tm_min;
+	session-&gt;seconds = fixtime - (intfixtime / 60) * 60;
+	strftime(session-&gt;gNMEAdata.utc, sizeof(session-&gt;gNMEAdata.utc),
+		 &quot;%Y-%m-%dT%H:%M:&quot;, when);
+	sprintf(session-&gt;gNMEAdata.utc+strlen(session-&gt;gNMEAdata.utc),
+		&quot;%02.3f&quot;, session-&gt;seconds);
+	gpsd_report(1, &quot;UTC: %s\n&quot;, session-&gt;gNMEAdata.utc);
+
+Is there anything obviously wrong with this?  Have I messed up the byte 
+offsets somehow?
+
+My firmware version is 231.000.000ES-01-39.  Am I screwed?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000757.html">[Gpsd-dev] Re: SiRF-II binary has some curious holes in its capabilities.
+</A></li>
+	<LI>Next message: <A HREF="000759.html">[Gpsd-dev] Re: SiRF-II binary has some curious holes in its capabilities.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#758">[ date ]</a>
+              <a href="thread.html#758">[ thread ]</a>
+              <a href="subject.html#758">[ subject ]</a>
+              <a href="author.html#758">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

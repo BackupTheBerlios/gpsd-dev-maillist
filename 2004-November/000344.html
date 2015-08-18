@@ -1,0 +1,81 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] State transition issues
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20State%20transition%20issues&In-Reply-To=%3C20041127213429.GB7657%40us.netrek.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000343.html">
+   <LINK REL="Next"  HREF="000347.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] State transition issues</H1>
+    <B>James Cameron</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20State%20transition%20issues&In-Reply-To=%3C20041127213429.GB7657%40us.netrek.org%3E"
+       TITLE="[Gpsd-dev] State transition issues">quozl at us.netrek.org
+       </A><BR>
+    <I>Sat Nov 27 22:34:29 CET 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000343.html">[Gpsd-dev] State transition issues
+</A></li>
+        <LI>Next message: <A HREF="000347.html">[Gpsd-dev] State transition issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#344">[ date ]</a>
+              <a href="thread.html#344">[ thread ]</a>
+              <a href="subject.html#344">[ subject ]</a>
+              <a href="author.html#344">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I agree, after some digging myself.  The online flag is only used for
+reporting the X message.  So I propose the attached patch which relies
+on arriving sentences only to set the online flag.  In other words, it
+removes the setting of online within gpsd_activate().
+
+-- 
+James Cameron    mailto:<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">quozl at us.netrek.org</A>     <A HREF="http://quozl.netrek.org/">http://quozl.netrek.org/</A>
+-------------- next part --------------
+Index: libgpsd_core.c
+===================================================================
+--- libgpsd_core.c	(revision 1108)
++++ libgpsd_core.c	(working copy)
+@@ -99,8 +99,6 @@
+     if ((session-&gt;gNMEAdata.gps_fd = gpsd_open(session-&gt;baudrate, session-&gt;device_type-&gt;stopbits, session)) &lt; 0)
+ 	return -1;
+     else {
+-	session-&gt;gNMEAdata.online = 1;
+-	REFRESH(session-&gt;gNMEAdata.online_stamp);
+ 	gpsd_report(1, &quot;gpsd_activate: opened GPS (%d)\n&quot;, session-&gt;gNMEAdata.gps_fd);
+ 
+ 	/* if there is an initializer and no trigger string, invoke it */
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000343.html">[Gpsd-dev] State transition issues
+</A></li>
+	<LI>Next message: <A HREF="000347.html">[Gpsd-dev] State transition issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#344">[ date ]</a>
+              <a href="thread.html#344">[ thread ]</a>
+              <a href="subject.html#344">[ subject ]</a>
+              <a href="author.html#344">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,281 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] ship board navigational software and gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ship%20board%20navigational%20software%20and%20gpsd&In-Reply-To=%3C4B7E22DB.2020806%40babel.com.au%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007374.html">
+   <LINK REL="Next"  HREF="007368.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] ship board navigational software and gpsd</H1>
+    <B>Del</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ship%20board%20navigational%20software%20and%20gpsd&In-Reply-To=%3C4B7E22DB.2020806%40babel.com.au%3E"
+       TITLE="[Gpsd-dev] ship board navigational software and gpsd">del at babel.com.au
+       </A><BR>
+    <I>Fri Feb 19 06:34:19 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007374.html">[Gpsd-dev] gpsd interface to turn on/off gps radio
+</A></li>
+        <LI>Next message: <A HREF="007368.html">[Gpsd-dev] ship board navigational software and gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7367">[ date ]</a>
+              <a href="thread.html#7367">[ thread ]</a>
+              <a href="subject.html#7367">[ subject ]</a>
+              <a href="author.html#7367">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Hi,
+
+I have really no idea where to start with this, so I'll start at the 
+beginning and work downwards.  Apologies in advance if this is overly long.
+
+I have spent a bit of time reading through the mailing lists, source 
+code of both gpsd and opencpn (which I use on board a sailing vessel) 
+and the various documentation.  I have seen a couple of discussions on 
+gpsd-users and gpsd-devel about these topics as well.
+
+Firstly, I am interested in porting to Linux, network enabling, and gpsd 
+enabling some stand-alone shipboard logging software that I have 
+available.  It is written (partially written, partially being developed) 
+in Java and PHP, however the logging side currently only accepts input 
+from an II that's connected to a windows serial port, and hence only 
+works on Windows.  I am also interested in porting to Linux some lift 
+calculation software, applicable to racing yachts, that would use much 
+the same data.
+
+Side note:  An &quot;II&quot; is an integrated instrumentation device which 
+usually has a GPS plugged in to it, hence the &quot;II&quot; used as a prefix in 
+the NMEA sentences.  ESR's document here: 
+<A HREF="http://gpsd.berlios.de/NMEA.html">http://gpsd.berlios.de/NMEA.html</A> incorrectly attributes this prefix to 
+the &quot;AutoHelm Seatalk system, made by Raytheon&quot; but in fact there are a 
+number of different makes and manufacturers of II devices, often 
+referred to as NMEA multiplexers, that use this prefix.  e.g. TackTick 
+which has been discussed extensively on the gpsd-users mailing list, 
+also Micromux as well as others.
+
+Side side note: Nautech was a UK company that used to make a system for 
+automatic steering on yachts known as &quot;AutoHelm&quot;.  That company was 
+bought out by Raytheon, which formed the division Raymarine for this and 
+other marine products.  Since 2001 Raymarine and Raytheon have been 
+separate companies, after UK based Raymarine management purchased the 
+business from Raytheon and later floated it on the London stock exchange 
+-- Raytheon is a US company and Raymarine is now a British company. 
+Raymarine now uses &quot;AutoHelm&quot; as a trademark for their autopilots.
+
+&quot;Seatalk&quot; is an integrated communication and power system for 
+instruments of various types, also developed by Raymarine.  AutoHelm 
+devices can use Seatalk to communicate amongst themselves, but Seatalk 
+might also be used to talk between a digital display device, an 
+anemometer, hull transducer, or a compass.  Seatalk is a proprietary 
+protocol and there are bidirectional NMEA to Seatalk gateways (except 
+that Seatalk also carries 12V to the instruments allowing them to be 
+powered over one 3 wire cable, and NMEA is essentially RS232).
+
+&quot;Autohelm&quot; has also come to be a colloquial term amongst yachties for 
+any type of electronic autopilot, which leads to odd conversations like 
+&quot;I have an Autohelm&quot; -- &quot;What type?&quot; -- &quot;It's a Coursemaster&quot;. 
+(Coursemaster and AutoHelm are in fact competing brands).
+
+The software (and any logging software) needs quite a bit more 
+information from the NMEA data stream than the Time/Position/Velocity 
+data provided by the GPS.  In particular NMEA muxes often output things 
+like water depth, temperature, velocity and heading through the water 
+(VHW sentence), Log data (VLW sentence), and wind velocity (MWV and VWR 
+sentences as well as others).  These can come from anemometers, hull 
+transducers, etc.
+
+The logging software basically needs this information either at a point 
+in time, averaged over a few minutes, averaged over an hour, or the max 
+value over an hour.  If it obtained the data at the current point in 
+time only it could do the rest of the calculations internally.
+
+The lift calculation software mostly only needs the data at a point in 
+time, but needs more of it.  In particular both speed through the water 
+and speed over ground are required so that the set &amp; drift can be 
+calculated, as well as magnetic &amp; true headings from the magnetic 
+compass as well as course over ground from the GPS.
+
+The software currently has a java based service to store and allow 
+retrieval of the most recent &amp; relevant data via an API.  I have pretty 
+much decided that I will use either gpsd or something like memcached to 
+store and retrieve the data, and make it available across a network.
+
+So, firstly, a couple of philosophical questions.  This is a quote from 
+Chris Kuethe on the gpsd-users mailing list a couple of years ago, when 
+NMEA data from the TackTick II was being discussed:
+
+&quot;Getting agreement from me will be difficult. I don't see a clean way
+of extending the O message to handle these quantities. Our attempt at
+mapping the truenorth compass into our standard PVT format is ugly to
+say the least.
+
+&quot;I'd argue that {wind,water} direction, velocity, temperature, pressure
+have no place in a navigation solution. They are utterly irrelevant to
+the position of the navigation set (or the phase center of its
+antenna). They are, relevant in the larger context of describing the
+environment when the plane crashed or the ship sank, but I consider
+mixing enviromental measurements and navigation solutions to be
+pollution.&quot;
+
+Then there's this statement in section VII.1 of the hackers' guide, when 
+discussing non-TPV data in the new JSON-based protocol:
+
+&quot;A major virtue of JSON is its extensibility. There are lots of other 
+things a sensor wedded to a GPS might report that don't fit the 
+position-velocity-time model of the oldstyle O report. Depth of water. 
+Temperature of water. Compass heading. Roll. Pitch. Yaw. We've already 
+had requests to handle some of these for NMEA-emitting devices like 
+magnetic compasses (which report heading via a proprietary TNTHTM 
+sentence) and fish finders (which report water depth and temperature via 
+NMEA DPT and MTW sentences). JSON gives a natural way to add ad-hoc 
+fields, and we expect to explot that in the future.&quot;
+
+So question 1, starter for 10 points: Are the current gpsd maintainers 
+interested in having support for non-TPV data added to gpsd in its 
+current incarnation or not?
+
+If not, then I'll find a completely separate solution.  The one that I'm 
+leaning towards is using something like memcached to store the currently 
+available environmental data, have a protocol (built on top of 
+memcached) to set and store that data, and network enabling this by 
+allowing non-localhost connections in to memcached.  The limitation of 
+this would be the data storage available from memcached, but for these 
+applications I'm not particularly interested in the data stream, I'm 
+only interested in the most recent values, or in some instances the 
+value that has been obtained by averaging over the last 5 minutes or 60 
+minutes.
+
+If so, then I'll talk about the internals of gpsd and how that might be 
+achieved.
+
+In terms of protocol, as is pointed out in the hackers' guide, extending 
+the gpsd protocol to support non-TPV data is simple.  Just extend the 
+JSON sentences being emitted, and all is good.
+
+In terms of the internal data structures, there appear to be a couple of 
+ways to go.  The data structure containing the session data is of type 
+gps_data_t defined in gps.h.  We can either extend this data structure 
+to contain the other non-TPV data (the TPV data is in the component fix 
+of type gps_fix_t), or we can squeeze the data in elsewhere.
+
+What would be the best approach?
+
+In terms of the code that extracting TPV data from NMEA sentences, there 
+are about half a dozen sentences that are applicable.  Each different 
+sentence type contains a separate function in driver_nmea.c to extract 
+the data.  For extracting non-TPV data, there are probably 20 - 30 
+sentences that are applicable.  It bothers me a little that there isn't 
+a single function in driver_nmea.c to handle an arbitrary NMEA sentence, 
+which then looks at a director or lookup table to find a method of 
+handing each different data element.  Personally if I was designing it 
+from scratch I would have taken a different approach, but that might be 
+a change too far.  Thoughts?
+
+This latter issue is the one thing that's making me lean towards having 
+an external process that subscribes to the raw NMEA sentences from the 
+gpsd data feed, decodes them, and stores them as necessary.  (That and 
+because my java-fu and my PHP-fu are both stronger than my C-fu so I 
+could almost certainly implement that faster).
+
+However that approach has already been discussed on the gpsd-users 
+mailing list, and was pointed to this: 
+<A HREF="http://gpsd.berlios.de/faq.html#why_not_parse_nmea.">http://gpsd.berlios.de/faq.html#why_not_parse_nmea.</A>  That's an 
+appropriate answer if gpsd parses all known NMEA sentences, but not if not.
+
+(Reference: <A HREF="http://marc.info/?l=gpsd-users&amp;m=117851046304732&amp;w=2">http://marc.info/?l=gpsd-users&amp;m=117851046304732&amp;w=2</A>).
+
+As far as the sentences that I need to have data extracted from, here is 
+a non-exhaustive set of samples.  The speeds are all zero because the 
+vessel was stationary at the time:
+
+$IIDPT,005.7,-1.2,*40
+
+     DePTh of water, 5.7m below transducer, -1.2m transducer to keel, 
+checksum.
+
+$IIGLL,3350.679,S,15111.744,E,095113,A,A*4D
+
+     Geographic Lat Long, 33^50.679', S, 151^11.744', E, 09:51:13 UTC, 
+vAlid,
+     FAA A mode, checksum.
+
+$IIMTW,+25.5,C*3A
+
+     Mean Temperature of Water, +25.5 degrees, C, checksum.
+
+$IIMWV,000,R,09.2,N,A*18
+$IIMWV,298,T,09.0,N,A*1F
+
+     Mean Wind Velocity, 298 degrees, Relative/True, 9.2, kNots, vAlid, 
+checksum.  Note the occasional zero response to be ignored.
+
+$IIRMC,095119,A,3350.679,S,15111.744,E,00.0,175,170210,12,E,A*1E
+
+     Recommended Minimum Nav information, 09:51:19 UTC, vAlid, 
+33^50.679', S,
+     151^11.744', E, SOG = 00.0 knots, COG 175 degrees true, 17 Feb 2010,
+     12 degrees mag variation, E mag variation, FAA mode A, checksum.
+
+$IIVHW,,,,,00.0,N,,*19
+
+     Velocity and Heading through Water, null degrees true, null (T/M),
+     null degrees magnetic, M, 00.0, kNots, null speed, Km/h, checksum.
+
+$IIVLW,02898,N,000.0,N*58
+
+     Distance travelled through water, 2898, Nautical miles, 0 since reset,
+     Nautical miles, checksum.
+
+$IIVWR,000,R,09.2,N,,,,*6A
+$IIVWR,068,L,09.4,N,,,,*7C
+
+     Velocity Wind Relative, 068, Left of bow, 9.4, kNots, null, M/s, null,
+     Km/hr, checksum.  Note the occasional zero response to be ignored.
+
+So, in summary, where I'm at is a crossroads between two different 
+solutions involving some up front design decisions:
+
+1. Major hacking on gpsd.
+2. External gpsd client to interpret and make available the NMEA data 
+that gpsd does not currently provide.
+
+-- 
+Del
+Babel Com Australia
+<A HREF="http://www.babel.com.au/">http://www.babel.com.au/</A>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007374.html">[Gpsd-dev] gpsd interface to turn on/off gps radio
+</A></li>
+	<LI>Next message: <A HREF="007368.html">[Gpsd-dev] ship board navigational software and gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7367">[ date ]</a>
+              <a href="thread.html#7367">[ thread ]</a>
+              <a href="subject.html#7367">[ subject ]</a>
+              <a href="author.html#7367">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

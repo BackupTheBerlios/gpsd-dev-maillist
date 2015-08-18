@@ -1,0 +1,167 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] PPS
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS&In-Reply-To=%3CPine.LNX.4.63.0508041013520.23228%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002764.html">
+   <LINK REL="Next"  HREF="002782.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] PPS</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS&In-Reply-To=%3CPine.LNX.4.63.0508041013520.23228%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] PPS">gem at rellim.com
+       </A><BR>
+    <I>Thu Aug  4 19:35:29 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002764.html">[Gpsd-dev] PPS
+</A></li>
+        <LI>Next message: <A HREF="002782.html">[Gpsd-dev] PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2771">[ date ]</a>
+              <a href="thread.html#2771">[ thread ]</a>
+              <a href="subject.html#2771">[ subject ]</a>
+              <a href="author.html#2771">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Rob!
+
+On Thu, 4 Aug 2005, Rob Janssen wrote:
+
+&gt;<i> &gt; Anyone else using PPS out there?  I just made a tweak to the ntpshm.c.
+</I>&gt;<i> &gt; Please test it out.  Basically I changed the lock range from 400mS to
+</I>&gt;<i> &gt; 500mS.  My GPS-18 LVC seems to be a consistent 420mS offset +/-10mS
+</I>&gt;<i> &gt; from true time.
+</I>&gt;<i>
+</I>&gt;<i> You made other changes too.
+</I>&gt;<i> The precision is set for message-based time.  In my experience this
+</I>&gt;<i> is bad.  Precision is not better than the order of .5 second for
+</I>&gt;<i> message-based time, it should only be set for PPS time where we have more
+</I>&gt;<i> assurance of accuracy.
+</I>
+I can see both sides to this.  On my serial GPS the 400mS offset is not
+so good, just enough to get the right second for the PPS.  However, on
+my native USB GPS, the offset is only 35mS and the long term accuracy is
+about +/- 10mS.
+
+I am trying to tweak the precision so that my ntpd makes better
+decisions.  For some reason it still prefers a network based time to the
+local GPS time even thought the accuracy and jitter of the local time is
+3x better.  Somewhere around 4x ntp will start to prefer the local time.
+I suspect the precision is involved.
+
+So how do we cut this baby in half?  For the USB GPS this was a good
+change, for the serial GPS it was not so good.
+
+Jitter is not a good measure because the NMEA time will be accurate for
+a bit, then make a jump of 100mS.
+
+&gt;<i> Furthermore, the 400ms capture limit of PPS should not be increased too
+</I>&gt;<i> much because of the risk of false lock.  If your messages would have been
+</I>&gt;<i> 520 ms off the 500 ms limit would mean the PPS would lock you to the wrong
+</I>&gt;<i> second.
+</I>
+Well, the capture limit is not really a capture limit.  My system clock
+is already stable to +/-20mS with network and GPS ntp sources.  It is
+really a capture limit plus a fixed offset.
+
+The ntpshm_pps() seems to be comparing the PPS to the raw NMEA time, instead of
+to a corrected time, or the sytem time, or ntpd time.
+
+With the 420mS offset, which ntpshm_pps() has no way of knowing about,
+the capture is only about 20mS wide.
+
+&gt;<i> I think this change should be backed out.
+</I>
+So what do we replace it with?  I gotta get the PPS to work somehow.
+
+Seems to me maybe we need to reference PPS capture time to the system time,
+which is the best that ntpd can make it.  That makes my capture range less
+than 100mS in most cases.
+
+&gt;<i> &gt; With PPS the accuracy seems to be under 1mS on a busy workstation.  Maybe
+</I>&gt;<i> &gt; well under, hard to tell at that level.  Not bad for the price.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Here is the new part to the /etc/ntp.conf:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; # for NMEA and gpsd
+</I>&gt;<i> &gt; server 127.127.28.0 minpoll 4 maxpoll 4
+</I>&gt;<i> &gt; fudge 127.127.28.0 time1 0.420 refid GPS
+</I>&gt;<i>
+</I>&gt;<i> This is the proper way to compensate for your 420ms offset, not increasing
+</I>&gt;<i> the capture range.
+</I>
+Apples and Oranges.  I had to do BOTH.  The fudge time is used by the
+ntpd program, NOT by gpsd.  So with just the fudge, and not the 2nd
+change, the PPS signal is in exactly the right place, but ntpshm_pps
+still thinks it is 420mS off.
+
+&gt;<i> What message protocol are you running?
+</I>
+NMEA 2.0 over serial.  Not sure is 2.3 would do this better since the
+messages are longer.
+
+For the USB GPS it is Garmin binary fixed length messages.  The fixed
+length removes the sentence length jitter.
+
+&gt;<i> Is there already a fixed offset in the code?
+</I>
+Nope.  ntpshm_pps() just looks at the raw offset between NMEA and PPS time.
+
+&gt;<i> Some protocols have a fixed offset in the decoder to pre-compensate for
+</I>&gt;<i> those offsets, maybe your protocol needs one too.
+</I>
+Well, nothing I can do in the Garmin GPS-18LVC.  SO how do we fix the
+ntpshm_pps()?
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.1 (GNU/Linux)
+
+iD8DBQFC8lHl8KZibdeR3qURAp3TAKDfys4fBz0ab5ldsrvEap8PWr1c+gCgtUzy
+Sy71DDJ0o0kSKmOJvJ+JFcI=
+=JVsL
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002764.html">[Gpsd-dev] PPS
+</A></li>
+	<LI>Next message: <A HREF="002782.html">[Gpsd-dev] PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2771">[ date ]</a>
+              <a href="thread.html#2771">[ thread ]</a>
+              <a href="subject.html#2771">[ subject ]</a>
+              <a href="author.html#2771">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,144 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] What should be in Python?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20What%20should%20be%20in%20Python%3F&In-Reply-To=%3C20061031000637.GE22325%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004791.html">
+   <LINK REL="Next"  HREF="004798.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] What should be in Python?</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20What%20should%20be%20in%20Python%3F&In-Reply-To=%3C20061031000637.GE22325%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] What should be in Python?">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Oct 31 01:06:37 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004791.html">[Gpsd-dev] [Gpsd-commit-watch] r3731 - trunk (fwd)
+</A></li>
+        <LI>Next message: <A HREF="004798.html">[Gpsd-dev] What should be in Python?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4797">[ date ]</a>
+              <a href="thread.html#4797">[ thread ]</a>
+              <a href="subject.html#4797">[ subject ]</a>
+              <a href="author.html#4797">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Chris Kuethe &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">chris.kuethe at gmail.com</A>&gt;:
+&gt;<i> &gt; gpspipe has your name in it.  But if it's orphaned, that's fine.  It
+</I>&gt;<i> &gt; ought to be replaced by a small handful of Python, anyway; there's no
+</I>&gt;<i> &gt; good reason for it to be in C.
+</I>&gt;<i> 
+</I>&gt;<i> Systems that don't have python. No compelling reason to kill something
+</I>&gt;<i> that small.
+</I>
+Where do you think we ought to draw the line?   Here's what I put in the
+Hacking Guide:
+
+    &lt;p&gt;The project implementation languages are C and Python.  The core
+    libgpsd libraries (and the daemon, which is a thin wrapper around
+    them) are written in C; the test and profiling tools are written in
+    Python.  Code in other languages will, in general, be accepted only if
+    it supplies a language binding for the libgps or libgpsd libraries
+    that we don't already have.  This restriction is an attempt to keep
+    our long-term maintenance problem as tractable as possible.&lt;/p&gt;
+
+    &lt;p&gt;We require C for anything that may have to run on an embedded
+    system. Thus, the daemon and libgpsd libraries need to stay pure C.
+    Anything that links direct to the core libraries should also be in C,
+    because Python's alien-type facilities are still just a little too
+    complex and painful to be a net win for our situation. (We know this
+    may be about to change with the advent of the ctypes module in Python
+    2.6 and will keep an open mind, especially to anyone who actually 
+    supplies a ctypes Python wrapper for libgpsd.)&lt;/p&gt;
+
+    &lt;p&gt;We prefer Python anywhere we aren't required to to use C by
+    technical constraints &mdash; test/profiling/logging tools, hotplug agents,
+    and miscellaneous scripts.  Again, this is a long-term maintainability
+    issue; there are whole classes of potential C bugs that simply don't
+    exist in Python, and Python programs have a drastically lower line
+    count for equivalent capability.&lt;/p&gt;
+
+I didn't think any of this would be controversial.  But if you find any
+of the premises or conclusions in the above wacky, please do say so.  That
+goes for the other senior developers and committers, too.
+
+By all means let's have this discussion about gpspipe, because it sits
+on a couple of interesting boundaries.
+
+gpspipe has two major use cases: 
+
+1) As a test tool (witness the role it just played in the J mess).
+
+2) As a generator for shell pipelines or logger processes picking up
+   GPS activity from remote systems.  
+
+Here's a brute fact: On systems that don't have Python, pretty much
+our entire set of test tools goes up the spout.  gpsfake won't work,
+gpsprof ditto, and the valgrind-audit check won't run either.  And our
+normal regression tests depend on gpsfake.
+
+What I'm saying is that we're already so dependent on Python for test
+tools that one more can't make our exposure any worse.  So just
+raising &quot;systems that don't have Python&quot; as an objection to writing
+test tools in Python (or moving them from C to Python) is kind of weak
+and funny.  And that pretty much takes care of case 1.
+
+(Now me, I don't view lots of Python as &quot;exposure&quot; -- if I were tempted
+to, I'd just reflect that every line of Python substitutes for many lines
+of C we don't have to maintain.  I think of all the lovely buffer overruns, 
+stale-pointer bugs, and stack smashes we'll never have to cope with and
+I smile.)
+
+On to case 2.  Maybe you can persuade me that I'm wrong, but I just
+can't easily visualize this kind of activity being *hosted* on a
+system too small for Python.  Sure, I can see collecting data from an
+SBC in a balloon somewhere using gpspipe, but it's 2006 -- if the 
+collecting system has enough marbles to do shell pipelines, requiring
+Python just isn't a big deal anymore.  (It has a *much* smaller 
+installation footprint than Perl...)
+
+But the real reason I want to move that code is that it's ugly.  It
+was a grubby, fast-and-dirty hack when Gary originally wrote it and
+it hasn't gotten any prettier since.  Time to rewrite -- and since 
+I think I can collapse that 331 lines into maybe 40 lines of Python
+that seems like the way to go.
+
+My mind is open to counterarguments, however.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004791.html">[Gpsd-dev] [Gpsd-commit-watch] r3731 - trunk (fwd)
+</A></li>
+	<LI>Next message: <A HREF="004798.html">[Gpsd-dev] What should be in Python?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4797">[ date ]</a>
+              <a href="thread.html#4797">[ thread ]</a>
+              <a href="subject.html#4797">[ subject ]</a>
+              <a href="author.html#4797">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

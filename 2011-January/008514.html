@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Considering a change to JSON timestamp format
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Considering%20a%20change%20to%20JSON%20timestamp%20format&In-Reply-To=%3C20110122173609.8494E20C25B%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008533.html">
+   <LINK REL="Next"  HREF="008515.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Considering a change to JSON timestamp format</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Considering%20a%20change%20to%20JSON%20timestamp%20format&In-Reply-To=%3C20110122173609.8494E20C25B%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Considering a change to JSON timestamp format">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Sat Jan 22 18:36:09 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008533.html">[Gpsd-dev] [PATCH 8/8] Displaying GPGST data in xgps
+</A></li>
+        <LI>Next message: <A HREF="008515.html">[Gpsd-dev] Considering a change to JSON timestamp format
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8514">[ date ]</a>
+              <a href="thread.html#8514">[ thread ]</a>
+              <a href="subject.html#8514">[ subject ]</a>
+              <a href="author.html#8514">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I've been wrestling with some GPS calendar issues recently, trying to find ways
+around the GPS week rollover problem. One result of this is that I've been 
+looking at the timestamps on JSON sentences - and finding them annoyingly 
+hard to read.  They're encoded as seconds UTC since the Unix epoch (the start
+of 1 Jan 1970).
+
+I am, therefore, contemplating one last change to our JSON-based
+encoding before we ship 3.0 and announce it's done.  That is to change
+the timestamp format to ISO 8601.  So, instead of looking like
+
+   1295713512.87
+
+timestamps would look like
+
+   2011-01-22T11:25:12.87Z
+
+There are currently exactly two such fields: fix time (per TPV) and
+skyview time (per SKY).
+
+I'm soliciting comment on this proposal.  There's been a bit of discussion on 
+the IRC channel, so I can address a couple  of issues that have already come up.
+
+Effect on code complexity: None. Clients have to call atof(3) or equivalent
+now before thay can do arithmetic on a timestamp; with this change, they'd 
+have to call strptime(3).
+
+Effect on code portability: None. Both decoders (and encoders) are in 
+Single Unix Specification.
+
+Effect on code size: None, the library already has a unix_to_iso8601()
+and iso8601_to_unix() functions. (These are used in logging and gpsmon.)
+
+Effect on performance: Encoding/decoding ISO 8601 is *very slightly* 
+more expensive than encoding raw integers; on the other hand, for
+ordinary display use (as in, for example, xgps) clients will
+often be able to shove ISO8601 to output without decoding at all.
+
+Effect on readability: This is the big win. A human eyeball can't 
+make sense of a Unix timestamp, but an ISO 8601 one is instantly
+parseable - so, for example, week wraparound errors would be glaringly
+obvious.
+
+Transition cost: Minimal. The diff for a test implementation is 154 lines,
+counting context and headers and including clients. No change to C client 
+API or structures.
+
+One final note: it has been suggested that sentences could include
+both forms, as a compatibility hack.  I oppose this on the basis of the
+SPOT rule - representations should have as single point of truth
+for any given piece of data.  &quot;No junk, no confusion.&quot;
+
+This change would, of course, bump the protocol version number.
+
+I'd like to hear pro and con arguments.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+&quot;Gun control&quot; is a job-safety program for criminals.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008533.html">[Gpsd-dev] [PATCH 8/8] Displaying GPGST data in xgps
+</A></li>
+	<LI>Next message: <A HREF="008515.html">[Gpsd-dev] Considering a change to JSON timestamp format
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8514">[ date ]</a>
+              <a href="thread.html#8514">[ thread ]</a>
+              <a href="subject.html#8514">[ subject ]</a>
+              <a href="author.html#8514">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

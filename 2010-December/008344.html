@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-335-g048bafc
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20Project%20gpsd%20at%20BerliOS%20branch%2C%0A%20master%2C%20updated.%20release-2.95-335-g048bafc&In-Reply-To=%3CAANLkTimnS%3Da0tey6NNwff4JPGdXrNA0ufWUMqA-sFiXk%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008343.html">
+   <LINK REL="Next"  HREF="008345.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-335-g048bafc</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20Project%20gpsd%20at%20BerliOS%20branch%2C%0A%20master%2C%20updated.%20release-2.95-335-g048bafc&In-Reply-To=%3CAANLkTimnS%3Da0tey6NNwff4JPGdXrNA0ufWUMqA-sFiXk%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-335-g048bafc">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Fri Dec 24 16:46:53 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008343.html">[Gpsd-dev] driver_ubx.c and CRCs
+</A></li>
+        <LI>Next message: <A HREF="008345.html">[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-345-gce243d0
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8344">[ date ]</a>
+              <a href="thread.html#8344">[ thread ]</a>
+              <a href="subject.html#8344">[ subject ]</a>
+              <a href="author.html#8344">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Thu, Dec 23, 2010 at 5:36 PM, garyemiller at BerliOS
+&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>&gt; wrote:
+&gt;<i> - &#160; &#160;if ( (session-&gt;gpsdata.dev.baudrate &gt;= 38400)
+</I>&gt;<i> - &#160; &#160; &#160;|| (session-&gt;sourcetype == source_usb) ) {
+</I>&gt;<i> + &#160; &#160;if (session-&gt;gpsdata.dev.baudrate &gt;= 38400) {
+</I>&gt;<i> + &#160; &#160; &#160; &#160;/* some USB are also too slow, no way to tell which ones */
+</I>
+it's not the usb that's too slow, it's the receiver chip that doesn't
+guard against link flooding. Once or twice I've seen a note in the
+manual discussing overflow, but most vendors seem to assume you know
+what data you need, when you need it and can configure the comm port
+accordingly.
+
+I guess there could be some test in the firmware to compute whether
+there's enough capacity on the link to transmit all the requested
+messages, but that's more work than just letting application designers
+and systems integrators figure it out. NovAtel gets this mostly right:
+
+&quot;&quot;&quot;
+3.3.23 Link Overload Error Message ID# 125
+     Sent by the receiver only when at least one log caused an
+overload of the data link. This log is sent at a
+     maximum rate of once per second. This log encodes a bit map of
+all the Message ID#s (1 to 127), therefore
+     indicating which ID#s caused the link overload. The request of
+the message that caused the overload is
+     cancelled to prevent any further overload.
+&quot;&quot;&quot;
+
+And it gets worse... in some receivers, messages are generated
+asynchronously, at different priorities. If certain conditions are
+met, you end up with
+[msgA_header][msgA_body_frag1][msgB_header][msgB_body][msgB_trailer][msgA_body_frag2][msgA_trailer]
+
+That's right. No mutex or interlock on the output... I suspect that
+most firmwares also wouldn't account for polled message, so if you
+were running your link pretty full and then polled the almanac, you'd
+also trash messages.
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008343.html">[Gpsd-dev] driver_ubx.c and CRCs
+</A></li>
+	<LI>Next message: <A HREF="008345.html">[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-345-gce243d0
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8344">[ date ]</a>
+              <a href="thread.html#8344">[ thread ]</a>
+              <a href="subject.html#8344">[ subject ]</a>
+              <a href="author.html#8344">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

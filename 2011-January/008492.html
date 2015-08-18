@@ -1,0 +1,149 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPS%20date%20fail%20due%20to%20week%20counter%20rollover%20%28not%20a%0A%20gpsd%20bug%29&In-Reply-To=%3C435673688.1338861295080898921.JavaMail.root%40zimbra31-e6.priv.proxad.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008491.html">
+   <LINK REL="Next"  HREF="008493.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)</H1>
+    <B>f4eru at free.fr</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPS%20date%20fail%20due%20to%20week%20counter%20rollover%20%28not%20a%0A%20gpsd%20bug%29&In-Reply-To=%3C435673688.1338861295080898921.JavaMail.root%40zimbra31-e6.priv.proxad.net%3E"
+       TITLE="[Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)">f4eru at free.fr
+       </A><BR>
+    <I>Sat Jan 15 09:41:38 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008491.html">[Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)
+</A></li>
+        <LI>Next message: <A HREF="008493.html">[Gpsd-dev] GPS date fail due to week counter rollover (not a	gpsd bug)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8492">[ date ]</a>
+              <a href="thread.html#8492">[ thread ]</a>
+              <a href="subject.html#8492">[ subject ]</a>
+              <a href="author.html#8492">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Eric,
+
+I don't agree with you.
+
+Most (quality) devices handle this properly.
+As every device today has flash memory to store firmware and parameters, the manufacturers implemented a simple routine that keep track of the number of rollovers (the higher bits of the Week counter, in fact) in their flasyh memory.
+
+Of course, to not be desync, you have to make one fix at least every 10-15 years for the device to detect and store the rollover.
+We can assume that, i think.
+
+
+If i find some time, i will test this on some devices i have at hand (7 year steps + cold boot) to see how far it goes before the end of the world as we knowit :)
+
+
+&gt;<i>It is probably true that we could curve-fit the decline in Earth's
+</I>&gt;<i>orbital speed to produce a function from leap-second count to a year
+</I>&gt;<i>estimate.  That's a very clever idea.  But there's a problem with it.
+</I>
+If i remember correctly, this is even patented by some manufacturer
+
+
+
+
+Christoph Riehl
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">f4eru at free.fr</A>
+
+----- Mail Original -----
+De: &quot;Eric Raymond&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt;
+&#192;: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>
+Envoy&#233;: Vendredi 14 Janvier 2011 19h28:10 GMT +01:00 Amsterdam / Berlin / Berne / Rome / Stockholm / Vienne
+Objet: Re: [Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)
+
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">f4eru at free.fr</A> &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">f4eru at free.fr</A>&gt;:
+&gt;<i> In my opinion, all these methods are quite dangerous. As probably
+</I>&gt;<i> only a handful of devices will fail, and the most critical ones are
+</I>&gt;<i> those that are often ON, I think the most reliable is to detect a
+</I>&gt;<i> step back &gt; 15 years, and only if the device type has not changed.
+</I>
+It's not just a handful of devices that will fail. Any given release
+of GPS firmware can be designed to operate in at most two rollover
+periods - from when it's issued to the next zero-counter event, and
+from then to when the counter is at the second before its issue date
+in the previous period.  If the vendor is stupid, the GPS will stop
+reporting dates sooner than that - after the next zero-counter event.
+
+*All* receivers will fail on their first cold-start outside this span, 
+because they won't have the information needed to tell that they aren't 
+starting up during a past week in their rollover period of origin.
+
+Diego Berge&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at navlost.eu</A>&gt; suggests:
+&gt;<i>    As an alternative, if your receiver outputs, and gpsd captures, the
+</I>&gt;<i> UTC message (page 18.4 of the navigation message), you're in luck. In
+</I>&gt;<i> such case you can use the leap seconds adjustment (&#916;tLS, &#916;tLSF)  to
+</I>&gt;<i> either determine (by means of a lookup table) or estimate (by relying on
+</I>&gt;<i> the fact that the Earth rotation rate is slowing down) the rough year.
+</I>&gt;<i> 
+</I>&gt;<i>    I haven't thought this through completely, but I think it should be
+</I>&gt;<i> close enough to disambiguate adequately for the foreseeable future and
+</I>&gt;<i> more deterministic than relying on the local clock, assuming you have
+</I>&gt;<i> one at all. The disadvantage is that probably not all receivers output
+</I>&gt;<i> the requisite information.
+</I>
+It is probably true that we could curve-fit the decline in Earth's
+orbital speed to produce a function from leap-second count to a year
+estimate.  That's a very clever idea.  But there's a problem with it.
+
+The problem with is that the estimate wouldn't be accurate within
+about two years - as we speak, it's January 2010 and the last leap
+second was at the end of December 2008. In the future, that two-year
+slop could easily put our estimate on the wrong side of a recent or
+near-future week rollover from actual present time.
+
+However, there's a variant of this idea I can and will use.  We know
+the leap-second offsets for past times; if we have a leap-second
+offset, we can at least check whether it's inconsistent with the year
+the GPS is reporting. This will detect some rollovers.
+
+So, for example, if the GPS reports it's 1985, but the current leap-second
+offset is greater than 5 seconds, we can't say exactly what rollover
+period we're in, but we can know for sure it isn't the right one and
+log a rollover error.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+_______________________________________________
+Gpsd-dev mailing list
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008491.html">[Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)
+</A></li>
+	<LI>Next message: <A HREF="008493.html">[Gpsd-dev] GPS date fail due to week counter rollover (not a	gpsd bug)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8492">[ date ]</a>
+              <a href="thread.html#8492">[ thread ]</a>
+              <a href="subject.html#8492">[ subject ]</a>
+              <a href="author.html#8492">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

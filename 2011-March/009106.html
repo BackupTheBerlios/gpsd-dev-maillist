@@ -1,0 +1,94 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Single-writer/many-reader consistency
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3C4D8E5671.2080409%40tmsw.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009101.html">
+   <LINK REL="Next"  HREF="009119.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Single-writer/many-reader consistency</H1>
+    <B>Terje Mathisen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3C4D8E5671.2080409%40tmsw.no%3E"
+       TITLE="[Gpsd-dev] Single-writer/many-reader consistency">terje at tmsw.no
+       </A><BR>
+    <I>Sat Mar 26 22:11:13 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009101.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+        <LI>Next message: <A HREF="009119.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9106">[ date ]</a>
+              <a href="thread.html#9106">[ thread ]</a>
+              <a href="subject.html#9106">[ subject ]</a>
+              <a href="author.html#9106">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>tz wrote:
+&gt;<i> Excuse a stupid question, but how closely are you trying to synchronize.
+</I>
+NTP with a local PPS source (which is what we're talking about here!) is 
+_capable_ of ~50 ns (check out Poul-Henning Kemp, phk of freebsd.org 
+fame), but anything below ~1-2 us require special hw to time each PPS 
+signal.
+
+&gt;<i>
+</I>&gt;<i> If you are using a 1Hz GPS, without the pps, given the variable
+</I>&gt;<i> latency in GPSD and hardware, the value will be close, but sometime
+</I>&gt;<i> after the second boundary.
+</I>&gt;<i>
+</I>&gt;<i> For readers, you could just do successive reads every 100 milliseconds
+</I>&gt;<i> or even 10 milliseconds (if the cache takes longer than this there are
+</I>&gt;<i> far worse problems) and find a set equal - without counters or
+</I>&gt;<i> anything.  Just memcmp.
+</I>
+We don't need anything like that!
+
+NTPD works with pairs of timestamps, i.e. the signal from an external 
+time source and the local system time at that instant: The difference 
+between those two are then used in the hybrid FLL/PLL control loop.
+
+Since GPSD's PPS handler grabs both of these and put them into the 
+shared segment, it really doesn't matter at all (within a second or so) 
+exactly when the pair is transferred via the shm interface!
+:<i>-)
+</I>
+Terje
+-- 
+- &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Terje at tmsw.no</A>&gt;
+&quot;almost all programming can be viewed as an exercise in caching&quot;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009101.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+	<LI>Next message: <A HREF="009119.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9106">[ date ]</a>
+              <a href="thread.html#9106">[ thread ]</a>
+              <a href="subject.html#9106">[ subject ]</a>
+              <a href="author.html#9106">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

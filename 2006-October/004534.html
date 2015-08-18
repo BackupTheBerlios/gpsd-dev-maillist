@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] refactoring
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20refactoring&In-Reply-To=%3C91981b3e0610131301s6bb11827s979630f0b02dd9d1%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004532.html">
+   <LINK REL="Next"  HREF="004535.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] refactoring</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20refactoring&In-Reply-To=%3C91981b3e0610131301s6bb11827s979630f0b02dd9d1%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] refactoring">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Fri Oct 13 22:01:58 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004532.html">[Gpsd-dev] gpspipe j patch
+</A></li>
+        <LI>Next message: <A HREF="004535.html">[Gpsd-dev] refactoring
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4534">[ date ]</a>
+              <a href="thread.html#4534">[ thread ]</a>
+              <a href="subject.html#4534">[ subject ]</a>
+              <a href="author.html#4534">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>i see a couple of refactoring opportunities:
+- string functions  like hexdump, hex2bin, strl{cat,cpy}
+- protocol switchers
+
+i suppose moving the string stuff isn't really that necessary as long
+as it's in the headers and is simple to link against.
+
+the reason i'd like to move/expose the protocol switchers is so that
+we can have a tool that can be used to configure a receiver,
+regardless of whether it's to be used with gpsd. this is useful for
+people hacking support for new protocols, transports or receivers.
+then you can do stuff like
+
+./garmintool -b /dev/tty00
+./sirfproto /dev/cuaU0 sirf 57600
+./itraxtool /dev/rfcomm0
+
+i could entertain the concept of a unified front end
+./gpsctl -t /dev/tty00
+    try probe the device. good for testing the device probes.
+
+./gpsctl -t sirf -s 57600 -b /dev/tty00
+    try force the receiver to use the sirf protocol at 57600
+
+./gpsctl -t sirf -s 4800 -n /dev/tty00
+    try force the sirf receiver to nmea at 4800
+
+./gpsctl -t itrax -b -s 115200 /dev/tty00
+    itrax binary at 115200
+
+./gpsctl -t garmin -n -s 19200 /dev/tty00
+    garmin nmea at 19200 (if your receiver did carrier phase, for example)
+
+and i don't want to do autodetection - this is a debugging and
+configuration tool for when autodetection fails, or when you want to
+restore a receiver's state.
+
+Comments?
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004532.html">[Gpsd-dev] gpspipe j patch
+</A></li>
+	<LI>Next message: <A HREF="004535.html">[Gpsd-dev] refactoring
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4534">[ date ]</a>
+              <a href="thread.html#4534">[ thread ]</a>
+              <a href="subject.html#4534">[ subject ]</a>
+              <a href="author.html#4534">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

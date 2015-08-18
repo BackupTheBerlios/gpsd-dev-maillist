@@ -1,0 +1,87 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] ntpshm.c PPS bad usec reference
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntpshm.c%20PPS%20bad%20usec%20reference&In-Reply-To=%3Calpine.DEB.1.10.0911041607460.14970%40org-pc51.fy.chalmers.se%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006979.html">
+   <LINK REL="Next"  HREF="006981.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] ntpshm.c PPS bad usec reference</H1>
+    <B>H&#229;kan Johansson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntpshm.c%20PPS%20bad%20usec%20reference&In-Reply-To=%3Calpine.DEB.1.10.0911041607460.14970%40org-pc51.fy.chalmers.se%3E"
+       TITLE="[Gpsd-dev] ntpshm.c PPS bad usec reference">f96hajo at chalmers.se
+       </A><BR>
+    <I>Wed Nov  4 16:58:12 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006979.html">[Gpsd-dev] ntpshm.c PPS bad usec reference
+</A></li>
+        <LI>Next message: <A HREF="006981.html">[Gpsd-dev] ntpshm.c PPS bad usec reference
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6980">[ date ]</a>
+              <a href="thread.html#6980">[ thread ]</a>
+              <a href="subject.html#6980">[ subject ]</a>
+              <a href="author.html#6980">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+&gt;<i> On Wed, Nov 04, 2009 at 02:21:54PM +0100, H&#229;kan Johansson wrote:
+</I>&gt;&gt;<i> If we'd always round down, we might hit the wrong second when the
+</I>&gt;&gt;<i> system clock is late and the sample came 'too early'?
+</I>&gt;<i>
+</I>&gt;<i> System clock is not involved here, it's assumed that the pulse was
+</I>&gt;<i> received at the time that was decoded from last message + 1 second.
+</I>
+Then perhaps an alternative solution 1:
+
+ntpshm_put() is extended with one more argument, which takes the offset. 
+The offset is only used to correct shmTime and not used for shmTimeP. 
+ntpshm_pps() does then not need to guess what strange corrections were 
+applied, no roundings at all.
+
+Solution 2:
+
+The offset applied when calling ntpshm_put() is presumed to make sure that 
+it is aligned with the value gotten from gettimeofday() (t1) inside 
+ntpshm_put().  Keep the offset and consider it in ntpshm_pps().  We 
+therefore also need to consider the value from gettimeofday() (t2) in 
+ntpshm_pps().  The difference between t2 and t1 should then be the 
+difference from the last time statement by ntpshm_put()to the pps pulse 
+under consideration.  Use this and align the pps pulse to the closest 
+multiple of the rate, with rounding.
+
+// H&#229;kan
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006979.html">[Gpsd-dev] ntpshm.c PPS bad usec reference
+</A></li>
+	<LI>Next message: <A HREF="006981.html">[Gpsd-dev] ntpshm.c PPS bad usec reference
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6980">[ date ]</a>
+              <a href="thread.html#6980">[ thread ]</a>
+              <a href="subject.html#6980">[ subject ]</a>
+              <a href="author.html#6980">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

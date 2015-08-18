@@ -1,0 +1,156 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Stripping down gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Stripping%20down%20gpsd&In-Reply-To=%3C20110311025544.GE26441%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008761.html">
+   <LINK REL="Next"  HREF="008739.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Stripping down gpsd</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Stripping%20down%20gpsd&In-Reply-To=%3C20110311025544.GE26441%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Stripping down gpsd">esr at thyrsus.com
+       </A><BR>
+    <I>Fri Mar 11 03:55:44 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008761.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+        <LI>Next message: <A HREF="008739.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8756">[ date ]</a>
+              <a href="thread.html#8756">[ thread ]</a>
+              <a href="subject.html#8756">[ subject ]</a>
+              <a href="author.html#8756">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Michael R. Davis &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mrdvt92 at yahoo.com</A>&gt;:
+&gt;<i> Compile time options do nothing for the 99% of the people out there
+</I>&gt;<i>  who want there distro to install their GPS device correctly.
+</I>
+That's correct.  We have essentially two important deployment scenarios:
+
+(1) Generic laptop.  This version wants all drivers because there's no telling
+wht's going to get plugged into a USB port next.
+
+(2) Well-controlled embedded environments.  This is tz's case, also for example
+the OpenMoko abd Maemo cases.  These will often use FIXED_PORT_SPEED and
+need just one driver, or possibly two -- NMEA pluse SiRF or some other 
+single binary type. *But* you can't predict *which* additional driver
+it's going to be without knowing the target hardware.
+
+This is why tz's --minimalist idea won't fly. It's useless for either
+case.  In the first case it's wrong, and in the second case you don't
+know which extra drivers should live in the minimal set.
+
+&gt;<i> This is where I feel we (gpsd-dev folks) need more work.  The
+</I>&gt;<i> concept of plug-ins would resolve much of this headache as we could
+</I>&gt;<i> put plug-ins in different packages (with lesser supported ones out
+</I>&gt;<i> of the main stream build).
+</I>
+No, no, no, *no*.  For us, plugins (runtime DLLs) would be a complete
+red herring.  Bad, *bad* idea.  Here's why...
+
+The overhead of an additional driver is pretty small.  Look:
+
+   text	   data	    bss	    dec	    hex	filename
+  11677	      0	      0	  11677	   2d9d	driver_aivdm.o
+   5520	      0	      0	   5520	   1590	driver_evermore.o
+  10527	      0	      0	  10527	   291f	driver_garmin.o
+   3358	      0	      0	   3358	    d1e	driver_garmin_txt.o
+  12692	      0	      0	  12692	   3194	driver_geostar.o
+   6494	      0	      0	   6494	   195e	driver_italk.o
+  16616	      0	      0	  16616	   40e8	driver_navcom.o
+  11973	      0	      0	  11973	   2ec5	driver_nmea.o
+   3962	     65	      0	   4027	    fbb	driver_oncore.o
+   3864	      0	      0	   3864	    f18	driver_rtcm2.o
+   8213	      0	      0	   8213	   2015	driver_rtcm3.o
+  13203	    390	      0	  13593	   3519	driver_sirf.o
+   8651	    256	      0	   8907	   22cb	drivers.o
+   5243	      6	      0	   5249	   1481	driver_superstar2.o
+  17810	      0	      0	  17810	   4592	driver_tsip.o
+   7478	      0	    516	   7994	   1f3a	driver_ubx.o
+   5202	      0	      0	   5202	   1452	driver_zodiac.o
+
+That's 152K for *everything*, with individual drivers averaging 9K each.
+Even on decade-old general-purpose hardware this is nothing.  And
+embedded deploymonts don't have to carry more than about 20K.
+
+In our domain, plugins simply can't give us enough space optimization
+to be worth the additional runtime complexity and packaging hassles
+they would imply.
+
+The other reason to do plugins besides space optimization is that you
+have technical or legal reasons to need some of your drivers to be
+developed outside your project. But we are not the GIMP or Musicbox or
+VLC. We don't have that problem and don't need that opportunity.
+
+&gt;<i>                        Let's face it; GPS chips (location aware
+</I>&gt;<i> chips) are going to be in the next laptop we need to be ready for
+</I>&gt;<i> that kind of pervasiveness.
+</I>
+I agree.  But that won't change a thing for *us*. We're ready
+*now*. We're so ready it's almost silly. Here's why.
+
+The lowest-level GPS component any system integrator ever puts in a
+laptop or smartphone is an OEM module that reports packets over TTL
+serial lines when you power it up.  There's just no good reason to
+ever do anything else; the reference designs are all paid for, and the
+data rates are low enough for TTL serial to make sense.  Anything else
+would be pointlessly expensive.
+
+So, from the OS-kernel point of view, all a GPS module is going to be
+is a special serial (RS232 device) - and I'll bet you any vital organ
+you care to name it'll present as a pseudo-tty named /dev/gps (or
+/dev/gps0, /dev/gps1, etc.)  
+
+We are so *completely* ready for this! I could write the discovery
+loop in about fifteen minutes flat.
+
+&gt;<i> We, also, should be driving the interface and protocol that that GPS
+</I>&gt;<i> chips should be using in this future.  I'd like to suggest that
+</I>&gt;<i> serial is not the way to go.
+</I>
+Fuhgeddabouddit.  We have no clout with the manufacturers, And we
+don't need it, either, not for this.  A virtual serial device shipping
+any of our supported protocols would fit our existing architecture
+like a grove, *and that's exactly what we're going to get*.  Doing
+anything else would require everyone in the systems-integration chain
+before us to spend extra NRE to no purpose.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008761.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+	<LI>Next message: <A HREF="008739.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8756">[ date ]</a>
+              <a href="thread.html#8756">[ thread ]</a>
+              <a href="subject.html#8756">[ subject ]</a>
+              <a href="author.html#8756">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

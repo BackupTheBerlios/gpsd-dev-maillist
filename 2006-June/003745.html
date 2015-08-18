@@ -1,0 +1,168 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] connection problems with Garmin eTrex
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20connection%20problems%20with%20Garmin%20eTrex&In-Reply-To=%3C20060610215313.GA28391%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003738.html">
+   <LINK REL="Next"  HREF="003783.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] connection problems with Garmin eTrex</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20connection%20problems%20with%20Garmin%20eTrex&In-Reply-To=%3C20060610215313.GA28391%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] connection problems with Garmin eTrex">esr at thyrsus.com
+       </A><BR>
+    <I>Sat Jun 10 23:53:13 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003738.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+        <LI>Next message: <A HREF="003783.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3745">[ date ]</a>
+              <a href="thread.html#3745">[ thread ]</a>
+              <a href="subject.html#3745">[ subject ]</a>
+              <a href="author.html#3745">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Tilman Koschnick &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">til at subnetz.org</A>&gt;:
+&gt;<i> On Sat, 2006-06-10 at 01:11 -0400, Eric S. Raymond wrote:
+</I>&gt;<i> &gt; Michael R. Davis &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mrdvt92 at yahoo.com</A>&gt;:
+</I>&gt;<i> &gt; &gt; Til,
+</I>&gt;<i> &gt; &gt; I had a similar experience on MIP arch with the pl2303 driver.  I think
+</I>&gt;<i> &gt; &gt; there must be some bug in pl2303 module.  If you read from the device
+</I>&gt;<i> &gt; &gt; at the wrong rate (e.g. cat /dev/xxx) it will lock up.  On openwrt it
+</I>&gt;<i> &gt; &gt; required a hard reboot.  I have since put stty /dev/xxx 4800 in my init
+</I>&gt;<i> &gt; &gt; before any reading.  Haven't check it since a recent upgrade.
+</I>&gt;<i> &gt; &gt; Mike
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; Can you give me more details about this?  What was the last version of the 
+</I>&gt;<i> &gt; driver that had this bug?  Is there a recipe for reproducing it that
+</I>&gt;<i> &gt; is reliable?
+</I>&gt;<i> 
+</I>&gt;<i> I don't have this problem - I can happily cat at different speeds, it's
+</I>&gt;<i> just garbage, but the device doesn't lock up.
+</I>
+OK, different bug then.
+
+&gt;<i> &gt; I'm also not sure of Til's status.  You report getting fuser to work;
+</I>&gt;<i> &gt; is the hunt still failing to lock on 7N1?  Have you a lock that exhibits
+</I>&gt;<i> &gt; this failure reliably?
+</I>
+That last &quot;lock&quot; should have been &quot;log&quot;.
+
+&gt;<i> Working on that. A first observation: After manually switching speeds, I
+</I>&gt;<i> get some garbage first, I guess while a buffer is cleared up, before the
+</I>&gt;<i> first legible sentences arrive:
+</I>&gt;<i> 
+</I>&gt;<i> (#553)<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">til at mother</A>:~/gpsd$ stty -F /dev/ttyUSB0 speed 4800
+</I>&gt;<i> 9600
+</I>&gt;<i> (#554)<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">til at mother</A>:~/gpsd$ cat /dev/ttyUSB0
+</I>&gt;<i> &#9618;&lt;f&#9618;f`~0f0&#9618;&#65533;fx&#65533;&#65533;&#65533;&#65533;&#65533;&#65533;&#65533;xf
+</I>&gt;<i>                        &#65533;`&#65533;~&#65533;&#65533;&#65533;&#65533;&#65533;&#65533;&#65533;&#65533;&#408;x&#9618;&#24600;
+</I>&gt;<i> `~&#65533;f&#9618;&#9618;&#9618;&#9618;&#9618;&#9618;&#9618;&#9618;&#9618;&#9618;&#9618;&#9618;&#9618;&#9618;&#9618;&#9618;fL&#65533;f`~&#65533;ffp&#9618;&#9618;&#9618;&#9618;$GPRMC,,V,,,,,,,100606,0.5,E,N*3C
+</I>&gt;<i> *66
+</I>&gt;<i> $GPGSA,A,1,,,,,,,,,,,,,,,*1E
+</I>&gt;<i> 
+</I>&gt;<i> $GPGSV,3,1,10,05,40,240,00,09,75,318,00,14,06,322,00,17,36,063,00*7A
+</I>&gt;<i> ...
+</I>
+I've seen similar things.  I think it happens because, though gpsd is 
+constantly trying to read from the serial device, there is a bit of a
+lag before the serial-port parameter change take effect.
+
+&gt;<i> Could it be that by the time the buffer is cleared and the first prober
+</I>&gt;<i> sentence arrives, gpsd has switched speed again?
+</I>
+No.  I don't use a timeout.  Instead, I read a fixed number of characters 
+looking for a packet header. If none is found I go to the next port setting.
+
+Hmmm...perhaps lock fails because the header comes in while the UART is
+still settling into the new state.  Hadn't thought of that before.
+
+&gt;<i> Remember, gpsd doesn't lock on at 7N2 all the time either - sometimes it
+</I>&gt;<i> goes right past and ends up segfaulting. It reports trying nonsensical
+</I>&gt;<i> speeds as well:
+</I>&gt;<i> 
+</I>&gt;<i> gpsd: speed 9600, 8N1
+</I>&gt;<i> gpsd: gpsd_activate: opened GPS (5)
+</I>&gt;<i> gpsd: speed 4800, 8N1
+</I>&gt;<i> gpsd: speed 9600, 8N1
+</I>&gt;<i> gpsd: speed 19200, 8N1
+</I>&gt;<i> gpsd: speed 38400, 8N1
+</I>&gt;<i> gpsd: speed 57600, 8N1
+</I>&gt;<i> gpsd: speed 1674785152, 8N1
+</I>&gt;<i> gpsd: speed 0, 7N2
+</I>&gt;<i> gpsd: speed 4800, 7N2
+</I>&gt;<i> 
+</I>&gt;<i> ...
+</I>&gt;<i> gpsd: speed -1785044608, 8N1
+</I>&gt;<i> gpsd: speed 0, 7N2
+</I>&gt;<i> ...
+</I>
+Now that's weird.  Here's the code that does the hunting:
+
+bool gpsd_next_hunt_setting(struct gps_device_t *session)
+/* advance to the next hunt setting  */
+{
+#ifdef FIXED_PORT_SPEED
+    /* just the one fixed port speed... */
+    static unsigned int rates[] = {FIXED_PORT_SPEED};
+#else /* FIXED_PORT_SPEED not defined */
+    /* every rate we're likely to see on a GPS */
+    static unsigned int rates[] = {0, 4800, 9600, 19200, 38400, 57600};
+#endif /* FIXED_PORT_SPEED defined */
+
+    if (session-&gt;retry_counter++ &gt;= SNIFF_RETRIES) {
+	session-&gt;retry_counter = 0;
+	if (session-&gt;baudindex++ &gt;= (unsigned int)(sizeof(rates)/sizeof(rates[0]))) {
+	    session-&gt;baudindex = 0;
+	    if (session-&gt;gpsdata.stopbits++ &gt;= 2)
+		return false;			/* hunt is over, no sync */
+	}
+	gpsd_set_speed(session, 
+		       rates[session-&gt;baudindex],
+		       'N', session-&gt;gpsdata.stopbits);
+    }
+
+    return true;	/* keep hunting */
+
+}
+
+How the heck can it get those nonsense speeds?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003738.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+	<LI>Next message: <A HREF="003783.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3745">[ date ]</a>
+              <a href="thread.html#3745">[ thread ]</a>
+              <a href="subject.html#3745">[ subject ]</a>
+              <a href="author.html#3745">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

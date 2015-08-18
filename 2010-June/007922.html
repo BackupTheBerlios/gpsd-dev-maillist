@@ -1,0 +1,137 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] AIS decode questions
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20AIS%20decode%20questions&In-Reply-To=%3C410499.20605.qm%40web51407.mail.re2.yahoo.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007921.html">
+   <LINK REL="Next"  HREF="007923.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] AIS decode questions</H1>
+    <B>Kurt Schwehr</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20AIS%20decode%20questions&In-Reply-To=%3C410499.20605.qm%40web51407.mail.re2.yahoo.com%3E"
+       TITLE="[Gpsd-dev] AIS decode questions">kurtschwehr at yahoo.com
+       </A><BR>
+    <I>Sun Jun 27 13:17:09 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007921.html">[Gpsd-dev] AIS decode questions
+</A></li>
+        <LI>Next message: <A HREF="007923.html">[Gpsd-dev] AIS decode questions
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7922">[ date ]</a>
+              <a href="thread.html#7922">[ thread ]</a>
+              <a href="subject.html#7922">[ subject ]</a>
+              <a href="author.html#7922">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Hi Randy,
+
+Look for a tutorial on bit operations in C. There are one 6 useful bits per character in each NMEA armored character. This is much like uuencode / mime encoding.  You can also look at my noaadata or libais packages or Eric's ais.py library for alternate ways to handle the same decoding problem. 
+
+-Kurt
+<A HREF="http://Schwehr.org">http://Schwehr.org</A>
+
+On Jun 27, 2010, at 3:08 AM, Randy &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">randyqiuxy at hotmail.com</A>&gt; wrote:
+
+Hi all,
+I'm a little confused with the following questions:
+How to convert primary ASCII characters to six bits fields?
+
+According to the &quot;table 1&quot;-ASCII payload armoring(<A HREF="http://gpsd.berlios.de/AIVDM.html">http://gpsd.berlios.de/AIVDM.html</A>) ,I thought,for instance,what I should do was just convert &quot;01&quot; into &quot;000000000001&quot;,as a result,I used the following code snip:
+     {
+        unsigned char data[]=&quot;0123456789&quot;;//for example,the payload data is &quot;0123456789&quot;
+unsigned char ch;
+unsigned char bits[2048];
+int bitlen=0;
+
+for(int i=0;i&lt;sizeof(data)/sizeof(char);i++)
+{
+ch=data[i];
+ch-=48;
+if(ch&gt;=40)
+ch-=8;
+for(int j=5;j&gt;=0;j--)
+{
+
+bits[bitlen++]=((ch&gt;&gt;j)&amp;0x01)+48;
+}
+
+}
+bits[bitlen]='\0';
+     }
+However,the GPSD use the code snip( in aivdm_decode function):
+    /* wacky 6-bit encoding, shades of FIELDATA */
+    /*@ +charint @*/
+    for (cp = data; cp &lt; data + strlen((char *)data); cp++) {
+ch = *cp;
+ch -= 48;
+if (ch &gt;= 40)
+    ch -= 8;
+#ifdef __UNUSED_DEBUG__
+gpsd_report(LOG_RAW, &quot;%c: %s\n&quot;, *cp, sixbits[ch]);
+#endif*/ /* __UNUSED_DEBUG__ 
+/*@ -shiftnegative @*/
+for (i = 5; i &gt;= 0; i--) {
+    if ((ch &gt;&gt; i) &amp; 0x01) {
+ais_context-&gt;bits[ais_context-&gt;bitlen / 8] |=
+    (1 &lt;&lt; (7 - ais_context-&gt;bitlen % 8));
+    }
+    ais_context-&gt;bitlen++;
+}
+/*@ +shiftnegative @*/
+    }
+    if (isdigit(pad))
+ais_context-&gt;bitlen -= (pad - '0');	/* ASCII assumption */
+    /*@ -charint @*/
+Then, I'd like to know what the above code does and, to be frank,I haven't understand the code especially the shift function.
+I will appreciate any response!
+
+Best regards,
+Randy
+
+_______________________________________________
+Gpsd-dev mailing list
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+
+
+
+      
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100627/3f9bb9df/attachment.html">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100627/3f9bb9df/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007921.html">[Gpsd-dev] AIS decode questions
+</A></li>
+	<LI>Next message: <A HREF="007923.html">[Gpsd-dev] AIS decode questions
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7922">[ date ]</a>
+              <a href="thread.html#7922">[ thread ]</a>
+              <a href="subject.html#7922">[ subject ]</a>
+              <a href="author.html#7922">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

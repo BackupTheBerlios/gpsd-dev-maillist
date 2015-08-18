@@ -1,0 +1,132 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Input packets buffering bug(s)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3CAANLkTinMUWYezFJr47g4mPbxKSDgzzG4_pua4bLC0fWZ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007766.html">
+   <LINK REL="Next"  HREF="007767.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Input packets buffering bug(s)</H1>
+    <B>Olivier Cornu</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3CAANLkTinMUWYezFJr47g4mPbxKSDgzzG4_pua4bLC0fWZ%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Input packets buffering bug(s)">o.cornu at gmail.com
+       </A><BR>
+    <I>Mon May 24 09:15:20 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007766.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+        <LI>Next message: <A HREF="007767.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7765">[ date ]</a>
+              <a href="thread.html#7765">[ thread ]</a>
+              <a href="subject.html#7765">[ subject ]</a>
+              <a href="author.html#7765">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Mon, May 24, 2010 at 00:46, Remco Treffkorn &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>&gt; wrote:
+&gt;<i> On Sunday 23 May 2010, Olivier Cornu wrote:
+</I>&gt;&gt;<i> &gt;&gt; To cut it short, the design wrongly assumes packets will be received
+</I>&gt;&gt;<i> &gt;&gt; one-at-a-time.
+</I>&gt;<i>
+</I>&gt;<i> And that is what I am having a problem with. You are dealing with a
+</I>&gt;<i> serial connection. You receive characters one after the other, in a serial
+</I>&gt;<i> fashion.
+</I>
+The serial bus does, gpsd receive them in a block read(). By
+definition, all chars from such a block are received at the same time,
+serial line or not.
+
+&gt;&gt;<i> &gt; If yes, then what is your definition of 'packet'?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Anything that is returned by packet_get() [packet.c:1639]. More
+</I>&gt;&gt;<i> precisely, what's copied in gps_packet_t.outbuffer by packet_accept()
+</I>&gt;&gt;<i> [packet.c:1042] after a successful packet_parse().
+</I>&gt;&gt;<i> In my context: a NMEA sentence.
+</I>&gt;<i>
+</I>&gt;<i> It is possible that a single read returns (...) multiple sentences.
+</I>&gt;<i> Is that what you mean?
+</I>
+Yes, among other things.
+I also explained what happens then (providing a log of such behavior),
+why (with references to the code) and proposed a solution.
+
+&gt;<i> It's beginning to smell like you are talking about buffered up NMEA
+</I>&gt;<i> sentences. If that's it, why not just say so.
+</I>
+The title of this thread is: &quot;input packets buffering bug&quot;.
+I wrote &quot;packet&quot; because that's what it's called everywhere in gpsd
+code. Either get used to it or fix it in the code, but don't blame me.
+
+&gt;<i> The fact that nobody has bitched here or on the user list is a fair
+</I>&gt;<i> indicator to me. People do not take kindly when you send their
+</I>&gt;<i> boat into the jetty, or make their UAV crash into the ground.
+</I>
+If you put as much trust in gpsd as to let it drive your boat, i
+sincerely hope i'm dead wrong about this bug&#8230; :-)
+
+&gt;<i> At the very least, that would make the bug you report to be less
+</I>&gt;<i> critical than you think it is. Just seeking perspective.
+</I>&gt;<i>
+</I>&gt;&gt;<i> &gt; Extraordinary claims require extraordinary proof.
+</I>
+Look, i'm not trying to make extraordinary claims: I was simply trying
+to use gpsd as a NMEA validator for my own generator and it failed.
+Looking deeper into the issue, doing tests and code reviews, i found
+gpsd was at fault (i may be wrong, that goes without saying -- i'm
+just a human).
+I'm reporting it (as clearly and fully as i can).
+
+&gt;<i> ie: if you claim &quot;it is possible to accumulate multiple NMEA sentences into
+</I>&gt;<i> a single read buffer, but only the first is processed and the others are deferred
+</I>&gt;<i> til the next read...&quot; , but at this point I can only guess.
+</I>
+See? You got it. :-)
+
+&gt;<i> And I am not trying to annoy you. I am just making an investment.
+</I>
+Good. We (others on #gpsd and me) have invested quite some time to
+identify this issue. If we happen to be right and the bug has been
+lying around for 15 years as you claim, it may be worth you spend a
+bit of yours on reading code. Just saying...
+
+
+Cheers,
+
+-- 
+Olivier
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007766.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+	<LI>Next message: <A HREF="007767.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7765">[ date ]</a>
+              <a href="thread.html#7765">[ thread ]</a>
+              <a href="subject.html#7765">[ subject ]</a>
+              <a href="author.html#7765">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,147 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [BUG] [PATCH] Fix handling of libdir
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BBUG%5D%20%5BPATCH%5D%20Fix%20handling%20of%20libdir&In-Reply-To=%3CCAMt7G9RoOX_D-SojYW-VeKhf7Y8dqDL0y4X9jKtK0boYTVNL3A%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009392.html">
+   <LINK REL="Next"  HREF="009395.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [BUG] [PATCH] Fix handling of libdir</H1>
+    <B>David Spencer</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BBUG%5D%20%5BPATCH%5D%20Fix%20handling%20of%20libdir&In-Reply-To=%3CCAMt7G9RoOX_D-SojYW-VeKhf7Y8dqDL0y4X9jKtK0boYTVNL3A%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [BUG] [PATCH] Fix handling of libdir">baildon.research at googlemail.com
+       </A><BR>
+    <I>Wed Aug  3 13:42:26 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009392.html">[Gpsd-dev] [BUG] [PATCH] Fix compiler flags in SConstruct
+</A></li>
+        <LI>Next message: <A HREF="009395.html">[Gpsd-dev] Bug in gpxlogger.c from gpsd-2.96
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9393">[ date ]</a>
+              <a href="thread.html#9393">[ thread ]</a>
+              <a href="subject.html#9393">[ subject ]</a>
+              <a href="author.html#9393">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+The build system's handling of libdir is broken.  It incorrectly
+hardcodes &lt;prefix&gt;/lib in the linker paths and pc files, ignoring
+libdir, which might be (for example) lib64.
+
+Regards and thanks
+-David Spencer
+gpsd packager for SlackBuilds.org
+
+-----------------
+
+This patch (1 of 2) fixes the link paths.
+
+diff --git a/SConstruct b/SConstruct
+index 333e9b7..3ff04ef 100644
+--- a/SConstruct
++++ b/SConstruct
+@@ -186,8 +186,8 @@ if env['CC'] == 'gcc':
+                             -D_GNU_SOURCE'''))
+
+ # Honor the specified installation prefix in link paths.
+-env.Prepend(LIBPATH=[os.path.join(env['prefix'], 'lib')])
+-env.Prepend(RPATH=[os.path.join(env['prefix'], 'lib')])
++env.Prepend(LIBPATH=[os.path.join(env['prefix'], env['libdir'])])
++env.Prepend(RPATH=[os.path.join(env['prefix'], env['libdir'])])
+
+ # Tell generated binaries to look in the current directory for
+ # shared libraries. Should be handled sanely by scons on all systems.
+
+-----------------
+
+This patch (2 of 2) fixes the pc files, by adding @libdir@ to the
+substituter function in SConstruct.
+
+**NOTE** this patch also thereby causes libgpsd.pc to actually get
+installed (it was previously missing).  The pc file for the Qt
+bindings is still missing -- see 'Unfinished items' at the top of
+SConstruct.
+
+diff --git a/SConstruct b/SConstruct
+index 3ff04ef..a14a8d3 100644
+--- a/SConstruct
++++ b/SConstruct
+@@ -850,6 +850,7 @@ def substituter(target, source, env):
+     substmap = (
+         ('@VERSION@', gpsd_version),
+         ('@prefix@',  env['prefix']),
++        ('@libdir@',  env['libdir']),
+         ('@PYTHON@',  sys.executable),
+         )
+     with open(str(source[0])) as sfp:
+@@ -959,7 +960,7 @@ python_install = [  python_extensions_install,
+                     python_egg_info_install]
+
+ pkgconfigdir = libdir + os.sep + 'pkgconfig'
+-pc_install = [ env.Install(pkgconfigdir, &quot;libgps.pc&quot;) ]
++pc_install = [ env.Install(pkgconfigdir, x) for x in (&quot;libgps.pc&quot;,
+&quot;libgpsd.pc&quot;) ]
+
+ maninstall = []
+ for manpage in base_manpages:
+diff --git a/libgps.pc.in b/libgps.pc.in
+index 6bd8a1f..1d3cef8 100644
+--- a/libgps.pc.in
++++ b/libgps.pc.in
+@@ -1,6 +1,6 @@
+ prefix=@prefix@
+ exec_prefix=${prefix}
+-libdir=${exec_prefix}/lib
++libdir=${exec_prefix}@libdir@
+ includedir=${prefix}/include
+
+ Name: GPSD
+diff --git a/libgpsd.pc.in b/libgpsd.pc.in
+index 93fee50..c377f63 100644
+--- a/libgpsd.pc.in
++++ b/libgpsd.pc.in
+@@ -1,6 +1,6 @@
+ prefix=@prefix@
+ exec_prefix=${prefix}
+-libdir=${exec_prefix}/lib
++libdir=${exec_prefix}@libdir@
+ includedir=${prefix}/include
+
+ Name: libgpsd
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009392.html">[Gpsd-dev] [BUG] [PATCH] Fix compiler flags in SConstruct
+</A></li>
+	<LI>Next message: <A HREF="009395.html">[Gpsd-dev] Bug in gpxlogger.c from gpsd-2.96
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9393">[ date ]</a>
+              <a href="thread.html#9393">[ thread ]</a>
+              <a href="subject.html#9393">[ subject ]</a>
+              <a href="author.html#9393">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

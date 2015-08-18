@@ -1,0 +1,109 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpspipes, O message based on RMC or GGA fix
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpspipes%2C%20O%20message%20based%20on%20RMC%20or%20GGA%20fix&In-Reply-To=%3C636kiCwPk1632S03.1159568170%40cmsweb03.cms.usa.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004468.html">
+   <LINK REL="Next"  HREF="004470.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpspipes, O message based on RMC or GGA fix</H1>
+    <B>Petr Slansky</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpspipes%2C%20O%20message%20based%20on%20RMC%20or%20GGA%20fix&In-Reply-To=%3C636kiCwPk1632S03.1159568170%40cmsweb03.cms.usa.net%3E"
+       TITLE="[Gpsd-dev] gpspipes, O message based on RMC or GGA fix">slansky at usa.net
+       </A><BR>
+    <I>Sat Sep 30 00:16:10 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004468.html">[Gpsd-dev] $PGRME message
+</A></li>
+        <LI>Next message: <A HREF="004470.html">[Gpsd-dev] gpspipes, O message based on RMC or GGA fix
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4469">[ date ]</a>
+              <a href="thread.html#4469">[ thread ]</a>
+              <a href="subject.html#4469">[ subject ]</a>
+              <a href="author.html#4469">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gentlemen,
+
+I run another strange configuration that couldbe described as chain of gpsd
+servers connected with &quot;gpspipe -r&quot;. Three gpsd server are running on one PC,
+first reads data from GPS, second and third read NMEA data from gpspipe, they
+are connected to chain (serial).
+
+I want t highlight, that both gpsd servers generate the same data but there is
+some time shift in NMEA senteces. And it results that xgps/cgps client
+connected to second gpsd oscilates between NOFIX/3D fix but client connected
+to the third gpsd oscilates between 2D/3D fix. Both clients get the same data!
+Example:
+
+GPSD,Y=GSV 1159566529.000 9:19 77 228 0 0:1 11 159 0 0:3 50 166 0 0:22 53 63
+39 1:18 16 49 22 1:11 30 279 0 0
+  GPSD,O=GGA 1159566530.000 0.005 50.047378 14.443647  300.70        ?       
+?             ?            ?  0.0
+  GPSD,O=RMC 1159566530.000 0.005 50.047378 14.443647  300.70 15.20        ?  
+0.0000    0.000  0.000          
+  GPSD,O=GSA 1159566530.000 0.005 50.047378 14.443647  300.70 15.20 21.60  
+0.0000    0.000  0.000             
+  GPSD,Y=GSV 1159566530.000 9:19 77 228 0 0:1 11 159 0 0:3 50 166 0 0:22 53 63
+46 1:18 16 49 21 1:11 30 279 0 0
+  GPSD,O=GGA 1159566531.000 0.005 50.047378 14.443647  300.70        ?       
+?             ?            ?  0.0
+  GPSD,O=RMC 1159566531.000 0.005 50.047378 14.443647  300.70 15.20        ?  
+0.0000    0.000  0.000        
+  GPSD,O=GSA 1159566531.000 0.005 50.047378 14.443647  300.70 15.20 21.60  
+0.0000    0.000  0.000           
+  
+Difference is that one gpsd starts cycle with GGA message (3D/2D fix) but
+second with RMC message (NOFIX/3D fix); one client can see only O messages
+based on RMC second client O messages based on GGA. Both gpsd clients produce
+the same messages at the output (gpspipe -w) but xgps and cgps filter just one
+O message from the stream. I am not sure what is impact on real application
+and if this could be fixed (or should be fixed). This behaviour is repeatable.
+I just want to highlight this, you can try this small experiment too. It could
+be problem, possibly related only to cgps and xgps.
+
+With regards,
+Petr
+
+
+---------------------------------
+  Petr Slansky, <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">slansky at usa.net</A>
+---------------------------------
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004468.html">[Gpsd-dev] $PGRME message
+</A></li>
+	<LI>Next message: <A HREF="004470.html">[Gpsd-dev] gpspipes, O message based on RMC or GGA fix
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4469">[ date ]</a>
+              <a href="thread.html#4469">[ thread ]</a>
+              <a href="subject.html#4469">[ subject ]</a>
+              <a href="author.html#4469">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

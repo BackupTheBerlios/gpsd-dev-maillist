@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] xgps leak
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20xgps%20leak&In-Reply-To=%3C10103.213.84.187.156.1119687516.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002223.html">
+   <LINK REL="Next"  HREF="002230.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] xgps leak</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20xgps%20leak&In-Reply-To=%3C10103.213.84.187.156.1119687516.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] xgps leak">gpsd at xs4all.nl
+       </A><BR>
+    <I>Sat Jun 25 10:18:36 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002223.html">[Gpsd-dev] Fix from future?
+</A></li>
+        <LI>Next message: <A HREF="002230.html">[Gpsd-dev] xgps leak
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2224">[ date ]</a>
+              <a href="thread.html#2224">[ thread ]</a>
+              <a href="subject.html#2224">[ subject ]</a>
+              <a href="author.html#2224">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I have found something that leaks.  Not in our software, but in the X server.
+But caused by xgps.
+
+After 3 copies of xgps ran for a couple of days, I noticed a lot of swap
+is in use:
+             total       used       free     shared    buffers     cached
+Mem:       1035776     992324      43452          0     174580      54756
+-/+ buffers/cache:     762988     272788
+Swap:      2104440    1444944     659496
+
+This is more than normal for my system.  I noticed it when switching to a
+virtual screen where mozilla is running.  It took several seconds to
+redraw.
+
+I did a &quot;ps axu&quot; and found these interesting lines:
+
+USER       PID %CPU %MEM   VSZ  RSS TTY      STAT START   TIME COMMAND
+root      7004  2.5 33.6 1861128 348460 ?    SL   Jun19 210:46 /usr/X11R6/bi
+ntp      18011  0.0  0.2  2696 2692 ?        SLs  Jun19   0:00 /usr/sbin/ntp
+nobody   23105  0.0  0.0  7004  900 ?        S&lt;sl Jun21   0:17 /home/rob/src
+rob      28724  0.2  0.1  7084 1968 pts/18   S    Jun22   9:03 /home/rob/src
+rob      28744  0.3  0.1  7084 2040 pts/18   S    Jun22  14:52 /home/rob/src
+rob      28759  0.2  0.1  7084 1936 pts/18   S    Jun22   9:44 /home/rob/src
+
+So the gps programs were not consuming that much memory.
+I still stopped the 3 xgps programs (the last three in this list) and then
+the X server showed:
+root      7004  2.5  2.2 367140 23424 ?      SL   Jun19 210:49 /usr/X11R6/bi
+
+So there certainly is a relation here.
+Unfortunately I have zero knowledge about X programming.  I would guess
+some kind of session or operation is started and never ended, or something
+is said to be saved, but apparently it remains related to the specific
+window because the X server neatly frees it once the program disconnects.
+
+If the system had less memory and swap it could have been into trouble
+because of this.  Maybe it explains the slowdown on other systems?
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002223.html">[Gpsd-dev] Fix from future?
+</A></li>
+	<LI>Next message: <A HREF="002230.html">[Gpsd-dev] xgps leak
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2224">[ date ]</a>
+              <a href="thread.html#2224">[ thread ]</a>
+              <a href="subject.html#2224">[ subject ]</a>
+              <a href="author.html#2224">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

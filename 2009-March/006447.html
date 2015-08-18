@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] stray makefiles after clean
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20stray%20makefiles%20after%20clean&In-Reply-To=%3Crmiab80ew6a.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006446.html">
+   <LINK REL="Next"  HREF="006448.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] stray makefiles after clean</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20stray%20makefiles%20after%20clean&In-Reply-To=%3Crmiab80ew6a.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] stray makefiles after clean">gdt at ir.bbn.com
+       </A><BR>
+    <I>Wed Mar  4 23:54:21 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006446.html">[Gpsd-dev] stray makefiles after clean
+</A></li>
+        <LI>Next message: <A HREF="006448.html">[Gpsd-dev] stray makefiles after clean
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6447">[ date ]</a>
+              <a href="thread.html#6447">[ thread ]</a>
+              <a href="subject.html#6447">[ subject ]</a>
+              <a href="author.html#6447">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+&quot;Gary E. Miller&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt; writes:
+
+&gt;<i> On Wed, 4 Mar 2009, Greg Troxel wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> I wonder if we can make cleaning of the manpages dependent on finding
+</I>&gt;&gt;<i> xslt at configure time.  Thinking about your use case, it seems right to
+</I>&gt;&gt;<i> delete them if we created them, and leave them alone if we didn't.  I
+</I>&gt;&gt;<i> think this is pretty easy to do and will try it out.
+</I>&gt;<i>
+</I>&gt;<i> That works for me.  Except I have xslt (and love it), it is something
+</I>&gt;<i> else preventing man pages building for me.  Not sure what my problem
+</I>&gt;<i> is but I see it commonly.
+</I>
+I went to make this change, but I noticed the whole how-to-build
+manpages was already wrapped in
+
+  if HAVE_XSLT_PROCESSOR
+
+Running make, this is the command:
+
+  xsltproc --nonet <A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A> gps.xml
+
+and it seems that works.  So I wonder if you can send the error output -
+it could be that one needs a docboook DTD also and you don't have that
+and we should checking add that to configure.ac.
+
+
+This patch makes the intent a little clearer, but I don't think it will
+help you.
+
+Index: Makefile.am
+===================================================================
+--- Makefile.am	(revision 5368)
++++ Makefile.am	(working copy)
+@@ -249,6 +249,9 @@
+ man_MANS = \
+ 	$(BUILT_MANPAGES)
+ 
++# Only clean manpages if we built them.
++CLEAN_MANPAGES=	$(BUILT_MANPAGES)
++
+ .xml.1:
+ 	$(MANGENERATOR) $(MANFLAGS) $(MANTARGET) $&lt;
+ 
+@@ -348,7 +351,7 @@
+ 	libgpsd.pc.in \
+ 	gpscap.ini
+ 
+-CLEANFILES = $(BUILT_SOURCES) test_float *.core $(PYEXTENSIONS) $(BUILT_MANPAGES)
++CLEANFILES = $(BUILT_SOURCES) test_float *.core $(PYEXTENSIONS) $(CLEAN_MANPAGES)
+ 
+ pkgconfig_DATA = libgps.pc libgpsd.pc
+ pkgconfigdir = $(libdir)/pkgconfig
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 193 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090304/3dc26a96/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090304/3dc26a96/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006446.html">[Gpsd-dev] stray makefiles after clean
+</A></li>
+	<LI>Next message: <A HREF="006448.html">[Gpsd-dev] stray makefiles after clean
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6447">[ date ]</a>
+              <a href="thread.html#6447">[ thread ]</a>
+              <a href="subject.html#6447">[ subject ]</a>
+              <a href="author.html#6447">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] endless loop, 100% cpu
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20endless%20loop%2C%20100%25%20cpu&In-Reply-To=%3C200505081605.58045.remco%40rvt.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001602.html">
+   <LINK REL="Next"  HREF="001605.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] endless loop, 100% cpu</H1>
+    <B>Remco Treffkorn</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20endless%20loop%2C%20100%25%20cpu&In-Reply-To=%3C200505081605.58045.remco%40rvt.com%3E"
+       TITLE="[Gpsd-dev] endless loop, 100% cpu">remco at rvt.com
+       </A><BR>
+    <I>Mon May  9 01:05:57 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001602.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+        <LI>Next message: <A HREF="001605.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1604">[ date ]</a>
+              <a href="thread.html#1604">[ thread ]</a>
+              <a href="subject.html#1604">[ subject ]</a>
+              <a href="author.html#1604">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sunday 08 May 2005 15:22, Remco Treffkorn wrote:
+&gt;<i> So I have gpsd compiled without sirf support
+</I>&gt;<i> As soon as gpsd sees the first $GPVTG sentence, it goes catatonic.
+</I>
+After this sentence is seen [ something goes wrong ] then the input buffer 
+fills up till it is full. Somehow delivery of the data in the buffer is never 
+triggered, so it fills up.
+Now the fun begins. Packet_get computes the available space (correctly) as 0 
+bytes. Then this adds insult to injury:
+
+    if (waiting &gt; room)
+        waiting = room;
+
+Waiting was the number of bytes available, but since room is zero waiting 
+becomes 0. And the we read zero bytes from the device, and that is 
+successful!
+
+Everybody is quite happy. The you do the next select, and that returns 
+immediately, since the data was never read in the first place.
+
+It's a very complex tied endless loop.
+
+I don't think we should put code into packet_get to handle something like 
+this, because there is really no way to recover from this.
+
+Cheers,
+Remco
+
+-- 
+Remco Treffkorn (RT445)
+HAM DC2XT
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001602.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+	<LI>Next message: <A HREF="001605.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1604">[ date ]</a>
+              <a href="thread.html#1604">[ thread ]</a>
+              <a href="subject.html#1604">[ subject ]</a>
+              <a href="author.html#1604">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

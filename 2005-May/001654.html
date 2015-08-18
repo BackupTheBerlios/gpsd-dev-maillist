@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] RE: Apparent bug in SiRF firmware
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20RE%3A%20Apparent%20bug%20in%20SiRF%20firmware&In-Reply-To=%3C134C86E29965B848959E7722A562887124B9B4%40ssfmail.sirf.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001689.html">
+   <LINK REL="Next"  HREF="001658.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] RE: Apparent bug in SiRF firmware</H1>
+    <B>Carl Carter</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20RE%3A%20Apparent%20bug%20in%20SiRF%20firmware&In-Reply-To=%3C134C86E29965B848959E7722A562887124B9B4%40ssfmail.sirf.com%3E"
+       TITLE="[Gpsd-dev] RE: Apparent bug in SiRF firmware">ccarter at sirf.com
+       </A><BR>
+    <I>Sat May 14 01:50:34 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001689.html">[Gpsd-dev] gpsd callback and c++ patch
+</A></li>
+        <LI>Next message: <A HREF="001658.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1654">[ date ]</a>
+              <a href="thread.html#1654">[ thread ]</a>
+              <a href="subject.html#1654">[ subject ]</a>
+              <a href="author.html#1654">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Here is the code that handles message 105:
+
+/* 105: Set debug message ON/OFF */
+/* $PSRF105,&lt;debug&gt;*CKSUM        */
+static int Input105( UMHandle hMsg, UINT8 MsgId, UINT8 *pMsg, int MsgLen
+)
+{
+   int Flag;
+   if( 1 != sscanf( (char*) pMsg, &quot;%d&quot;, &amp;Flag ) )
+   {
+      DebugPrintf( &quot;Nak Input105.&quot; );
+      return 0;
+   }
+   DebugEnabled = Flag ? TRUE : FALSE;
+   DebugPrintf( &quot;Ack Input105.&quot; );
+   return 1;
+}
+
+Note that the response is a call to DebugPrintf ().  That function is
+supposed to interject its message in between the end of the current
+message being sent and the next one queued, sort of a priority message.
+The code you are using is, as I recall, 2.2.0, which may have had a bug,
+but that is older code I no longer have on my system so I can't test it
+any longer.  To the best of my knowledge that is not happening any more.
+I have not heard any customers reporting it with current code.
+
+Carl 
+
+
+Carl Carter
+Field Application Engineer
+SiRF Technology, Inc.
+1231 East Dyer Road, Suite 200
+Santa Ana, California 92705 USA
+Phone (direct) 1-714-435-4902
+          (main)  1-714-435-4900
+          (fax)     1-714-435-4993
+
+-----Original Message-----
+From: Eric S. Raymond [mailto:<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>] 
+Sent: Friday, May 13, 2005 12:00 PM
+To: Carl Carter
+Cc: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>
+Subject: Apparent bug in SiRF firmware
+
+Look at this...
+
+gpsd: Selecting Generic NMEA driver...
+gpsd: =&gt; GPS: $PSRF105,1*3E
+
+gpsd: &lt;= GPS: $GPGSA,A,3,26,22,15,09,,,,,,,,,9.5,3.1,9.0*3C
+gpsd: GPGSA sets mode 3
+gpsd: &lt;= GPS: $GPRMC,185313.6W,185313.691,A*$Ack Input105.
+gpsd: &lt;= GPS:
+$GPGGA,185314.691,4002.1140,N,07531.1790,W,1,04,3.1,-5.6,M,-33.8,M,0.0,0
+000*64
+gpsd: GPGGA sets status 1
+
+This response: &quot;$GPRMC,185313.6W,185313.691,A*$Ack Input105.&quot; just
+doesn't look right.  Why wasn't a checksum and \r\n emitted before the
+$Ack?  Is it a known bug that this happens occasionally?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+&quot;The great object is, that every man be armed. [...] Every one who is
+able may have a gun.&quot;
+        -- Patrick Henry, speech of June 14 1788
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001689.html">[Gpsd-dev] gpsd callback and c++ patch
+</A></li>
+	<LI>Next message: <A HREF="001658.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1654">[ date ]</a>
+              <a href="thread.html#1654">[ thread ]</a>
+              <a href="subject.html#1654">[ subject ]</a>
+              <a href="author.html#1654">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

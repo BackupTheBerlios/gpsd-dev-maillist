@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] volatile (was: Re: Compile warning Mac OS X 10.6.6 - Xcode 3.2.5)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20volatile%20%28was%3A%20Re%3A%20Compile%20warning%20Mac%20OS%20X%2010.6.6%20-%0A%20Xcode%203.2.5%29&In-Reply-To=%3Calpine.LNX.1.00.1103211512170.22210%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008939.html">
+   <LINK REL="Next"  HREF="008940.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] volatile (was: Re: Compile warning Mac OS X 10.6.6 - Xcode 3.2.5)</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20volatile%20%28was%3A%20Re%3A%20Compile%20warning%20Mac%20OS%20X%2010.6.6%20-%0A%20Xcode%203.2.5%29&In-Reply-To=%3Calpine.LNX.1.00.1103211512170.22210%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] volatile (was: Re: Compile warning Mac OS X 10.6.6 - Xcode 3.2.5)">gem at rellim.com
+       </A><BR>
+    <I>Mon Mar 21 23:17:32 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008939.html">[Gpsd-dev] volatile (was: Re: Compile warning Mac OS X 10.6.6 - Xcode 3.2.5)
+</A></li>
+        <LI>Next message: <A HREF="008940.html">[Gpsd-dev] volatile (was: Re: Compile warning Mac OS X 10.6.6 - Xcode 3.2.5)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8941">[ date ]</a>
+              <a href="thread.html#8941">[ thread ]</a>
+              <a href="subject.html#8941">[ subject ]</a>
+              <a href="author.html#8941">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo H&#229;kan!
+
+On Mon, 21 Mar 2011, H&#229;kan Johansson wrote:
+
+&gt;<i> Just checked the generated assembler code (x86, gcc -O2), and indeed, without
+</I>&gt;<i> the volatile inside ntpshm_put and ntpshm_pps it generates one single add-by-2
+</I>&gt;<i> for count and just the set-1 for valid.  I.e. gcc does what it should do -
+</I>&gt;<i> optimise :-)
+</I>
+Thanks for the confirmation.  Great when practive and theory agree.
+
+&gt;<i> I do not agree with the system headers (of shmget??) being wrong, shared
+</I>&gt;<i> memory need not be treated with volatile.
+</I>
+I spoke in haste, the main problem was in gpsd, see the recent commits.
+OTOH, I can't see the point of using SHM if it is NOT volatile.  Not gonna
+go to the POSIX people and argue it as there are subtleties involved...
+
+&gt;<i>  Just inserting
+</I>&gt;<i>  asm volatile (&quot;&quot; : : : &quot;memory&quot;);
+</I>&gt;<i> where the barriers later are needed forces the compiler to not coalesce the
+</I>&gt;<i> two count/valid-updates.
+</I>
+Which I doubt is portable to non-gcc, so I intend to play with that after
+the imminent release.
+
+&gt;<i> For now, the volatile in ntpshm_put and ntpshm_pps makes things better. The
+</I>&gt;<i> volatile in getShmTime has no effect so may be omitted, thus removing the
+</I>&gt;<i> warning.  No need to make all session-&gt;context-&gt;shmTime volatile.
+</I>
+Yes, no need, but if someone writes new code that uses shmTime the volatile
+will generate a usefull warning.  Best to call a spade a spade as soon as you
+know it is a spade.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 109 NW Wilmington Ave., Suite E, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFNh85/BmnRqz71OvMRAl4aAJ47LstzRAazOR7eWf13Bm1P56QXHQCfSKy4
+2mHU7hwnzlQk3FC8cXGTtuU=
+=m8f1
+-----END PGP SIGNATURE-----
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008939.html">[Gpsd-dev] volatile (was: Re: Compile warning Mac OS X 10.6.6 - Xcode 3.2.5)
+</A></li>
+	<LI>Next message: <A HREF="008940.html">[Gpsd-dev] volatile (was: Re: Compile warning Mac OS X 10.6.6 - Xcode 3.2.5)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8941">[ date ]</a>
+              <a href="thread.html#8941">[ thread ]</a>
+              <a href="subject.html#8941">[ subject ]</a>
+              <a href="author.html#8941">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

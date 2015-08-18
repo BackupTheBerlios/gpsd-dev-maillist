@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Net::GPSD won't fix (possible gpsd error)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Net%3A%3AGPSD%20won%27t%20fix%20%28possible%20gpsd%20error%29&In-Reply-To=%3C4498E93E.1020803%40xmission.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003923.html">
+   <LINK REL="Next"  HREF="003932.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Net::GPSD won't fix (possible gpsd error)</H1>
+    <B>Brad Midgley</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Net%3A%3AGPSD%20won%27t%20fix%20%28possible%20gpsd%20error%29&In-Reply-To=%3C4498E93E.1020803%40xmission.com%3E"
+       TITLE="[Gpsd-dev] Net::GPSD won't fix (possible gpsd error)">bmidgley at xmission.com
+       </A><BR>
+    <I>Wed Jun 21 08:37:50 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003923.html">[Gpsd-dev] Net::GPSD won't fix (possible gpsd error)
+</A></li>
+        <LI>Next message: <A HREF="003932.html">[Gpsd-dev] Net::GPSD won't fix (possible gpsd error)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3924">[ date ]</a>
+              <a href="thread.html#3924">[ thread ]</a>
+              <a href="subject.html#3924">[ subject ]</a>
+              <a href="author.html#3924">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Michael
+
+&gt;&gt;<i> You have S=1 (fix) AND M=0 (no mode value yet seen).
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Huh???  AFAIK you should NOT have an S=1 and M=0.  You only have 14
+</I>&gt;&gt;<i> parameters for O so you have an older version of GPSD.  What is your
+</I>&gt;&gt;<i> hardware?
+</I>&gt;<i> 
+</I>&gt;<i> I was expecting an reply on this but, never got one.
+</I>
+fwiw, I check both now. I've been able to use the cgi below from my
+remote google-map mashup, so the proof of concept is finally working.
+(The script would be much simpler to use if it ran its own mini http
+service instead of requiring apache.)
+
+#!/usr/bin/perl -w
+
+# run as a cgi behind apache etc
+# redirect requests to the target url provided in the request
+# with the gps values tacked on the url
+# this makes the values available to javascript downloaded from the target
+
+use strict;
+use Net::GPSD;It
+use CGI::Request;
+
+my $g=new Net::GPSD;
+my $p=$g-&gt;get;
+my $fix;
+if(!defined $p-&gt;fix) {
+        $fix = 0;
+} elsif($p-&gt;fix == 0 &amp;&amp; $p-&gt;{'S'}-&gt;[0] != 0) {
+        $fix = $p-&gt;{'S'}-&gt;[0];
+} else {
+        $fix = $p-&gt;fix;
+}
+
+my $req = new CGI::Request;
+my $url = $req-&gt;param('url') || &quot;none&quot;;
+$url .= &quot;?fix=&quot; . $fix;
+$url .= &quot;&amp;lat=&quot; . $p-&gt;lat if $p-&gt;lat;
+$url .= &quot;&amp;lon=&quot; . $p-&gt;lon if $p-&gt;lon;
+$url .= &quot;&amp;heading=&quot; . $p-&gt;heading if $p-&gt;heading;
+$url .= &quot;&amp;speed=&quot; . $p-&gt;speed if $p-&gt;speed;
+$url .= &quot;&amp;mode=&quot; . $p-&gt;mode if $p-&gt;mode;
+$url .= &quot;&amp;time=&quot; . $p-&gt;time if $p-&gt;time;
+$url .= &quot;&amp;alt=&quot; . $p-&gt;alt if $p-&gt;alt;
+$url .= &quot;&amp;climb=&quot; . $p-&gt;climb if $p-&gt;climb;
+
+print &quot;Location: $url\n\n&quot;;
+
+Brad
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003923.html">[Gpsd-dev] Net::GPSD won't fix (possible gpsd error)
+</A></li>
+	<LI>Next message: <A HREF="003932.html">[Gpsd-dev] Net::GPSD won't fix (possible gpsd error)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3924">[ date ]</a>
+              <a href="thread.html#3924">[ thread ]</a>
+              <a href="subject.html#3924">[ subject ]</a>
+              <a href="author.html#3924">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

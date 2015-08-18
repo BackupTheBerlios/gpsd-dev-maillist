@@ -1,0 +1,90 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Eliminating dynamic-memory allocation from the daemon
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Eliminating%20dynamic-memory%20allocation%20from%20the%20daemon&In-Reply-To=%3C200506272217.j5RMH8dK014144%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002250.html">
+   <LINK REL="Next"  HREF="002244.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Eliminating dynamic-memory allocation from the daemon</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Eliminating%20dynamic-memory%20allocation%20from%20the%20daemon&In-Reply-To=%3C200506272217.j5RMH8dK014144%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Eliminating dynamic-memory allocation from the daemon">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Tue Jun 28 00:17:08 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002250.html">[Gpsd-users] Re: [Gpsd-dev] Considering a 2.27 point release
+</A></li>
+        <LI>Next message: <A HREF="002244.html">[Gpsd-dev] Eliminating dynamic-memory allocation from the daemon
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2242">[ date ]</a>
+              <a href="thread.html#2242">[ thread ]</a>
+              <a href="subject.html#2242">[ subject ]</a>
+              <a href="author.html#2242">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>The best way to avoid long-term memory leaks is to have no dynamic-memory
+allocation in the code at all.  Rather to my own surprise, I have worked
+out a way to do this.  I know how to get rid of all but one use of 
+calloc/malloc/strdup/free from the daeon.
+
+The odd one out is in the Garmin driver.  Gary uses calloc() to
+allocate a buffer with a size that is compile-time-fixed at
+sizeof(Packet_t).  The point of this exercise is obviously so the
+gps_device_t structure declaration does not have to know the size
+and shape of the packet structure.
+
+Gary, given that the structure is declared with #pragma pack(1), that
+size really ought to be an architecture-independent constant.  Can I
+get you to patch the code to 
+
+(a) declare that constant explicitl, and 
+
+(b) Use #if/#error in garmin.c to check that it's &gt;= sizeof(Packet_t)?
+
+I realize that it's a bit ugly, but if you do this I can follow up
+with another patch that will make memory leaks impossible.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+(Those) who are trying to read the Second Amendment out of the Constitution by
+claiming it's not an individual right (are) courting disaster by encouraging
+others to use the same means to eliminate portions of the Constitution they
+don't like.
+	-- Alan Dershowitz, Harvard Law School
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002250.html">[Gpsd-users] Re: [Gpsd-dev] Considering a 2.27 point release
+</A></li>
+	<LI>Next message: <A HREF="002244.html">[Gpsd-dev] Eliminating dynamic-memory allocation from the daemon
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2242">[ date ]</a>
+              <a href="thread.html#2242">[ thread ]</a>
+              <a href="subject.html#2242">[ subject ]</a>
+              <a href="author.html#2242">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

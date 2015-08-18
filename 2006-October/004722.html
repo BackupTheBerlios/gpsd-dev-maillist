@@ -1,0 +1,137 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] Tidy pydoc output for gps.py
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Tidy%20pydoc%20output%20for%20gps.py&In-Reply-To=%3C454531AE.2040304%40knitter.ch%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004716.html">
+   <LINK REL="Next"  HREF="004727.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] Tidy pydoc output for gps.py</H1>
+    <B>Andreas Stricker</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Tidy%20pydoc%20output%20for%20gps.py&In-Reply-To=%3C454531AE.2040304%40knitter.ch%3E"
+       TITLE="[Gpsd-dev] [PATCH] Tidy pydoc output for gps.py">andy at knitter.ch
+       </A><BR>
+    <I>Sun Oct 29 23:56:46 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004716.html">[Gpsd-dev] xml and man pages in svn
+</A></li>
+        <LI>Next message: <A HREF="004727.html">[Gpsd-dev] [PATCH] Tidy pydoc output for gps.py
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4722">[ date ]</a>
+              <a href="thread.html#4722">[ thread ]</a>
+              <a href="subject.html#4722">[ subject ]</a>
+              <a href="author.html#4722">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+I frequently use the help() command on modules. gps.py is cluttered
+by the import of the math module into the gps name space. One way
+around this is the usage of __all__ (bad maintainability) or the
+use of the full module name math.xxx (more to write). This patch
+tries the second approach. Tested by invoking affected functions.
+
+Index: gps.py
+===================================================================
+- --- gps.py	(Revision 3701)
++++ gps.py	(Arbeitskopie)
+@@ -4,7 +4,7 @@
+ # gps.py -- Python interface to GPSD.
+ #
+ import time, calendar, socket, sys, thread
+- -from math import *
++import math
+
+ # Needed in all versions of Python that don't implement
+ # PEP 75 (<A HREF="http://python.fyxm.net/peps/pep-0754.html">http://python.fyxm.net/peps/pep-0754.html</A>).
+@@ -446,7 +446,7 @@
+
+ def Deg2Rad(x):
+     &quot;Degrees to radians.&quot;
+- -    return x * (pi/180)
++    return x * (math.pi/180)
+
+ def CalcRad(lat):
+     &quot;Radius of curvature in meters at specified latitude.&quot;
+@@ -464,7 +464,7 @@
+     # a = 6378 km (3963 mi) Equatorial radius (surface to center distance)
+     # b = 6356.752 km (3950 mi) Polar radius (surface to center distance)
+     # e = 0.081082 Eccentricity
+- -    sc = sin(Deg2Rad(lat))
++    sc = math.sin(Deg2Rad(lat))
+     x = a * (1.0 - e2)
+     z = 1.0 - e2 * sc * sc
+     y = pow(z, 1.5)
+@@ -475,20 +475,20 @@
+
+ def EarthDistance((lat1, lon1), (lat2, lon2)):
+     &quot;Distance in meters between two points specified in degrees.&quot;
+- -    x1 = CalcRad(lat1) * cos(Deg2Rad(lon1)) * sin(Deg2Rad(90-lat1))
+- -    x2 = CalcRad(lat2) * cos(Deg2Rad(lon2)) * sin(Deg2Rad(90-lat2))
+- -    y1 = CalcRad(lat1) * sin(Deg2Rad(lon1)) * sin(Deg2Rad(90-lat1))
+- -    y2 = CalcRad(lat2) * sin(Deg2Rad(lon2)) * sin(Deg2Rad(90-lat2))
+- -    z1 = CalcRad(lat1) * cos(Deg2Rad(90-lat1))
+- -    z2 = CalcRad(lat2) * cos(Deg2Rad(90-lat2))
+- -    a = (x1*x2 + y1*y2 + z1*z2)/pow(CalcRad((lat1+lat2)/2),2)
++    x1 = CalcRad(lat1) * math.cos(Deg2Rad(lon1)) * math.sin(Deg2Rad(90-lat1))
++    x2 = CalcRad(lat2) * math.cos(Deg2Rad(lon2)) * math.sin(Deg2Rad(90-lat2))
++    y1 = CalcRad(lat1) * math.sin(Deg2Rad(lon1)) * math.sin(Deg2Rad(90-lat1))
++    y2 = CalcRad(lat2) * math.sin(Deg2Rad(lon2)) * math.sin(Deg2Rad(90-lat2))
++    z1 = CalcRad(lat1) * math.cos(Deg2Rad(90-lat1))
++    z2 = CalcRad(lat2) * math.cos(Deg2Rad(90-lat2))
++    a = (x1*x2 + y1*y2 + z1*z2)/pow(CalcRad((lat1+lat2)/2), 2)
+     # a should be in [1, -1] but can sometimes fall outside it by
+     # a very small amount due to rounding errors in the preceding
+     # calculations (this is prone to happen when the argument points
+     # are very close together).  Thus we constrain it here.
+     if abs(a) &gt; 1: a = 1
+     elif a &lt; -1: a = -1
+- -    return CalcRad((lat1+lat2) / 2) * acos(a)
++    return CalcRad((lat1+lat2) / 2) * math.acos(a)
+
+ def MeterOffset((lat1, lon1), (lat2, lon2)):
+     &quot;Return offset in meters of second arg from first.&quot;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.5 (GNU/Linux)
+
+iD8DBQFFRTGrbJa6vxmEnbARAimOAJ9VUoAcbW7TBFcndSuo5MfeiVfgEgCeMMQ8
+bvhEXk8FLVd+mT1Vy+XMCpM=
+=vEEI
+-----END PGP SIGNATURE-----
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004716.html">[Gpsd-dev] xml and man pages in svn
+</A></li>
+	<LI>Next message: <A HREF="004727.html">[Gpsd-dev] [PATCH] Tidy pydoc output for gps.py
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4722">[ date ]</a>
+              <a href="thread.html#4722">[ thread ]</a>
+              <a href="subject.html#4722">[ subject ]</a>
+              <a href="author.html#4722">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

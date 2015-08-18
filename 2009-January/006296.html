@@ -1,0 +1,124 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Patch against autogen.sh
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Patch%20against%20autogen.sh&In-Reply-To=%3C0E356609-5DC8-4B68-BEB1-2DB17B039BAE%40ledford.cc%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006295.html">
+   <LINK REL="Next"  HREF="006297.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Patch against autogen.sh</H1>
+    <B>Michael Ledford</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Patch%20against%20autogen.sh&In-Reply-To=%3C0E356609-5DC8-4B68-BEB1-2DB17B039BAE%40ledford.cc%3E"
+       TITLE="[Gpsd-dev] Patch against autogen.sh">michael at ledford.cc
+       </A><BR>
+    <I>Mon Jan 12 23:42:00 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006295.html">[Gpsd-dev] USB vs. RS232
+</A></li>
+        <LI>Next message: <A HREF="006297.html">[Gpsd-dev] Patch against autogen.sh
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6296">[ date ]</a>
+              <a href="thread.html#6296">[ thread ]</a>
+              <a href="subject.html#6296">[ subject ]</a>
+              <a href="author.html#6296">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hello,
+
+On Mac OS X libtool and libtoolize have been renamed due to internal  
+conflicts. This patch provides for using glibtool and glibtoolize, the  
+renamed, instead when available and the operating system is recognized  
+as Darwin. Since I'm not sure how patches are sent to the list I  
+included it in the body and as an attachment.
+
+Sincerely,
+Michael
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: autogen_osx.diff
+Type: application/octet-stream
+Size: 1051 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090112/ef8139dc/attachment.obj">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090112/ef8139dc/attachment.obj</A>&gt;
+-------------- next part --------------
+
+
+======
+
+Index: autogen.sh
+===================================================================
+--- autogen.sh  (revision 4993)
++++ autogen.sh  (working copy)
+@@ -69,8 +69,15 @@
+         tput sgr0
+  fi
+
++GLIBTOOL=`which glibtool`
++if [[ $? -eq 0 &amp;&amp; `uname` = 'Darwin' ]]; then
++       LIBTOOL=${GLIBTOOL}
++else
++       LIBTOOL=`which libtool`
++fi
++
+  # Check libtool version
+-LT_VERSION=`libtool --version | sed -n -e 's#[^0-9]* \([0-9]*\)\.\ 
+([0-9]*\).*$#\1 \2#p'`
++LT_VERSION=`${LIBTOOL} --version | sed -n -e 's#[^0-9]* \([0-9]*\)\.\ 
+([0-9]*\).*$#\1 \2#p'`
+  LT_V1=`echo $LT_VERSION | awk '{print $1}'`
+  LT_V2=`echo $LT_VERSION | awk '{print $2}'`
+
+@@ -93,9 +100,16 @@
+         tput sgr0
+  fi
+
++GLIBTOOLIZE=`which glibtoolize`
++if [[ $? -eq 0 &amp;&amp; `uname` = &quot;Darwin&quot; ]]; then
++       LIBTOOLIZE=${GLIBTOOLIZE}
++else
++       LIBTOOLIZE=`which libtoolize`
++fi
++
+  echo Configuring build environment for gpsd
+  aclocal \
+-  &amp;&amp; libtoolize --force --copy \
++  &amp;&amp; ${LIBTOOLIZE} --force --copy \
+    &amp;&amp; autoheader --force \
+    &amp;&amp; automake --add-missing --foreign --copy  --include-deps \
+    &amp;&amp; autoconf --force \
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006295.html">[Gpsd-dev] USB vs. RS232
+</A></li>
+	<LI>Next message: <A HREF="006297.html">[Gpsd-dev] Patch against autogen.sh
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6296">[ date ]</a>
+              <a href="thread.html#6296">[ thread ]</a>
+              <a href="subject.html#6296">[ subject ]</a>
+              <a href="author.html#6296">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

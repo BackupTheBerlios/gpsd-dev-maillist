@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] A lightweight synchronization mechanism for shared	memory
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20A%20lightweight%20synchronization%20mechanism%20for%20shared%0A%09memory&In-Reply-To=%3CAANLkTim2jnwK6kn2daxi-BnOvg_CbVHRhsQhmL3is62a%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009011.html">
+   <LINK REL="Next"  HREF="009016.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] A lightweight synchronization mechanism for shared	memory</H1>
+    <B>Thomas Sprinkmeier</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20A%20lightweight%20synchronization%20mechanism%20for%20shared%0A%09memory&In-Reply-To=%3CAANLkTim2jnwK6kn2daxi-BnOvg_CbVHRhsQhmL3is62a%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] A lightweight synchronization mechanism for shared	memory">thomas.sprinkmeier at gmail.com
+       </A><BR>
+    <I>Fri Mar 25 04:29:16 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009011.html">[Gpsd-dev] A lightweight synchronization mechanism for shared	memory
+</A></li>
+        <LI>Next message: <A HREF="009016.html">[Gpsd-dev] A lightweight synchronization mechanism for shared memory
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9013">[ date ]</a>
+              <a href="thread.html#9013">[ thread ]</a>
+              <a href="subject.html#9013">[ subject ]</a>
+              <a href="author.html#9013">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 25 March 2011 13:41, Richard Allen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">rsaxvc at gmail.com</A>&gt; wrote:
+&gt;<i> Just a few small questions...
+</I>&gt;<i>
+</I>&gt;<i> On Mar 24, 2011 9:55 PM, &quot;Eric Raymond&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at snark.thyrsus.com</A>&gt; wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Between the ntp-hackers discussion of synchronization and my own growing
+</I>&gt;&gt;<i> interest in writing a shared-memory exporter for gpsd, I've had good
+</I>&gt;&gt;<i> reason
+</I>&gt;&gt;<i> to think recently about lightweight synchronization mechanism for shared
+</I>&gt;&gt;<i> memory.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> The case I'm addressing is one reader, one or more writers.
+</I>&gt;&gt;<i> The problem is that partial writes and partial reads may be mixed in
+</I>&gt;&gt;<i> any order, and the goal is for the reader to be have certainty when
+</I>&gt;&gt;<i> it has read the result of a complete write.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I think I have invented a mechanism that avoids contention due to
+</I>&gt;&gt;<i> blocking semaphores and is guaranteed correct under relatively weak
+</I>&gt;&gt;<i> assumptions. &#160;I present it for review and criticism.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Let's say we have a given struct payload_t we want to ship safely. &#160;On
+</I>&gt;&gt;<i> each update, we actually write a wrapper structure that looks like
+</I>&gt;&gt;<i> this:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> struct wrapper_t
+</I>&gt;&gt;<i> {
+</I>&gt;&gt;<i> &#160; &#160;int startguard;
+</I>&gt;&gt;<i> &#160; &#160;struct payload_t payload;
+</I>&gt;&gt;<i> &#160; &#160;int endguard;
+</I>&gt;&gt;<i> };
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> The sentinels startguard and endguard are initially zero. Before each
+</I>&gt;&gt;<i> write,
+</I>&gt;&gt;<i> they are incremented.
+</I>&gt;<i>
+</I>&gt;<i> After each write, are they decremented? Or do you mean first the startguard
+</I>&gt;<i> is incremented, then the critical section is updated, and last the endguard
+</I>&gt;<i> is incremented?
+</I>
+write:
+  monatomically increment endguard (possible? guaranteed?)
+  update payload
+  set startguard = endguard
+
+read:
+  copy structure FROM BEGINNING TO END!
+  assert(cpy.startguard == cpy.endguard)
+  use cpy.payload
+
+
+Thomas
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009011.html">[Gpsd-dev] A lightweight synchronization mechanism for shared	memory
+</A></li>
+	<LI>Next message: <A HREF="009016.html">[Gpsd-dev] A lightweight synchronization mechanism for shared memory
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9013">[ date ]</a>
+              <a href="thread.html#9013">[ thread ]</a>
+              <a href="subject.html#9013">[ subject ]</a>
+              <a href="author.html#9013">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

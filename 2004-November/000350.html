@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] State transition issues
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20State%20transition%20issues&In-Reply-To=%3CDDE5741BCE3D8047B49976319557A6A60F5360%40nnexchange.hq.netilla.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000349.html">
+   <LINK REL="Next"  HREF="000351.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] State transition issues</H1>
+    <B>Devin Heitmueller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20State%20transition%20issues&In-Reply-To=%3CDDE5741BCE3D8047B49976319557A6A60F5360%40nnexchange.hq.netilla.com%3E"
+       TITLE="[Gpsd-dev] State transition issues">dheitmueller at netilla.com
+       </A><BR>
+    <I>Sun Nov 28 18:49:15 CET 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000349.html">[Gpsd-dev] State transition issues
+</A></li>
+        <LI>Next message: <A HREF="000351.html">[Gpsd-dev] State transition issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#350">[ date ]</a>
+              <a href="thread.html#350">[ thread ]</a>
+              <a href="subject.html#350">[ subject ]</a>
+              <a href="author.html#350">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hello Eric,
+
+&gt;<i> This does not match the behavior I am seeing.
+</I>
+&gt;<i> When I unplug my GPS, I get an GPSD,X=0 on the next poll.  When I plug
+</I>&gt;<i> it back in, I get GPSD,X=1.  So my client never gets stuck in a state where
+</I>&gt;<i> it thinks the device is online when it's not.  Or am I misunderstanding your
+</I>&gt;<i> error case?
+</I>
+This could be some issue with my setup (but I doubt it).  I'm running Red Hat 9.0 and have a Garmin eTrex connected to /dev/ttyS0.  In this case, if gpsd is running and I disconnect the GPS from the serial port, I see alternating messages of X=1 then X=0.  When I added some more logging.  I believe gpsd_activate() is being called, which sends back X=1 because the open() call to the serial port succeeded.  However, the open() call succeeding has no bearing on whether a device is actually connected to the serial port.  If the serial port exists, the open() will succeed.  However, this does not mean the device should be considered as &quot;online&quot; just because /dev/ttyS0 exists.
+
+Then once gpsd_poll() runs, the read timeout occurs, causing the device to be taken offline.  This results in X=1 being sent and then gpsd_activate is called and the process starts over again.
+ 
+&gt;&gt;<i> Digging into the source shows that the issue appears to lie in the
+</I>&gt;&gt;<i> way the session-&gt;gNMEAdata.online_stamp is managed.  This time is
+</I>&gt;&gt;<i> used to indicate state transitions between online and offline.
+</I>&gt;&gt;<i> However it gets updated by gpsd_activate even if the device is not
+</I>&gt;&gt;<i> really connected to the serial port.
+</I>
+&gt;<i> What you write suggests that the open of the device can succeed without
+</I>&gt;<i> actually putting it on-line.  How is this possible?
+</I>
+Let's look at the code for gpsd_activate:
+
+int gpsd_activate(struct gps_session_t *session)
+/* acquire a connection to the GPS device */
+{
+    if ((session-&gt;gNMEAdata.gps_fd = gpsd_open(session-&gt;baudrate, session-&gt;device_type-&gt;stopbits, session)) &lt; 0)
+	return -1;
+    else {
+	session-&gt;gNMEAdata.online = 1;
+	REFRESH(session-&gt;gNMEAdata.online_stamp);
+	gpsd_report(1, &quot;gpsd_activate: opened GPS (%d)\n&quot;, session-&gt;gNMEAdata.gps_fd);
+
+	/* if there is an initializer and no trigger string, invoke it */
+	if (session-&gt;device_type-&gt;initializer &amp;&amp; !session-&gt;device_type-&gt;trigger)
+	    session-&gt;device_type-&gt;initializer(session);
+	return session-&gt;gNMEAdata.gps_fd;
+    }
+}
+
+If the gpsd_open() call succeeds, it will mark the device as online.  As I said above, as long as the serial port is present (regardless of whether the GPS is connected), the call will succeed.   I believe this is what is responsible for the device being declared online and then a second later being declared offline.
+
+Devin
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000349.html">[Gpsd-dev] State transition issues
+</A></li>
+	<LI>Next message: <A HREF="000351.html">[Gpsd-dev] State transition issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#350">[ date ]</a>
+              <a href="thread.html#350">[ thread ]</a>
+              <a href="subject.html#350">[ subject ]</a>
+              <a href="author.html#350">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

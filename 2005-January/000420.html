@@ -1,0 +1,190 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] Teach xgpsspeed to show kilometer per hour
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Teach%20xgpsspeed%20to%20show%20kilometer%20per%20hour&In-Reply-To=%3C20050103083001.GC24320%40us.netrek.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000418.html">
+   <LINK REL="Next"  HREF="000422.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] Teach xgpsspeed to show kilometer per hour</H1>
+    <B>James Cameron</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Teach%20xgpsspeed%20to%20show%20kilometer%20per%20hour&In-Reply-To=%3C20050103083001.GC24320%40us.netrek.org%3E"
+       TITLE="[Gpsd-dev] [PATCH] Teach xgpsspeed to show kilometer per hour">quozl at us.netrek.org
+       </A><BR>
+    <I>Mon Jan  3 09:30:01 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000418.html">[Gpsd-dev] [PATCH] Teach xgpsspeed to show kilometer per hour
+</A></li>
+        <LI>Next message: <A HREF="000422.html">[Gpsd-dev] [PATCH] Teach xgpsspeed to show kilometer per hour
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#420">[ date ]</a>
+              <a href="thread.html#420">[ thread ]</a>
+              <a href="subject.html#420">[ subject ]</a>
+              <a href="author.html#420">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sun, Jan 02, 2005 at 11:04:09PM -0500, Eric S. Raymond wrote:
+&gt;<i> Petter Reinholdtsen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">pere at hungry.com</A>&gt;:
+</I>&gt;<i> &gt; It might be better to allow setting the option using X resources as
+</I>&gt;<i> &gt; well, but I do not quite know how that API work. :)
+</I>&gt;<i> 
+</I>&gt;<i> Yes, this should be handled with an X resource.  Any of the X mavens 
+</I>&gt;<i> on the list want to volunteer?
+</I>
+How about this?  Untested, but compiles clean.
+
+Adds a &quot;--units&quot; command line option and a &quot;*units&quot; resource, which if
+set to &quot;kph&quot; will cause international standard display.  Defaults to
+miles per hour.  Leaves the &quot;-k&quot; option present.  Includes an edit to
+the man page source file gpsd.xml.
+
+I'm not sure if &quot;KNOTS_TO_KMPH&quot; is right usage.  units(1) interprets
+&quot;kmph&quot; this as kilo miles per hour.  Perhaps it should be
+&quot;KNOTS_TO_KPH&quot;.
+
+With a quick popen(3) and a dependency on units(1), the program could
+display in any units, even furlongs per fortnight.
+
+-- 
+James Cameron    mailto:<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">quozl at us.netrek.org</A>     <A HREF="http://quozl.netrek.org/">http://quozl.netrek.org/</A>
+-------------- next part --------------
+Index: xgpsspeed.c
+===================================================================
+--- xgpsspeed.c	(revision 1252)
++++ xgpsspeed.c	(working copy)
+@@ -9,6 +9,7 @@
+ #include &lt;X11/Shell.h&gt;
+ #include &lt;X11/Xaw/Label.h&gt;
+ #include &lt;X11/Xaw/Paned.h&gt;
++#include &lt;Xm/XmStrDefs.h&gt;
+ #include &lt;Tachometer.h&gt;
+ 
+ #include &quot;xgpsspeed.icon&quot;
+@@ -19,12 +20,14 @@
+ {&quot;-rv&quot;,		&quot;*reverseVideo&quot;,	XrmoptionNoArg,		&quot;TRUE&quot;},
+ {&quot;-nc&quot;,         &quot;*needleColor&quot;,         XrmoptionSepArg,        NULL},
+ {&quot;-needlecolor&quot;,&quot;*needleColor&quot;,         XrmoptionSepArg,        NULL},
++{&quot;--units&quot;,     &quot;*units&quot;,               XrmoptionSepArg,        NULL},
+ };
+ String fallback_resources[] = {NULL};
+ 
+ static struct gps_data_t *gpsdata;
+ static Widget tacho;
+-static double speedfactor = KNOTS_TO_MPH;
++static double speedfactor;
++static Widget toplevel;
+ 
+ static void update_display(char *buf UNUSED)
+ {
+@@ -37,17 +40,39 @@
+     gps_poll(gpsdata);
+ }
+ 
++static char *get_resource(char *name, char *default_value)
++{
++  XtResource xtr;
++  char *value = NULL;
++
++  xtr.resource_name = name;
++  xtr.resource_class = &quot;AnyClass&quot;;
++  xtr.resource_type = XmRString;
++  xtr.resource_size = sizeof(String);
++  xtr.resource_offset = 0;
++  xtr.default_type = XmRImmediate;
++  xtr.default_addr = default_value;
++  XtGetApplicationResources(toplevel, &amp;value, &amp;xtr, 1, NULL, 0);
++  if (value) return value;
++  return default_value;
++}
++
+ int main(int argc, char **argv)
+ {
+     Arg             args[10];
+     XtAppContext app;
+     int option;
+-    char *colon, *server = NULL, *port = DEFAULT_GPSD_PORT;
+-    Widget toplevel, base;
++    char *colon, *server = NULL, *port = DEFAULT_GPSD_PORT, *units;
++    Widget base;
+ 
+     toplevel = XtVaAppInitialize(&amp;app, &quot;xpsspeed.ad&quot;, 
+ 				 options, XtNumber(options),
+ 				 &amp;argc, argv, fallback_resources, NULL);
++
++    speedfactor = KNOTS_TO_MPH;
++    units = get_resource(&quot;units&quot;, &quot;mph&quot;);
++    if (!strcmp(units, &quot;kph&quot;)) speedfactor = KNOTS_TO_KMPH;
++
+     while ((option = getopt(argc, argv, &quot;?hkv&quot;)) != -1) {
+ 	switch (option) {
+ 	case 'k':
+@@ -57,7 +82,7 @@
+ 	    printf(&quot;xgpsspeed %s\n&quot;, VERSION);
+ 	    exit(0);
+ 	case 'h': case '?': default:
+-	    fputs(&quot;usage: gps [-?] [-h] [-v] [-rv] [-nc] [-needlecolor] [server[:port]]\n&quot;, stderr);
++	    fputs(&quot;usage: gps [-?] [-h] [-v] [-rv] [-nc] [-needlecolor] [--units {kph,mph}] [server[:port]]\n&quot;, stderr);
+ 	    exit(1);
+ 	}
+     }
+Index: gpsd.xml
+===================================================================
+--- gpsd.xml	(revision 1252)
++++ gpsd.xml	(working copy)
+@@ -44,6 +44,7 @@
+       &lt;arg choice='opt'&gt;-nc &lt;replaceable&gt;X-color&lt;/replaceable&gt;&lt;/arg&gt;
+       &lt;arg choice='opt'&gt;-h &lt;/arg&gt;
+       &lt;arg choice='opt'&gt;-v &lt;/arg&gt;
++      &lt;arg choice='opt'&gt;--units &lt;replaceable&gt;kph&lt;/replaceable&gt;&lt;/arg&gt;
+       &lt;arg choice='opt'&gt;&lt;replaceable&gt;server&lt;/replaceable&gt;&lt;/arg&gt;
+ &lt;/cmdsynopsis&gt;
+ 
+@@ -325,9 +326,10 @@
+ position information from the GPS. It accepts an -h option and
+ optional argument as for &lt;application&gt;gps&lt;/application&gt;, or a -v
+ option to dump the package version and exit.  Additionally, it accepts
+--rv (reverse video) and -nc (needle color) options. The misfeature of
+-previous versions that allowed it to direct-connect to the serial
+-device has been removed.&lt;/para&gt;
++-rv (reverse video) and -nc (needle color) options.&lt;/para&gt;
++&lt;para&gt;The --units option can be used to set the units for display;
++follow the keyword with either kph for kilometres per hour, or mph for
++miles per hour.  The default is miles per hour.&lt;/para&gt;
+ 
+ &lt;/refsect2&gt;
+ &lt;/refsect1&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000418.html">[Gpsd-dev] [PATCH] Teach xgpsspeed to show kilometer per hour
+</A></li>
+	<LI>Next message: <A HREF="000422.html">[Gpsd-dev] [PATCH] Teach xgpsspeed to show kilometer per hour
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#420">[ date ]</a>
+              <a href="thread.html#420">[ thread ]</a>
+              <a href="subject.html#420">[ subject ]</a>
+              <a href="author.html#420">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

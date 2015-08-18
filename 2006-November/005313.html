@@ -1,0 +1,149 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] The evil goto, considered occasionally helpful
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20The%20evil%20goto%2C%20considered%20occasionally%20helpful&In-Reply-To=%3Cc32efac40611261234v449e929dnf78e1cbcbdf9e3c3%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005312.html">
+   <LINK REL="Next"  HREF="005383.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] The evil goto, considered occasionally helpful</H1>
+    <B>Dave Hylands</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20The%20evil%20goto%2C%20considered%20occasionally%20helpful&In-Reply-To=%3Cc32efac40611261234v449e929dnf78e1cbcbdf9e3c3%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] The evil goto, considered occasionally helpful">dhylands at gmail.com
+       </A><BR>
+    <I>Sun Nov 26 21:34:12 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005312.html">[Gpsd-dev] The evil goto, considered occasionally helpful
+</A></li>
+        <LI>Next message: <A HREF="005383.html">[Gpsd-dev] TSIP - problem in v2.32
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5313">[ date ]</a>
+              <a href="thread.html#5313">[ thread ]</a>
+              <a href="subject.html#5313">[ subject ]</a>
+              <a href="author.html#5313">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Eric,
+
+&gt;<i> I've been writing C code for 24 years, which means that while there
+</I>&gt;<i> are people more expert in the language out there, you would have to
+</I>&gt;<i> work fairly hard to find them.  My nuts are more than large enough to
+</I>&gt;<i> use a goto when appropriate. :-)
+</I>
+I have been programming in C for almost as long (20 years).
+
+&gt;<i> Edsger Dijkstra noticed this was a bad idea. In 1968 he wrote a paper called
+</I>&gt;<i> &quot;Go To Considered harmful&quot;.  You can read it here:
+</I>&gt;<i> &lt;<A HREF="http://www.acm.org/classics/oct95/">http://www.acm.org/classics/oct95/</A>&gt;.  And you should, it's a classic.
+</I>
+I seem to recall that he wrote a followup article on this as well, but
+I can't remember.
+
+&gt;<i> The mavens of modern C style (which includes me, in a minor way) have
+</I>&gt;<i> broadly agreed on a set of heuristics for when goto is appropriate,
+</I>&gt;<i> and which are less restrictive than Dijkstra's taboo.  Here they are.
+</I>&gt;<i>
+</I>&gt;<i> 1. The goto backward is always forbidden.  It's just too confusing,
+</I>&gt;<i> and situations where you might think you need it are better handled with
+</I>&gt;<i> a looping construct or setjmp/longjmp.
+</I>
+The one exception to all of these rules is when you're writing
+performance code. I recall writing a state-machine based decompressor
+(for G4 fax compression). I got the code all working properly with no
+gotos. In the profiling stages, I discovered that the &quot;structured
+code&quot; overhead was significant, so I changed the design to use gotos,
+and managed to get a 15% improvement. This was mostly because I could
+goto the next state.
+
+Obviously, this was a core algorithim, and 90% of the code in any
+given program is typically not performance sensitive.
+
+&gt;<i> 3. The goto forward is permitted under specific circumstances, only
+</I>&gt;<i> when the code with goto is easier to read than the version without it.
+</I>
+The place that I like the forward goto is going to a a cleanup label,
+which is an exit from the function. This is espcially usefull when you
+need to release allocated memoy, close files etc and there are lots of
+error checks.
+
+A typical template looks like this:
+
+void foo( args)
+{
+    void *mem = NULL;
+    FILE *fs = NULL;
+    int rc;
+
+    if (( mem = malloc( somesize )) == NULL )
+    {
+        rc = ENOMEM;
+        goto cleanup;
+    }
+    if (( fs = fopen( &quot;SomeFile&quot;, &quot;r&quot; )) == NULL )
+    {
+        .. report error..
+        rc = errno;
+        goto cleanup;
+    }
+    ....
+    Read file
+    if ( error )
+    {
+        set rc
+        goto cleanp;
+    }
+
+
+    // Since we got this far, everything was successful
+
+    rc = 0;
+
+cleanup:
+    if ( mem != NULL )
+        free( mem );
+    if ( fs != NULL )
+        fclose( fs );
+
+    return rc;
+}
+
+-- 
+Dave Hylands
+Vancouver, BC, Canada
+<A HREF="http://www.DaveHylands.com/">http://www.DaveHylands.com/</A>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005312.html">[Gpsd-dev] The evil goto, considered occasionally helpful
+</A></li>
+	<LI>Next message: <A HREF="005383.html">[Gpsd-dev] TSIP - problem in v2.32
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5313">[ date ]</a>
+              <a href="thread.html#5313">[ thread ]</a>
+              <a href="subject.html#5313">[ subject ]</a>
+              <a href="author.html#5313">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

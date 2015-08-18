@@ -1,0 +1,87 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Input packets buffering bug(s)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3CAANLkTilMHHl_U-l4zPFSjGJqzedAPKhFEp9315YYlfIo%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007815.html">
+   <LINK REL="Next"  HREF="007818.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Input packets buffering bug(s)</H1>
+    <B>Jon Schlueter</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3CAANLkTilMHHl_U-l4zPFSjGJqzedAPKhFEp9315YYlfIo%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Input packets buffering bug(s)">jon.schlueter at gmail.com
+       </A><BR>
+    <I>Sat May 29 18:45:20 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007815.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+        <LI>Next message: <A HREF="007818.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7816">[ date ]</a>
+              <a href="thread.html#7816">[ thread ]</a>
+              <a href="subject.html#7816">[ subject ]</a>
+              <a href="author.html#7816">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sat, May 29, 2010 at 12:20 PM, Remco Treffkorn &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>&gt; wrote:
+&gt;<i> On Saturday, May 29, 2010, Jon Schlueter wrote:
+</I>&gt;&gt;<i> The hunch of the problem here is that read is reading from a UDP
+</I>&gt;&gt;<i> Socket (Datagrams) and
+</I>&gt;&gt;<i> if you don't read the whole datagram in you lose the rest of it... but
+</I>&gt;&gt;<i> things are committed already
+</I>&gt;<i>
+</I>&gt;<i> This is not how UDP works. Even for a WAG this one is far out there.
+</I>&gt;<i>
+</I>
+when you receive data from a UDP Socket you need to receive the whole datagram
+
+normally when reading data from a UDP Socket you use recvfrom() and
+you should read the whole datagram in one call, if you don't the rest
+of the data is gone.
+
+a quick google supports this assumptions from other people's comments
+
+<A HREF="http://www.answerspice.com/c119/1539555/c-nonblocking-udp-socket-what-do-i-get">http://www.answerspice.com/c119/1539555/c-nonblocking-udp-socket-what-do-i-get</A>
+<A HREF="http://fixunix.com/vxworks/48111-recvfrom-recv-socket-buffer.html">http://fixunix.com/vxworks/48111-recvfrom-recv-socket-buffer.html</A>
+
+now the way it is done in gpsd is to use a read to read all file
+descriptors regardless if it's a socket or a serial port once it's
+setup.  This worked when introduced because read was using a large
+enough buffer and read/recv and recvfrom all end up behaving the same
+way and to a limit can be used interchangeably..
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007815.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+	<LI>Next message: <A HREF="007818.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7816">[ date ]</a>
+              <a href="thread.html#7816">[ thread ]</a>
+              <a href="subject.html#7816">[ subject ]</a>
+              <a href="author.html#7816">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

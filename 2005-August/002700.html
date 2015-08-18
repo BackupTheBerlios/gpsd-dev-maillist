@@ -1,0 +1,84 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] garmin driver
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20garmin%20driver&In-Reply-To=%3C20050802053541.GA2776%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002699.html">
+   <LINK REL="Next"  HREF="002701.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] garmin driver</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20garmin%20driver&In-Reply-To=%3C20050802053541.GA2776%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] garmin driver">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Aug  2 07:35:41 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002699.html">[Gpsd-dev] garmin driver
+</A></li>
+        <LI>Next message: <A HREF="002701.html">[Gpsd-dev] garmin driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2700">[ date ]</a>
+              <a href="thread.html#2700">[ thread ]</a>
+              <a href="subject.html#2700">[ subject ]</a>
+              <a href="author.html#2700">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+&gt;<i> I am trying to figure out why the latest SVN HEAD does not work with my
+</I>&gt;<i> Garmin 18.  I see the GetPacket() routine being called, but not the
+</I>&gt;<i> garmin_parse_input().  Any ideas?  Still digging from this end...
+</I>
+I'll bet it was commit 3002 that did it.
+
+r3002 | esr | 2005-07-26 19:53:31 -0400 (Tue, 26 Jul 2005) | 12 lines
+
+Packetizing RTCM revealed a bug deep in the framework code -- one that only
+shows up when the device delivers less than one packet per cycle (e.g. normally
+1 per second).  It became manifest because gpsfake, unable to packetize RTCM, 
+inserts a delay between each *character* of an RTCM load.
+
+The bug was this: the packet getter was returning nz only when it saw a 
+complete packet.  What it needed to be doing (and does now) is return nz 
+when it has new data, whether that new data finishes a packet or not.  
+Otherwise the online check will spuriously fail if the device takes over a 
+second to deliver a packet completion -- even if it's getting new data 
+each time!
+
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002699.html">[Gpsd-dev] garmin driver
+</A></li>
+	<LI>Next message: <A HREF="002701.html">[Gpsd-dev] garmin driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2700">[ date ]</a>
+              <a href="thread.html#2700">[ thread ]</a>
+              <a href="subject.html#2700">[ subject ]</a>
+              <a href="author.html#2700">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,81 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] mkgmtime broken - date and time breaks down
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2008-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20mkgmtime%20broken%20-%20date%20and%20time%20breaks%20down&In-Reply-To=%3C22715.213.84.187.156.1199200160.squirrel%40webmail.xs4all.nl%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005927.html">
+   <LINK REL="Next"  HREF="005929.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] mkgmtime broken - date and time breaks down</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20mkgmtime%20broken%20-%20date%20and%20time%20breaks%20down&In-Reply-To=%3C22715.213.84.187.156.1199200160.squirrel%40webmail.xs4all.nl%3E"
+       TITLE="[Gpsd-dev] mkgmtime broken - date and time breaks down">gpsd at xs4all.nl
+       </A><BR>
+    <I>Tue Jan  1 16:09:20 CET 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005927.html">[Gpsd-dev] splint failure on tsip.c
+</A></li>
+        <LI>Next message: <A HREF="005929.html">[Gpsd-dev] mkgmtime broken - date and time breaks down
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5928">[ date ]</a>
+              <a href="thread.html#5928">[ thread ]</a>
+              <a href="subject.html#5928">[ subject ]</a>
+              <a href="author.html#5928">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+&gt;<i> Rob, I found code on the glibc man page for gmtime(3) that apppears to do
+</I>&gt;<i> the right thing and have committed it.  Please check that it works for
+</I>&gt;<i> you.
+</I>
+I don't like that solution very much.  The glibc approach to mktime is
+already very ineffecient, and has to handle many special cases that do not
+matter for UTC time.  Encapsulating it in a handler that sets an empty
+timezone does not make that much better.
+
+Actually, the original routine is not that bad, only it appears not to
+work for jan and feb of leapyears.
+What I meant with looking again at it is to see what tests only need to be
+done once and what could be done e.g. with 2 month-day tables, one for
+leap years.
+The test for leapyears in my first proposal could be extended to include
+the mod-100 and mod-400 cases and it would be OK.
+
+Rob
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005927.html">[Gpsd-dev] splint failure on tsip.c
+</A></li>
+	<LI>Next message: <A HREF="005929.html">[Gpsd-dev] mkgmtime broken - date and time breaks down
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5928">[ date ]</a>
+              <a href="thread.html#5928">[ thread ]</a>
+              <a href="subject.html#5928">[ subject ]</a>
+              <a href="author.html#5928">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

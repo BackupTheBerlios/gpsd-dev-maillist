@@ -1,0 +1,117 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-commit-watch] r2321 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r2321%20-%20trunk&In-Reply-To=%3C20050412202940.GF25626%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001337.html">
+   <LINK REL="Next"  HREF="001338.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-commit-watch] r2321 - trunk</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r2321%20-%20trunk&In-Reply-To=%3C20050412202940.GF25626%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-commit-watch] r2321 - trunk">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Apr 12 22:29:40 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001337.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2321 - trunk
+</A></li>
+        <LI>Next message: <A HREF="001338.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2321 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1341">[ date ]</a>
+              <a href="thread.html#1341">[ thread ]</a>
+              <a href="subject.html#1341">[ subject ]</a>
+              <a href="author.html#1341">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+&gt;<i> Yup.  You need to pick a policy, document it in the source, then the
+</I>&gt;<i> rest of us can try to be consistent to that.
+</I>
+Indeed I do.
+ 
+&gt;<i> &gt; 1. When a command returns ?, does that mean &quot;leave the corresponding
+</I>&gt;<i> &gt; field in the gps_fix_t or gps_data_t structure unchanged&quot; or &quot;fill the
+</I>&gt;<i> &gt; corresponding field with a recognizable out-of-band value?
+</I>&gt;<i> 
+</I>&gt;<i> I would slightly prefer to clear the data out.  That makes it less likely
+</I>&gt;<i> that a sloppy client might miss the flag meaning.  Reading invalid or
+</I>&gt;<i> uninitialized data is a recurring issue with all code.
+</I>&gt;<i> 
+</I>&gt;<i> A smart client can implement a &quot;coast mode&quot; if it wants by keeping it's
+</I>&gt;<i> own copy of prior data.
+</I>
+Making this sort of thing easier is the reason I factored the fix structure out
+of the GPS data structure.
+
+&gt;<i> &gt; 2. What should a client look for to determine if a given field has valid
+</I>&gt;<i> &gt; data in it?  The alternatives are:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; a) The status flag in the 'valid' field.
+</I>&gt;<i> &gt; b) Out-of-band value in the field itself.
+</I>&gt;<i> &gt; c) Value of the mode field (e.g. MODE_NO_FIX means lat/lon is no good)
+</I>&gt;<i> &gt; d) Age based on an associated timestamp.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Right now xgps mixes a, b, and c.  This is too complicated.
+</I>&gt;<i> 
+</I>&gt;<i> Prolly best that gpsd stick to the spirit of NMEA.  That is to have
+</I>&gt;<i> status flags/bits to denote invalid/valid data (a or c).  I could care
+</I>&gt;<i> less whether (a) or (c) but only one should be kept around.  Since bits
+</I>&gt;<i> are cheap these days I slightly prefer (a).
+</I>
+On the other hand, I would like (a) to have only one meaning -- not whether
+(b) is valid, but only whether it has been modified recently (e.g. since
+the last time the valid field was cleared).
+
+&gt;<i> Timestamps (d) have to be in there somewhere.  If the GPS just stops
+</I>&gt;<i> sending data an invalid condition can only be detected by a timer.  This
+</I>&gt;<i> could be a privater time that then implements one of (a), (b)  or (c).
+</I>
+Yes, I think that's policy and belongs in the client.
+ 
+&gt;<i> OTOH, debugging is easier with an out-of band value (b).  That way no
+</I>&gt;<i> chance that an invalid data point slips by a sloppy client and be
+</I>&gt;<i> seen by tthe user as seemingly valid.
+</I>&gt;<i> 
+</I>&gt;<i> So, being a belt-and-suspenders guy I would go with (a) and (b).
+</I>
+I think I'm going to go for out-of-band values to convey validity
+and the valid mask to convey &quot;set recently&quot;.  I guess I'll change
+the field name.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001337.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2321 - trunk
+</A></li>
+	<LI>Next message: <A HREF="001338.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2321 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1341">[ date ]</a>
+              <a href="thread.html#1341">[ thread ]</a>
+              <a href="subject.html#1341">[ subject ]</a>
+              <a href="author.html#1341">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

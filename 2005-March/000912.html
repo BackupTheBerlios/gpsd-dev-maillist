@@ -1,0 +1,94 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] The bedamned rate-limiting code
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20The%20bedamned%20rate-limiting%20code&In-Reply-To=%3C20050316193650.GA15544%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000910.html">
+   <LINK REL="Next"  HREF="000927.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] The bedamned rate-limiting code</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20The%20bedamned%20rate-limiting%20code&In-Reply-To=%3C20050316193650.GA15544%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] The bedamned rate-limiting code">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Mar 16 20:36:50 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000910.html">[Gpsd-dev] The bedamned rate-limiting code
+</A></li>
+        <LI>Next message: <A HREF="000927.html">[Gpsd-dev] The bedamned rate-limiting code
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#912">[ date ]</a>
+              <a href="thread.html#912">[ thread ]</a>
+              <a href="subject.html#912">[ subject ]</a>
+              <a href="author.html#912">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Chris Kuethe &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">ckuethe at ualberta.ca</A>&gt;:
+&gt;<i> I don't have my receivers on hand. I'll see about testing whether or not
+</I>&gt;<i> rate control works. Something disturbing: the description for message 4
+</I>&gt;<i> says that it is output at 1Hz. Not &quot;1 Hz or response to polling message&quot;
+</I>&gt;<i> but output at 1Hz. This may mean that message 4 can't be rate controlled.
+</I>
+Oh, crap.  That would neatly explain why trying to rate-limit MID4 has been
+driving me buggy.  But if it's really true, somebody at SiRF should be 
+horsewhipped.
+
+It's time to pull whatever strings you have at SiRF HQ.  We need a definitive
+answer on this.
+
+&gt;<i> &gt;Related issue.  I want to code up an initializer to enable SBAS
+</I>&gt;<i> &gt;in integrity mode. Do I need to explicitly set SBAS as the DGPS ource for 
+</I>&gt;<i> &gt;this to work?
+</I>&gt;<i> 
+</I>&gt;<i> I believe so. My take on it would be that for the &gt;95% of users who don't
+</I>&gt;<i> have DGPS beacon receivers, setting SBAS as the default would be the best
+</I>&gt;<i> option anyway. My receivers all seem to default to wanting RTCM on serial
+</I>&gt;<i> line B, and I need to kick them into WAAS mode.
+</I>
+OK, then let me see if I have this right.  I gather I'll need to send two
+messages...
+
+First, DGPS Source (133, 0x85) with the DGPS Source field set to 1.
+Then, Set SBAS Parameters (170, 0xaa) with SBAS PRN set to 0=Auto mode,
+SBAS Mode set to 1=Integrity, and flag bits 0.
+
+What the heck is an &quot;internal beacon receiver&quot;, anyway?  I gather consumer-
+grade GPSes don't have them?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000910.html">[Gpsd-dev] The bedamned rate-limiting code
+</A></li>
+	<LI>Next message: <A HREF="000927.html">[Gpsd-dev] The bedamned rate-limiting code
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#912">[ date ]</a>
+              <a href="thread.html#912">[ thread ]</a>
+              <a href="subject.html#912">[ subject ]</a>
+              <a href="author.html#912">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

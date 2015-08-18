@@ -1,0 +1,200 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] ntp-pps
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntp-pps&In-Reply-To=%3C18932.213.84.187.156.1158484061.squirrel%40webmail.xs4all.nl%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004329.html">
+   <LINK REL="Next"  HREF="004357.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] ntp-pps</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntp-pps&In-Reply-To=%3C18932.213.84.187.156.1158484061.squirrel%40webmail.xs4all.nl%3E"
+       TITLE="[Gpsd-dev] ntp-pps">gpsd at xs4all.nl
+       </A><BR>
+    <I>Sun Sep 17 11:07:41 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004329.html">[Gpsd-dev] ntp-pps
+</A></li>
+        <LI>Next message: <A HREF="004357.html">[Gpsd-dev] ntp-pps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4354">[ date ]</a>
+              <a href="thread.html#4354">[ thread ]</a>
+              <a href="subject.html#4354">[ subject ]</a>
+              <a href="author.html#4354">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+&gt;&gt;<i> &gt; Agreed.  I also see anothre problem in the saniuty checks in the
+</I>&gt;&gt;<i> ntp-pps
+</I>&gt;&gt;<i> &gt; code that makes assumptions about the relationship between fix time
+</I>&gt;&gt;<i> and
+</I>&gt;&gt;<i> &gt; pps time.  After we get this I'll work on those.
+</I>&gt;&gt;<i> &gt;
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I hope you don't mind that I mention that it was designed this way, and
+</I>&gt;&gt;<i> that I prefer you to lay down and discuss the &quot;problems&quot; you find in it
+</I>&gt;&gt;<i> over abusing your commit privileges and modifying the code to relax the
+</I>&gt;&gt;<i> designed checks (as you did before).
+</I>&gt;<i>
+</I>&gt;<i> Well, I only wanted to work on one problem at a time, but since you ae
+</I>&gt;<i> in a hurry again lets do it.
+</I>
+I am not in a hurry, I only post this message because I hate to find yet
+another &quot;fix&quot; from you introduced in a gpsd release version without
+adequate discussion and testing by others.  And as Eric is in release mode
+again, I need to be alert.
+
+
+&gt;<i> This is community debugging.  You have had a long time to fix it and it
+</I>&gt;<i> is still broken.
+</I>
+It is not broken.  You call it broken, but I think you are the only one
+having problems.  At least, problems have not been reported here by
+others.
+I have tested the code on three different receivers, running three
+different   protocols, and it worked on all of them.
+
+&gt;&gt;<i> The code was written with the intention to first have the NTP daemon
+</I>&gt;&gt;<i> lock
+</I>&gt;&gt;<i> to the message-based time and be well within a second (I chose 400ms
+</I>&gt;&gt;<i> because I feel it should stay far away from possible plus-or-minus one
+</I>&gt;&gt;<i> second confusion), and after that lock to the nearest second using the
+</I>&gt;&gt;<i> PPS
+</I>&gt;&gt;<i> pulse.
+</I>&gt;<i>
+</I>&gt;<i> Well, see that is my problem.  The time from my PPS to my NMEA time
+</I>&gt;<i> seems to be about 550mS (as gpsd computes it with the fudge factors).
+</I>&gt;<i> That has been pretty rock solid for a long time.  So the +/- 400mS is
+</I>&gt;<i> just plain wrong for my setup.
+</I>
+Then you can adjust the fudge to compensate.
+As I wrote, the offset for NMEA is hard to get right because there are so
+many different implementations for NMEA.
+The offset should be settable inside gpsd but Eric does not want
+configuration so it has to be solved elsewhere.
+
+
+&gt;<i> PPS has no idea of WHAT second this is, so the worst damage it could do is
+</I>&gt;<i> move things under the one second window fixed by the NMEA time.
+</I>
+No, the worst damage it can do is to lock plus or minus one second.
+That is because the PPS monitor adds in the absolute time of the
+systemclock with the relative time of the PPS pulses, and hands the result
+to ntpd.
+That is because I would not know how to hand over a PPS-specific offset
+value to ntpd via the ntpshm mechanism.  ntpd has internal support for PPS
+clocks that can do it, but no external interface for it AFAIK.
+
+So, when there are no checks and the clock is more than 500ms off (as it
+seems to be for you), and there are no other external references to
+compare with, the system clock will happily lock off by one second,  That
+is bad and must be avoided.
+
+&gt;&gt;<i> There are hardcoded offsets from message time to real time in the code.
+</I>&gt;&gt;<i> I
+</I>&gt;&gt;<i> am not too happy with that, because the offsets are not the same for
+</I>&gt;&gt;<i> every
+</I>&gt;&gt;<i> receiver.  But additional offset can be added in the ntp config file
+</I>&gt;&gt;<i> using
+</I>&gt;&gt;<i> fudge, when required.
+</I>&gt;<i>
+</I>&gt;<i> And as I recall that was an agreed solution, but I have not seen any
+</I>&gt;<i> working
+</I>&gt;<i> code from you.
+</I>
+What do you mean, code from me??
+fudge is an ntpd option, a statement you put in your /etc/ntpd.conf
+Amongst others, it allows you to specify the offset for each clock source,
+which will be added in before applying it to the locking loop.
+No code needed for that!
+
+&gt;<i>  Talk is cheap, show us some code that fixes it your way
+</I>&gt;<i> or let someone else fix it.  Leaving it broken is not an option.
+</I>&gt;<i>
+</I>&gt;<i> My solution would be to remove the fudge factors from gpsd and let the
+</I>&gt;<i> tuning and sanity checking mostly be done by the ntpd code which is what
+</I>&gt;<i> it
+</I>&gt;<i> was designed to do.
+</I>
+That could be done, but it would mean that everyone has to use a fudge,
+also those people that happen to have a receiver that falls within the
+usual spectrum of offsets.
+Maybe it is best to zero the offset for NMEA because it is so unreliable. 
+But for other protocols, the hardwired offset seems to do a reasonable
+job.
+
+
+&gt;<i> If you have a solution then please commit some code.  Quickly.
+</I>
+You seem to be thinking that a solution implies that code is required, but
+I disagree with that.
+
+&gt;&gt;<i> Maybe there should be a survey to determine the optimal offset hardwired
+</I>&gt;&gt;<i> in the code for every protocol supported (the median value for all
+</I>&gt;&gt;<i> offsets
+</I>&gt;&gt;<i> reported for different receivers).
+</I>&gt;<i>
+</I>&gt;<i> Well, right now the code adds 675mS and them I have to subtract back out
+</I>&gt;<i> 550mS in ntp.  So the real delay is about 125mS.  The ntp offset for my
+</I>&gt;<i> pps is .0003 mS.  Unless I set PUT_MAX_OFFSET to 600000 my pps is locked
+</I>&gt;<i> out.  Notice how 550mS is not conveniently in +/- 400mS ?
+</I>
+Also notice that you only know it is 550 and not 450 because you compare
+with other sources, and that zooming into the smallest offset (which would
+happen when you increase the max_offset to 600 and not have other
+references) woould lock it in off-by-1.
+
+I think the PUT_MAX_OFFSET should be put back to 400 ms.
+You can make your system operative by adding the proper fudge command in
+/etc/ntpd.conf.
+
+Someone with a large collection of NMEA receivers (or a poll on the user
+list?) should find the typical offset found for NMEA, which may be
+different from the 675ms I determined from my own receivers (that are old
+and connected over slow 4800 bps serial).
+The remainder of the offset can then by put in /etc/ntpd.conf
+
+Still, no code required.
+And I would not know how to solve it with code, other than adding some
+configfile or option to set the offset for NMEA time on a case-by-case
+basis.
+Widening the tolerance range certainly is not an option for me.
+
+Rob
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004329.html">[Gpsd-dev] ntp-pps
+</A></li>
+	<LI>Next message: <A HREF="004357.html">[Gpsd-dev] ntp-pps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4354">[ date ]</a>
+              <a href="thread.html#4354">[ thread ]</a>
+              <a href="subject.html#4354">[ subject ]</a>
+              <a href="author.html#4354">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

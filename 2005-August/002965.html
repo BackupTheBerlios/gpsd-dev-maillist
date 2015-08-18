@@ -1,0 +1,175 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-commit-watch] r3140 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r3140%20-%20trunk&In-Reply-To=%3C91981b3e05081823013e0d39b9%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002963.html">
+   <LINK REL="Next"  HREF="002968.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-commit-watch] r3140 - trunk</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r3140%20-%20trunk&In-Reply-To=%3C91981b3e05081823013e0d39b9%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-commit-watch] r3140 - trunk">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Fri Aug 19 08:01:51 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002963.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r3140 - trunk
+</A></li>
+        <LI>Next message: <A HREF="002968.html">[Gpsd-dev] opinion on patch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2965">[ date ]</a>
+              <a href="thread.html#2965">[ thread ]</a>
+              <a href="subject.html#2965">[ subject ]</a>
+              <a href="author.html#2965">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Squashed. It was the listen() call.
+
+I now get data out of my server and Gary Miller's server.
+
+CK
+
+On 8/18/05, Chris Kuethe &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">chris.kuethe at gmail.com</A>&gt; wrote:
+&gt;<i> I think this breaks things - I just get &quot;no data&quot; now. Interested
+</I>&gt;<i> parties can point it at my test server (gpsd.mainframe.cx).
+</I>&gt;<i> 
+</I>&gt;<i> On 8/17/05, Eric S. Raymond at BerliOS &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at berlios.de</A>&gt; wrote:
+</I>&gt;<i> &gt; Author: esr
+</I>&gt;<i> &gt; Date: 2005-08-18 02:42:23 +0200 (Thu, 18 Aug 2005)
+</I>&gt;<i> &gt; New Revision: 3140
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Modified:
+</I>&gt;<i> &gt;    trunk/cgps.c
+</I>&gt;<i> &gt; Log:
+</I>&gt;<i> &gt; Use a select rather than spinning.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Modified: trunk/cgps.c
+</I>&gt;<i> &gt; ===================================================================
+</I>&gt;<i> &gt; --- trunk/cgps.c        2005-08-17 19:23:54 UTC (rev 3139)
+</I>&gt;<i> &gt; +++ trunk/cgps.c        2005-08-18 00:42:23 UTC (rev 3140)
+</I>&gt;<i> &gt; @@ -29,6 +29,8 @@
+</I>&gt;<i> &gt;  #include &lt;unistd.h&gt;
+</I>&gt;<i> &gt;  #include &lt;math.h&gt;
+</I>&gt;<i> &gt;  #include &lt;errno.h&gt;
+</I>&gt;<i> &gt; +#include &lt;sys/select.h&gt;
+</I>&gt;<i> &gt; +#include &lt;sys/socket.h&gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;  #include &lt;ncurses.h&gt;
+</I>&gt;<i> &gt;  #include &lt;signal.h&gt;
+</I>&gt;<i> &gt; @@ -250,6 +252,12 @@
+</I>&gt;<i> &gt;      char *arg = NULL, *colon1, *colon2, *device = NULL, *server = NULL, *port = DEFAULT_GPSD_PORT;
+</I>&gt;<i> &gt;      char *err_str = NULL;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; +    struct timeval timeout;
+</I>&gt;<i> &gt; +    fd_set rfds;
+</I>&gt;<i> &gt; +    int data;
+</I>&gt;<i> &gt; +
+</I>&gt;<i> &gt; +
+</I>&gt;<i> &gt; +
+</I>&gt;<i> &gt;      /* Process the options.  Print help if requested. */
+</I>&gt;<i> &gt;      while ((option = getopt(argc, argv, &quot;hv&quot;)) != -1) {
+</I>&gt;<i> &gt;         switch (option) {
+</I>&gt;<i> &gt; @@ -327,7 +335,7 @@
+</I>&gt;<i> &gt;         default:                err_str = &quot;Unknown&quot;; break;
+</I>&gt;<i> &gt;         }
+</I>&gt;<i> &gt;         (void)fprintf( stderr,
+</I>&gt;<i> &gt; -                      &quot;xgps: no gpsd running or network error: %d, %s\n&quot;,
+</I>&gt;<i> &gt; +                      &quot;cgps: no gpsd running or network error: %d, %s\n&quot;,
+</I>&gt;<i> &gt;                        errno, err_str);
+</I>&gt;<i> &gt;         exit(2);
+</I>&gt;<i> &gt;      }
+</I>&gt;<i> &gt; @@ -360,14 +368,34 @@
+</I>&gt;<i> &gt;      /* Request &quot;w+x&quot; data from gpsd. */
+</I>&gt;<i> &gt;      (void)gps_query(gpsdata, &quot;w+x\n&quot;);
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; -    /* Loop and poll once per second (this could be less than optimal
+</I>&gt;<i> &gt; -       for a receiver that updates &gt; 1hz, or for a user using a *really*
+</I>&gt;<i> &gt; -       slow ancient serial terminal). */
+</I>&gt;<i> &gt; -    for(;;) {
+</I>&gt;<i> &gt; -       (void)gps_poll(gpsdata);
+</I>&gt;<i> &gt; -       (void)sleep(1);
+</I>&gt;<i> &gt; +    /* accept connections */
+</I>&gt;<i> &gt; +    (void)listen(gpsdata-&gt;gps_fd, 5);
+</I>&gt;<i> &gt; +
+</I>&gt;<i> &gt; +    for (;;) { /* heart of the client */
+</I>&gt;<i> &gt; +
+</I>&gt;<i> &gt; +        /* watch to see when it has input */
+</I>&gt;<i> &gt; +        FD_ZERO(&amp;rfds);
+</I>&gt;<i> &gt; +        FD_SET(gpsdata-&gt;gps_fd, &amp;rfds);
+</I>&gt;<i> &gt; +
+</I>&gt;<i> &gt; +       /* wait up to five seconds. */
+</I>&gt;<i> &gt; +       timeout.tv_sec = 5;
+</I>&gt;<i> &gt; +       timeout.tv_usec = 0;
+</I>&gt;<i> &gt; +
+</I>&gt;<i> &gt; +       /* check if we have new information */
+</I>&gt;<i> &gt; +       data = select(gpsdata-&gt;gps_fd + 1, &amp;rfds, NULL, NULL, &amp;timeout);
+</I>&gt;<i> &gt; +
+</I>&gt;<i> &gt; +       if (data == -1) {
+</I>&gt;<i> &gt; +           fprintf( stderr, &quot;cgps: Socket error\n&quot;);
+</I>&gt;<i> &gt; +           exit(2);
+</I>&gt;<i> &gt; +       }
+</I>&gt;<i> &gt; +       else if( data ) {
+</I>&gt;<i> &gt; +           /* code that calls gps_poll(gpsdata) */
+</I>&gt;<i> &gt; +           (void)gps_poll(gpsdata);
+</I>&gt;<i> &gt; +       }
+</I>&gt;<i> &gt; +       else {
+</I>&gt;<i> &gt; +           fprintf(stderr, &quot;cgps: No data\n&quot;);
+</I>&gt;<i> &gt; +       }
+</I>&gt;<i> &gt;      }
+</I>&gt;<i> &gt; -
+</I>&gt;<i> &gt; -    //die();
+</I>&gt;<i> &gt; +    //die(0);
+</I>&gt;<i> &gt;  }
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; _______________________________________________
+</I>&gt;<i> &gt; Gpsd-commit-watch mailing list
+</I>&gt;<i> &gt; <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-commit-watch at lists.berlios.de</A>
+</I>&gt;<i> &gt; <A HREF="http://lists.berlios.de/mailman/listinfo/gpsd-commit-watch">http://lists.berlios.de/mailman/listinfo/gpsd-commit-watch</A>
+</I>&gt;<i> &gt;
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> --
+</I>&gt;<i> GDB has a 'break' feature; why doesn't it have 'fix' too?
+</I>&gt;<i> 
+</I>
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002963.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r3140 - trunk
+</A></li>
+	<LI>Next message: <A HREF="002968.html">[Gpsd-dev] opinion on patch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2965">[ date ]</a>
+              <a href="thread.html#2965">[ thread ]</a>
+              <a href="subject.html#2965">[ subject ]</a>
+              <a href="author.html#2965">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

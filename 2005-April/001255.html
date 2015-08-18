@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] result of trying svn version
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20result%20of%20trying%20svn%20version&In-Reply-To=%3C20050407000324.GA8135%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001256.html">
+   <LINK REL="Next"  HREF="001266.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] result of trying svn version</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20result%20of%20trying%20svn%20version&In-Reply-To=%3C20050407000324.GA8135%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] result of trying svn version">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Apr  7 02:03:24 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001256.html">[Gpsd-dev] result of trying svn version
+</A></li>
+        <LI>Next message: <A HREF="001266.html">[Gpsd-dev] result of trying svn version
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1255">[ date ]</a>
+              <a href="thread.html#1255">[ thread ]</a>
+              <a href="subject.html#1255">[ subject ]</a>
+              <a href="author.html#1255">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+&gt;<i> There seems to be an issue with the ecef_to_wgs84fix calculation.
+</I>&gt;<i> The calculated altitude is wrong, I think the wgs84_separation has the
+</I>&gt;<i> wrong sign.  When I change the addition of wgs84_separation into
+</I>&gt;<i> subtraction, the result here (52N 5E) is OK.
+</I>
+Ask Oleg Gusev.  He gave me the code for WGS84 separations.
+
+&gt;<i> There also is an issue that I have observed ever since writing sirf.c
+</I>&gt;<i> (what is now called sirfmon.c) and using it on my receiver:
+</I>&gt;<i> My uBlox receiver outputs both x/y/z and lat/lon/alt.
+</I>&gt;<i> The latter is output in a manufacturer-defined packet (0x62).
+</I>&gt;<i> 
+</I>&gt;<i> In my sirf.c I have been displaying both, one normal and one bold, at the
+</I>&gt;<i> same position.  One can often see the fields toggle between two values
+</I>&gt;<i> because the results are not exactly the same (I think due to rounding).
+</I>&gt;<i> But now, there is a bigger difference: 0x02 packets calculate altitude
+</I>&gt;<i> above mean sea level, and the 0x62 packet has altitude above the wgs84
+</I>&gt;<i> geoid.
+</I>&gt;<i> So the output shown on the screen toggles between two values differing
+</I>&gt;<i> about 45m.
+</I>
+This is why I wanted WGS84 separation code.  I wanted to be able to throw
+away packet 0x29 (the SiRF Geodetic Navigation Data) and the equivalent 
+uBlox 0x62 and get all my fix info from *one* packet with a well-defined
+timestamp.  
+
+&gt;<i> Maybe there should be more than one &quot;fix&quot; structure per receiver?
+</I>&gt;<i> (but how to access them from the TCP socket?)
+</I>
+Why, if they're all returning the same data?  And in your case they are,
+subject to change in coordinate system.  If I've got the sign of the
+correction wrong, that's a simple bug and a different issue.
+
+&gt;<i> Or maybe I should just forget about the data returned in packet 0x62, as
+</I>&gt;<i> now seems to have happened to the 0x29 packet data?
+</I>
+Yes, you should.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001256.html">[Gpsd-dev] result of trying svn version
+</A></li>
+	<LI>Next message: <A HREF="001266.html">[Gpsd-dev] result of trying svn version
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1255">[ date ]</a>
+              <a href="thread.html#1255">[ thread ]</a>
+              <a href="subject.html#1255">[ subject ]</a>
+              <a href="author.html#1255">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

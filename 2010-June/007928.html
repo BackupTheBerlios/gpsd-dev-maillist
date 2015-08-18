@@ -1,0 +1,152 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Failure after upgrade
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Failure%20after%20upgrade&In-Reply-To=%3C1030781972-1277749004-cardhu_decombobulator_blackberry.rim.net-122069895-%40bda642.bisx.prod.on.blackberry%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007927.html">
+   <LINK REL="Next"  HREF="007926.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Failure after upgrade</H1>
+    <B>mrdvt92 at yahoo.com</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Failure%20after%20upgrade&In-Reply-To=%3C1030781972-1277749004-cardhu_decombobulator_blackberry.rim.net-122069895-%40bda642.bisx.prod.on.blackberry%3E"
+       TITLE="[Gpsd-dev] Failure after upgrade">mrdvt92 at yahoo.com
+       </A><BR>
+    <I>Mon Jun 28 20:16:29 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007927.html">[Gpsd-dev] Failure after upgrade
+</A></li>
+        <LI>Next message: <A HREF="007926.html">[Gpsd-dev] (no subject)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7928">[ date ]</a>
+              <a href="thread.html#7928">[ thread ]</a>
+              <a href="subject.html#7928">[ subject ]</a>
+              <a href="author.html#7928">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>GPSD Dev Folks,
+I never understood why we over loaded the port with both protocols.  Why would we not add a port for the new protocol and keep the old port like it has been.  Maybe it could be nothing but a port listener and a wrapper around gpsd3.  If I'm a commercial vendor I'm going to want to keep api 2 support for a long time running in parallel.  Is it too late to move GPSD3 to a new port and get API2 100% backwards compatible? 
+
+I would think package management systems would want to install &quot;gpsd-3&quot; and &quot;gpsd-compat-api2&quot; so, that's some basis  on thinking about how to separate the applications.
+Mike
+
+Sorry for the top post from Blackberry!
+Sent via BlackBerry from T-Mobile
+
+-----Original Message-----
+From: Nic Roets &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">nroets at gmail.com</A>&gt;
+Sender: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev-bounces at lists.berlios.de</A>
+Date: Mon, 28 Jun 2010 16:44:07 
+To: Bernd Zeimetz&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">bernd at bzed.de</A>&gt;
+Reply-To: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>
+Cc: &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>&gt;
+Subject: Re: [Gpsd-dev] Failure after upgrade
+
+Hello Bernd,
+
+I tried you're patch on my own machine which is still running Ubuntu
+2009 Karmic Koala. It does not compile because gps_stream and
+WATCH_ENABLE not defined in 2.35.
+
+Then I looked at your link and it said nothing about conditional
+compilation. So after searching a bit on the net, I went for this
+code:
+
+    #if GPSD_API_MAJOR_VERSION &lt;= 3
+    gps_query (gpsData, &quot;w+x\n&quot;);
+    #else
+    gps_stream (gpsData, WATCH_ENABLE, NULL);
+    #endif
+
+So I'll commit it like this. It's a bit unfortunate that my code and
+the dozens of other projects that uses libgps will now have to look
+like this for a number of years. Various versions of linux will remain
+on many machines until support is dropped e.g. Ubuntu 2008 Hardy Long
+Term Support.
+
+A much better alternative would be for the new libgps to implement
+gps_query() as a call to gps_stream() plus a few validity checks. That
+is the lengths other mature libraries go to to ensure backward
+compatibility. Just look at functions like gets() and creat().
+
+Lastly I would like to point out that WATCH_ENABLE is a very generic
+name and is prone to name space conflicts.
+
+Regards,
+Nic
+
+On Mon, Jun 28, 2010 at 3:44 PM, Bernd Zeimetz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">bernd at bzed.de</A>&gt; wrote:
+&gt;<i> Hey Nic,
+</I>&gt;<i>
+</I>&gt;&gt;<i> I committed a fix to Gosmore svn.
+</I>&gt;<i>
+</I>&gt;<i> + &#160;if (gpsData) {
+</I>&gt;<i> + &#160; &#160;gps_set_raw_hook (gpsData, GpsMove);
+</I>&gt;<i> + &#160; &#160;gps_query (gpsData, &quot;w+x\n&quot;);
+</I>&gt;<i>
+</I>&gt;<i> sorry, but that implements the old protocol and won't work with any recent gpsd.
+</I>&gt;<i> See <A HREF="http://gpsd.berlios.de/protocol-transition.html">http://gpsd.berlios.de/protocol-transition.html</A> for details.
+</I>&gt;<i> The untested patch below should fix it
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Cheers,
+</I>&gt;<i>
+</I>&gt;<i> Bernd
+</I>&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i> &#160;Bernd Zeimetz &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;Debian GNU/Linux Developer
+</I>&gt;<i> &#160;<A HREF="http://bzed.de">http://bzed.de</A> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;<A HREF="http://www.debian.org">http://www.debian.org</A>
+</I>&gt;<i> &#160;GPG Fingerprints: 06C8 C9A2 EAAD E37E 5B2C BE93 067A AD04 C93B FF79
+</I>&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; ECA1 E3F2 8E11 2432 D485 DD95 EB36 171A 6FF9 435F
+</I>&gt;<i>
+</I>&gt;<i> Index: gosmore.cpp
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- gosmore.cpp (revision 22060)
+</I>&gt;<i> +++ gosmore.cpp (working copy)
+</I>&gt;<i> @@ -3101,7 +3101,7 @@
+</I>&gt;<i> &#160; gps_data_t *gpsData = gps_open (&quot;127.0.0.1&quot;, &quot;2947&quot;);
+</I>&gt;<i> &#160; if (gpsData) {
+</I>&gt;<i> &#160; &#160; gps_set_raw_hook (gpsData, GpsMove);
+</I>&gt;<i> - &#160; &#160;gps_query (gpsData, &quot;w+x\n&quot;);
+</I>&gt;<i> + &#160; &#160;gps_stream(gpsdata, WATCH_ENABLE, NULL)
+</I>&gt;<i> &#160; &#160; gpsSockTag = gdk_input_add (gpsData-&gt;gps_fd, GDK_INPUT_READ,
+</I>&gt;<i> &#160; &#160; &#160; (GdkInputFunction) gps_poll, gpsData);
+</I>&gt;<i>
+</I>_______________________________________________
+Gpsd-dev mailing list
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007927.html">[Gpsd-dev] Failure after upgrade
+</A></li>
+	<LI>Next message: <A HREF="007926.html">[Gpsd-dev] (no subject)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7928">[ date ]</a>
+              <a href="thread.html#7928">[ thread ]</a>
+              <a href="subject.html#7928">[ subject ]</a>
+              <a href="author.html#7928">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

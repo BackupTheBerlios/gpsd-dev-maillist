@@ -1,0 +1,221 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] PPS
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS&In-Reply-To=%3CPine.LNX.4.63.0508050108590.26211%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002807.html">
+   <LINK REL="Next"  HREF="002821.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] PPS</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS&In-Reply-To=%3CPine.LNX.4.63.0508050108590.26211%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] PPS">gem at rellim.com
+       </A><BR>
+    <I>Fri Aug  5 10:58:44 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002807.html">[Gpsd-dev] PPS
+</A></li>
+        <LI>Next message: <A HREF="002821.html">[Gpsd-dev] PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2809">[ date ]</a>
+              <a href="thread.html#2809">[ thread ]</a>
+              <a href="subject.html#2809">[ subject ]</a>
+              <a href="author.html#2809">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Rob!
+
+On Fri, 5 Aug 2005, Rob Janssen wrote:
+
+&gt;<i> First I should say I am not very happy about the situation we are in.
+</I>&gt;<i> I have written the NTP support for gpsd, and my only access to the SVN is
+</I>&gt;<i> by patches sent via Eric.
+</I>&gt;<i> Suddenly I find an announcement here that someone has modified code to
+</I>&gt;<i> adapt it to the needs of his own receiver, and I find myself in the
+</I>&gt;<i> position where I have to defend each decision and have to beg to get
+</I>&gt;<i> changes out of there.
+</I>
+Hey, it was broken, totally, in my case.  When I asked about a fix,
+no one had one.  So I fixed it and asked your opinion at the same
+time.  Now it is working for both of us and we are on to an even better
+solution. That is what development builds are for.
+
+&gt;<i> &gt; You talked about adding sample offsets to timebase.h?  I do not see
+</I>&gt;<i> &gt; any in there.  Is that where you want them?
+</I>&gt;<i>
+</I>&gt;<i> This still has to be done.  I am not going to jump in and make changes
+</I>&gt;<i> until  it is clear what we start from and where we head to, because I only
+</I>&gt;<i> submit patches.
+</I>
+And that is why I also asked Eric what he wanted, it was his idea.
+
+&gt;<i> Moving constants to timebase.h is a good idea, but it won't solve the
+</I>&gt;<i> problem in your case.  For that, the extra functionality of a table of
+</I>&gt;<i> receiver types and time offsets is required.
+</I>
+I was under the impression that he only wanted comments in that file
+for now?  Got a better place to put a table of observations?
+
+&gt;<i> For your own testing, you can modify the 0.675 in drivers.c until your
+</I>&gt;<i> message time is in sync with your PPS time, or at least is well within
+</I>&gt;<i> 400ms of it.
+</I>
+Now THAT is new info.  I had not noticed that.  That changes some things.
+
+When, as just a test, I remove your 0.675 offset I see that my offset
+is really 1.077 Sec.  Talk about being 1 Sec off.
+
+&gt;<i> &gt; We still need to agree on the answer to ntpshm_pps().  The simple answer
+</I>&gt;<i> &gt; is to just allow PUT_MAX_OFFSET to stay at the new value of 500mS
+</I>&gt;<i> &gt; instead of the old one of 400mS.  That works for me.
+</I>&gt;<i>
+</I>&gt;<i> But that is only stable because you have other references and you put in a
+</I>&gt;<i> reasonably correct fudge in ntp.conf.
+</I>
+And yours is stable only because you put in a reasonable, for your
+setup, fudge in the code.  It all comes down to where you want the fudge
+factor, not if you have a fudge factor.  If we can determine it
+automagically then good, but we do not know how to do that yet.
+
+&gt;<i> A user that plugs in an unknown receiver and just starts everything in
+</I>&gt;<i> default config will easily lock at 1 second off correct time.
+</I>
+Yes, that is what we are trying to solve.  Presently the old and new
+code have that potential problem.
+
+&gt;<i> We need to compensate for that somewhere, and we are now in the process of
+</I>&gt;<i> finding how that can be done best so that it works for most people.
+</I>
+Agreed.
+
+&gt;<i> &gt; PPS_MAX_OFFSET is the difference between the system time and the PPS
+</I>&gt;<i> &gt; time. PPS lock will not occur unless the PPS is within PPS_MAX_OFFSET
+</I>&gt;<i> &gt; of system time.  PPS_MAX_OFFSET is 100mS and that value is 5x what I
+</I>&gt;<i> &gt; need to pull in.  I do not want or need to change that.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; So, the PPS lock will only happen if my 'fudge' value in ntp.conf
+</I>&gt;<i> &gt; has been set to with 100mS of the PPS.
+</I>&gt;<i>
+</I>&gt;<i> Once the offset is compensated inside gpsd this setting of fudge in ntpd
+</I>&gt;<i> is no longer required.  The option remains available for those that do not
+</I>&gt;<i> want to modify gpsd and want to correct a small offset in their
+</I>&gt;<i> unsupported receiver.
+</I>
+I doubt it is easier for the user to change the fudge in the code and
+recompile than to change the fudge in the ntp.conf and restart ntpd.
+
+If we can, and I doubt we can, figure out the fudge automatically, then
+it belongs in our code.  If we can not IMHO the fudge belongs where the
+the ntpd admin expects it.  That respects the principle of least surprise.
+
+&gt;<i> &gt; Another solution might be to dispense with PUT_MAX_OFFSET all together.
+</I>&gt;<i> &gt; Now that I think of it, the PPS will always be within 500mS of the
+</I>&gt;<i> &gt; NMEA/Binary time. :-)
+</I>&gt;<i>
+</I>&gt;<i> &gt; Then leave it to the admin to be sure his system time is within 100mS of
+</I>&gt;<i> &gt; correct and the PPS will pull it in the rest of the way.
+</I>&gt;<i>
+</I>&gt;<i> This is not reasonable.
+</I>&gt;<i> When we offer the service of synchronizing the system clock via gpsd, we
+</I>&gt;<i> cannot expect it to be within 100ms via another method.
+</I>
+Just trying to cover all the possible solutions.  Until we have a working
+solution we need to look at all the possibilities.  Nothing so far is
+even close to 500mS.
+
+&gt;<i> So, we need to apply some fudge factor to bring all known GPS receivers to
+</I>&gt;<i> within a few hundred milliseconds of correct time (the 400 already was the
+</I>&gt;<i> highest I wanted to go, other implementations of PPS locking recommend not
+</I>&gt;<i> to go higher than 250).
+</I>
+Because of the ambiguity of which second, I do not see how the old solution
+would prevent locking on the wrong second.  By your own admission some
+GPS take 1.5 seconds to output the time.  Subtract your fudge of 0.675 and
+we end up within the old 400mS window.  Viola, the old code locks on to
+the wrong second.
+
+&gt;<i> Then the PPS can be trusted to lock to the correct second.
+</I>
+Only if we get the right fudge factor all the time.  So far we have two
+PPS data points and one non-PPS.  Here are the raw, unfudged, numbers:
+
+PPS:
+	Your GPS:    0.675
+        GPS-18/LVC:  1.077 +/- 10mS
+
+Non-PPS:
+	GPS-18/USB:  0.725 +/- 20mS
+
+
+The +/- 10mS is interesting, because at the moment time.windows.com is
+17mS off from GPS, clepsydra and clock.isc.  Wanna guess who is right?
+:<i>-)
+</I>
+&gt;<i> The best approach is not to use NMEA because the time information in there
+</I>&gt;<i> is completely undefined, and probably only there to provide wall clock
+</I>&gt;<i> time and some validation of the moment at which a fix was calculated.
+</I>&gt;<i> Binary protocols sometimes have better-defined time messages, and also
+</I>&gt;<i> they can often be run at higher serial rates.  This makes it all a bit
+</I>&gt;<i> easier.
+</I>
+Well, in my case, when we settle this, I am going to try to get binary
+protocol on the serial garmin.  Wanna bet the fudge factor is within 10%
+of the NMEA one for the same device?  OTOH, I expect half the jitter.
+
+Right now my system seems to be stable in the 1uS or better range w/ PPS.
+Of course when I turn on the TV card it sags to 1mS again. :-)
+
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.1 (GNU/Linux)
+
+iD8DBQFC8ypH8KZibdeR3qURAjQcAKCe4vJlNymi7PFiGWCwS7c/olpfJQCgn9BS
+s+hAnOZhCs3IduKQLaRnHRM=
+=7sUi
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002807.html">[Gpsd-dev] PPS
+</A></li>
+	<LI>Next message: <A HREF="002821.html">[Gpsd-dev] PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2809">[ date ]</a>
+              <a href="thread.html#2809">[ thread ]</a>
+              <a href="subject.html#2809">[ subject ]</a>
+              <a href="author.html#2809">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

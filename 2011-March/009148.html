@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20Single-writer/many-reader%20consistency%3A%0A%20Test%20program%20written%20%26%20verified&In-Reply-To=%3C4D907D4A.6080404%40tmsw.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009141.html">
+   <LINK REL="Next"  HREF="009149.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified</H1>
+    <B>Terje Mathisen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20Single-writer/many-reader%20consistency%3A%0A%20Test%20program%20written%20%26%20verified&In-Reply-To=%3C4D907D4A.6080404%40tmsw.no%3E"
+       TITLE="[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified">terje at tmsw.no
+       </A><BR>
+    <I>Mon Mar 28 14:21:30 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009141.html">[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written
+</A></li>
+        <LI>Next message: <A HREF="009149.html">[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9148">[ date ]</a>
+              <a href="thread.html#9148">[ thread ]</a>
+              <a href="subject.html#9148">[ subject ]</a>
+              <a href="author.html#9148">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Terje Mathisen wrote:
+&gt;<i> As I promised I've written a test program, with one writer and 3 readers
+</I>&gt;<i> (I have 4 cores so all run at all times, I force them to be on separate
+</I>&gt;<i> cores).
+</I>&gt;<i>
+</I>&gt;<i> With up to 1000 updates/second I'm totally unable to see any kind of
+</I>&gt;<i> inconsistency at any time, with 10K to 1M updates/second the FIFO needs
+</I>&gt;<i> to be significantly larger to avoid all problems.
+</I>&gt;<i>
+</I>&gt;<i> Anyway, for 1-100Hz the 4-way buffer is definitely working.
+</I>&gt;<i>
+</I>&gt;<i> I'll post the program and more details tomorrow.
+</I>
+Dave Hart &amp; I have banged quite a bit against the (fixed) version of the 
+test program, and the conclusion is quite nice:
+
+With a 4-way timestamp buffer, and a simple _ReadWriteBarrier() between 
+the store of the timestamp and the update of the counter (inside the 
+writer process) it is simply impossible to get to an inconsistent state:
+
+Here's the results from a 1-minute run:
+
+counts[] = {0,1,2,3}
+Writer affinity = 1, old = f
+Reader 1 affinity = fffffffe, old = f
+Reader 2 affinity = fffffffe, old = f
+Reader 3 affinity = fffffffe, old = f
+
+counts[] = {1020921970,1939160384,924938960,2002669713}
+
+All threads done!
+Thread 0 did 1020921970 iterations
+Thread 1 did 1939160384 iterations
+Thread 2 did 924938960 iterations
+Thread 3 did 2002669713 iterations
+counter_update = 1047208131, counter_retry = 365502934, 
+timestamps_inconsistent = 0
+
+I.e. 1e9 write operations, nearly 4e9 reads.
+
+Of the reads 1e9, i.e. about 25% happened in the middle of an update and 
+one third of these required a retry due to the counter variable getting 
+close to wrapping around.
+
+There were zero inconsistent timestamps, verified by having the same 
+value in both copies, and the current counter value in ns/us field.
+
+Dave has done similar tests for up to hour-long runs, on 3-4 different 
+cpu models, with the same results.
+
+As I posted last night, as soon as the update rate drops down to 1KHz or 
+less, there are effectively zero retries so the readers never have to 
+even spin around a single extra time.
+
+I'll put a copy of the source code on my server later today, I'm 
+currently traveling.
+
+Terje
+
+-- 
+- &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Terje at tmsw.no</A>&gt;
+&quot;almost all programming can be viewed as an exercise in caching&quot;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009141.html">[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written
+</A></li>
+	<LI>Next message: <A HREF="009149.html">[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9148">[ date ]</a>
+              <a href="thread.html#9148">[ thread ]</a>
+              <a href="subject.html#9148">[ subject ]</a>
+              <a href="author.html#9148">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

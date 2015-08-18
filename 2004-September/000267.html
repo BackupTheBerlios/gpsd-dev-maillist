@@ -1,0 +1,96 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] pl2303 - weeding out gps devices
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20pl2303%20-%20weeding%20out%20gps%20devices&In-Reply-To=%3C20040923112622.GA16327%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000266.html">
+   <LINK REL="Next"  HREF="000270.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] pl2303 - weeding out gps devices</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20pl2303%20-%20weeding%20out%20gps%20devices&In-Reply-To=%3C20040923112622.GA16327%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] pl2303 - weeding out gps devices">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Sep 23 13:26:22 CEST 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000266.html">[Gpsd-dev] pl2303 - weeding out gps devices
+</A></li>
+        <LI>Next message: <A HREF="000270.html">[Gpsd-dev] pl2303 - weeding out gps devices
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#267">[ date ]</a>
+              <a href="thread.html#267">[ thread ]</a>
+              <a href="subject.html#267">[ subject ]</a>
+              <a href="author.html#267">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Lonnie Mendez &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">lmendez19 at austin.rr.com</A>&gt;:
+&gt;<i> &gt;There is one thing that might save us: the USB class ID.  What is it on
+</I>&gt;<i> &gt;your rs232 db9 adapter?
+</I>&gt;<i> 
+</I>&gt;<i> The usb class id on it is 0.  Attached is the device's entry from 
+</I>&gt;<i> /proc/bus/usb/devices and lsusb -vv output. 
+</I>
+&gt;<i> T:  Bus=01 Lev=01 Prnt=01 Port=01 Cnt=02 Dev#=  5 Spd=12  MxCh= 0
+</I>&gt;<i> D:  Ver= 1.10 Cls=00(&gt;ifc ) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
+</I>&gt;<i> P:  Vendor=067b ProdID=2303 Rev= 2.02
+</I>&gt;<i> C:* #Ifs= 1 Cfg#= 1 Atr=a0 MxPwr=100mA
+</I>&gt;<i> I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=00 Prot=00 Driver=(none)
+</I>&gt;<i> E:  Ad=81(I) Atr=03(Int.) MxPS=  10 Ivl=1ms
+</I>&gt;<i> E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+</I>&gt;<i> E:  Ad=83(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+</I>
+Actually, I was thinking of the class field in the I line, 0xff.
+
+But either way, I think we're screwed.  My last hope was that we'd be
+able to use the class field of 0xff (vendor-specific) to distinguish 
+USB GPSes from other device types that have allocated device types in
+the USB standard.  
+
+But it ain't so.  Nothing the USB subsystem can see makes your rs232 db9
+adapter distinguishable from a GPS.  That's a crash landing -- we could
+have lived with failure to detect a GPS that's there, but we can't live
+with mis-detecting something else as a GPS.  The best possible result from
+that is a hang on open, making the other device unavailable.
+
+The only actual solution for this problem is long-term.  USB needs to
+allocate a GPS device class, and vendor firmware needs to advertise it.
+
+Sigh...I'll take that item off the to-do list.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000266.html">[Gpsd-dev] pl2303 - weeding out gps devices
+</A></li>
+	<LI>Next message: <A HREF="000270.html">[Gpsd-dev] pl2303 - weeding out gps devices
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#267">[ date ]</a>
+              <a href="thread.html#267">[ thread ]</a>
+              <a href="subject.html#267">[ subject ]</a>
+              <a href="author.html#267">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

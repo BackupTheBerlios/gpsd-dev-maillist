@@ -1,0 +1,240 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] RFC: new regression test hooks
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20RFC%3A%20new%20regression%20test%20hooks&In-Reply-To=%3C91981b3e0710151822i7bdfed7dt8dc163372fab044e%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="005784.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] RFC: new regression test hooks</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20RFC%3A%20new%20regression%20test%20hooks&In-Reply-To=%3C91981b3e0710151822i7bdfed7dt8dc163372fab044e%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] RFC: new regression test hooks">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Tue Oct 16 03:22:01 CEST 2007</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="005784.html">[Gpsd-dev] Cross compiling gpsd for Xscale How to draft
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5781">[ date ]</a>
+              <a href="thread.html#5781">[ thread ]</a>
+              <a href="subject.html#5781">[ subject ]</a>
+              <a href="author.html#5781">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I think our regression test framework might be a bit complicated. Or
+perhaps, there's another way to run test with less coverage, but more
+speed...
+
+For quite some time now, gpsd has been able to use a file as a
+&quot;device&quot;. I have here a diff which adds a flag to run gpsd in kind of
+a test mode - point it at a file, it reads the file in, spews out nmea
+and gpsd messages to stderr, and quits when it gets to the end of the
+file. This means the &quot;lightweight&quot; test could look something like
+
+for TEST in test/*log ; do
+    ./gpsd -T $TEST 2&gt;&amp;1 &gt; ${TEST}.out
+    cmp ${TEST}.chk ${TEST}.out || \
+        echo &quot;regression test failure for ${TEST}&quot; &amp;&amp;
+        diff -u ${TEST}.chk ${TEST}.out &amp;&amp; exit 1
+    rm -f ${TEST}.out
+done
+
+diff at <A HREF="https://www.mainframe.cx/~ckuethe/gpsd-testmode_flag.diff">https://www.mainframe.cx/~ckuethe/gpsd-testmode_flag.diff</A>
+
+comments?
+
+Index: libgpsd_core.c
+===================================================================
+--- libgpsd_core.c	(revision 4426)
++++ libgpsd_core.c	(working copy)
+@@ -774,7 +774,11 @@
+ 	    }
+ #endif /* RTCM104_ENABLE */
+ 	    if (buf2[0] != '\0') {
+-		gpsd_report(LOG_IO, &quot;&lt;= GPS: %s&quot;, buf2);
++		if (session-&gt;context-&gt;testmode)
++		    gpsd_report(LOG_SHOUT, &quot;TEST: %s&quot;, buf2);
++		else
++		    gpsd_report(LOG_IO, &quot;&lt;= GPS: %s&quot;, buf2);
++
+ 		if (session-&gt;gpsdata.raw_hook)
+ 		    session-&gt;gpsdata.raw_hook(&amp;session-&gt;gpsdata,
+ 					      buf2, strlen(buf2), 1);
+Index: gpsd.c
+===================================================================
+--- gpsd.c	(revision 4423)
++++ gpsd.c	(working copy)
+@@ -91,24 +91,25 @@
+ static jmp_buf restartbuf;
+ /*@ -initallelements -nullassign -nullderef @*/
+ static struct gps_context_t context = {
+-    .valid	      = 0,
+-    .readonly	   = false,
+-    .sentdgps	   = false,
+-    .dgnss_service      = dgnss_none,
+-    .fixcnt	     = 0,
+-    .dsock	      = -1,
+-    .dgnss_privdata     = NULL,
+-    .rtcmbytes	  = 0,
++    .valid	    = 0,
++    .readonly	    = false,
++    .testmode       = false,
++    .sentdgps	    = false,
++    .dgnss_service  = dgnss_none,
++    .fixcnt	    = 0,
++    .dsock	    = -1,
++    .dgnss_privdata = NULL,
++    .rtcmbytes	    = 0,
+     .rtcmbuf	    = {'\0'},
+-    .rtcmtime	   = 0,
+-    .leap_seconds       = LEAP_SECONDS,
++    .rtcmtime	    = 0,
++    .leap_seconds   = LEAP_SECONDS,
+     .century	    = CENTURY_BASE,
+ #ifdef NTPSHM_ENABLE
+-    .enable_ntpshm      = false,
++    .enable_ntpshm  = false,
+     .shmTime	    = {0},
+-    .shmTimeInuse       = {0},
++    .shmTimeInuse   = {0},
+ # ifdef PPS_ENABLE
+-    .shmTimePPS	 = false,
++    .shmTimePPS	    = false,
+ # endif /* PPS_ENABLE */
+ #endif /* NTPSHM_ENABLE */
+ };
+@@ -399,6 +400,8 @@
+ static void detach_client(struct subscriber_t *sub)
+ {
+     char *c_ip = sock2ip(sub-&gt;fd);
++    if (context.testmode)
++	return;
+     (void)shutdown(sub-&gt;fd, SHUT_RDWR);
+     (void)close(sub-&gt;fd);
+     gpsd_report(LOG_INF, &quot;detaching %s (sub%d, fd %d) in detach_client\n&quot;,
+@@ -418,6 +421,11 @@
+ {
+     ssize_t status;
+
++    if (context.testmode){
++	gpsd_report(LOG_SHOUT, &quot;TEST: %s&quot;, buf);
++	return len;
++    }
++
+     if (debuglevel &gt;= 3) {
+ 	if (isprint(buf[0]))
+ 	    gpsd_report(LOG_IO, &quot;=&gt; client(%d): %s&quot;, sub_index(sub), buf);
+@@ -447,7 +455,8 @@
+     else if (errno == EWOULDBLOCK &amp;&amp; timestamp() - sub-&gt;active &gt;
+NOREAD_TIMEOUT)
+ 	gpsd_report(LOG_INF, &quot;client(%d) timed out.\n&quot;, sub_index(sub));
+     else
+-	gpsd_report(LOG_INF, &quot;client(%d) write: %s\n&quot;, sub_index(sub),
+strerror(errno));
++	gpsd_report(LOG_INF, &quot;client(%d) write: %s\n&quot;, sub_index(sub),
++	    strerror(errno));
+     detach_client(sub);
+     return status;
+ }
+@@ -1269,7 +1278,7 @@
+     (void)setlocale(LC_NUMERIC, &quot;C&quot;);
+ #endif
+     debuglevel = 0;
+-    while ((option = getopt(argc, argv, &quot;F:D:S:bhNnP:V&quot;
++    while ((option = getopt(argc, argv, &quot;F:D:S:bhNnP:VT&quot;
+ #ifdef RTCM104_SERVICE
+ 			    &quot;R:&quot;
+ #endif /* RTCM104_SERVICE */
+@@ -1301,6 +1310,11 @@
+ 	case 'P':
+ 	    pid_file = optarg;
+ 	    break;
++	case 'T':
++	    nowait = true;
++	    go_background = false;
++	    context.testmode = true;
++	    break;
+ 	case 'V':
+ 	    (void)printf(&quot;gpsd %s\n&quot;, VERSION);
+ 	    exit(0);
+@@ -1641,6 +1655,8 @@
+ 		    adjust_max_fd(channel-&gt;gpsdata.gps_fd, false);
+ 		    gpsd_deactivate(channel);
+ 		    notify_watchers(channel, &quot;GPSD,X=0\r\n&quot;);
++		    if (context.testmode)
++			exit(0);
+ 		}
+ 		else {
+ 		    /* handle laggy response to a firmware version query*/
+@@ -1673,6 +1689,12 @@
+ 					     &amp;sub-&gt;fixbuffer, &amp;sub-&gt;oldfix);
+ 			}
+ 		    }
++		    if (context.testmode &amp;&amp; sub-&gt;device){
++			gps_merge_fix(&amp;sub-&gt;fixbuffer, changed,
++				      &amp;sub-&gt;device-&gt;gpsdata.fix);
++			gpsd_error_model(sub-&gt;device, &amp;sub-&gt;fixbuffer,
++					 &amp;sub-&gt;oldfix);
++		    }
+ 		}
+ #ifdef RTCM104_SERVICE
+ 		/* copy each RTCM-104 correction to all GPSes */
+@@ -1701,6 +1723,19 @@
+ 			(void)handle_gpsd_request(sub, cmds, (int)strlen(cmds));
+ 		}
+ 	    }
++#if 1
++	    if (context.testmode){
++		char cmds[4] = &quot;&quot;;
++		if (changed &amp;~ ONLINE_SET) {
++		    if (changed &amp; (LATLON_SET | MODE_SET))
++			(void)strlcat(cmds, &quot;o&quot;, 4);
++		    if (changed &amp; SATELLITE_SET)
++			(void)strlcat(cmds, &quot;y&quot;, 4);
++		}
++		if (cmds[0] != '\0')
++		    (void)handle_gpsd_request(sub, cmds, (int)strlen(cmds));
++	    }
++#endif
+ #ifdef DBUS_ENABLE
+ 	    if (changed &amp;~ ONLINE_SET) {
+ 		    if (changed &amp; (LATLON_SET | MODE_SET))
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="005784.html">[Gpsd-dev] Cross compiling gpsd for Xscale How to draft
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5781">[ date ]</a>
+              <a href="thread.html#5781">[ thread ]</a>
+              <a href="subject.html#5781">[ subject ]</a>
+              <a href="author.html#5781">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

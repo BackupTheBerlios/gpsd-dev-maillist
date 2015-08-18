@@ -1,0 +1,211 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] garmin serial
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20garmin%20serial&In-Reply-To=%3C20090309045801.GA30509%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006481.html">
+   <LINK REL="Next"  HREF="006470.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] garmin serial</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20garmin%20serial&In-Reply-To=%3C20090309045801.GA30509%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] garmin serial">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Mar  9 05:58:01 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006481.html">[Gpsd-dev] garmin serial
+</A></li>
+        <LI>Next message: <A HREF="006470.html">[Gpsd-dev] garmin serial
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6483">[ date ]</a>
+              <a href="thread.html#6483">[ thread ]</a>
+              <a href="subject.html#6483">[ subject ]</a>
+              <a href="author.html#6483">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+&gt;<i> I just pulled SVN 5418.  And tested it on my GPS-18/USB and GPS-18/LVC.
+</I>&gt;<i> 
+</I>&gt;<i> Both work fine for me, both giving fixes and working with NTP.
+</I>&gt;<i> 
+</I>&gt;<i> &gt; 1. Is 1PPs working?
+</I>&gt;<i> 
+</I>&gt;<i> Yep, I have a nice solid 1PPS fix from my GPS-18/LVC.
+</I>
+OK, we're in state 2 (yellow) then.  I'll freeze for release next Sunday if
+there are no blockers in the meantime.
+
+&gt;<i> &gt; 2. Should we apply tjackson's patch?  Patch included below for reference:
+</I>&gt;<i> 
+</I>&gt;<i> +                   if (duration &gt; 501000) {
+</I>&gt;<i> 
+</I>&gt;<i> I am not sure what problem this patch solves.  Our problems have tended
+</I>&gt;<i> to be rejecting pulses that are in fact valid.  So I am leary of any
+</I>&gt;<i> patches that rejects more pulses, at least until I hear an argument for
+</I>&gt;<i> why.
+</I>
+He explains it this way in GPSD tracker bug #15297: PPS NTP interface
+sets shared memory time stamps incorrectly.  URL is:
+<A HREF="http://developer.berlios.de/bugs/?func=detailbug&amp;bug_id=15297&amp;group_id=2116">http://developer.berlios.de/bugs/?func=detailbug&amp;bug_id=15297&amp;group_id=2116</A>
+
+  I noticed two issues. This is the first, the second is reported as a
+  seperate bug.
+
+  The first is that when running with a 40ms wide pps pulse I noticed in
+  the ntpq output that ntpd locked to the pps output of gpsd would lock
+  up with approximately a 40 ms offset wrt other time servers and that
+  periodically the pps offset would jump from near zero to around 40ms
+  for a short time and then return to near zero. While this only occured
+  occasionally it knocked the ntp lock off a bit and added to the
+  jitter.
+
+  On looking at the code it is clear why this is
+  occuring. gpsd_ppsmonitor looks for the pps signal transitions and
+  then does various tests to try and work out what kind of pps signal is
+  being used. My case is the 'conventional' one ie a one second period
+  with shortish pulse. This case is dealt with at the end of the tests
+  in gpsd_ppsmoniotr but as the code is now it will call ntpshm_pps on
+  BOTH edges of the pps pulse. However the code of ntpshm_pps is correct
+  only for the active edge (ie the edge simultaneous with the 1 second
+  boundary). So what is happening is that when ntp looks the shared
+  memory most of the time it sees the time stamp from the trailing (ie
+  non-second simultaneous edge) (because of the polarity of my setup)
+  and therefore locks up 40ms out. However occasionally if the timing is
+  such and it looks IN BETWEEN the two edges it gets the 'correct' ttime
+  stamp but since it is locked up 40ms out it sees an offset of 40ms.
+
+  The (or at least a) solution is to add a test in gpsd_ppsmonitor (line
+  216) for (duration &gt; 600000) before calling ntpshm_pps. This ensure
+  ntpshm_pps is only called on the active edge. I think this works for
+  either polarity of signal.
+
+  Having implemented this my system locked to within 1ms or so of the
+  other time servers and with significantly less jitter.
+
+Does this analysis seem correct?
+
+&gt;<i> I can't see the harm here in the following:
+</I>&gt;<i> 
+</I>&gt;<i> &gt; -#define PPS_MAX_OFFSET	100000		/* microseconds the PPS can 'pull' */
+</I>&gt;<i> &gt; +#define PPS_MAX_OFFSET	200000		/* microseconds the PPS can 'pull' */
+</I>&gt;<i> 
+</I>&gt;<i> I do not get this one.  A pulse can only be 500000 microseconds from
+</I>&gt;<i> the nearest second.  So even now that test does nothing.  Not sure how
+</I>&gt;<i> setting this beyond that has any effect.
+</I>&gt;<i> 
+</I>&gt;<i> - -#define PUT_MAX_OFFSET 500000          /* microseconds for lost lock */
+</I>&gt;<i> +#define PUT_MAX_OFFSET 700000          /* microseconds for lost lock */
+</I>
+Explained in tracker bug #15298: ntp pps lock unreliable for certain
+gps unit latencies. URL is:
+<A HREF="http://developer.berlios.de/bugs/?func=detailbug&amp;bug_id=15298&amp;group_id=2116">http://developer.berlios.de/bugs/?func=detailbug&amp;bug_id=15298&amp;group_id=2116</A>
+
+  I am using a Garmin gps18 lvc, gpsd 2.38 running on Linux Fedora Core 8.
+
+  This is clearly a gps unit that has been used in gpsd development so
+  I not quite sure why this issue hasn't been noticed before.
+
+  I am attempting to use both the serial port based timing and the 1
+  pps signal based timing.
+
+  While looking at the debug logging (D5) in the initial timing
+  acquisition phase (ie using the serial port based timing) it was
+  noticed that the ntp pps shared memory was not always updated even
+  though the gps unit was producing valid output and the system was
+  not to far from correct lock. This meant that in some cases the
+  system either never locked to the pps despite getting valid timing
+  data from the gps unit, or would start to lock but then 'give up' ,
+  or that it would lock up but that ntp shared memory update was
+  intermitent meaning that the jitter was much higher than it needed
+  to be.
+
+  On looking at the code it is apparent what is happening.  The gps
+  unit outputs the time of the previous 1pps pulse active edge
+  sometime during the following second. Gpsd stores its clock(ie the
+  system) time and the time from the gps unit (ie the time of the last
+  1 second tick) in shared memory which gives ntpd the course time
+  offset. Because of there is a systematic delay between the actual
+  second tick and when the message arrives from the gps unit there is
+  an offset that has to be corrected within ntp by setting a 'time1'
+  offset. Note however that within gpsd when correctly locked there
+  will still be an offset equal to the delay within the gps unit
+  between the actual second tick and the time the gps sends the time
+  message.
+
+  If pps is being used gpsd also uses the pps signal to store a more
+  accurate time offset based this.  However before it does this it
+  checks within ntpshm_pps that course (ie serial based) offset is
+  less than PUT_MAX_OFFSET which in 2.38 is set to 500000 or 1/2 a
+  second.
+
+  In my setup it is clear that the latency of the gps 18 lvc is not to
+  far off this (this is also confirmed by the recommened ntp time1
+  offset of 0.42 seconds for this gps unit). In my case the latency
+  actally seemed to be closer to 0.5 seconds.
+
+  The effect of the test in ntpshm_pps as it stands is that if the
+  time between the second tick and the time when the gps unit actually
+  outputs the time message is greater that 0.5 seconds no pps time
+  offset is stored. This means that as the system begins to lock, gpsd
+  STOPS storing the pps based time offset (just at the moment when it
+  is needed!). This means that it either never locks or as in my case
+  where the delay was obviously marginal locks 'intermittently'.
+
+  I don't know whether the configuration of the gps unit can be
+  altered to make the time string to be output more quickly, nothing I
+  did seemed to make much difference. However I believe that
+  PUT_MAX_OFFSET can be safely increased provided that PUT_MAX_OFFSET
+  plus PPS_MAX_OFFSET is less than one second (otherwise there is a
+  danger that the system will lock to the wrong 1 pps signal).
+
+  I increased PUT_MAX_OFFSET to 700ms and this seemed to cure the
+  problem, ie it seems that period between the actual second boundary
+  and the timing message never seemed to be bigger than this.
+
+  As a slightly secondary issue I also increased PPS_MAX_OFFSET to
+  200ms since there seemed no drawback and it allows the more accurate
+  pps timing to be used at an earlier stage in the lock in.
+
+You should look at bug #15348: NTP PPS interface does not use
+interlocks correctly, too.  URL is:
+<A HREF="http://developer.berlios.de/bugs/?func=detailbug&amp;bug_id=15348&amp;group_id=2116">http://developer.berlios.de/bugs/?func=detailbug&amp;bug_id=15348&amp;group_id=2116</A>
+
+tjackson is on this list, so you can ask him questions if you like.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006481.html">[Gpsd-dev] garmin serial
+</A></li>
+	<LI>Next message: <A HREF="006470.html">[Gpsd-dev] garmin serial
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6483">[ date ]</a>
+              <a href="thread.html#6483">[ thread ]</a>
+              <a href="subject.html#6483">[ subject ]</a>
+              <a href="author.html#6483">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

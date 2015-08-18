@@ -1,0 +1,454 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] The state of gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20The%20state%20of%20gpsd&In-Reply-To=%3CPine.LNX.4.62.0502142159500.27845%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000654.html">
+   <LINK REL="Next"  HREF="000663.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] The state of gpsd</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20The%20state%20of%20gpsd&In-Reply-To=%3CPine.LNX.4.62.0502142159500.27845%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] The state of gpsd">gem at rellim.com
+       </A><BR>
+    <I>Tue Feb 15 07:18:40 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000654.html">[Gpsd-dev] The state of gpsd
+</A></li>
+        <LI>Next message: <A HREF="000663.html">[Gpsd-dev] The state of gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#658">[ date ]</a>
+              <a href="thread.html#658">[ thread ]</a>
+              <a href="subject.html#658">[ subject ]</a>
+              <a href="author.html#658">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Eric
+
+On Mon, 14 Feb 2005, Eric S. Raymond wrote:
+
+&gt;<i> Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+</I>&gt;<i> &gt; &gt; Um...if I understand you correctly, it *is* the case.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; No NMEA means no data in xpgs.
+</I>&gt;<i>
+</I>&gt;<i> xgps never sees the NMEA.  It reads and parses rthe digested information
+</I>&gt;<i> that GPSD sends up.
+</I>
+Yes, but gpsd only sends up the data when IT sees the NMEA.
+
+Here is the path:
+	*_dump creates the NMEA sentence.
+
+	-&gt;gNMEAdata.raw_hook is used to call raw_hook in gpsd.c
+
+	raw_hook uses the sentence type to see what data
+	to PUBLISH() to the gpsd clients.
+
+	PUBLISH() calls handle_request() which pushes the date
+        to the gpsd clients.
+
+Now that the garmin driver works I see no pressing reason to shorcut
+this sytem.  Worse to hack around it would make the main path less
+obvious.
+
+&gt;<i> &gt; Any idea how to snag a copy of the real standard online?
+</I>&gt;<i>
+</I>&gt;<i> It's not on line.  You can buy a paper copy from NMEA for $250.  I haven't.
+</I>
+Hehehe, not me either.  No wonder no one does it the same way as
+anyone else.  Google will have to do.
+
+&gt;<i> &gt; Fixed in my copy.  See diff below.
+</I>&gt;<i>
+</I>&gt;<i> Note: as a defensive-programming measure, I've enhanced nmea_send() so that it
+</I>&gt;<i> appends a trailing asterisk if not already present.
+</I>
+Good idea. No big, but then why keep the first addition of the asterisk?
+
+&gt;<i> &gt; &gt; Do you want commit access to the svn?
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; If you trust me.  I promise to stick to the garmin area for now.
+</I>&gt;<i>
+</I>&gt;<i> You'll need to get a berlios.de account first.
+</I>
+Took five days to get back to me, but my login is: garyemiller
+
+I have the alpha garmin working now.  Still no error detection,
+error recovery, etc.  But is works when things are working!
+
+See below for diffs from this mornings SVN.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+
+- --- gps.h.DIST  2005-02-14 17:53:40.000000000 -0800
++++ gps.h       2005-02-14 17:52:25.000000000 -0800
+@@ -57,7 +57,7 @@
+     double latitude;           /* Latitude in degrees */
+     double longitude;          /* Longitude in degrees */
+     struct life_t latlon_stamp;
+- -    double altitude;           /* Altitude in meters */
++    double altitude;           /* Altitude in meters, MSL, not WGS 84 */
+     struct life_t altitude_stamp;
+
+     /* velocity */
+
+- --- gpsd.c.DIST 2005-02-14 17:12:18.000000000 -0800
++++ gpsd.c      2005-02-14 17:35:30.000000000 -0800
+@@ -398,6 +398,7 @@
+
+ static void raw_hook(char *sentence)
+ /* hook to be executed on each incoming sentence */
++/* CAUTION: only one NMEA sentence per call */
+ {
+     int fd;
+
+@@ -424,7 +425,7 @@
+            if (PREFIX(&quot;$GPRMC&quot;, sentence)) {
+                PUBLISH(fd, &quot;pdtvs&quot;);
+            } else if (PREFIX(&quot;$GPGGA&quot;, sentence)) {
+- -               PUBLISH(fd, &quot;pdas&quot;);
++               PUBLISH(fd, &quot;pdasm&quot;);
+            } else if (PREFIX(&quot;$GPGLL&quot;, sentence)) {
+                PUBLISH(fd, &quot;pd&quot;);
+            } else if (PREFIX(&quot;$GPVTG&quot;, sentence)) {
+
+
+- --- libgpsd_core.c.DIST	2005-02-14 15:58:09.000000000 -0800
++++ libgpsd_core.c	2005-02-14 18:59:35.000000000 -0800
+@@ -1,4 +1,4 @@
+- -/* libgpsd_core.c -- irect access to GPSes on serial or USB devices. */
++/* libgpsd_core.c -- direct access to GPSes on serial or USB devices. */
+ #include &lt;unistd.h&gt;
+ #include &lt;stdlib.h&gt;
+ #include &lt;stdio.h&gt;
+@@ -202,9 +202,15 @@
+
+ void gpsd_binary_fix_dump(struct gps_session_t *session, char *bufp)
+ {
++    char hdop_str[128] = &quot;&quot;;
++
++    if ( SEEN(session-&gt;gNMEAdata.fix_quality_stamp) ) {
++	sprintf(hdop_str, &quot;%.2f&quot;, session-&gt;gNMEAdata.hdop);
++    }
++
+     if (session-&gt;gNMEAdata.mode &gt; 1) {
+ 	sprintf(bufp,
+- -		&quot;$GPGGA,%02d%02d%02d,%f,%c,%f,%c,%d,%02d,%.2f,%.1f,%c,%f,%c,%s,%s*&quot;,
++		&quot;$GPGGA,%02d%02d%02d,%f,%c,%f,%c,%d,%02d,%s,%.1f,%c,%f,%c,%s,%s*&quot;,
+ 		session-&gt;hours,
+ 		session-&gt;minutes,
+ 		session-&gt;seconds,
+@@ -214,11 +220,17 @@
+ 		((session-&gt;gNMEAdata.longitude &gt; 0) ? 'E' : 'W'),
+ 		session-&gt;gNMEAdata.mode,
+ 		session-&gt;gNMEAdata.satellites_used,
+- -		session-&gt;gNMEAdata.hdop,
++		hdop_str,
++                // altitude is MSL
+ 		session-&gt;gNMEAdata.altitude, 'M',
+- -		session-&gt;separation, 'M', &quot;&quot;, &quot;&quot;);
++		session-&gt;separation, 'M',
++                // next two items shoud be mag_var
++                &quot;&quot;, &quot;&quot;);
+ 	nmea_add_checksum(bufp);
+- -	bufp = bufp + strlen(bufp);
++	if (session-&gt;gNMEAdata.raw_hook) {
++	    session-&gt;gNMEAdata.raw_hook(bufp);
++        }
++	bufp += strlen(bufp);
+     }
+     sprintf(bufp,
+ 	    &quot;$GPRMC,%02d%02d%02d,%c,%f,%c,%f,%c,%f,%f,%02d%02d%02d,,*&quot;,
+@@ -234,17 +246,25 @@
+ 	    session-&gt;month,
+ 	    (session-&gt;year % 100));
+ 	nmea_add_checksum(bufp);
++	if (session-&gt;gNMEAdata.raw_hook) {
++	    session-&gt;gNMEAdata.raw_hook(bufp);
++        }
+ }
+
+ void gpsd_binary_satellite_dump(struct gps_session_t *session, char *bufp)
+ {
+     int i, j;
++    char *bufp2 = bufp;
+
+     j = (session-&gt;gNMEAdata.satellites / 4) + (((session-&gt;gNMEAdata.satellites % 4) &gt; 0) ? 1 : 0);
+
++    // FIXME!  only dump chanels that have data
+     for( i = 0 ; i &lt; MAXCHANNELS; i++ ) {
+- -	if (i % 4 == 0)
+- -	    sprintf(bufp, &quot;$GPGSV,%d,%d,%02d&quot;, j, (i / 4) + 1, session-&gt;gNMEAdata.satellites);
++	if (i % 4 == 0) {
++            bufp2 = bufp;
++	    sprintf(bufp, &quot;$GPGSV,%d,%d,%02d&quot;, j, (i / 4) + 1,
++            	session-&gt;gNMEAdata.satellites);
++	}
+ 	bufp += strlen(bufp);
+ 	if (i &lt;= session-&gt;gNMEAdata.satellites &amp;&amp; session-&gt;gNMEAdata.elevation[i])
+ 	    sprintf(bufp, &quot;,%02d,%02d,%03d,%02d&quot;, session-&gt;gNMEAdata.PRN[i],
+@@ -252,11 +272,14 @@
+ 	else
+ 	    sprintf(bufp, &quot;,%02d,00,000,%02d,&quot;, session-&gt;gNMEAdata.PRN[i],
+ 		    session-&gt;gNMEAdata.ss[i]);
+- -	bufp += strlen(bufp);
+ 	if (i % 4 == 3) {
+- -	    sprintf(bufp, &quot;*&quot;);
+- -	    nmea_add_checksum(bufp);
++	    strcat(bufp2, &quot;*&quot;);
++	    nmea_add_checksum(bufp2);
++            if (session-&gt;gNMEAdata.raw_hook) {
++		session-&gt;gNMEAdata.raw_hook(bufp2);
++	    }
+ 	}
++	bufp += strlen(bufp);
+     }
+ }
+
+@@ -281,6 +304,9 @@
+     sprintf(bufp, &quot;%.2f,%.2f,%.2f*&quot;, session-&gt;gNMEAdata.pdop, session-&gt;gNMEAdata.hdop,
+ 	    session-&gt;gNMEAdata.vdop);
+     nmea_add_checksum(bufp);
++    if (session-&gt;gNMEAdata.raw_hook) {
++        session-&gt;gNMEAdata.raw_hook(bufp);
++    }
+ }
+
+ #endif /* BINARY_ENABLE */
+
+
+- --- garmin.c.DIST	2005-02-14 10:22:55.000000000 -0800
++++ garmin.c	2005-02-14 18:57:42.000000000 -0800
+@@ -1,40 +1,57 @@
+ /*
+  * Handle the Garmin binary packet format supported by the USB Garmins
+- - * tested with the Garmin 18
++ * tested with the Garmin 18 and other models.  This driver is NOT for
++ * serial port connected Garmins, they provide adequate NMEA support.
+  *
+  * This code is partly from the Garmin IOSDK and partly from the
+  * sample code in the Linux garmin_gps driver.
+  *
+- - * Protocol info from the:
++ * Presently this code needs the Linux garmin_usb driver and will
++ * not function without it.  It also depends on the Intel byte order
++ * (little-endian) so will not work on PPC or other big-endian machines
++ *
++ * Protocol info from:
+  *	 GPS18_TechnicalSpecification.pdf
+  *	 iop_spec.pdf
+  * <A HREF="http://www.garmin.com/support/commProtocol.html">http://www.garmin.com/support/commProtocol.html</A>
+  *
+  * bad code by: Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;
++ * all rights abandoned, a thank would be nice if you use this code.
+  *
+  * -D 3 = packet trace
+  * -D 4 = packet details
+  * -D 5 = more packet details
+  *
+  * limitations:
+- - * do not really have from garmin:
+- - *      pdop, so use epe instead
+- - *      hdop, so use eph instead
+- - *      vdop, so use epv instead
+- - * do not have:
++ *
++ * do not have from garmin:
++ *      pdop
++ *      hdop
++ *      vdop
+  *	magnetic variation
++ * do not know what to do about this.
++ *
++ * INSTEAD NEED TO SUPPORT THIS SENTENCE:
++ * $PGRME,15.0,M,45.0,M,25.0,M*1C
++ *
++ * where:
++ * 15.0,M       Estimated horizontal position error in meters (HPE)
++ * 45.0,M       Estimated vertical error (VPE) in meters
++ * 25.0,M       Overall spherical equivalent position error
++ *
+  *
+  * known bugs:
+- - * won't work on a little-endian machine
+- - *	Satellties over 32 are being reported.
++ *      won't work on a little-endian machine
+  *	xgps says &quot;NO FIX&quot; and refuses to show the speed and track.
+  *      hangs in the fread loop instead of keeping state and returning.
+  */
+ #include &lt;stdio.h&gt;
+ #include &lt;stdlib.h&gt;
++// Linux math.h need the next two defines to get hypot() and _PI constants
+ #define __USE_ISOC99
+ #define __USE_GNU
+ #include &lt;math.h&gt;
++
+ #include &lt;string.h&gt;
+ #include &lt;unistd.h&gt;
+
+@@ -82,6 +99,7 @@
+ #define ASYNC_DATA_SIZE 64
+
+
++// This is the packet format to/from the Garmin USB
+ #pragma pack(1)
+ typedef struct {
+     unsigned char  mPacketType;
+@@ -93,6 +111,7 @@
+     char  mData[MAX_BUFFER_SIZE];
+ } Packet_t;
+
++// This is the data format of the satellite data from the garmin USB
+ typedef struct {
+ 	unsigned char  svid;
+ 	unsigned short snr; // 0 - 0xffff
+@@ -104,6 +123,7 @@
+ } cpo_sat_data;
+
+ /* Garmin D800_Pvt_Date_Type */
++// This is the data format of the position data from the garmin USB
+ typedef struct {
+ 	float alt;  /* altitude above WGS 84 */
+ 	float epe;  /* estimated position error, 2 sigma (meters)  */
+@@ -254,17 +274,19 @@
+ 		session-&gt;gNMEAdata.longitude = radtodeg(pvt-&gt;lon);
+ 		REFRESH(session-&gt;gNMEAdata.latlon_stamp);
+
+- -                // altitude over WGS84
+- -		session-&gt;gNMEAdata.altitude = pvt-&gt;alt;
++                // altitude over WGS84 cnverted to MSL
++		session-&gt;gNMEAdata.altitude = pvt-&gt;alt + pvt-&gt;msl_hght;
++
+ 		// geoid separation from WGS 84
+ 		session-&gt;separation = pvt-&gt;msl_hght;
+ 		REFRESH(session-&gt;gNMEAdata.altitude_stamp);
+
+ 		// do not really have an ?dop, use ep? instead
+- -		session-&gt;gNMEAdata.pdop = pvt-&gt;epe;
+- -		session-&gt;gNMEAdata.hdop = pvt-&gt;eph;
+- -		session-&gt;gNMEAdata.vdop = pvt-&gt;epv;
+- -		REFRESH(session-&gt;gNMEAdata.fix_quality_stamp);
++                // NO, bad idea, should emit $PGRME instead..
++		//session-&gt;gNMEAdata.pdop = pvt-&gt;epe;
++		//session-&gt;gNMEAdata.hdop = pvt-&gt;eph;
++		//session-&gt;gNMEAdata.vdop = pvt-&gt;epv;
++		SEEN(session-&gt;gNMEAdata.fix_quality_stamp) = 0;
+
+ 		// convert lat/lon in meters/sec to speed in knots
+ 		session-&gt;gNMEAdata.speed
+@@ -334,12 +356,13 @@
+ 		    , pvt-&gt;grmn_days);
+
+ 		gpsd_binary_fix_dump(session, bufp);
++		bufp += strlen(bufp);
+ 		break;
+             case GARMIN_PKTID_SAT_DATA:
+ 		gpsd_report(3, &quot;SAT Data Sz: %d\n&quot;, pkt-&gt;mDataSize);
+ 		sats = (cpo_sat_data*)pkt-&gt;mData;
+
+- -		session-&gt;gNMEAdata.satellites = 12; // always got data for 12
++		session-&gt;gNMEAdata.satellites = 0;
+ 		session-&gt;gNMEAdata.satellites_used = 0;
+
+ 		// clear used table
+@@ -357,27 +380,31 @@
+
+ 			// busted??
+ // FIXME!! need to elimate sats over 32
+- -			//if ( 255 == sats-&gt;svid ) {
++			if ( (32 &lt; sats-&gt;svid) || (0 == sats-&gt;svid) ) {
+ 				// Garmin uses 255 for empty
+                                 // gpsd uses 0 for empty
+- -				//sats-&gt;svid = 0;
+- -			//}
++				continue;
++			}
+
+- -			session-&gt;gNMEAdata.PRN[i] = sats-&gt;svid;
+- -			session-&gt;gNMEAdata.azimuth[i] = sats-&gt;azmth;
+- -			session-&gt;gNMEAdata.elevation[i] = sats-&gt;elev;
++			session-&gt;gNMEAdata.PRN[j] = sats-&gt;svid;
++			session-&gt;gNMEAdata.azimuth[j] = sats-&gt;azmth;
++			session-&gt;gNMEAdata.elevation[j] = sats-&gt;elev;
+ 			// snr units??
+ 			// garmin 0 -&gt; 0xffff, NMEA 99 -&gt; 0
+- -			session-&gt;gNMEAdata.ss[i]
++			session-&gt;gNMEAdata.ss[j]
+ 				= 99 - ((100 *(long)sats-&gt;snr) &gt;&gt; 16);
+ 			if ( sats-&gt;status &amp; 4 ) {
+ 				// used in solution?
+ 				session-&gt;gNMEAdata.used[ session-&gt;gNMEAdata.satellites_used++] = sats-&gt;svid;
+ 			}
++			session-&gt;gNMEAdata.satellites++;
++			j++;
+ 		}
+ 		REFRESH(session-&gt;gNMEAdata.satellite_stamp);
+ 		gpsd_binary_satellite_dump(session, bufp);
++		bufp += strlen(bufp);
+ 		gpsd_binary_quality_dump(session, bufp+strlen(bufp));
++		bufp += strlen(bufp);
+ 		break;
+             default:
+ 		gpsd_report(3, &quot;ID: %d, Sz: %d\n&quot;
+@@ -422,9 +449,6 @@
+
+     if ( bufp != buf ) {
+ 	gpsd_report(3, &quot;%s&quot;, buf);
+- -	if (session-&gt;gNMEAdata.raw_hook) {
+- -	    session-&gt;gNMEAdata.raw_hook(buf);
+- -        }
+     }
+
+ }
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.2.3 (GNU/Linux)
+
+iD8DBQFCEZRD8KZibdeR3qURAjY/AKCckfisln5qyGThN/eviHr1jUHpDgCfROtc
+0Vz0SvZ0HzFnK8KPzYD1h4I=
+=t+fW
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000654.html">[Gpsd-dev] The state of gpsd
+</A></li>
+	<LI>Next message: <A HREF="000663.html">[Gpsd-dev] The state of gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#658">[ date ]</a>
+              <a href="thread.html#658">[ thread ]</a>
+              <a href="subject.html#658">[ subject ]</a>
+              <a href="author.html#658">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,150 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] IPv6 Support patch
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20IPv6%20Support%20patch&In-Reply-To=%3Cfce2b0b90902192311v6886f7ceqe11c384f031a4213%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006409.html">
+   <LINK REL="Next"  HREF="006413.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] IPv6 Support patch</H1>
+    <B>Mathieu Peresse</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20IPv6%20Support%20patch&In-Reply-To=%3Cfce2b0b90902192311v6886f7ceqe11c384f031a4213%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] IPv6 Support patch">thieummm at gmail.com
+       </A><BR>
+    <I>Fri Feb 20 08:11:10 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006409.html">[Gpsd-dev] IPv6 Support patch
+</A></li>
+        <LI>Next message: <A HREF="006413.html">[Gpsd-dev] IPv6 Support patch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6410">[ date ]</a>
+              <a href="thread.html#6410">[ thread ]</a>
+              <a href="subject.html#6410">[ subject ]</a>
+              <a href="author.html#6410">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Greg,
+
+My patch is the result of a couple of hours hacking for a project I am on at
+work...
+I think your approach to IPv6 support is a sane one.
+
+If I have time I'll try to make it behave nice :) Please tell me if you
+prefer to work on it.
+
+
+On Fri, Feb 20, 2009 at 1:04 AM, Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt; wrote:
+
+&gt;<i> It allows the gpsd daemon to listen on a v6 socket, when started with the
+</I>&gt;<i>  &quot;-6&quot; option.
+</I>&gt;<i>  It also updates netlib.c, libgps.c, gpspipe.c, gpsctl.c to allow gpspipe
+</I>&gt;<i> and
+</I>&gt;<i>  gpsctl to connect to the gpsd daemon with IPv6.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Thanks for hacking on v6 support.  I have long thought that gpsd should
+</I>&gt;<i> support v6.  I read your patch and have quite a few comments - sorry if
+</I>&gt;<i> this comes across as harsh - am just trying to get us where I think we
+</I>&gt;<i> need to be as quickly as possible.
+</I>&gt;<i>
+</I>&gt;<i> First, I think we need to talk about what the desired behavior is.  I am
+</I>&gt;<i> used to the KAME/BSD approach to v6, which is that programs that used to
+</I>&gt;<i> listen on a v4 socket should instead listen on both v6 and v4 and be
+</I>&gt;<i> able to cope with incoming connections on either.  For example, one of
+</I>&gt;<i> my machines runs DNS, and fstat shows:
+</I>&gt;<i>
+</I>&gt;<i> named    named       4288   20* internet6 stream tcp c32e6ab8 *:53
+</I>&gt;<i> named    named       4288  128* internet6 dgram udp c2b966b4 *:53
+</I>&gt;<i>
+</I>&gt;<i> This is why I haven't dug in to fixing gpsd for v6: it needs a
+</I>&gt;<i> structural change (albeit a minor one) to have multiple listening
+</I>&gt;<i> sockets.  Listening on v6 and not v4 would be awkward and has no gradual
+</I>&gt;<i> transition story.
+</I>&gt;<i>
+</I>&gt;<i> I think listening on v6 should be the default for systems that have v6
+</I>&gt;<i> support (via .h files, separate from 'a global v6 address is
+</I>&gt;<i> configured').  It's ok to have an option for 'listen only on v4' and
+</I>&gt;<i> 'listen only on v6' - but I'm not sure it's really needed.
+</I>&gt;<i>
+</I>&gt;<i> When given a name (with 'localhost' being the implicit name), cgps
+</I>&gt;<i> etc. should use getaddrinfo (if it exists), and then use the first
+</I>&gt;<i> AF/address returned, which will typically be v6.
+</I>&gt;<i> For example:
+</I>&gt;<i>
+</I>&gt;<i>  foobar gdt &gt; telnet localhost smtp
+</I>&gt;<i>  Trying ::1...
+</I>&gt;<i>  Connected to localhost.
+</I>&gt;<i>  Escape character is '^]'.
+</I>&gt;<i>  220 foobar.ir.bbn.com ESMTP Postfix
+</I>&gt;<i>
+</I>&gt;<i> goes over v6.
+</I>&gt;<i>
+</I>&gt;<i> I would say that if netlib_ takes names, then it should perhaps just use
+</I>&gt;<i> getaddrinfo, and perhaps should take an AF_ variable to force only a
+</I>&gt;<i> specific family so -4 and -6 command line args can be given in case of
+</I>&gt;<i> trouble (as ntpq and ssh do).  Sockets already defines AF_INET and
+</I>&gt;<i> AF_INET6, so IMHO best to use those rather than define new constants.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> I think gpsd runs on some systems which are too lame to have
+</I>&gt;<i> getaddrinfo, so autoconf support is needed.
+</I>&gt;<i> getaddrinfo is in POSIX.1 2004:
+</I>&gt;<i>
+</I>&gt;<i>  <A HREF="http://www.opengroup.org/onlinepubs/009695399/functions/getaddrinfo.html">http://www.opengroup.org/onlinepubs/009695399/functions/getaddrinfo.html</A>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>
+
+-- 
+&#224; bient&#244;t,
+
+Mathieu
+
+::<i>Contact::
+</I>Personal : +33 6 86 40 69 10
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mathieu.peresse at gmail.com</A>
+Professionnal :  +33 2 99 12 70 49
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mathieu.peresse at telecom-bretagne.eu</A>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090220/39d241ed/attachment.html">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090220/39d241ed/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006409.html">[Gpsd-dev] IPv6 Support patch
+</A></li>
+	<LI>Next message: <A HREF="006413.html">[Gpsd-dev] IPv6 Support patch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6410">[ date ]</a>
+              <a href="thread.html#6410">[ thread ]</a>
+              <a href="subject.html#6410">[ subject ]</a>
+              <a href="author.html#6410">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

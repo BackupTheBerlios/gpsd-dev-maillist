@@ -1,0 +1,89 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] zodiac.c uses satcounter
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20zodiac.c%20uses%20satcounter&In-Reply-To=%3C200505101755.25240.remco%40rvt.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001640.html">
+   <LINK REL="Next"  HREF="001622.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] zodiac.c uses satcounter</H1>
+    <B>Remco Treffkorn</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20zodiac.c%20uses%20satcounter&In-Reply-To=%3C200505101755.25240.remco%40rvt.com%3E"
+       TITLE="[Gpsd-dev] zodiac.c uses satcounter">remco at rvt.com
+       </A><BR>
+    <I>Wed May 11 02:55:25 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001640.html">[Gpsd-dev] Bug in serial.c
+</A></li>
+        <LI>Next message: <A HREF="001622.html">[Gpsd-dev] zodiac.c uses satcounter
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1621">[ date ]</a>
+              <a href="thread.html#1621">[ thread ]</a>
+              <a href="subject.html#1621">[ subject ]</a>
+              <a href="author.html#1621">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Satcounter is sirf only. It does not exist when sirf is not enabled, yet it is 
+used in zodiac.c today. This must be a recent addition, since I had just 
+fixed all of those. What is done here means nothing to me. I see what the 
+code does, but there is no way for me to guess why this is done, or (for that 
+matter) why this should not be done when sirf is not enabled.
+
+I can only guess, that satcounter is no longer sirf specific, but should be 
+conditioned on binary enable?
+
+    case 1002:
+        if (session-&gt;satcounter++ % 5)
+            break;
+        mask = handle1002(session);
+        strcpy(buf, &quot;$PRWIZCH&quot;);
+        for (i = 0; i &lt; MAXCHANNELS; i++) {
+            sprintf(buf+strlen(buf), &quot;,%02d,%X&quot;, session-&gt;Zs[i], 
+session-&gt;Zv[i]);
+        }
+        strcat(buf, &quot;*&quot;);
+        nmea_add_checksum(buf);
+        gpsd_binary_quality_dump(session, buf+strlen(buf));
+        gpsd_report(3, &quot;&lt;= GPS: %s&quot;, buf);
+        break;
+
+-- 
+Remco Treffkorn (RT445)
+HAM DC2XT
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001640.html">[Gpsd-dev] Bug in serial.c
+</A></li>
+	<LI>Next message: <A HREF="001622.html">[Gpsd-dev] zodiac.c uses satcounter
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1621">[ date ]</a>
+              <a href="thread.html#1621">[ thread ]</a>
+              <a href="subject.html#1621">[ subject ]</a>
+              <a href="author.html#1621">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

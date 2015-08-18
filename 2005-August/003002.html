@@ -1,0 +1,138 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Broken gps mouse
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Broken%20gps%20mouse&In-Reply-To=%3C91981b3e0508191812ccd9981%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003001.html">
+   <LINK REL="Next"  HREF="003003.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Broken gps mouse</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Broken%20gps%20mouse&In-Reply-To=%3C91981b3e0508191812ccd9981%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Broken gps mouse">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Sat Aug 20 03:12:41 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003001.html">[Gpsd-dev] Broken gps mouse
+</A></li>
+        <LI>Next message: <A HREF="003003.html">[Gpsd-dev] Broken gps mouse
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3002">[ date ]</a>
+              <a href="thread.html#3002">[ thread ]</a>
+              <a href="subject.html#3002">[ subject ]</a>
+              <a href="author.html#3002">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 8/19/05, Remco Treffkorn &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>&gt; wrote:
+&gt;<i> 
+</I>&gt;<i> It's recognized as SiRF, but has a fw bug. Its time is 10 seconds off. In NMEA
+</I>&gt;<i> mode it is correct.
+</I>
+10 or 13 seconds?
+
+SiRF mode to returns time referenced to GPS, not UTC. I'm not sure if
+I got that from the docs or from one of the engineers, but I have it
+from an authoritative source that the only places where you get UTC
+out of a SiRF receiver are a) NMEA, b) message 52 (pps time) or c) by
+hand, after decoding the 50bps data.
+
+&gt;<i> A few observations:
+</I>&gt;<i> 
+</I>&gt;<i> I compiled gpsd with SiRF disabled, and that works great.
+</I>&gt;<i> If I look at the data with cgps (which I like), the Climb, VPE, HPE, and
+</I>&gt;<i> Altitude fields flicker. Looks like a bug to me.
+</I>
+This is in the faq - perhaps I need to clarify that section.
+
+Also, we might want to add a &quot;-buffered&quot; option to [cx]gps to allow
+them to fill/update a structure and refresh the display of the
+structure every measurement cycle, with the understanding that the use
+of -buffered can lead to the display of outdated data.
+
+&gt;<i> I was looking at sirf.c to find a way to blacklist my receiver (better than to
+</I>&gt;<i> fully disable SiRF) but could not find any distinguishing message other than
+</I>&gt;<i> 0x06. My version 231.000.000 (or close to that).
+</I>
+Ah, good ol'  231.000.000 ... what a festering pile of crap that was.
+
+&gt;<i> Chris, is there a way to get a manufacturer or product string? Is there a
+</I>&gt;<i> document online I should look at?
+</I>
+As best I can tell, SiRF-powered products aren't branded in firmware,
+or at least not always meaningfully.
+
+&quot;Note:&#173; Convert ASCII to symbol to assemble message (i.e., 0x4E is
+`N'). This is a low priority task and is not necessarily outputted at
+constant intervals. Effective with
+version GSW 2.3.2, message length was increased from 21 to 81 bytes to
+allow for upto 80-character version string.&quot;
+
+Here's what Carl Carter has to say about firmware versions:
+<A HREF="http://www.gpspassion.com/forumsen/topic.asp?TOPIC_ID=27925">http://www.gpspassion.com/forumsen/topic.asp?TOPIC_ID=27925</A>
+
+&gt;<i> I noticed that you send a request for a version message, but my mouse never
+</I>&gt;<i> sends it to gpsd. I can get it from sirfmon.
+</I>&gt;<i> Could the request message be bad?
+</I>
+Look for a nak message. Maybe the receiver is dropping the request due
+to cpu exhaustion. Anyway, all my manuals say that a firmware version
+request looks like this: A0A2 0002 8400 0084 B0B3
+
+
+&gt;<i> Something a bit more esoteric:
+</I>...
+&gt;<i> The way I remember it, the data that goes into the array is put by the
+</I>&gt;<i> compiler in a data segment in memory. When you get into the block, code is
+</I>&gt;<i> executed that copies the data onto the stack to initialize your auto variable
+</I>&gt;<i> msg.
+</I>&gt;<i> 
+</I>&gt;<i> I think the copy is unnecessary, and there is no need to use stack space.
+</I>&gt;<i> Just make it  &quot;static unsigned char msg[] = {0xa0, 0xa2, 0x00, 0x09,&quot;.
+</I>&gt;<i> 
+</I>&gt;<i> Since this is done all over, it should save quite a few cycles and stack
+</I>&gt;<i> space.
+</I>
+Profile it and see how much it costs us - I'm betting not much. I
+don't see a big issue with making it static though. But I'm not a
+compiler jock...
+
+CK
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003001.html">[Gpsd-dev] Broken gps mouse
+</A></li>
+	<LI>Next message: <A HREF="003003.html">[Gpsd-dev] Broken gps mouse
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3002">[ date ]</a>
+              <a href="thread.html#3002">[ thread ]</a>
+              <a href="subject.html#3002">[ subject ]</a>
+              <a href="author.html#3002">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

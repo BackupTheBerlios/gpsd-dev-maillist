@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] The state of RTCM3 support, and two	request?for?healp
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%0A%09%3D%3Fiso-8859-1%3Fq%3FThe_state_of_RTCM3_support%3D2C_and_two%3F%3D%0A%09%3D%3Fiso-8859-1%3Fq%3F%3D09request%3D3Ffor%3D3Fhealp%3F%3D&In-Reply-To=%3C200901081207.14958.remco%40rvt.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006266.html">
+   <LINK REL="Next"  HREF="006270.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] The state of RTCM3 support, and two	request?for?healp</H1>
+    <B>Remco Treffkorn</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%0A%09%3D%3Fiso-8859-1%3Fq%3FThe_state_of_RTCM3_support%3D2C_and_two%3F%3D%0A%09%3D%3Fiso-8859-1%3Fq%3F%3D09request%3D3Ffor%3D3Fhealp%3F%3D&In-Reply-To=%3C200901081207.14958.remco%40rvt.com%3E"
+       TITLE="[Gpsd-dev] The state of RTCM3 support, and two	request?for?healp">remco at rvt.com
+       </A><BR>
+    <I>Thu Jan  8 21:07:14 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006266.html">[Gpsd-dev] The state of RTCM3 support, and two	request?for?healp
+</A></li>
+        <LI>Next message: <A HREF="006270.html">[Gpsd-dev] The state of RTCM3 support, and	two?request?for?healp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6268">[ date ]</a>
+              <a href="thread.html#6268">[ thread ]</a>
+              <a href="subject.html#6268">[ subject ]</a>
+              <a href="author.html#6268">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Hi guys.
+
+Eric, I never got the message you are replying to here.
+
+I disagree with many things said in this thread, but they are besides the 
+point.
+
+As a solution to the current problem I suggested to just not write the 
+message. Another one will be coming shortly...
+
+This is where we should all be able to agree.
+
+Off the point, strictly as a side node, and only my opinion:
+
+I consider the bt driver broken. Bad craftsmanship. And yes, programs should 
+be able to live with that, and with the above strategy we are.
+
+Adding code with a higher complexity to an application than would be needed in 
+the driver strikes me as a loosing proposition.
+
+More inline:
+
+On Thursday 08 January 2009, Eric S. Raymond wrote:
+&gt;<i> Matthias Urlichs &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">smurf at smurf.noris.de</A>&gt;:
+</I>&gt;<i> &gt; See above -- IMHO gpsd is the lazy party, by making special assumptions
+</I>&gt;<i> &gt; about the properties of the 'serial' lines it needs to write to.
+</I>&gt;<i>
+</I>&gt;<i> There are points on both sides here, I think.
+</I>
+No, not what I said. What special assumptions does gpsd make? A write fails. 
+Let it fail.
+
+&gt;<i> Matthias, you are certainly correct that, classically, Unix programs
+</I>&gt;<i> wtiting to serial devices should be prepared to handle EAGAIN.  On the
+</I>&gt;<i> other hand, on modern not-so-memory-limited hardware the Bluetooth
+</I>&gt;<i> driver really ought to be coalescing adjacent writes and capable of
+</I>&gt;<i> buffering more data per second than DGPS ships -- Remco is right that
+</I>&gt;<i> failing to do this is lazy and shoddy work.
+</I>
+My point is a soft one, having to to with 'reasonable' expectations about what 
+a driver 'should' provide. If you are doing something 'ordinary', something 
+that seems 'normal' in the context of what one would 'expect' a driver to do, 
+and it does not work, then you might blame the driver. I believe a driver 
+should do what a group of 'average' developers 'expects' from it.
+
+For example: Most everybody would agree that a serial driver that requires you 
+to write a single character, then wait x milliseconds before the next can be 
+written is not good. On the other side of things, almost nobody would blame a 
+driver for not wanting to do a 4k write to a 300 baud port in one sitting.
+
+There is no standard (I know of) that dictates what the relationship of buffer 
+depth to bandwidth should be. I believe the phrase is &quot;make it reasonable'.
+
+Please note: I am mot saying that this obligates the driver maintainer to do 
+anything. This test is just to decide where effort is spent most efficiently.
+ 
+&gt;<i> On the gripping hand, both PVT packets from GPS and DGPS packets going
+</I>&gt;<i> to them are datagram-like.  No one of them is critical.  So simply
+</I>&gt;<i> dropping a short write is, I think, better than introducing a lot of
+</I>&gt;<i> complexity in an attempt to make the transmission reliable, especially
+</I>&gt;<i> since actual reliability probaly isn't achievable.
+</I>
+I hope we can agree on that.
+
+&gt;<i> I've added a brief discussion of this issue to the Hacking Guide in the
+</I>&gt;<i> section on &quot;Architecture and how to hack it&quot;.  Please critique.
+</I>
+If you really want me to, I will do it.
+But keep in mind: This is as close to religion as I ever will get. It's one of 
+the few things people have found they can not argue with me about.
+
+Cheers,
+Remco
+
+-- 
+Remco Treffkorn (RT445)
+HAM DC2XT
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006266.html">[Gpsd-dev] The state of RTCM3 support, and two	request?for?healp
+</A></li>
+	<LI>Next message: <A HREF="006270.html">[Gpsd-dev] The state of RTCM3 support, and	two?request?for?healp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6268">[ date ]</a>
+              <a href="thread.html#6268">[ thread ]</a>
+              <a href="subject.html#6268">[ subject ]</a>
+              <a href="author.html#6268">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

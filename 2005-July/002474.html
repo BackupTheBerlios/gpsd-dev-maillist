@@ -1,0 +1,97 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: splint is obsessive
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20splint%20is%20obsessive&In-Reply-To=%3C20050712201324.GA19753%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002473.html">
+   <LINK REL="Next"  HREF="002475.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: splint is obsessive</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20splint%20is%20obsessive&In-Reply-To=%3C20050712201324.GA19753%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Re: splint is obsessive">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Jul 12 22:13:24 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002473.html">[Gpsd-dev] Re: splint is obsessive
+</A></li>
+        <LI>Next message: <A HREF="002475.html">[Gpsd-dev] Re: splint is obsessive
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2474">[ date ]</a>
+              <a href="thread.html#2474">[ thread ]</a>
+              <a href="subject.html#2474">[ subject ]</a>
+              <a href="author.html#2474">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Wolfgang S. Rupprecht &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">wolfgang+gnus20050712 at dailyplanet.dontspam.wsrcc.com</A>&gt;:
+&gt;<i> &quot;Eric S. Raymond&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; writes:
+</I>&gt;<i> &gt; This means the bad code is being generated at -O2 level by some behavior
+</I>&gt;<i> &gt; that is not controlled by any of these switches.
+</I>&gt;<i> 
+</I>&gt;<i> That is my conclusion too.  Some arch's have -mno-tail-call flags, but
+</I>&gt;<i> not x86 on that compiler.  It would be nice to turn it off and confirm
+</I>&gt;<i> that was the problem. 
+</I>
+It almost certainly was.  Your previous comment about the argument getting
+stepped on gave me the idea to... well, I'll just show you:
+
+#define rtcmparityok(w)	(rtcmparity(w) == ((w) &amp; 0x3f))
+
+#if 0
+/* 
+ * Defining the above as a function triggers an optimizer bug in gcc 3.4.2.
+ * The symptom is that parity computation is screwed up and the decoder
+ * never achieves sync lock.  Something steps on the argument to 
+ * rtcmparity(); the lossage appears to be related to the compiler's 
+ * attempt to fold the rtcmparity() call into rtcmparityok() in some
+ * tail-recursion-like manner.  This happens under -O2, but not -O1, on
+ * both i386 and amd64. gcc 4.0 does not manifest the bug.
+ */
+static bool rtcmparityok(RTCMWORD w)
+{
+    return (rtcmparity(w) == (w &amp; 0x3f));
+}
+#endif
+
+This version works like a charm at -O2.
+
+And I'm glad *that's* over.  First actual compiler bug I've been bit by 
+in about six years.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002473.html">[Gpsd-dev] Re: splint is obsessive
+</A></li>
+	<LI>Next message: <A HREF="002475.html">[Gpsd-dev] Re: splint is obsessive
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2474">[ date ]</a>
+              <a href="thread.html#2474">[ thread ]</a>
+              <a href="subject.html#2474">[ subject ]</a>
+              <a href="author.html#2474">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,256 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Patches for flocktest and freebsd builds.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Patches%20for%20flocktest%20and%20freebsd%20builds.&In-Reply-To=%3CPine.OSF.4.61.1004170725190.38183%40sirppi.helsinki.fi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007694.html">
+   <LINK REL="Next"  HREF="007696.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Patches for flocktest and freebsd builds.</H1>
+    <B>M Joonas Pihlaja</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Patches%20for%20flocktest%20and%20freebsd%20builds.&In-Reply-To=%3CPine.OSF.4.61.1004170725190.38183%40sirppi.helsinki.fi%3E"
+       TITLE="[Gpsd-dev] Patches for flocktest and freebsd builds.">jpihlaja at cc.helsinki.fi
+       </A><BR>
+    <I>Sat Apr 17 06:36:06 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007694.html">[Gpsd-dev] Trimble Thunderbolt-E
+</A></li>
+        <LI>Next message: <A HREF="007696.html">[Gpsd-dev] Patches for flocktest and freebsd builds.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7695">[ date ]</a>
+              <a href="thread.html#7695">[ thread ]</a>
+              <a href="subject.html#7695">[ subject ]</a>
+              <a href="author.html#7695">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Hey,
+
+Please have a look at the attached patch series which fix the build 
+on a freebsd machine I'd like to add to the test flock.  The final 
+commit does that.
+
+Cheers,
+
+Joonas
+-------------- next part --------------
+From 2bccb1d241b69a72c2d7d38e745814a7e2d486cb Mon Sep 17 00:00:00 2001
+From: M Joonas Pihlaja &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jpihlaja at cc.helsinki.fi</A>&gt;
+Date: Sat, 17 Apr 2010 03:54:39 +0000
+Subject: [PATCH] test: Fix GNU makeism concerning exporting variables in Makefile.
+
+The PYTHON env variable was being exported to child processes using
+a GNU make extension.  Primarily this is used in regress-driver
+to run the testers with the right python environment by querying
+the python interpreter.
+
+This patch makes explicit the carrying around of the PYTHON
+environment variable down to regress-driver through the convolutions
+of the Makefile.  This fixes the build using FreeBSD's make, which
+doesn't support the variable export extension that GNU make does.
+---
+ Makefile.am |   15 ++++++++-------
+ do-tests    |    2 +-
+ 2 files changed, 9 insertions(+), 8 deletions(-)
+
+diff --git a/Makefile.am b/Makefile.am
+index deb3270..28ebcbd 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -70,7 +70,6 @@ PYTHONPAGES_DIST = gpsprof.1 gpsfake.1 gpscat.1
+ if HAVE_PYTHON
+ python_PYTHON = gpscap.py
+ PYTHONPAGES = $(PYTHONPAGES_DIST)
+-export PYTHON
+ endif
+ 
+ #
+@@ -576,19 +575,21 @@ version:
+ # depends on each TEST as well as invokes it (with TESTS_ENVIRONMENT)
+ # the entire list of tests is run twice.
+ 
++run_regress_driver = PYTHON=$(PYTHON) $(srcdir)/regress-driver
++
+ # Regression-test the daemon
+ gps-regress: gpsd 
+-	$(srcdir)/regress-driver $(srcdir)/test/daemon/*.log
++	$(run_regress_driver) $(srcdir)/test/daemon/*.log
+ 
+ # Test that super-raw mode works. Compare each logfile against itself 
+ # dumped through the daemon running in R=2 mode.  (This test is not
+ # included in the normal regressions.)
+ raw-regress:
+-	$(srcdir)/regress-driver -r  $(srcdir)/test/daemon/*.log
++	$(run_regress_driver) -r  $(srcdir)/test/daemon/*.log
+ 
+ # Build the regression tests for the daemon.
+ gps-makeregress: gpsd
+-	$(srcdir)/regress-driver -b $(srcdir)/test/daemon/*.log
++	$(run_regress_driver) -b $(srcdir)/test/daemon/*.log
+ 
+ # To build an individual test for a load named foo.log, put it in
+ # test/daemon and do this:
+@@ -661,12 +662,12 @@ time-regress: test_mkgmtime
+ # Regression test the unpacking code in libgps
+ unpack-regress: libgps
+ 	@echo &quot;Testing the client-library sentence decoder...&quot;
+-	$(srcdir)/regress-driver -c $(srcdir)/test/clientlib/*.log
++	$(run_regress_driver) -c $(srcdir)/test/clientlib/*.log
+ 
+ # Build the regression test for the sentence unpacker
+ unpack-makeregress: libgps
+ 	@echo &quot;Rebuilding the client sentence-unpacker tests...&quot;
+-	$(srcdir)/regress-driver -c -b $(srcdir)/test/clientlib/*.log
++	$(run_regress_driver) -c -b $(srcdir)/test/clientlib/*.log
+ 
+ # Unit-test the JSON parsing
+ json-regress: test_json
+@@ -682,7 +683,7 @@ testregress: gps-regress rtcm-regress aivdm-regress packet-regress time-regress
+ 
+ # do-tests is a shell script that invokes make with target testregress.
+ # This works around automake's lack of support for make targets as tests.
+-TESTS_ENVIRONMENT = MAKE=$(MAKE)
++TESTS_ENVIRONMENT = MAKE=$(MAKE) PYTHON=$(PYTHON)
+ TESTS = do-tests
+ 
+ # The website directory
+diff --git a/do-tests b/do-tests
+index 1b362b8..0e59945 100755
+--- a/do-tests
++++ b/do-tests
+@@ -1,3 +1,3 @@
+ #!/bin/sh
+ 
+-${MAKE} testregress
++${MAKE} testregress PYTHON=&quot;$PYTHON&quot;
+-- 
+1.6.0.2.g1293c
+
+-------------- next part --------------
+From 0209bb11233b1a10de8829ccdd8a413b4d33d815 Mon Sep 17 00:00:00 2001
+From: M Joonas Pihlaja &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jpihlaja at cc.helsinki.fi</A>&gt;
+Date: Sat, 17 Apr 2010 05:51:30 +0300
+Subject: [PATCH] flocktest: Allow machines to be quiet.
+
+Some test machines can't send any mail at all,
+so we need to be able to make them quiet by default.
+This patch looks at the per-machine section and picks
+up a quiet = yes option from it.
+---
+ devtools/flocktest |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/devtools/flocktest b/devtools/flocktest
+index 68b5a9c..f27bce0 100755
+--- a/devtools/flocktest
++++ b/devtools/flocktest
+@@ -193,6 +193,8 @@ class TestSite:
+     def do_flockdriver(self, agent, invocation):
+         &quot;Copy flockdriver to the remote site and run it.&quot;
+         self.starttime = time.time()
++        if self.config.get(&quot;quiet&quot;, &quot;no&quot;) == &quot;yes&quot;:
++            invocation += &quot; -q&quot;
+         uploader = &quot;ssh -p %s %s 'cat &gt;%s'&quot; \
+                        % (self.config.get(&quot;port&quot;, &quot;22&quot;), self.me, agent)
+         if self.verbose:
+-- 
+1.6.0.2.g1293c
+
+-------------- next part --------------
+From 664f9f9e874b2daa7267a4954480d32302b9c585 Mon Sep 17 00:00:00 2001
+From: M Joonas Pihlaja &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jpihlaja at cc.helsinki.fi</A>&gt;
+Date: Sat, 17 Apr 2010 05:53:34 +0300
+Subject: [PATCH] flocktest: Fix the -d option to set the subdir.
+
+The -d option sets the subdirectory on the remote machine
+in which flocktest runs its tests.  This patch fixes
+the getopt option string to actually parse the option argument
+when the user gives one for the -d option.
+---
+ devtools/flocktest |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/devtools/flocktest b/devtools/flocktest
+index f27bce0..aa84f91 100755
+--- a/devtools/flocktest
++++ b/devtools/flocktest
+@@ -252,7 +252,7 @@ class TestFlock:
+ 
+ if __name__ == '__main__':
+     try:
+-        (options, arguments) = getopt.getopt(sys.argv[1:], &quot;cdkqvx:?&quot;)
++        (options, arguments) = getopt.getopt(sys.argv[1:], &quot;cd:kqvx:?&quot;)
+     except getopt.GetoptError, msg:
+         print &quot;flocktest: &quot; + str(msg)
+         raise SystemExit, 1
+-- 
+1.6.0.2.g1293c
+
+-------------- next part --------------
+From 2231411c6163bff68277372ce0505c5dce5e05db Mon Sep 17 00:00:00 2001
+From: M Joonas Pihlaja &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jpihlaja at cc.helsinki.fi</A>&gt;
+Date: Sat, 17 Apr 2010 05:55:41 +0300
+Subject: [PATCH] flocktest.ini: Add a sparc64/freebsd machine to the test flock.
+
+Add an older E4500 to the test flock.  This is a big-endian machine
+with lots of slow processors and memory.
+---
+ devtools/flocktest.ini |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
+
+diff --git a/devtools/flocktest.ini b/devtools/flocktest.ini
+index 7b2bfb5..1c78d55 100644
+--- a/devtools/flocktest.ini
++++ b/devtools/flocktest.ini
+@@ -60,3 +60,13 @@ devices = -
+ port = 4670
+ status = up
+ 
++[mitzi.chem.ualberta.ca]
++os = FreeBSD
++arch = sparc64
++admin = <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jpihlaja at cc.helsinki.fi</A>
++login = gpsd
++devices = -
++port = 26090
++quiet = yes
++regression = ./autogen.sh &amp;&amp; make -j14 &amp;&amp; make check
++status = up
+-- 
+1.6.0.2.g1293c
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007694.html">[Gpsd-dev] Trimble Thunderbolt-E
+</A></li>
+	<LI>Next message: <A HREF="007696.html">[Gpsd-dev] Patches for flocktest and freebsd builds.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7695">[ date ]</a>
+              <a href="thread.html#7695">[ thread ]</a>
+              <a href="subject.html#7695">[ subject ]</a>
+              <a href="author.html#7695">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

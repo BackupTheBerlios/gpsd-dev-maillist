@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: The state of gpsd; PPS_ENABLE
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20The%20state%20of%20gpsd%3B%20PPS_ENABLE&In-Reply-To=%3C20060312185809.GB5157%40space.mit.edu%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003298.html">
+   <LINK REL="Next"  HREF="003296.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: The state of gpsd; PPS_ENABLE</H1>
+    <B>Geoffrey B. Crew</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20The%20state%20of%20gpsd%3B%20PPS_ENABLE&In-Reply-To=%3C20060312185809.GB5157%40space.mit.edu%3E"
+       TITLE="[Gpsd-dev] Re: The state of gpsd; PPS_ENABLE">gbc at space.mit.edu
+       </A><BR>
+    <I>Sun Mar 12 19:58:09 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003298.html">[Gpsd-dev] gpsd and udev
+</A></li>
+        <LI>Next message: <A HREF="003296.html">[Gpsd-dev] Re: The state of gpsd; PPS_ENABLE
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3293">[ date ]</a>
+              <a href="thread.html#3293">[ thread ]</a>
+              <a href="subject.html#3293">[ subject ]</a>
+              <a href="author.html#3293">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> &gt; [Rob Janssen]
+</I>&gt;<i> &gt;&gt; The issue is: a thread is created using the pthread library to
+</I>&gt;<i> &gt;&gt; monitor the PPS input, and when it finds it cannot do so (usually
+</I>&gt;<i> &gt;&gt; because the USB serial device does not implement TIOCMIWAIT). the
+</I>&gt;<i> &gt;&gt; thread just terminates.  But it seems the pthread library closes the
+</I>&gt;<i> &gt;&gt; file descriptor in this case.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; That is very strange.  As far as I know, pthreads will not close file
+</I>&gt;<i> &gt; descriptors on thread exit.  I looked at the code to try to figure out
+</I>&gt;<i> &gt; if the thread is exiting in some strange way.  It seem to only return
+</I>&gt;<i> &gt; from the thread function, so nothing strange there.
+</I>&gt;<i> 
+</I>&gt;<i> That is my thought as well.  I believed this code was entirely safe, until
+</I>&gt;<i> someone found that it broke their gpsd which worked before it was added.
+</I>&gt;<i> I only tested with oldfashioned serial ports (on UARTS) which implement
+</I>&gt;<i> the TIOCMWAIT ioctl.  When the receiver provides no PPS pulses the thread
+</I>&gt;<i> just gets blocked in the ioctl and does no harm.
+</I>&gt;<i> 
+</I>&gt;<i> But people reported that with a USB-attached GPS the ioctl would return an
+</I>&gt;<i> error, the thread will exit, and then the parent process somehow got no
+</I>&gt;<i> access to the port anymore.   It could also be that the erroneous ioctl
+</I>&gt;<i> somehow upset the driver, but I doubt that can happen (it just isn't
+</I>&gt;<i> implemented so it returns -1 and that should be it).
+</I>&gt;<i> 
+</I>&gt;<i> At the moment I have no USB GPS to test with.
+</I>
+For what it's worth, I can confirm that the current version (svn 3259)
+with PPS enabled behaves as expected with 2 USB GPSes attached on a
+more-or-less vanilla FedoraCore4 Linux system.  When I last investigated,
+the ioctl did indeed return with an error number (I forget which number,
+but it seemed like a plausible one for a driver complaining about an
+unsupported feature) and the thread left no bad side effects.
+
+Of course, neither of these units provides a useful carrier detect
+PPS signal via USB, so it's a somewhat moot point.
+
+-- 
+
+		Geoff
+		<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gbc at space.mit.edu</A>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003298.html">[Gpsd-dev] gpsd and udev
+</A></li>
+	<LI>Next message: <A HREF="003296.html">[Gpsd-dev] Re: The state of gpsd; PPS_ENABLE
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3293">[ date ]</a>
+              <a href="thread.html#3293">[ thread ]</a>
+              <a href="subject.html#3293">[ subject ]</a>
+              <a href="author.html#3293">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

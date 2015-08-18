@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Time for a fast release?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Time%20for%20a%20fast%20release%3F&In-Reply-To=%3C20455.213.84.187.156.1114849586.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001489.html">
+   <LINK REL="Next"  HREF="001478.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Time for a fast release?</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Time%20for%20a%20fast%20release%3F&In-Reply-To=%3C20455.213.84.187.156.1114849586.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] Time for a fast release?">gpsd at xs4all.nl
+       </A><BR>
+    <I>Sat Apr 30 10:26:26 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001489.html">[Gpsd-dev] Time for a fast release?
+</A></li>
+        <LI>Next message: <A HREF="001478.html">[Gpsd-dev] Time for a fast release?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1491">[ date ]</a>
+              <a href="thread.html#1491">[ thread ]</a>
+              <a href="subject.html#1491">[ subject ]</a>
+              <a href="author.html#1491">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;&gt;<i> Here is what I found on the ntpshm.  Looks like the shared memory is
+</I>&gt;&gt;<i> opened 0700, as root, then later used as nobody.  I tyied moving the
+</I>&gt;&gt;<i> ntpshm_init() until after the drop priveledges but same results.  Dunno
+</I>&gt;&gt;<i> what the implications of opening the shared memory as 0666 instead of
+</I>&gt;&gt;<i> 0700.  BTW, shmget() ignores the 0111 bits.
+</I>&gt;<i>
+</I>&gt;<i> Rob Jansen, are you listening?  You're the SHM expert...
+</I>
+Well...  not really.
+I copied the function that accesses the SHM from a test program included
+with   the ntpd source (there was a remark in the head of the file but it
+has now disappeared), and there it uses 0700.
+In the source of ntpd itself the mode is specified as:
+
+(unit&lt;2?0700:0777)
+
+i.e. it uses 0700 for unit number 0 and 1 and 0777 for unit 2 and 3.
+
+This is only the creation mode, which is used when ntpd actually creates
+the segment.  When it is created by gpsd the mode will be what gpsd sets.
+
+ntpd also uses setuid to lower the privilege (at first I thought it could
+be a matter of using seteuid or setreuid), and I see no special tricks in
+ntpd to switch back to root before accessing the segment.
+
+It is possible to drop privileges and save the original values, and then
+switch back again when required (with setreuid) but it is a bit of false
+security: when using this method, an attacker could in principle do the
+same thing in his shellcode.
+
+Exposing the shm to everyone is not that big of a risk.  It is not like an
+attacker can write an invalid time there and then have the clock set
+backward.  ntpd will not step the clock based on information in the shared
+memory!  it will judge the info, when it suddenly is off by a large amount
+it will mark the clock as invalid, when it is off by a small amount it
+will very slowly move the system clock to that new value.  When going
+backward, this process is going so slowly that the clock never steps
+backward, it will just tick slower until it is in sync again.
+
+I am not sure why the shared memory behaves as it does on your system. 
+Like you, I would expect that attaching it as root and then switching uid
+would keep it accessible, just like a file.  I have not tested it here
+yet, I'll try to build a current version.
+But if it cannot be solved somehow, we could consider changing the unit
+number to 2 or 3 (and update documentation for the ntp configuration).
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001489.html">[Gpsd-dev] Time for a fast release?
+</A></li>
+	<LI>Next message: <A HREF="001478.html">[Gpsd-dev] Time for a fast release?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1491">[ date ]</a>
+              <a href="thread.html#1491">[ thread ]</a>
+              <a href="subject.html#1491">[ subject ]</a>
+              <a href="author.html#1491">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

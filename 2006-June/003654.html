@@ -1,0 +1,137 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: Eliminating the -d option
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20Eliminating%20the%20-d%20option&In-Reply-To=%3C20060608173914.GA20987%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003651.html">
+   <LINK REL="Next"  HREF="003614.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: Eliminating the -d option</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20Eliminating%20the%20-d%20option&In-Reply-To=%3C20060608173914.GA20987%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Re: Eliminating the -d option">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Jun  8 19:39:14 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003651.html">[Gpsd-dev] Re: Eliminating the -d option
+</A></li>
+        <LI>Next message: <A HREF="003614.html">[Gpsd-dev] Today's SVN
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3654">[ date ]</a>
+              <a href="thread.html#3654">[ thread ]</a>
+              <a href="subject.html#3654">[ subject ]</a>
+              <a href="author.html#3654">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Ville Nuorvala &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">vnuorval at tcs.hut.fi</A>&gt;:
+&gt;<i> Ok, so in stead of for example 'gpsd /dev/rfcomm0' you would like to be
+</I>&gt;<i> able to say 'gpsd gps.example.com[:port]' to get remote GPS data over
+</I>&gt;<i> the net. Did I understand you correctly?
+</I>
+That's right.  The idea is to support two things:
+
+1) Command line arguments can be a mixture of local device files and
+server:port specifications.
+
+2) Whenever you connect to either a device file or server:port stream, 
+the packet sniffer figures out what kind of data is actually coming 
+from that source and dispatches to the right handler for it.
+
+Possible source types used to be NMEA, several GPS binary protocols, or 
+RTCM104.  Now I guess the packet sniffer needs to know how to recognize an
+NTRIP data stream as well.  Because the protocol is textual, 
+I'm guessing that probably is not hard.
+
+Take a look at packet.c.  I think what's going on there is fairly clear.
+
+&gt;<i> So in stead of reading from a device file, the GPS data could be read
+</I>&gt;<i> from the socket, right?
+</I>&gt;<i>
+</I>&gt;<i> Do we want to support only NMEA sentences or do we want to accept vendor
+</I>&gt;<i> specific raw data formats from these remote sources? (Or does the format
+</I>&gt;<i> even matter?)
+</I>
+See above about the packet sniffer.  What I'm after here is to
+decouple the type of the input source (device or remote server) from
+the input stream protocol, which gpsd should autodetect.
+
+The ultimate goal is to get to where you give gpsd any mixture of
+local or remote data sources you like and it just does the right
+thing.  That is, some can be GPS, some can be RTCM, some can be NTRIP, and
+gpsd figures out how to integrate them according to a documented
+set of combination rules.  Clients get to choose which data source(s)
+to listen to.
+
+&gt;<i> Assuming we have several different type data sources how do we define
+</I>&gt;<i> their type? Is something like 'gpsd <A HREF="gps://gps.example.com">gps://gps.example.com</A>
+</I>&gt;<i> <A HREF="ntrip://ntrip.example.com">ntrip://ntrip.example.com</A>' acceptable?
+</I>
+No type definitions.  gpsd should figure it out.
+
+&gt;<i> Assuming we get different type data from the same source (for example
+</I>&gt;<i> another gpsd instance), how do we demultiplex the data to the right handler?
+</I>
+That's what the packet sniffer is for.  It autodetects the kind of data
+coming down the wire and selects the right handler.
+
+&gt;<i> And a related question: What is the protocol for dumping such GPS/DGPS
+</I>&gt;<i> data like? Do we just dump the raw data (like we do with DGPS data in
+</I>&gt;<i> Ntrip and DGPS-IP after the initial handshake) or do we prepend some
+</I>&gt;<i> sort of header to it indicating what type of data is carried in the payload?
+</I>
+I'm not completely certain I undestand this question.  
+At the moment we have two rules:
+
+1) Ship incoming GPS data to watchers as sequences of O and Y reports
+
+2) Ship incoming RTCM104 to watchers in the format described in rtcm-104.xml
+
+The idea is that if there are both GPS and RTCM channels, clients get 
+to choose which they monitor.
+
+The Sanger dump format described in rtcm-104.xml might do for dumping NTRIP,
+too; I don't know.
+
+&gt;<i> Sorry for all the questions, but I need more info to get a better
+</I>&gt;<i> understanding of this all.
+</I>
+Of course.  You just did an excellent job on the NTRIP support, so I'm
+rewarding you by handing you a bigger job :-).  
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003651.html">[Gpsd-dev] Re: Eliminating the -d option
+</A></li>
+	<LI>Next message: <A HREF="003614.html">[Gpsd-dev] Today's SVN
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3654">[ date ]</a>
+              <a href="thread.html#3654">[ thread ]</a>
+              <a href="subject.html#3654">[ subject ]</a>
+              <a href="author.html#3654">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

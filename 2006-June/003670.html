@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from  meters/sec to knots
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Re%3A%20accuracy%20in%20conversion%20from%20%0A%20meters/sec%20to%20knots&In-Reply-To=%3Cp06230905c0ae9aa4c481%40%5B192.168.11.10%5D%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003663.html">
+   <LINK REL="Next"  HREF="003673.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from  meters/sec to knots</H1>
+    <B>Robin L Darroch</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Re%3A%20accuracy%20in%20conversion%20from%20%0A%20meters/sec%20to%20knots&In-Reply-To=%3Cp06230905c0ae9aa4c481%40%5B192.168.11.10%5D%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from  meters/sec to knots">robin at spade-men.com
+       </A><BR>
+    <I>Fri Jun  9 05:37:22 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003663.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+        <LI>Next message: <A HREF="003673.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3670">[ date ]</a>
+              <a href="thread.html#3670">[ thread ]</a>
+              <a href="subject.html#3670">[ subject ]</a>
+              <a href="author.html#3670">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>At 13:16 -0700 8/6/06, Gary E. Miller wrote:
+&gt;<i>I think the main problem is that real users never start gpsd.  That is
+</I>&gt;<i>done by hotplug or udevd or some other hard to find/debug/change method.
+</I>
+Yep - fair call.  This is another reason to prefer the compile-time option.
+
+&gt;<i>The user interacts with the client and the client can tell gpsd how to act.
+</I>&gt;<i>
+</I>&gt;<i>And that opens up another can of worms.  If one client can tell gpsd to
+</I>&gt;<i>enter/leave smoothing mode, do the other clients get changed at the same
+</I>&gt;<i>time?  I keep my ntp/gpsd server open to one and all  (gpsd.rellim.com). I
+</I>&gt;<i>can see how some clients would wnat smoothed datat and some not.  So if
+</I>&gt;<i>the smoothing is in gpsd it should be a per-client setting.
+</I>
+Yes - this is another reason why I don't like the idea of it being a 
+runtime command: we are, by the very nature of the issue, dealing 
+with a single set of data for all clients.  Therefore the 
+buffer-clearing logic for one client must be the same buffer-clearing 
+logic for all clients.  Clear-at-Start-of-Cycle destroys data, so 
+there is no way to &quot;simulate&quot; Never-Clear results accurately by a 
+layer that follows it - the data has been destroyed, and any 
+subsequent layer has no knowledge of why it has been destroyed (was 
+it genuinely invalidated by loss of fix or new sentence invalidating 
+that parameter, or was it simply a casualty of the start-of-cycle 
+clear?).
+
+The decision has to be made by the server administrator.  However, we 
+COULD easily provide a command for clients to *check* what decision 
+the server administrator made when building gpsd.  In my opinion, 
+that's the perfect solution: the remaining J command!  &lt;singing 
+Cookie-Monster style&gt;J is for Jitter and that's good enough for 
+me&lt;/singing&gt;.
+
+client-&gt;gpsd: J
+
+gpsd-&gt;client: J=0 (jitter off = never-clear logic in use)
+    OR
+gpsd-&gt;client: J=1 (jitter on = clear-at-start-of-cycle logic in use)
+
+
+&gt;<i>  &gt; Remember, the very worst case scenario that anyone has come up 
+</I>&gt;<i>with for &quot;never
+</I>&gt;&gt;<i>  clear&quot; is that you get an O report with an altitude (for example) that came
+</I>&gt;&gt;<i>  from a sentence with a timestamp one second earlier than the latitude and
+</I>&gt;&gt;<i>  longitude reported in the same .
+</I>&gt;<i>
+</I>&gt;<i>One second or one cycle?  What about GPS that only report less than
+</I>&gt;<i>once a second?  Like the EC-10X?
+</I>
+Fair point - it is actually one cycle... which is just *usually* one 
+second.  Reviewing the data in the test directory, the EC-10 returns 
+only one timestamped sentence per cycle, so will behave identically 
+in either mode: no matter what, you get the same age of data 
+regardless of the buffer-clearing chosen.
+-- 
+
+-------------------------------------------------------------------------
+  Robin L. Darroch - PO Box 2715, South Hedland WA 6722 - +61 421 503 966
+       <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at darroch.id.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at nyca.org.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003663.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+	<LI>Next message: <A HREF="003673.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3670">[ date ]</a>
+              <a href="thread.html#3670">[ thread ]</a>
+              <a href="subject.html#3670">[ subject ]</a>
+              <a href="author.html#3670">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

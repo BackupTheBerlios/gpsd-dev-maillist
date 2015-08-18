@@ -1,0 +1,95 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Infinite Garmin reconfigure loop
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Infinite%20Garmin%20reconfigure%20loop&In-Reply-To=%3C20090318022945.GA18668%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006540.html">
+   <LINK REL="Next"  HREF="006555.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Infinite Garmin reconfigure loop</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Infinite%20Garmin%20reconfigure%20loop&In-Reply-To=%3C20090318022945.GA18668%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Infinite Garmin reconfigure loop">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Mar 18 03:29:46 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006540.html">[Gpsd-dev] Infinite Garmin reconfigure loop
+</A></li>
+        <LI>Next message: <A HREF="006555.html">[Gpsd-dev] Infinite Garmin reconfigure loop
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6552">[ date ]</a>
+              <a href="thread.html#6552">[ thread ]</a>
+              <a href="subject.html#6552">[ subject ]</a>
+              <a href="author.html#6552">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Andrew E. Mileski &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">andrewm at isoar.ca</A>&gt;:
+&gt;<i> Eric S. Raymond wrote:
+</I>&gt;<i> &gt; Andrew E. Mileski &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">andrewm at isoar.ca</A>&gt;:
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; It may be more correct for the re-configure code to expect responses to
+</I>&gt;<i> &gt;&gt; the commands it issues, rather than the NMEA parser having to deal with
+</I>&gt;<i> &gt;&gt; them.
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; We can't do it.  I've thought hard about expect-send, but it would be
+</I>&gt;<i> &gt; a disaster waiting to happen if we blocked waiting for input anywhere 
+</I>&gt;<i> &gt; other than in the main polling loop.
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; I'll stare at the comment describing the bug and see if anything 
+</I>&gt;<i> &gt; occurs to me.
+</I>&gt;<i> 
+</I>&gt;<i> The problem stems from mode changes to / from Garmin serial being set
+</I>&gt;<i> internally before the GPS hardware had actually transitioned to that
+</I>&gt;<i> new mode.
+</I>&gt;<i> 
+</I>&gt;<i> When the mode is set to Garmin serial and NMEA is detected (the response
+</I>&gt;<i> to the change request is NMEA), the mode is set back to NMEA, which
+</I>&gt;<i> starts the whole re-configure loop over.
+</I>&gt;<i> 
+</I>&gt;<i> The old NMEA parser used to confuse $PGRMC1 with $GPRMC, as it would
+</I>&gt;<i> ignore the first three characters and compare against the three
+</I>&gt;<i> character string RMC.  NMEA would be detected and so the mode would be
+</I>&gt;<i> set back to NMEA.  GPRMC1 would have been ignored, but it could never be
+</I>&gt;<i> detected by the old code.
+</I>
+Gary, this sounds like a Garmin driver bug.  Are you actually calling the 
+driver switcher explicitly rather than waiting for the packet sniffer to
+notice the protocol change and do it?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006540.html">[Gpsd-dev] Infinite Garmin reconfigure loop
+</A></li>
+	<LI>Next message: <A HREF="006555.html">[Gpsd-dev] Infinite Garmin reconfigure loop
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6552">[ date ]</a>
+              <a href="thread.html#6552">[ thread ]</a>
+              <a href="subject.html#6552">[ subject ]</a>
+              <a href="author.html#6552">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

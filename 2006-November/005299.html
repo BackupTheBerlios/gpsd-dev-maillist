@@ -1,0 +1,132 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] SVN 3934 Change to gpsd.c- Clarifiation please
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20SVN%203934%20Change%20to%20gpsd.c-%20Clarifiation%20please&In-Reply-To=%3C200611231857.41206.mick.durkin%40saunalahti.fi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005296.html">
+   <LINK REL="Next"  HREF="005302.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] SVN 3934 Change to gpsd.c- Clarifiation please</H1>
+    <B>Mick Durkin</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20SVN%203934%20Change%20to%20gpsd.c-%20Clarifiation%20please&In-Reply-To=%3C200611231857.41206.mick.durkin%40saunalahti.fi%3E"
+       TITLE="[Gpsd-dev] SVN 3934 Change to gpsd.c- Clarifiation please">mick.durkin at saunalahti.fi
+       </A><BR>
+    <I>Thu Nov 23 17:57:41 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005296.html">[Gpsd-dev] gpsd.php heads-up -- general timing problem in clients
+</A></li>
+        <LI>Next message: <A HREF="005302.html">[Gpsd-dev] SVN 3934 Change to gpsd.c- Clarifiation please
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5299">[ date ]</a>
+              <a href="thread.html#5299">[ thread ]</a>
+              <a href="subject.html#5299">[ subject ]</a>
+              <a href="author.html#5299">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Guys,
+
+I am not sure if I misunderstand things, but I noticed that my driver no 
+longer gets asked to probe for its device at start up when running SVN 3959. 
+I as a sanity check, I enabled the Garmin driver which I know also has a 
+probe facility and this also doesn't respond.
+
+I traced the code and it seems the mod to gpsd.c in SVN 3934 changed things. I 
+confirmed this by backing out the change; I swapped gpsd_open() back to 
+gpsd_activate(). This call has an additional parameter now, but that was the 
+only other change needed. After that, the probes reappeared.
+
+Here is a snapshot of a session with the code on SVN 3959:-
+
+[<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">root at linuxbox</A> trunk]# gpsd -n -N -D3 /dev/ttyS0
+gpsd: launching (Version 2.34)
+gpsd: listening on port gpsd
+gpsd: shmat(0,0,0) succeeded
+gpsd: shmat(0,0,0) succeeded
+gpsd: shmat(0,0,0) succeeded
+gpsd: shmat(0,0,0) succeeded
+gpsd: running with effective group ID 0
+gpsd: running with effective user ID 0
+gpsd: opening GPS data source at '/dev/ttyS0'
+gpsd: speed 9600, 8N1
+
+The program waits, but nothing happens as the connected GPS device is silent 
+unless probed. I stopped it after a few seconds.
+
+gpsd: closing GPS=/dev/ttyS0 (4)
+gpsd: Received terminating signal 2. Exiting...
+[<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">root at linuxbox</A> trunk]#
+
+
+
+=========================================
+
+Here is the same command when the 3959 code is backed out:-
+
+[<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">root at linuxbox</A> trunk]# gpsd -n -N -D3 /dev/ttyS0
+gpsd: launching (Version 2.34)
+gpsd: listening on port gpsd
+gpsd: shmat(0,0,0) succeeded
+gpsd: shmat(0,0,0) succeeded
+gpsd: shmat(0,0,0) succeeded
+gpsd: shmat(0,0,0) succeeded
+gpsd: running with effective group ID 0
+gpsd: running with effective user ID 0
+gpsd: opening GPS data source at '/dev/ttyS0'
+gpsd: speed 9600, 8N1
+gpsd: garmin_gps not active.
+gpsd: jupiter_t_probe_detect: Probing for a Jupiter-T device
+.
+.
+&lt;snipped&gt;
+
+In this case, the device gets probed and comes to life. Notice also that in 
+this case the garmin device is also probed for (of course it isn't there on 
+my machine).
+
+I have effected a fix, but I am not sure of what was the desired consequence 
+of the change I removed. Could anyone tell me if I have found a bug or have I 
+omitted some changes to my driver?
+
+I assumed that I hadn't missed something, since the garmin drive didn't probe 
+and that is part of the supported codebase, but I am prepared to be shot 
+down.
+
+Best Regards
+
+Mick
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005296.html">[Gpsd-dev] gpsd.php heads-up -- general timing problem in clients
+</A></li>
+	<LI>Next message: <A HREF="005302.html">[Gpsd-dev] SVN 3934 Change to gpsd.c- Clarifiation please
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5299">[ date ]</a>
+              <a href="thread.html#5299">[ thread ]</a>
+              <a href="subject.html#5299">[ subject ]</a>
+              <a href="author.html#5299">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

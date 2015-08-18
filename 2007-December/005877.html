@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Changing version-control systems
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Changing%20version-control%20systems&In-Reply-To=%3C20071218042023.7C6238306A0%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005874.html">
+   <LINK REL="Next"  HREF="005878.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Changing version-control systems</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Changing%20version-control%20systems&In-Reply-To=%3C20071218042023.7C6238306A0%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Changing version-control systems">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Tue Dec 18 05:20:23 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005874.html">[Gpsd-dev] Furuno Electronics GH-79L4-N
+</A></li>
+        <LI>Next message: <A HREF="005878.html">[Gpsd-dev] Changing version-control systems
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5877">[ date ]</a>
+              <a href="thread.html#5877">[ thread ]</a>
+              <a href="subject.html#5877">[ subject ]</a>
+              <a href="author.html#5877">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>As I was taking the lead on this project back in in 2004, one of the 
+joint decisions the 1.x maintainers and I made during the transition
+was to move the project from CVS to Subversion.  That, indeed, is the
+reason we ended up on Berlios -- it was one of the very first hosting
+sites to offer Subversion, which had just recently reached production 
+status and was then the hot new thing in version control.
+
+Moving to Subversion was a good decision for 2004.  It lived up to its
+early promise, and has since deservedly become the single most widely used
+version-control system in the open-source world.  It has served us
+well, and I think we could continue using it for many years.  But
+I also think the time has come to move on.
+
+There is a new generation of VCS (version-control system) out there
+that support disconnected operation.  That is, you don't have to be on
+the Internet to a central repository to do commits.  Instead, each
+working copy of a project is a peer repository; the fundamental
+operation is a repository merge that preserves the change histories
+from both repos.
+
+Disconnected operation is a good thing in general (you can do commits 
+on an airplane and push them to a master repo when you land), but it's 
+especially appropriate for *this* project.  We, more than most other
+projects, tend to have developers and contributors working in odd,
+remote locations where Internet access is spotty (and packet latencies
+when it *is* available make conversation with a central repo awkwardly
+slow).
+
+For this reason, I have been thinking about moving the gpsd project to one
+of the third-generation distributed VCSes: arch, monotone,
+bzr, git, darcs, or Mercurial.
+
+Now, as it happens, I *like* thinking about version-control systems.
+I've been interested in them ever since SCCS, and it is not by
+accident that I came to write Emacs VC mode in 1992.  In fact I
+recently rewrote VC almost completely to fix some serious deficiencies
+in its handling of changeset-oriented VCSes; the results are in Emacs
+CVS now and will ship with version 23.
+
+So I'm not going to do any such transition casually.  I'm researching
+the strengths and weaknesses of these different systems and have
+started writing (for publication) an in-depth technical comparison of
+their fundamental concepts and their interfaces.  
+
+I also don't intend to make the decision alone.  Switching will
+impose transition costs on our entire dev group, and the devs should
+therefore have a say in whether we acatually move and what we move to.
+
+I have more research to do, but here is how I see the options before
+us at this time:
+
+* We could stick with Subversion.  Advantages: Zero transition costs,
+proven technology, strong development community.  Disadvantages: No
+disconnected operation.
+
+* monotone, darcs:  These seem to me to have similar strengths
+and weaknesses.  Both very innovative in their time, both suffering
+from an overly theoretical focus and small development communities.
+Neither has scored significant design wins among major projects.
+
+* arch: all the advantages and disadvantages above plus an absolutely
+hideous UI and a maintainer/author who's notoriously flaky.  Give him
+credit for being first, though --  arch was doing the distributed
+thing when even *Subversion* wasn't off the ground then.
+
+* bzr: Seems like a good clean design and has some nice medium-scale
+design wins to prove it -- GNU Mailman and Drupal are two of them.
+Importantly, it has the backing of Mark Shuttleworth and Canonical,
+which I think is a pretty good guarantee it'll stick around.  I'd
+probably be happy with this choice.
+
+* git: The Linux kernel and X both use this.  It has some unique
+strengths including a really obsessive focus on detecting data
+corruption.  But, frankly, git scares me.  Linus has admitted that
+he was really only interested in writing a content-addressible
+filesystem, and the VCS layers above that seem to me to be 
+excessively complicated, tricky and ad-hoc.  Nor is it well
+documented.  My instincts say &quot;minefield&quot;.
+
+* Mercurial: Clean design, carefully thought out primitives and
+storage engine, simple interface, good documentation, and some major
+design wins including Firefox and OpenSolaris.  I've been doing a lot
+of digging and even Mercurial's competitors have a visibly hard time
+finding anything wrong with it; notably, it's the only other VCS Linus
+Torvalds mentioned with approval during the now-notorious Google tech
+talk in which he roundly trashed CVS, Subversion, Perforce, and
+everything else in sight.
+
+I lean towards Mercurial, with bzr as a strong runner-up.  But I
+haven't yet used any of these for production, and would like to hear
+from any other devs with opinions or (even better) experience.
+
+It may be that our biggest transition problem would be finding
+a place to host the repo.  None of the big hosting sites offer these
+yet.  I have a service request in at Berlios but no idea when
+or if I'll ever get a response.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+The politician attempts to remedy the evil by increasing the very thing
+that caused the evil in the first place: legal plunder.
+	-- Frederick Bastiat
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005874.html">[Gpsd-dev] Furuno Electronics GH-79L4-N
+</A></li>
+	<LI>Next message: <A HREF="005878.html">[Gpsd-dev] Changing version-control systems
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5877">[ date ]</a>
+              <a href="thread.html#5877">[ thread ]</a>
+              <a href="subject.html#5877">[ subject ]</a>
+              <a href="author.html#5877">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

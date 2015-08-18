@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Single-writer/many-reader consistency
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3CAANLkTi%3DrcXE%3DReggbZE1GLecU61BobiMEpBHmFt46p76%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009138.html">
+   <LINK REL="Next"  HREF="009103.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Single-writer/many-reader consistency</H1>
+    <B>Dave Hart</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3CAANLkTi%3DrcXE%3DReggbZE1GLecU61BobiMEpBHmFt46p76%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Single-writer/many-reader consistency">davehart at gmail.com
+       </A><BR>
+    <I>Sat Mar 26 17:09:53 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009138.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+        <LI>Next message: <A HREF="009103.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9097">[ date ]</a>
+              <a href="thread.html#9097">[ thread ]</a>
+              <a href="subject.html#9097">[ subject ]</a>
+              <a href="author.html#9097">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sat, Mar 26, 2011 at 05:34 UTC, Eric Raymond wrote:
+&gt;<i> In previous mail Dave Hart wrote:
+</I>&gt;&gt;<i> 8. &#160;Come to agreement on the consistency protocol for one writer,
+</I>&gt;&gt;<i> multiple readers, including use of memory barriers where available,
+</I>&gt;&gt;<i> but do not require memory barrier support from the compiler, as (IIUC)
+</I>&gt;&gt;<i> x86/x64 do not need them for volatile atomic accesses to be coherent
+</I>&gt;&gt;<i> across processors, and the ovewhelming majority of current
+</I>&gt;&gt;<i> refclock_shm users are on x86 or x64.
+</I>&gt;<i>
+</I>&gt;<i> I'm writing to point out that NTP and GPSD are facing near-identical
+</I>&gt;<i> problems here. &#160;We too have a one-writer/many-readers shred-memory
+</I>&gt;<i> interface we're trying to design with good consistency guarantees.
+</I>
+Yes, I picked up on that and consider it fortuitous, and I'm
+optimistic we might come up with similar-enough solutions to be able
+to learn from each others' experiences in the wild going forward.
+Thank you for pointing it out, though, as some of my NTP colleagues
+were undoubtedly unaware.  I had joined gpsd-dev@ before
+cross-posting, so I saw some traffic <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">hackers at ntp</A> didn't which made
+that obvious.
+
+&gt;<i> As noted in that other thread I started: If your premise is that you
+</I>&gt;<i> can't require on memory barriers, you may *have* to go with a
+</I>&gt;<i> semaphore, because in their absence instruction reordering and strange
+</I>&gt;<i> memory-controller strategies can cause serious problems for spinlocks.
+</I>
+I probably should not have mentioned without requiring memory barriers
+as I was attempting to collect a list of suggested improvements, and
+here, the suggested improvement boils down to &quot;reduce or eliminate
+readers using a mix of two updates&quot; with the liveliest discussion all
+about how to achieve that.
+
+&gt;<i> I myself am seriously considering abandoning the spinlock variation I
+</I>&gt;<i> invented in favor of a semaphore. &#160;I invented my mechanism because I
+</I>&gt;<i> wanted to avoid contention on a semaphore, but in thinking about it
+</I>&gt;<i> further I think I may have been more worried about that than I should
+</I>&gt;<i> have been.
+</I>&gt;<i>
+</I>&gt;<i> Only one process (the single writer) would ever change the semaphore
+</I>&gt;<i> state; the readers would just block or spin until it goes to zero. &#160;In
+</I>&gt;<i> GPSD writes are infrequent, now normally 1 per second and highly
+</I>&gt;<i> unlikely to exceed 100 per second even with survey-grade GPSes we
+</I>&gt;<i> don't support yet. &#160;Writes are also small, less than 8K.
+</I>&gt;<i>
+</I>&gt;<i> Given this timing pattern, I think readers blocking on the semaphore seem
+</I>&gt;<i> unlikely to take a performance hit that is much above the level of
+</I>&gt;<i> profiling noise, if that.
+</I>&gt;<i>
+</I>&gt;<i> If NTP thinks it's looking at a similar timing pattern, you might want
+</I>&gt;<i> to seriously look at using an explicit semaphore.
+</I>
+For refclock_shm.c the rate is one update per second and unlikely to
+increase.  On one hand, using a semaphore is appealing because any
+needed memory barrier is handled portably by the semaphore
+implementation, giving us the same level of consistency guarantee on
+all architectures.  I agree actual contention is not going to be much
+of a factor, when everything is working smoothly.  I am concerned that
+use of a semaphore or mutex could allow one participant process to
+interfere with others in undesirable ways, like blocking for extended
+periods or failing to receive subsequent updates, that lock-free
+approaches would not suffer.
+
+&gt;<i> (I'm having big fun with all this. &#160;Eric gets to think like an OS implementor
+</I>&gt;<i> again, yay! &#160;I've missed that, I have.)
+</I>
+Good to hear.  Having fun is important in keeping us fully engaged and creative.
+
+Cheers,
+Dave Hart
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009138.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+	<LI>Next message: <A HREF="009103.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9097">[ date ]</a>
+              <a href="thread.html#9097">[ thread ]</a>
+              <a href="subject.html#9097">[ subject ]</a>
+              <a href="author.html#9097">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,162 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Input packets buffering bug(s)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3C201005231546.35760.remco%40rvt.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007761.html">
+   <LINK REL="Next"  HREF="007763.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Input packets buffering bug(s)</H1>
+    <B>Remco Treffkorn</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3C201005231546.35760.remco%40rvt.com%3E"
+       TITLE="[Gpsd-dev] Input packets buffering bug(s)">remco at rvt.com
+       </A><BR>
+    <I>Mon May 24 00:46:35 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007761.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+        <LI>Next message: <A HREF="007763.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7762">[ date ]</a>
+              <a href="thread.html#7762">[ thread ]</a>
+              <a href="subject.html#7762">[ subject ]</a>
+              <a href="author.html#7762">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sunday 23 May 2010, Olivier Cornu wrote:
+&gt;<i> On Sun, May 23, 2010 at 22:59, Remco Treffkorn &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>&gt; wrote:
+</I>&gt;<i> &gt; If you want o overcome my low iq and my lazyness, please take the time to explain the
+</I>&gt;<i> &gt; problem so that I can understand it without investing a lot of time on a problem that
+</I>&gt;<i> &gt; has a low probability to exist.
+</I>&gt;<i> 
+</I>&gt;<i> I'm sorry, i think i explained it the best i could. Perhaps someone
+</I>&gt;<i> else can do better?
+</I>&gt;<i> Anyhow, i believe you'd get it if you spent roughly as much time
+</I>&gt;<i> trying as you've spent writing this answer (no irony intended).
+</I>
+I think the word you are looking for is 'sarcasm', but close enough.
+
+My spending more time on this than I have to closely related to:
+
+Give a man a fish... Teach a man how to fish...
+As you noticed, I am really not as lazy as I made myself out to be.
+
+&gt;<i> &gt; On Sunday 23 May 2010, Olivier Cornu wrote:
+</I>&gt;<i> &gt;&gt; To cut it short, the design wrongly assumes packets will be received
+</I>&gt;<i> &gt;&gt; one-at-a-time.
+</I>
+And that is what I am having a problem with. You are dealing with a
+serial connection. You receive characters one after the other, in a serial
+fashion.
+
+&gt;<i> &gt; Are you talking about gps data from the serial port?
+</I>&gt;<i> &gt; If yes, then what is your definition of 'packet'?
+</I>&gt;<i> 
+</I>&gt;<i> Anything that is returned by packet_get() [packet.c:1639]. More
+</I>&gt;<i> precisely, what's copied in gps_packet_t.outbuffer by packet_accept()
+</I>&gt;<i> [packet.c:1042] after a successful packet_parse().
+</I>&gt;<i> In my context: a NMEA sentence.
+</I>
+And again, I am not even looking at the code. How can multiple NMEA
+sentences be sent (or not sent) at the same time. You are looking at a
+character stream. The buffer is filled from the tty layer via read.
+
+It is possible that a single read returns a part of a sentence, a complete sentence,
+or multiple sentences with possibly an incomplete sentence at the end. 
+
+Is that what you mean?
+
+&gt;<i> &gt;&gt; GPS device may actually send them one-at-a-time, yet there is no
+</I>
+Again: character stream. One after another (well: modulo any line
+discipline. But I don't want to spend any brain waves on this amount of
+detail when I am not even sure that that is what you mean).
+
+&gt;<i> &gt;&gt; guarantee that's how they'll be received by gpsd.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; What?
+</I>&gt;<i> 
+</I>&gt;<i> What if 3.14 packets have been received over the serial line the next
+</I>&gt;<i> time you poll for input and read as much of it as you can
+</I>&gt;<i> [packet.c:1646]?
+</I>
+It's beginning to smell like you are talking about buffered up NMEA
+sentences. If that's it, why not just say so.
+
+&gt;<i> &gt; Please also address the point why in all the time gpsd is in use nobody has been bitten
+</I>&gt;<i> &gt; by this bug.
+</I>&gt;<i> 
+</I>&gt;<i> Probably because GPS devices usually send packets one at a time,
+</I>&gt;<i> slowly enough to let gpsd process them one by one, and regularly
+</I>&gt;<i> enough to keep the lag small if ever two packets arrived at once.
+</I>&gt;<i> I've talked about it on #gpsd and i'm definitely not the first one to
+</I>&gt;<i> experience this kind of bug.
+</I>&gt;<i> 
+</I>&gt;<i> Do you have any proof nobody was ever bitten by this bug?
+</I>
+The fact that nobody has bitched here or on the user list is a fair
+indicator to me. People do not take kindly when you send their
+boat into the jetty, or make their UAV crash into the ground.
+
+At the very least, that would make the bug you report to be less
+critical than you think it is. Just seeking perspective.
+
+&gt;<i> &gt; Extraordinary claims require extraordinary proof.
+</I>&gt;<i> 
+</I>&gt;<i> Proofs need people willing to understand them.
+</I>
+The burden is on the side of the claimant. In a round-about way
+I was just asking for you to explain in common comp/sci language
+what the problem is. You should be able to do that without me
+having to hit the code.
+
+ie: if you claim &quot;it is possible to accumulate multiple NMEA sentences into
+a single read buffer, but only the first is processed and the others are deferred
+til the next read...&quot; , but at this point I can only guess.
+
+And I am not trying to annoy you. I am just making an investment.
+
+Cheers,
+Remco
+
+-- 
+Remco Treffkorn (RT445)
+HAM DC2XT
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007761.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+	<LI>Next message: <A HREF="007763.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7762">[ date ]</a>
+              <a href="thread.html#7762">[ thread ]</a>
+              <a href="subject.html#7762">[ subject ]</a>
+              <a href="author.html#7762">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

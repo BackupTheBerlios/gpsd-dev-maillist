@@ -1,0 +1,179 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] PPS timing investigation
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS%20timing%20investigation&In-Reply-To=%3C20091110121036.GR31313%40localhost%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007010.html">
+   <LINK REL="Next"  HREF="007030.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] PPS timing investigation</H1>
+    <B>Miroslav Lichvar</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS%20timing%20investigation&In-Reply-To=%3C20091110121036.GR31313%40localhost%3E"
+       TITLE="[Gpsd-dev] PPS timing investigation">mlichvar at redhat.com
+       </A><BR>
+    <I>Tue Nov 10 13:10:36 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007010.html">[Gpsd-dev] PPS timing investigation
+</A></li>
+        <LI>Next message: <A HREF="007030.html">[Gpsd-dev] PPS timing investigation
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7016">[ date ]</a>
+              <a href="thread.html#7016">[ thread ]</a>
+              <a href="subject.html#7016">[ subject ]</a>
+              <a href="author.html#7016">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sun, Nov 08, 2009 at 01:28:33AM +0100, H&#229;kan Johansson wrote:
+&gt;<i> In order to figure out how the ntpshm.c PPS and serial handling can
+</I>&gt;<i> be improved, data on the behaviour of various module models is
+</I>&gt;<i> needed.  By slight extension of the existing log messages
+</I>&gt;<i> (attachment gpsd_pps_timing_log.diff), the necessary data can be
+</I>&gt;<i> collected.
+</I>
+Here is my log from GPS 18x LVC in NMEA mode.
+
+Note that most of the GPRMC message don't make the 0.5 second locking
+limit in ntpshm_pps(), so they are ignored.
+
+Also, the pulse width is only 40 ms by default, which makes gpsd
+report both edges and ntpd is most likely (96% chance) syncing to the
+wrong edge. 
+
+-- 
+Miroslav Lichvar
+-------------- next part --------------
+gpsd: speed 9600, 8N1
+gpsd: switch_driver(Generic NMEA) called...
+gpsd: selecting Generic NMEA driver...
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853974.000039
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853974.040021
+gpsd: ntpshm_put: Clock: 1257853974.000000 @ 1257853974.560483 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853975.000024
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853975.040023
+gpsd: ntpshm_put: Clock: 1257853975.000000 @ 1257853975.546411 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853976.000023
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853976.040021
+gpsd: ntpshm_put: Clock: 1257853976.000000 @ 1257853976.533423 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853977.000022
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853977.040023
+gpsd: ntpshm_put: Clock: 1257853977.000000 @ 1257853977.519405 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853978.000025
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853978.040023
+gpsd: ntpshm_put: Clock: 1257853978.000000 @ 1257853978.532420 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853979.000023
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853979.040022
+gpsd: ntpshm_put: Clock: 1257853979.000000 @ 1257853979.525426 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853980.000024
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853980.040022
+gpsd: ntpshm_put: Clock: 1257853980.000000 @ 1257853980.535420 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853981.000022
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853981.040024
+gpsd: ntpshm_put: Clock: 1257853981.000000 @ 1257853981.544426 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853982.000025
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853982.040023
+gpsd: ntpshm_put: Clock: 1257853982.000000 @ 1257853982.535420 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853983.000023
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853983.040022
+gpsd: ntpshm_put: Clock: 1257853983.000000 @ 1257853983.536423 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853984.000023
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853984.040022
+gpsd: ntpshm_put: Clock: 1257853984.000000 @ 1257853984.526422 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853985.000022
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853985.040024
+gpsd: ntpshm_put: Clock: 1257853985.000000 @ 1257853985.490414 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853986.000024
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853986.040023
+gpsd: ntpshm_put: Clock: 1257853986.000000 @ 1257853986.522422 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853987.000026
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853987.040023
+gpsd: ntpshm_put: Clock: 1257853987.000000 @ 1257853987.489423 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853988.000023
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853988.040021
+gpsd: ntpshm_put: Clock: 1257853988.000000 @ 1257853988.524381 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853989.000023
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853989.040023
+gpsd: ntpshm_put: Clock: 1257853989.000000 @ 1257853989.522423 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853990.000025
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853990.040023
+gpsd: ntpshm_put: Clock: 1257853990.000000 @ 1257853990.497423 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853991.000022
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853991.040022
+gpsd: ntpshm_put: Clock: 1257853991.000000 @ 1257853991.525380 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853992.000023
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853992.040022
+gpsd: ntpshm_put: Clock: 1257853992.000000 @ 1257853992.490412 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853993.000022
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853993.040024
+gpsd: ntpshm_put: Clock: 1257853993.000000 @ 1257853993.499427 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853994.000024
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853994.040023
+gpsd: ntpshm_put: Clock: 1257853994.000000 @ 1257853994.524423 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853995.000027
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853995.040032
+gpsd: ntpshm_put: Clock: 1257853995.000000 @ 1257853995.502428 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853996.000024
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853996.040021
+gpsd: ntpshm_put: Clock: 1257853996.000000 @ 1257853996.538379 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853997.000022
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853997.040024
+gpsd: ntpshm_put: Clock: 1257853997.000000 @ 1257853997.501426 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853998.000025
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853998.040024
+gpsd: ntpshm_put: Clock: 1257853998.000000 @ 1257853998.556427 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257853999.000023
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257853999.040022
+gpsd: ntpshm_put: Clock: 1257853999.000000 @ 1257853999.518394 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257854000.000024
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257854000.040021
+gpsd: ntpshm_put: Clock: 1257854000.000000 @ 1257854000.492342 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257854001.000023
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257854001.040023
+gpsd: ntpshm_put: Clock: 1257854001.000000 @ 1257854001.498425 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257854002.000024
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257854002.040022
+gpsd: ntpshm_put: Clock: 1257854002.000000 @ 1257854002.502424 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257854003.000026
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257854003.040022
+gpsd: ntpshm_put: Clock: 1257854003.000000 @ 1257854003.505355 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257854004.000023
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257854004.040021
+gpsd: ntpshm_put: Clock: 1257854004.000000 @ 1257854004.497425 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257854005.000023
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0 @ 1257854005.040022
+gpsd: ntpshm_put: Clock: 1257854005.000000 @ 1257854005.497353 (pktlen 74)
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1 @ 1257854006.000025
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007010.html">[Gpsd-dev] PPS timing investigation
+</A></li>
+	<LI>Next message: <A HREF="007030.html">[Gpsd-dev] PPS timing investigation
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7016">[ date ]</a>
+              <a href="thread.html#7016">[ thread ]</a>
+              <a href="subject.html#7016">[ subject ]</a>
+              <a href="author.html#7016">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

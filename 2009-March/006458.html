@@ -1,0 +1,131 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] intentional delay in gpsmon causing backups?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20intentional%20delay%20in%20gpsmon%20causing%20backups%3F&In-Reply-To=%3C91981b3e0903051103p4ba3563djfe236e6de449b61c%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006457.html">
+   <LINK REL="Next"  HREF="006459.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] intentional delay in gpsmon causing backups?</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20intentional%20delay%20in%20gpsmon%20causing%20backups%3F&In-Reply-To=%3C91981b3e0903051103p4ba3563djfe236e6de449b61c%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] intentional delay in gpsmon causing backups?">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Thu Mar  5 20:03:24 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006457.html">[Gpsd-dev] intentional delay in gpsmon causing backups?
+</A></li>
+        <LI>Next message: <A HREF="006459.html">[Gpsd-dev] intentional delay in gpsmon causing backups?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6458">[ date ]</a>
+              <a href="thread.html#6458">[ thread ]</a>
+              <a href="subject.html#6458">[ subject ]</a>
+              <a href="author.html#6458">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I think you'd have to spend some quality time with the svn browser to
+figure out where that came from. I wonder if it's left-over from when
+sirfmon used to be a standalone program? Anyway, removing it doesnt
+break any of my monitors.
+
+On Thu, Mar 5, 2009 at 11:43 AM, Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt; wrote:
+&gt;<i>
+</I>&gt;<i> I believe I have tracked down the cause of the delays. &#160;In gpsmon.c, it
+</I>&gt;<i> calls select with the gpsd fd, and then gpsd_poll. &#160;But there is a
+</I>&gt;<i> usleep of 0.1 seconds in between. &#160;I have no idea why this is there, so
+</I>&gt;<i> I took it out:
+</I>&gt;<i>
+</I>&gt;<i> Index: gpsmon.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- gpsmon.c &#160; &#160;(revision 5376)
+</I>&gt;<i> +++ gpsmon.c &#160; &#160;(working copy)
+</I>&gt;<i> @@ -161,7 +161,9 @@
+</I>&gt;<i> &#160; &#160; if (!FD_ISSET(session.gpsdata.gps_fd,&amp;select_set))
+</I>&gt;<i> &#160; &#160; &#160; &#160;return EOF;
+</I>&gt;<i>
+</I>&gt;<i> +#if 0
+</I>&gt;<i> &#160; &#160; (void)usleep(100000);
+</I>&gt;<i> +#endif
+</I>&gt;<i>
+</I>&gt;<i> &#160; &#160; changed = gpsd_poll(&amp;session);
+</I>&gt;<i> &#160; &#160; if (changed &amp; ERROR_SET)
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Now gpsmon seems 3s slow, and seems to stay there.
+</I>&gt;<i>
+</I>&gt;<i> Amusingly, I killed gpsd and the old gpsmon is reporting 'new' data
+</I>&gt;<i> minutes later, with the backlog shrinking:
+</I>&gt;<i>
+</I>&gt;<i> tcp &#160; &#160; &#160; &#160;0 &#160; &#160; &#160;0 &#160;localhost.gpsd &#160; &#160; &#160; &#160; localhost.53985 &#160; &#160; &#160; &#160;FIN_WAIT_2
+</I>&gt;<i> tcp &#160; 106857 &#160; &#160; &#160;0 &#160;localhost.53985 &#160; &#160; &#160; &#160;localhost.gpsd &#160; &#160; &#160; &#160; CLOSE_WAIT
+</I>&gt;<i> &lt;pause&gt;
+</I>&gt;<i> tcp &#160; &#160; &#160; &#160;0 &#160; &#160; &#160;0 &#160;localhost.gpsd &#160; &#160; &#160; &#160; localhost.53985 &#160; &#160; &#160; &#160;FIN_WAIT_2
+</I>&gt;<i> tcp &#160; &#160;89235 &#160; &#160; &#160;0 &#160;localhost.53985 &#160; &#160; &#160; &#160;localhost.gpsd &#160; &#160; &#160; &#160; CLOSE_WAIT
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> POSIX says implementations may round up:
+</I>&gt;<i>
+</I>&gt;<i> &#160;<A HREF="http://www.opengroup.org/onlinepubs/000095399/functions/usleep.html">http://www.opengroup.org/onlinepubs/000095399/functions/usleep.html</A>
+</I>&gt;<i>
+</I>&gt;<i> and it may be that NetBSD rounds up more than Linux. &#160;There are 7
+</I>&gt;<i> messages per second, but they are all in the same TCP segment.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Should I just remove the usleep? &#160;If not, can someone add a comment
+</I>&gt;<i> justifying it? &#160;It seems to me once select says true we might as well
+</I>&gt;<i> read.
+</I>&gt;<i>
+</I>&gt;<i> I don't know if this is at all related to the cgps delays I saw earlier,
+</I>&gt;<i> but they were assocatied with NTP SHM being off.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>
+
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006457.html">[Gpsd-dev] intentional delay in gpsmon causing backups?
+</A></li>
+	<LI>Next message: <A HREF="006459.html">[Gpsd-dev] intentional delay in gpsmon causing backups?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6458">[ date ]</a>
+              <a href="thread.html#6458">[ thread ]</a>
+              <a href="subject.html#6458">[ subject ]</a>
+              <a href="author.html#6458">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

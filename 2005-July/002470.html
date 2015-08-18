@@ -1,0 +1,2701 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: splint is obsessive
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20splint%20is%20obsessive&In-Reply-To=%3C20050712180805.GA8948%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002469.html">
+   <LINK REL="Next"  HREF="002471.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: splint is obsessive</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20splint%20is%20obsessive&In-Reply-To=%3C20050712180805.GA8948%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Re: splint is obsessive">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Jul 12 20:08:05 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002469.html">[Gpsd-dev] Re: splint is obsessive
+</A></li>
+        <LI>Next message: <A HREF="002471.html">[Gpsd-dev] Re: splint is obsessive
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2470">[ date ]</a>
+              <a href="thread.html#2470">[ thread ]</a>
+              <a href="subject.html#2470">[ subject ]</a>
+              <a href="author.html#2470">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Wolfgang S. Rupprecht &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">wolfgang+gnus20050712 at dailyplanet.dontspam.wsrcc.com</A>&gt;:
+&gt;<i> I don't know how to do it from gcc but objdump can help.  This gets
+</I>&gt;<i> you enough of the lines of code to find your place:
+</I>&gt;<i> 
+</I>&gt;<i>     gcc -O2 -g -gstabs rtcmdecode.c -o rtcmdecode
+</I>&gt;<i>     objdump rtcmdecode -d -S &gt; rtcmdecode.objdump
+</I>
+Yes, it does.  Here are dumps at -O1 and -O2 enclosed for you to look at,
+while I pin down which -O2 suboption is generating the bad code.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+-------------- next part --------------
+
+rtcmdecode:     file format elf32-i386
+
+Disassembly of section .init:
+
+080483cc &lt;_init&gt;:
+ 80483cc:	55                   	push   %ebp
+ 80483cd:	89 e5                	mov    %esp,%ebp
+ 80483cf:	83 ec 08             	sub    $0x8,%esp
+ 80483d2:	e8 c1 00 00 00       	call   8048498 &lt;call_gmon_start&gt;
+ 80483d7:	e8 14 01 00 00       	call   80484f0 &lt;frame_dummy&gt;
+ 80483dc:	e8 db 09 00 00       	call   8048dbc &lt;__do_global_ctors_aux&gt;
+ 80483e1:	c9                   	leave  
+ 80483e2:	c3                   	ret    
+Disassembly of section .plt:
+
+080483e4 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">vsnprintf at plt-0x10</A>&gt;:
+ 80483e4:	ff 35 e4 90 04 08    	pushl  0x80490e4
+ 80483ea:	ff 25 e8 90 04 08    	jmp    *0x80490e8
+ 80483f0:	00 00                	add    %al,(%eax)
+	...
+
+080483f4 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">vsnprintf at plt</A>&gt;:
+ 80483f4:	ff 25 ec 90 04 08    	jmp    *0x80490ec
+ 80483fa:	68 00 00 00 00       	push   $0x0
+ 80483ff:	e9 e0 ff ff ff       	jmp    80483e4 &lt;_init+0x18&gt;
+
+08048404 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">getopt at plt</A>&gt;:
+ 8048404:	ff 25 f0 90 04 08    	jmp    *0x80490f0
+ 804840a:	68 08 00 00 00       	push   $0x8
+ 804840f:	e9 d0 ff ff ff       	jmp    80483e4 &lt;_init+0x18&gt;
+
+08048414 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">fputs at plt</A>&gt;:
+ 8048414:	ff 25 f4 90 04 08    	jmp    *0x80490f4
+ 804841a:	68 10 00 00 00       	push   $0x10
+ 804841f:	e9 c0 ff ff ff       	jmp    80483e4 &lt;_init+0x18&gt;
+
+08048424 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">__strtol_internal at plt</A>&gt;:
+ 8048424:	ff 25 f8 90 04 08    	jmp    *0x80490f8
+ 804842a:	68 18 00 00 00       	push   $0x18
+ 804842f:	e9 b0 ff ff ff       	jmp    80483e4 &lt;_init+0x18&gt;
+
+08048434 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">__libc_start_main at plt</A>&gt;:
+ 8048434:	ff 25 fc 90 04 08    	jmp    *0x80490fc
+ 804843a:	68 20 00 00 00       	push   $0x20
+ 804843f:	e9 a0 ff ff ff       	jmp    80483e4 &lt;_init+0x18&gt;
+
+08048444 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">printf at plt</A>&gt;:
+ 8048444:	ff 25 00 91 04 08    	jmp    *0x8049100
+ 804844a:	68 28 00 00 00       	push   $0x28
+ 804844f:	e9 90 ff ff ff       	jmp    80483e4 &lt;_init+0x18&gt;
+
+08048454 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">exit at plt</A>&gt;:
+ 8048454:	ff 25 04 91 04 08    	jmp    *0x8049104
+ 804845a:	68 30 00 00 00       	push   $0x30
+ 804845f:	e9 80 ff ff ff       	jmp    80483e4 &lt;_init+0x18&gt;
+
+08048464 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">_IO_getc at plt</A>&gt;:
+ 8048464:	ff 25 08 91 04 08    	jmp    *0x8049108
+ 804846a:	68 38 00 00 00       	push   $0x38
+ 804846f:	e9 70 ff ff ff       	jmp    80483e4 &lt;_init+0x18&gt;
+Disassembly of section .text:
+
+08048474 &lt;_start&gt;:
+ 8048474:	31 ed                	xor    %ebp,%ebp
+ 8048476:	5e                   	pop    %esi
+ 8048477:	89 e1                	mov    %esp,%ecx
+ 8048479:	83 e4 f0             	and    $0xfffffff0,%esp
+ 804847c:	50                   	push   %eax
+ 804847d:	54                   	push   %esp
+ 804847e:	52                   	push   %edx
+ 804847f:	68 78 8d 04 08       	push   $0x8048d78
+ 8048484:	68 24 8d 04 08       	push   $0x8048d24
+ 8048489:	51                   	push   %ecx
+ 804848a:	56                   	push   %esi
+ 804848b:	68 7a 8c 04 08       	push   $0x8048c7a
+ 8048490:	e8 9f ff ff ff       	call   8048434 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">__libc_start_main at plt</A>&gt;
+ 8048495:	f4                   	hlt    
+ 8048496:	90                   	nop    
+ 8048497:	90                   	nop    
+
+08048498 &lt;call_gmon_start&gt;:
+ 8048498:	55                   	push   %ebp
+ 8048499:	89 e5                	mov    %esp,%ebp
+ 804849b:	53                   	push   %ebx
+ 804849c:	e8 00 00 00 00       	call   80484a1 &lt;call_gmon_start+0x9&gt;
+ 80484a1:	5b                   	pop    %ebx
+ 80484a2:	81 c3 3f 0c 00 00    	add    $0xc3f,%ebx
+ 80484a8:	52                   	push   %edx
+ 80484a9:	8b 83 fc ff ff ff    	mov    0xfffffffc(%ebx),%eax
+ 80484af:	85 c0                	test   %eax,%eax
+ 80484b1:	74 02                	je     80484b5 &lt;call_gmon_start+0x1d&gt;
+ 80484b3:	ff d0                	call   *%eax
+ 80484b5:	58                   	pop    %eax
+ 80484b6:	5b                   	pop    %ebx
+ 80484b7:	c9                   	leave  
+ 80484b8:	c3                   	ret    
+ 80484b9:	90                   	nop    
+ 80484ba:	90                   	nop    
+ 80484bb:	90                   	nop    
+
+080484bc &lt;__do_global_dtors_aux&gt;:
+ 80484bc:	55                   	push   %ebp
+ 80484bd:	89 e5                	mov    %esp,%ebp
+ 80484bf:	83 ec 08             	sub    $0x8,%esp
+ 80484c2:	80 3d 6c 93 04 08 00 	cmpb   $0x0,0x804936c
+ 80484c9:	74 0f                	je     80484da &lt;__do_global_dtors_aux+0x1e&gt;
+ 80484cb:	eb 1f                	jmp    80484ec &lt;__do_global_dtors_aux+0x30&gt;
+ 80484cd:	8d 76 00             	lea    0x0(%esi),%esi
+ 80484d0:	83 c0 04             	add    $0x4,%eax
+ 80484d3:	a3 28 91 04 08       	mov    %eax,0x8049128
+ 80484d8:	ff d2                	call   *%edx
+ 80484da:	a1 28 91 04 08       	mov    0x8049128,%eax
+ 80484df:	8b 10                	mov    (%eax),%edx
+ 80484e1:	85 d2                	test   %edx,%edx
+ 80484e3:	75 eb                	jne    80484d0 &lt;__do_global_dtors_aux+0x14&gt;
+ 80484e5:	c6 05 6c 93 04 08 01 	movb   $0x1,0x804936c
+ 80484ec:	c9                   	leave  
+ 80484ed:	c3                   	ret    
+ 80484ee:	89 f6                	mov    %esi,%esi
+
+080484f0 &lt;frame_dummy&gt;:
+ 80484f0:	55                   	push   %ebp
+ 80484f1:	89 e5                	mov    %esp,%ebp
+ 80484f3:	83 ec 08             	sub    $0x8,%esp
+ 80484f6:	a1 10 90 04 08       	mov    0x8049010,%eax
+ 80484fb:	85 c0                	test   %eax,%eax
+ 80484fd:	74 19                	je     8048518 &lt;frame_dummy+0x28&gt;
+ 80484ff:	b8 00 00 00 00       	mov    $0x0,%eax
+ 8048504:	85 c0                	test   %eax,%eax
+ 8048506:	74 10                	je     8048518 &lt;frame_dummy+0x28&gt;
+ 8048508:	83 ec 0c             	sub    $0xc,%esp
+ 804850b:	68 10 90 04 08       	push   $0x8049010
+ 8048510:	ff d0                	call   *%eax
+ 8048512:	83 c4 10             	add    $0x10,%esp
+ 8048515:	8d 76 00             	lea    0x0(%esi),%esi
+ 8048518:	c9                   	leave  
+ 8048519:	c3                   	ret    
+ 804851a:	90                   	nop    
+ 804851b:	90                   	nop    
+
+0804851c &lt;gpsd_report&gt;:
+static int verbose = 5;
+
+void gpsd_report(int errlevel, const char *fmt, ... )
+/* assemble command in printf(3) style, use stderr or syslog */
+{
+ 804851c:	55                   	push   %ebp
+ 804851d:	89 e5                	mov    %esp,%ebp
+ 804851f:	57                   	push   %edi
+ 8048520:	56                   	push   %esi
+ 8048521:	53                   	push   %ebx
+ 8048522:	81 ec 0c 20 00 00    	sub    $0x200c,%esp
+    if (errlevel &lt;= verbose) {
+ 8048528:	8b 45 08             	mov    0x8(%ebp),%eax
+ 804852b:	3b 05 40 91 04 08    	cmp    0x8049140,%eax
+ 8048531:	7f 54                	jg     8048587 &lt;gpsd_report+0x6b&gt;
+	char buf[BUFSIZ];
+	va_list ap;
+
+	buf[0] = '\0';
+ 8048533:	c6 85 e8 df ff ff 00 	movb   $0x0,0xffffdfe8(%ebp)
+	va_start(ap, fmt) ;
+ 804853a:	8d 45 10             	lea    0x10(%ebp),%eax
+	(void)vsnprintf(buf + strlen(buf), sizeof(buf)-strlen(buf), fmt, ap);
+ 804853d:	50                   	push   %eax
+ 804853e:	ff 75 0c             	pushl  0xc(%ebp)
+ 8048541:	8d 9d e8 df ff ff    	lea    0xffffdfe8(%ebp),%ebx
+ 8048547:	be ff ff ff ff       	mov    $0xffffffff,%esi
+ 804854c:	89 df                	mov    %ebx,%edi
+ 804854e:	b2 00                	mov    $0x0,%dl
+ 8048550:	fc                   	cld    
+ 8048551:	89 f1                	mov    %esi,%ecx
+ 8048553:	88 d0                	mov    %dl,%al
+ 8048555:	f2 ae                	repnz scas %es:(%edi),%al
+ 8048557:	f7 d1                	not    %ecx
+ 8048559:	b8 01 20 00 00       	mov    $0x2001,%eax
+ 804855e:	29 c8                	sub    %ecx,%eax
+ 8048560:	50                   	push   %eax
+ 8048561:	89 df                	mov    %ebx,%edi
+ 8048563:	89 f1                	mov    %esi,%ecx
+ 8048565:	88 d0                	mov    %dl,%al
+ 8048567:	f2 ae                	repnz scas %es:(%edi),%al
+ 8048569:	f7 d1                	not    %ecx
+ 804856b:	8d 4c 19 ff          	lea    0xffffffff(%ecx,%ebx,1),%ecx
+ 804856f:	51                   	push   %ecx
+ 8048570:	e8 7f fe ff ff       	call   80483f4 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">vsnprintf at plt</A>&gt;
+	va_end(ap);
+
+	(void)fputs(buf, stderr);
+ 8048575:	83 c4 08             	add    $0x8,%esp
+ 8048578:	ff 35 60 93 04 08    	pushl  0x8049360
+ 804857e:	53                   	push   %ebx
+ 804857f:	e8 90 fe ff ff       	call   8048414 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">fputs at plt</A>&gt;
+ 8048584:	83 c4 10             	add    $0x10,%esp
+    }
+}
+ 8048587:	8d 65 f4             	lea    0xfffffff4(%ebp),%esp
+ 804858a:	5b                   	pop    %ebx
+ 804858b:	5e                   	pop    %esi
+ 804858c:	5f                   	pop    %edi
+ 804858d:	c9                   	leave  
+ 804858e:	c3                   	ret    
+
+0804858f &lt;rtcmparity&gt;:
+#endif /* TESTMAIN */
+
+#define MAG_SHIFT 6u
+#define MAG_TAG_DATA (1 &lt;&lt; MAG_SHIFT)
+#define MAG_TAG_MASK (3 &lt;&lt; MAG_SHIFT)
+
+#define PREAMBLE_PATTERN 0x66
+#define PREAMBLE_SHIFT 22
+#define PREAMBLE_MASK (0xFF &lt;&lt; PREAMBLE_SHIFT)
+
+#define W_DATA_MASK	0x3fffffc0u
+
+/*@ +charint @*/
+static unsigned char   parity_array[] = {
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0
+};
+
+static unsigned int reverse_bits[] = {
+    0, 32, 16, 48, 8, 40, 24, 56, 4, 36, 20, 52, 12, 44, 28, 60,
+    2, 34, 18, 50, 10, 42, 26, 58, 6, 38, 22, 54, 14, 46, 30, 62,
+    1, 33, 17, 49, 9, 41, 25, 57, 5, 37, 21, 53, 13, 45, 29, 61,
+    3, 35, 19, 51, 11, 43, 27, 59, 7, 39, 23, 55, 15, 47, 31, 63
+};
+/*@ -charint @*/
+
+static unsigned int rtcmparity(RTCMWORD th)
+{
+ 804858f:	55                   	push   %ebp
+ 8048590:	89 e5                	mov    %esp,%ebp
+ 8048592:	57                   	push   %edi
+ 8048593:	56                   	push   %esi
+ 8048594:	53                   	push   %ebx
+ 8048595:	83 ec 10             	sub    $0x10,%esp
+#define P_30_MASK	0x40000000u
+
+#define	PARITY_25	0xbb1f3480u
+#define	PARITY_26	0x5d8f9a40u
+#define	PARITY_27	0xaec7cd00u
+#define	PARITY_28	0x5763e680u
+#define	PARITY_29	0x6bb1f340u
+#define	PARITY_30	0x8b7a89c0u
+    RTCMWORD        t;
+    unsigned int    p;
+
+    /*
+    if (th &amp; P_30_MASK)
+	th ^= W_DATA_MASK;
+    */
+
+    /*@ +charint @*/
+    t = th &amp; PARITY_25;
+ 8048598:	8b 7d 08             	mov    0x8(%ebp),%edi
+ 804859b:	81 e7 80 34 1f bb    	and    $0xbb1f3480,%edi
+    p = parity_array[t &amp; 0xff] ^ parity_array[(t &gt;&gt; 8) &amp; 0xff] ^
+ 80485a1:	8b 55 08             	mov    0x8(%ebp),%edx
+ 80485a4:	81 e2 80 00 00 00    	and    $0x80,%edx
+ 80485aa:	89 f8                	mov    %edi,%eax
+ 80485ac:	c1 e8 08             	shr    $0x8,%eax
+ 80485af:	25 ff 00 00 00       	and    $0xff,%eax
+ 80485b4:	8a 9a 60 91 04 08    	mov    0x8049160(%edx),%bl
+ 80485ba:	88 da                	mov    %bl,%dl
+ 80485bc:	32 90 60 91 04 08    	xor    0x8049160(%eax),%dl
+ 80485c2:	89 f8                	mov    %edi,%eax
+ 80485c4:	c1 e8 10             	shr    $0x10,%eax
+ 80485c7:	25 ff 00 00 00       	and    $0xff,%eax
+ 80485cc:	32 90 60 91 04 08    	xor    0x8049160(%eax),%dl
+ 80485d2:	89 f8                	mov    %edi,%eax
+ 80485d4:	c1 e8 18             	shr    $0x18,%eax
+ 80485d7:	32 90 60 91 04 08    	xor    0x8049160(%eax),%dl
+ 80485dd:	0f b6 f2             	movzbl %dl,%esi
+	parity_array[(t &gt;&gt; 16) &amp; 0xff] ^ parity_array[(t &gt;&gt; 24) &amp; 0xff];
+    t = th &amp; PARITY_26;
+ 80485e0:	8b 7d 08             	mov    0x8(%ebp),%edi
+ 80485e3:	81 e7 40 9a 8f 5d    	and    $0x5d8f9a40,%edi
+    p = (p &lt;&lt; 1) | (parity_array[t &amp; 0xff] ^ parity_array[(t &gt;&gt; 8) &amp; 0xff] ^
+ 80485e9:	d1 e6                	shl    %esi
+ 80485eb:	8b 55 08             	mov    0x8(%ebp),%edx
+ 80485ee:	83 e2 40             	and    $0x40,%edx
+ 80485f1:	89 f8                	mov    %edi,%eax
+ 80485f3:	c1 e8 08             	shr    $0x8,%eax
+ 80485f6:	25 ff 00 00 00       	and    $0xff,%eax
+ 80485fb:	8a 8a 60 91 04 08    	mov    0x8049160(%edx),%cl
+ 8048601:	88 ca                	mov    %cl,%dl
+ 8048603:	32 90 60 91 04 08    	xor    0x8049160(%eax),%dl
+ 8048609:	89 f8                	mov    %edi,%eax
+ 804860b:	c1 e8 10             	shr    $0x10,%eax
+ 804860e:	25 ff 00 00 00       	and    $0xff,%eax
+ 8048613:	32 90 60 91 04 08    	xor    0x8049160(%eax),%dl
+ 8048619:	89 f8                	mov    %edi,%eax
+ 804861b:	c1 e8 18             	shr    $0x18,%eax
+ 804861e:	32 90 60 91 04 08    	xor    0x8049160(%eax),%dl
+ 8048624:	0f b6 d2             	movzbl %dl,%edx
+ 8048627:	09 d6                	or     %edx,%esi
+		  parity_array[(t &gt;&gt; 16) &amp; 0xff] ^ parity_array[(t &gt;&gt; 24) &amp; 0xff]);
+    t = th &amp; PARITY_27;
+ 8048629:	8b 7d 08             	mov    0x8(%ebp),%edi
+ 804862c:	81 e7 00 cd c7 ae    	and    $0xaec7cd00,%edi
+    p = (p &lt;&lt; 1) | (parity_array[t &amp; 0xff] ^ parity_array[(t &gt;&gt; 8) &amp; 0xff] ^
+ 8048632:	d1 e6                	shl    %esi
+ 8048634:	89 f8                	mov    %edi,%eax
+ 8048636:	c1 e8 08             	shr    $0x8,%eax
+ 8048639:	25 ff 00 00 00       	and    $0xff,%eax
+ 804863e:	8a 15 60 91 04 08    	mov    0x8049160,%dl
+ 8048644:	32 90 60 91 04 08    	xor    0x8049160(%eax),%dl
+ 804864a:	89 f8                	mov    %edi,%eax
+ 804864c:	c1 e8 10             	shr    $0x10,%eax
+ 804864f:	25 ff 00 00 00       	and    $0xff,%eax
+ 8048654:	32 90 60 91 04 08    	xor    0x8049160(%eax),%dl
+ 804865a:	89 f8                	mov    %edi,%eax
+ 804865c:	c1 e8 18             	shr    $0x18,%eax
+ 804865f:	32 90 60 91 04 08    	xor    0x8049160(%eax),%dl
+ 8048665:	0f b6 d2             	movzbl %dl,%edx
+ 8048668:	09 d6                	or     %edx,%esi
+		  parity_array[(t &gt;&gt; 16) &amp; 0xff] ^ parity_array[(t &gt;&gt; 24) &amp; 0xff]);
+    t = th &amp; PARITY_28;
+ 804866a:	8b 7d 08             	mov    0x8(%ebp),%edi
+ 804866d:	81 e7 80 e6 63 57    	and    $0x5763e680,%edi
+    p = (p &lt;&lt; 1) | (parity_array[t &amp; 0xff] ^ parity_array[(t &gt;&gt; 8) &amp; 0xff] ^
+ 8048673:	d1 e6                	shl    %esi
+ 8048675:	89 f8                	mov    %edi,%eax
+ 8048677:	c1 e8 08             	shr    $0x8,%eax
+ 804867a:	25 ff 00 00 00       	and    $0xff,%eax
+ 804867f:	32 98 60 91 04 08    	xor    0x8049160(%eax),%bl
+ 8048685:	89 f8                	mov    %edi,%eax
+ 8048687:	c1 e8 10             	shr    $0x10,%eax
+ 804868a:	25 ff 00 00 00       	and    $0xff,%eax
+ 804868f:	32 98 60 91 04 08    	xor    0x8049160(%eax),%bl
+ 8048695:	89 f8                	mov    %edi,%eax
+ 8048697:	c1 e8 18             	shr    $0x18,%eax
+ 804869a:	32 98 60 91 04 08    	xor    0x8049160(%eax),%bl
+ 80486a0:	0f b6 db             	movzbl %bl,%ebx
+ 80486a3:	09 de                	or     %ebx,%esi
+		  parity_array[(t &gt;&gt; 16) &amp; 0xff] ^ parity_array[(t &gt;&gt; 24) &amp; 0xff]);
+    t = th &amp; PARITY_29;
+ 80486a5:	8b 7d 08             	mov    0x8(%ebp),%edi
+ 80486a8:	81 e7 40 f3 b1 6b    	and    $0x6bb1f340,%edi
+    p = (p &lt;&lt; 1) | (parity_array[t &amp; 0xff] ^ parity_array[(t &gt;&gt; 8) &amp; 0xff] ^
+ 80486ae:	d1 e6                	shl    %esi
+ 80486b0:	89 f8                	mov    %edi,%eax
+ 80486b2:	c1 e8 08             	shr    $0x8,%eax
+ 80486b5:	25 ff 00 00 00       	and    $0xff,%eax
+ 80486ba:	32 88 60 91 04 08    	xor    0x8049160(%eax),%cl
+ 80486c0:	89 f8                	mov    %edi,%eax
+ 80486c2:	c1 e8 10             	shr    $0x10,%eax
+ 80486c5:	25 ff 00 00 00       	and    $0xff,%eax
+ 80486ca:	32 88 60 91 04 08    	xor    0x8049160(%eax),%cl
+ 80486d0:	89 f8                	mov    %edi,%eax
+ 80486d2:	c1 e8 18             	shr    $0x18,%eax
+ 80486d5:	32 88 60 91 04 08    	xor    0x8049160(%eax),%cl
+ 80486db:	0f b6 c9             	movzbl %cl,%ecx
+ 80486de:	09 ce                	or     %ecx,%esi
+		  parity_array[(t &gt;&gt; 16) &amp; 0xff] ^ parity_array[(t &gt;&gt; 24) &amp; 0xff]);
+    t = th &amp; PARITY_30;
+ 80486e0:	8b 7d 08             	mov    0x8(%ebp),%edi
+ 80486e3:	81 e7 c0 89 7a 8b    	and    $0x8b7a89c0,%edi
+    p = (p &lt;&lt; 1) | (parity_array[t &amp; 0xff] ^ parity_array[(t &gt;&gt; 8) &amp; 0xff] ^
+ 80486e9:	d1 e6                	shl    %esi
+ 80486eb:	8b 55 08             	mov    0x8(%ebp),%edx
+ 80486ee:	81 e2 c0 00 00 00    	and    $0xc0,%edx
+ 80486f4:	89 f8                	mov    %edi,%eax
+ 80486f6:	c1 e8 08             	shr    $0x8,%eax
+ 80486f9:	25 ff 00 00 00       	and    $0xff,%eax
+ 80486fe:	8a 92 60 91 04 08    	mov    0x8049160(%edx),%dl
+ 8048704:	32 90 60 91 04 08    	xor    0x8049160(%eax),%dl
+ 804870a:	89 f8                	mov    %edi,%eax
+ 804870c:	c1 e8 10             	shr    $0x10,%eax
+ 804870f:	25 ff 00 00 00       	and    $0xff,%eax
+ 8048714:	32 90 60 91 04 08    	xor    0x8049160(%eax),%dl
+ 804871a:	89 f8                	mov    %edi,%eax
+ 804871c:	c1 e8 18             	shr    $0x18,%eax
+ 804871f:	32 90 60 91 04 08    	xor    0x8049160(%eax),%dl
+ 8048725:	0f b6 d2             	movzbl %dl,%edx
+ 8048728:	09 d6                	or     %edx,%esi
+		  parity_array[(t &gt;&gt; 16) &amp; 0xff] ^ parity_array[(t &gt;&gt; 24) &amp; 0xff]);
+    /*@ -charint @*/
+
+    gpsd_report(6, &quot;parity %u\n&quot;, p);
+ 804872a:	56                   	push   %esi
+ 804872b:	68 08 8e 04 08       	push   $0x8048e08
+ 8048730:	6a 06                	push   $0x6
+ 8048732:	e8 e5 fd ff ff       	call   804851c &lt;gpsd_report&gt;
+    return (p);
+}
+ 8048737:	89 f0                	mov    %esi,%eax
+ 8048739:	8d 65 f4             	lea    0xfffffff4(%ebp),%esp
+ 804873c:	5b                   	pop    %ebx
+ 804873d:	5e                   	pop    %esi
+ 804873e:	5f                   	pop    %edi
+ 804873f:	c9                   	leave  
+ 8048740:	c3                   	ret    
+
+08048741 &lt;rtcmparityok&gt;:
+
+
+static bool rtcmparityok(RTCMWORD w)
+{
+ 8048741:	55                   	push   %ebp
+ 8048742:	89 e5                	mov    %esp,%ebp
+ 8048744:	53                   	push   %ebx
+ 8048745:	83 ec 10             	sub    $0x10,%esp
+ 8048748:	8b 5d 08             	mov    0x8(%ebp),%ebx
+    return (rtcmparity(w) == (w &amp; 0x3f));
+ 804874b:	53                   	push   %ebx
+ 804874c:	e8 3e fe ff ff       	call   804858f &lt;rtcmparity&gt;
+ 8048751:	83 e3 3f             	and    $0x3f,%ebx
+ 8048754:	83 c4 10             	add    $0x10,%esp
+ 8048757:	39 d8                	cmp    %ebx,%eax
+ 8048759:	0f 94 c0             	sete   %al
+ 804875c:	0f b6 c0             	movzbl %al,%eax
+}
+ 804875f:	8b 5d fc             	mov    0xfffffffc(%ebp),%ebx
+ 8048762:	c9                   	leave  
+ 8048763:	c3                   	ret    
+
+08048764 &lt;rtcm_init&gt;:
+
+void rtcm_init(/*@out@*/struct rtcm_ctx * ctx)
+{
+ 8048764:	55                   	push   %ebp
+ 8048765:	89 e5                	mov    %esp,%ebp
+ 8048767:	8b 45 08             	mov    0x8(%ebp),%eax
+    ctx-&gt;curr_word = 0;
+ 804876a:	c7 40 08 00 00 00 00 	movl   $0x0,0x8(%eax)
+    ctx-&gt;curr_offset = 24;	/* first word */
+ 8048771:	c7 40 04 18 00 00 00 	movl   $0x18,0x4(%eax)
+    ctx-&gt;locked = false;
+ 8048778:	c6 00 00             	movb   $0x0,(%eax)
+    ctx-&gt;bufindex = 0;
+ 804877b:	c7 80 0c 02 00 00 00 	movl   $0x0,0x20c(%eax)
+ 8048782:	00 00 00 
+}
+ 8048785:	c9                   	leave  
+ 8048786:	c3                   	ret    
+
+08048787 &lt;rtcm_decode&gt;:
+
+struct rtcm_msghdr *rtcm_decode(struct rtcm_ctx * ctx, unsigned int c)
+{
+ 8048787:	55                   	push   %ebp
+ 8048788:	89 e5                	mov    %esp,%ebp
+ 804878a:	57                   	push   %edi
+ 804878b:	56                   	push   %esi
+ 804878c:	53                   	push   %ebx
+ 804878d:	83 ec 0c             	sub    $0xc,%esp
+ 8048790:	8b 5d 08             	mov    0x8(%ebp),%ebx
+ 8048793:	8b 75 0c             	mov    0xc(%ebp),%esi
+    struct rtcm_msghdr *res;
+
+    if ((c &amp; MAG_TAG_MASK) != MAG_TAG_DATA) {
+ 8048796:	89 f0                	mov    %esi,%eax
+ 8048798:	25 c0 00 00 00       	and    $0xc0,%eax
+	return RTCM_NO_SYNC;
+ 804879d:	ba 00 00 00 00       	mov    $0x0,%edx
+ 80487a2:	83 f8 40             	cmp    $0x40,%eax
+ 80487a5:	0f 85 49 02 00 00    	jne    80489f4 &lt;rtcm_decode+0x26d&gt;
+ 80487ab:	eb 1a                	jmp    80487c7 &lt;rtcm_decode+0x40&gt;
+    }
+    c = reverse_bits[c &amp; 0x3f];
+
+    /*@ -shiftnegative @*/
+    if (!ctx-&gt;locked) {
+	ctx-&gt;curr_offset = -5;
+	ctx-&gt;bufindex = 0;
+
+	while (ctx-&gt;curr_offset &lt;= 0) {
+	    gpsd_report(7, &quot;syncing&quot;);
+	    ctx-&gt;curr_word &lt;&lt;= 1;
+	    if (ctx-&gt;curr_offset &gt; 0) {
+		ctx-&gt;curr_word |= c &lt;&lt; ctx-&gt;curr_offset;
+	    } else {
+		ctx-&gt;curr_word |= c &gt;&gt; -(ctx-&gt;curr_offset);
+	    }
+	    if (((struct rtcm_msghw1 *) &amp; ctx-&gt;curr_word)-&gt;preamble ==
+		PREAMBLE_PATTERN) {
+		if (rtcmparityok(ctx-&gt;curr_word)) {
+		    gpsd_report(5, &quot;preamble ok, parity ok -- locked\n&quot;);
+ 80487ad:	83 ec 08             	sub    $0x8,%esp
+ 80487b0:	68 b4 8e 04 08       	push   $0x8048eb4
+ 80487b5:	6a 05                	push   $0x5
+ 80487b7:	e8 60 fd ff ff       	call   804851c &lt;gpsd_report&gt;
+		    ctx-&gt;locked = true;
+ 80487bc:	c6 03 01             	movb   $0x1,(%ebx)
+		    /* ctx-&gt;curr_offset;  XXX - testing */
+		    break;
+ 80487bf:	83 c4 10             	add    $0x10,%esp
+ 80487c2:	e9 9f 00 00 00       	jmp    8048866 &lt;rtcm_decode+0xdf&gt;
+ 80487c7:	89 f0                	mov    %esi,%eax
+ 80487c9:	83 e0 3f             	and    $0x3f,%eax
+ 80487cc:	8b 34 85 60 92 04 08 	mov    0x8049260(,%eax,4),%esi
+ 80487d3:	80 3b 00             	cmpb   $0x0,(%ebx)
+ 80487d6:	0f 85 98 00 00 00    	jne    8048874 &lt;rtcm_decode+0xed&gt;
+ 80487dc:	c7 43 04 fb ff ff ff 	movl   $0xfffffffb,0x4(%ebx)
+ 80487e3:	c7 83 0c 02 00 00 00 	movl   $0x0,0x20c(%ebx)
+ 80487ea:	00 00 00 
+ 80487ed:	83 ec 08             	sub    $0x8,%esp
+ 80487f0:	68 13 8e 04 08       	push   $0x8048e13
+ 80487f5:	6a 07                	push   $0x7
+ 80487f7:	e8 20 fd ff ff       	call   804851c &lt;gpsd_report&gt;
+ 80487fc:	8b 43 08             	mov    0x8(%ebx),%eax
+ 80487ff:	d1 e0                	shl    %eax
+ 8048801:	89 43 08             	mov    %eax,0x8(%ebx)
+ 8048804:	83 c4 10             	add    $0x10,%esp
+ 8048807:	83 7b 04 00          	cmpl   $0x0,0x4(%ebx)
+ 804880b:	7e 10                	jle    804881d &lt;rtcm_decode+0x96&gt;
+ 804880d:	8b 4b 04             	mov    0x4(%ebx),%ecx
+ 8048810:	89 f2                	mov    %esi,%edx
+ 8048812:	d3 e2                	shl    %cl,%edx
+ 8048814:	89 d1                	mov    %edx,%ecx
+ 8048816:	09 c1                	or     %eax,%ecx
+ 8048818:	89 4b 08             	mov    %ecx,0x8(%ebx)
+ 804881b:	eb 0c                	jmp    8048829 &lt;rtcm_decode+0xa2&gt;
+ 804881d:	8b 4b 04             	mov    0x4(%ebx),%ecx
+ 8048820:	f7 d9                	neg    %ecx
+ 8048822:	89 f0                	mov    %esi,%eax
+ 8048824:	d3 e8                	shr    %cl,%eax
+ 8048826:	09 43 08             	or     %eax,0x8(%ebx)
+ 8048829:	66 8b 43 0a          	mov    0xa(%ebx),%ax
+ 804882d:	66 c1 e8 06          	shr    $0x6,%ax
+ 8048831:	3c 66                	cmp    $0x66,%al
+ 8048833:	75 28                	jne    804885d &lt;rtcm_decode+0xd6&gt;
+ 8048835:	83 ec 0c             	sub    $0xc,%esp
+ 8048838:	ff 73 08             	pushl  0x8(%ebx)
+ 804883b:	e8 01 ff ff ff       	call   8048741 &lt;rtcmparityok&gt;
+ 8048840:	83 c4 10             	add    $0x10,%esp
+ 8048843:	84 c0                	test   %al,%al
+ 8048845:	0f 85 62 ff ff ff    	jne    80487ad &lt;rtcm_decode+0x26&gt;
+		}
+		gpsd_report(5, &quot;preamble ok, parity fail\n&quot;);
+ 804884b:	83 ec 08             	sub    $0x8,%esp
+ 804884e:	68 1b 8e 04 08       	push   $0x8048e1b
+ 8048853:	6a 05                	push   $0x5
+ 8048855:	e8 c2 fc ff ff       	call   804851c &lt;gpsd_report&gt;
+ 804885a:	83 c4 10             	add    $0x10,%esp
+	    }
+	    ctx-&gt;curr_offset++;
+ 804885d:	ff 43 04             	incl   0x4(%ebx)
+ 8048860:	83 7b 04 00          	cmpl   $0x0,0x4(%ebx)
+ 8048864:	7e 87                	jle    80487ed &lt;rtcm_decode+0x66&gt;
+	}			/* end while */
+    }
+    if (ctx-&gt;locked) {
+	res = RTCM_SYNC;
+
+	if (ctx-&gt;curr_offset &gt; 0) {
+	    ctx-&gt;curr_word |= c &lt;&lt; ctx-&gt;curr_offset;
+	} else {
+	    ctx-&gt;curr_word |= c &gt;&gt; -(ctx-&gt;curr_offset);
+	}
+
+	if (ctx-&gt;curr_offset &lt;= 0) {
+	    /* weird-assed inversion */
+	    if (ctx-&gt;curr_word &amp; P_30_MASK)
+		ctx-&gt;curr_word ^= W_DATA_MASK;
+
+	    if (rtcmparityok(ctx-&gt;curr_word)) {
+		if (((struct rtcm_msghw1 *) &amp; ctx-&gt;curr_word)-&gt;preamble ==
+		    PREAMBLE_PATTERN) {
+		    gpsd_report(6, 
+				&quot;Preamble spotted (index: %u)&quot;,
+				ctx-&gt;bufindex);
+		    ctx-&gt;bufindex = 0;
+		}
+		gpsd_report(6,
+			    &quot;processing word %u (offset %d)\n&quot;,
+			    ctx-&gt;bufindex, ctx-&gt;curr_offset);
+		{
+		    struct rtcm_msghdr  *msghdr = (struct rtcm_msghdr *) ctx-&gt;buf;
+
+		    /*
+		     * Guard against a buffer overflow attack.  Just wait for
+		     * the next PREAMBLE_PATTERN and go on from there. 
+		     */
+		    if (ctx-&gt;bufindex &gt;= RTCM_CTX_MAX_MSGSZ){
+			ctx-&gt;bufindex = 0;
+			return RTCM_NO_SYNC;
+		    }
+
+		    ctx-&gt;buf[ctx-&gt;bufindex] = ctx-&gt;curr_word;
+
+		    if ((ctx-&gt;bufindex == 0) &amp;&amp;
+			(msghdr-&gt;w1.preamble != PREAMBLE_PATTERN)) {
+			gpsd_report(6, &quot;word 0 not a preamble- punting\n&quot;);
+			return RTCM_NO_SYNC;
+		    }
+		    ctx-&gt;bufindex++;
+		    /* rtcm_print_msg(msghdr); */
+
+		    if (ctx-&gt;bufindex &gt; 2) {	/* do we have the length yet? */
+			if (ctx-&gt;bufindex &gt;= msghdr-&gt;w2.frmlen + 2) {
+			    res = msghdr;
+			    ctx-&gt;bufindex = 0;
+			}
+		    }
+		}
+		ctx-&gt;curr_word &lt;&lt;= 30;	/* preserve the 2 low bits */
+		ctx-&gt;curr_offset += 30;
+		if (ctx-&gt;curr_offset &gt; 0) {
+		    ctx-&gt;curr_word |= c &lt;&lt; ctx-&gt;curr_offset;
+		} else {
+		    ctx-&gt;curr_word |= c &gt;&gt; -(ctx-&gt;curr_offset);
+		}
+	    } else {
+		gpsd_report(5, &quot;Parity failure, lost lock\n&quot;);
+		ctx-&gt;locked = false;
+	    }
+	}
+	ctx-&gt;curr_offset -= 6;
+	gpsd_report(7, &quot;residual %d&quot;, ctx-&gt;curr_offset);
+	return res;
+    }
+    /*@ +shiftnegative @*/
+
+    /* never achieved lock */
+    return RTCM_NO_SYNC;
+ 8048866:	ba 00 00 00 00       	mov    $0x0,%edx
+ 804886b:	80 3b 00             	cmpb   $0x0,(%ebx)
+ 804886e:	0f 84 80 01 00 00    	je     80489f4 &lt;rtcm_decode+0x26d&gt;
+ 8048874:	bf ff ff ff ff       	mov    $0xffffffff,%edi
+ 8048879:	83 7b 04 00          	cmpl   $0x0,0x4(%ebx)
+ 804887d:	7e 0c                	jle    804888b &lt;rtcm_decode+0x104&gt;
+ 804887f:	8b 4b 04             	mov    0x4(%ebx),%ecx
+ 8048882:	89 f0                	mov    %esi,%eax
+ 8048884:	d3 e0                	shl    %cl,%eax
+ 8048886:	09 43 08             	or     %eax,0x8(%ebx)
+ 8048889:	eb 0c                	jmp    8048897 &lt;rtcm_decode+0x110&gt;
+ 804888b:	8b 4b 04             	mov    0x4(%ebx),%ecx
+ 804888e:	f7 d9                	neg    %ecx
+ 8048890:	89 f0                	mov    %esi,%eax
+ 8048892:	d3 e8                	shr    %cl,%eax
+ 8048894:	09 43 08             	or     %eax,0x8(%ebx)
+ 8048897:	83 7b 04 00          	cmpl   $0x0,0x4(%ebx)
+ 804889b:	0f 8f 38 01 00 00    	jg     80489d9 &lt;rtcm_decode+0x252&gt;
+ 80488a1:	8b 43 08             	mov    0x8(%ebx),%eax
+ 80488a4:	a9 00 00 00 40       	test   $0x40000000,%eax
+ 80488a9:	74 08                	je     80488b3 &lt;rtcm_decode+0x12c&gt;
+ 80488ab:	35 c0 ff ff 3f       	xor    $0x3fffffc0,%eax
+ 80488b0:	89 43 08             	mov    %eax,0x8(%ebx)
+ 80488b3:	83 ec 0c             	sub    $0xc,%esp
+ 80488b6:	ff 73 08             	pushl  0x8(%ebx)
+ 80488b9:	e8 83 fe ff ff       	call   8048741 &lt;rtcmparityok&gt;
+ 80488be:	83 c4 10             	add    $0x10,%esp
+ 80488c1:	84 c0                	test   %al,%al
+ 80488c3:	0f 84 fb 00 00 00    	je     80489c4 &lt;rtcm_decode+0x23d&gt;
+ 80488c9:	66 8b 43 0a          	mov    0xa(%ebx),%ax
+ 80488cd:	66 c1 e8 06          	shr    $0x6,%ax
+ 80488d1:	3c 66                	cmp    $0x66,%al
+ 80488d3:	75 22                	jne    80488f7 &lt;rtcm_decode+0x170&gt;
+ 80488d5:	83 ec 04             	sub    $0x4,%esp
+ 80488d8:	ff b3 0c 02 00 00    	pushl  0x20c(%ebx)
+ 80488de:	68 35 8e 04 08       	push   $0x8048e35
+ 80488e3:	6a 06                	push   $0x6
+ 80488e5:	e8 32 fc ff ff       	call   804851c &lt;gpsd_report&gt;
+ 80488ea:	c7 83 0c 02 00 00 00 	movl   $0x0,0x20c(%ebx)
+ 80488f1:	00 00 00 
+ 80488f4:	83 c4 10             	add    $0x10,%esp
+ 80488f7:	ff 73 04             	pushl  0x4(%ebx)
+ 80488fa:	ff b3 0c 02 00 00    	pushl  0x20c(%ebx)
+ 8048900:	68 d8 8e 04 08       	push   $0x8048ed8
+ 8048905:	6a 06                	push   $0x6
+ 8048907:	e8 10 fc ff ff       	call   804851c &lt;gpsd_report&gt;
+ 804890c:	8d 4b 0c             	lea    0xc(%ebx),%ecx
+ 804890f:	83 c4 10             	add    $0x10,%esp
+ 8048912:	83 bb 0c 02 00 00 7f 	cmpl   $0x7f,0x20c(%ebx)
+ 8048919:	76 14                	jbe    804892f &lt;rtcm_decode+0x1a8&gt;
+ 804891b:	c7 83 0c 02 00 00 00 	movl   $0x0,0x20c(%ebx)
+ 8048922:	00 00 00 
+ 8048925:	ba 00 00 00 00       	mov    $0x0,%edx
+ 804892a:	e9 c5 00 00 00       	jmp    80489f4 &lt;rtcm_decode+0x26d&gt;
+ 804892f:	8b 93 0c 02 00 00    	mov    0x20c(%ebx),%edx
+ 8048935:	8b 43 08             	mov    0x8(%ebx),%eax
+ 8048938:	89 44 93 0c          	mov    %eax,0xc(%ebx,%edx,4)
+ 804893c:	85 d2                	test   %edx,%edx
+ 804893e:	75 25                	jne    8048965 &lt;rtcm_decode+0x1de&gt;
+ 8048940:	66 8b 41 02          	mov    0x2(%ecx),%ax
+ 8048944:	66 c1 e8 06          	shr    $0x6,%ax
+ 8048948:	3c 66                	cmp    $0x66,%al
+ 804894a:	74 19                	je     8048965 &lt;rtcm_decode+0x1de&gt;
+ 804894c:	83 ec 08             	sub    $0x8,%esp
+ 804894f:	68 f8 8e 04 08       	push   $0x8048ef8
+ 8048954:	6a 06                	push   $0x6
+ 8048956:	e8 c1 fb ff ff       	call   804851c &lt;gpsd_report&gt;
+ 804895b:	ba 00 00 00 00       	mov    $0x0,%edx
+ 8048960:	e9 8f 00 00 00       	jmp    80489f4 &lt;rtcm_decode+0x26d&gt;
+ 8048965:	ff 83 0c 02 00 00    	incl   0x20c(%ebx)
+ 804896b:	83 bb 0c 02 00 00 02 	cmpl   $0x2,0x20c(%ebx)
+ 8048972:	76 1f                	jbe    8048993 &lt;rtcm_decode+0x20c&gt;
+ 8048974:	8a 41 05             	mov    0x5(%ecx),%al
+ 8048977:	d0 e8                	shr    %al
+ 8048979:	83 e0 1f             	and    $0x1f,%eax
+ 804897c:	83 c0 02             	add    $0x2,%eax
+ 804897f:	39 83 0c 02 00 00    	cmp    %eax,0x20c(%ebx)
+ 8048985:	72 0c                	jb     8048993 &lt;rtcm_decode+0x20c&gt;
+ 8048987:	89 cf                	mov    %ecx,%edi
+ 8048989:	c7 83 0c 02 00 00 00 	movl   $0x0,0x20c(%ebx)
+ 8048990:	00 00 00 
+ 8048993:	8b 43 08             	mov    0x8(%ebx),%eax
+ 8048996:	89 c2                	mov    %eax,%edx
+ 8048998:	c1 e2 1e             	shl    $0x1e,%edx
+ 804899b:	89 53 08             	mov    %edx,0x8(%ebx)
+ 804899e:	8b 4b 04             	mov    0x4(%ebx),%ecx
+ 80489a1:	83 c1 1e             	add    $0x1e,%ecx
+ 80489a4:	89 4b 04             	mov    %ecx,0x4(%ebx)
+ 80489a7:	85 c9                	test   %ecx,%ecx
+ 80489a9:	7e 0b                	jle    80489b6 &lt;rtcm_decode+0x22f&gt;
+ 80489ab:	89 f0                	mov    %esi,%eax
+ 80489ad:	d3 e0                	shl    %cl,%eax
+ 80489af:	09 d0                	or     %edx,%eax
+ 80489b1:	89 43 08             	mov    %eax,0x8(%ebx)
+ 80489b4:	eb 23                	jmp    80489d9 &lt;rtcm_decode+0x252&gt;
+ 80489b6:	8b 4b 04             	mov    0x4(%ebx),%ecx
+ 80489b9:	f7 d9                	neg    %ecx
+ 80489bb:	89 f0                	mov    %esi,%eax
+ 80489bd:	d3 e8                	shr    %cl,%eax
+ 80489bf:	09 43 08             	or     %eax,0x8(%ebx)
+ 80489c2:	eb 15                	jmp    80489d9 &lt;rtcm_decode+0x252&gt;
+ 80489c4:	83 ec 08             	sub    $0x8,%esp
+ 80489c7:	68 52 8e 04 08       	push   $0x8048e52
+ 80489cc:	6a 05                	push   $0x5
+ 80489ce:	e8 49 fb ff ff       	call   804851c &lt;gpsd_report&gt;
+ 80489d3:	c6 03 00             	movb   $0x0,(%ebx)
+ 80489d6:	83 c4 10             	add    $0x10,%esp
+ 80489d9:	8b 43 04             	mov    0x4(%ebx),%eax
+ 80489dc:	83 e8 06             	sub    $0x6,%eax
+ 80489df:	89 43 04             	mov    %eax,0x4(%ebx)
+ 80489e2:	83 ec 04             	sub    $0x4,%esp
+ 80489e5:	50                   	push   %eax
+ 80489e6:	68 6d 8e 04 08       	push   $0x8048e6d
+ 80489eb:	6a 07                	push   $0x7
+ 80489ed:	e8 2a fb ff ff       	call   804851c &lt;gpsd_report&gt;
+ 80489f2:	89 fa                	mov    %edi,%edx
+}
+ 80489f4:	89 d0                	mov    %edx,%eax
+ 80489f6:	8d 65 f4             	lea    0xfffffff4(%ebp),%esp
+ 80489f9:	5b                   	pop    %ebx
+ 80489fa:	5e                   	pop    %esi
+ 80489fb:	5f                   	pop    %edi
+ 80489fc:	c9                   	leave  
+ 80489fd:	c3                   	ret    
+
+080489fe &lt;rtcm_print_msg&gt;:
+
+#ifdef TESTMAIN
+void rtcm_print_msg(struct rtcm_msghdr *msghdr)
+{
+ 80489fe:	55                   	push   %ebp
+ 80489ff:	89 e5                	mov    %esp,%ebp
+ 8048a01:	56                   	push   %esi
+ 8048a02:	53                   	push   %ebx
+ 8048a03:	83 ec 10             	sub    $0x10,%esp
+ 8048a06:	8b 5d 08             	mov    0x8(%ebp),%ebx
+    int             len = (int)msghdr-&gt;w2.frmlen;
+ 8048a09:	8a 43 05             	mov    0x5(%ebx),%al
+ 8048a0c:	d0 e8                	shr    %al
+ 8048a0e:	be 1f 00 00 00       	mov    $0x1f,%esi
+ 8048a13:	21 c6                	and    %eax,%esi
+    double          zcount = msghdr-&gt;w2.zcnt * ZCOUNT_SCALE;
+ 8048a15:	66 8b 43 06          	mov    0x6(%ebx),%ax
+ 8048a19:	66 d1 e8             	shr    %ax
+ 8048a1c:	25 ff 1f 00 00       	and    $0x1fff,%eax
+ 8048a21:	dd 05 18 8f 04 08    	fldl   0x8048f18
+ 8048a27:	50                   	push   %eax
+ 8048a28:	da 0c 24             	fimull (%esp)
+ 8048a2b:	dd 55 f0             	fstl   0xfffffff0(%ebp)
+
+    printf(&quot;H\t%u\t%u\t%0.1f\t%u\t%u\t%u\n&quot;,
+ 8048a2e:	66 8b 43 04          	mov    0x4(%ebx),%ax
+ 8048a32:	66 c1 e8 06          	shr    $0x6,%ax
+ 8048a36:	83 e0 07             	and    $0x7,%eax
+ 8048a39:	89 04 24             	mov    %eax,(%esp)
+ 8048a3c:	56                   	push   %esi
+ 8048a3d:	8b 43 04             	mov    0x4(%ebx),%eax
+ 8048a40:	c1 e8 0e             	shr    $0xe,%eax
+ 8048a43:	83 e0 07             	and    $0x7,%eax
+ 8048a46:	50                   	push   %eax
+ 8048a47:	8d 64 24 f8          	lea    0xfffffff8(%esp),%esp
+ 8048a4b:	dd 1c 24             	fstpl  (%esp)
+ 8048a4e:	66 8b 03             	mov    (%ebx),%ax
+ 8048a51:	66 c1 e8 06          	shr    $0x6,%ax
+ 8048a55:	0f b7 c0             	movzwl %ax,%eax
+ 8048a58:	50                   	push   %eax
+ 8048a59:	0f b6 43 02          	movzbl 0x2(%ebx),%eax
+ 8048a5d:	83 e0 3f             	and    $0x3f,%eax
+ 8048a60:	50                   	push   %eax
+ 8048a61:	68 79 8e 04 08       	push   $0x8048e79
+ 8048a66:	e8 d9 f9 ff ff       	call   8048444 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">printf at plt</A>&gt;
+	   msghdr-&gt;w1.msgtype,
+	   msghdr-&gt;w1.refstaid,
+	   zcount,
+	   msghdr-&gt;w2.sqnum,
+	   msghdr-&gt;w2.frmlen,
+	   msghdr-&gt;w2.stathlth);
+    switch (msghdr-&gt;w1.msgtype) {
+ 8048a6b:	83 c4 20             	add    $0x20,%esp
+ 8048a6e:	0f b6 43 02          	movzbl 0x2(%ebx),%eax
+ 8048a72:	83 e0 3f             	and    $0x3f,%eax
+ 8048a75:	83 f8 01             	cmp    $0x1,%eax
+ 8048a78:	74 09                	je     8048a83 &lt;rtcm_print_msg+0x85&gt;
+ 8048a7a:	83 f8 09             	cmp    $0x9,%eax
+ 8048a7d:	0f 85 f0 01 00 00    	jne    8048c73 &lt;rtcm_print_msg+0x275&gt;
+    case 1:
+    case 9:
+	{
+	    struct rtcm_msg1    *m = (struct rtcm_msg1 *) msghdr;
+
+	    while (len &gt;= 0) {
+		if (len &gt;= 2)
+		    printf(&quot;S\t%u\t%u\t%u\t%0.1f\t%0.3f\t%0.3f\n&quot;,
+			   m-&gt;w3.satident1,
+			   m-&gt;w3.udre1,
+			   m-&gt;w4.issuedata1,
+			   zcount,
+			   m-&gt;w3.pc1 * (m-&gt;w3.scale1 ? PCLARGE : PCSMALL),
+			   m-&gt;w4.rangerate1 * (m-&gt;w3.scale1 ?
+					       RRLARGE : RRSMALL));
+		if (len &gt;= 4)
+		    printf(&quot;S\t%u\t%u\t%u\t%0.1f\t%0.3f\t%0.3f\n&quot;,
+			   m-&gt;w4.satident2,
+			   m-&gt;w4.udre2,
+			   m-&gt;w6.issuedata2,
+			   zcount,
+			   m-&gt;w5.pc2 * (m-&gt;w4.scale2 ? PCLARGE : PCSMALL),
+			   m-&gt;w5.rangerate2 * (m-&gt;w4.scale2 ?
+					       RRLARGE : RRSMALL));
+		
+		/*@ -shiftimplementation @*/
+		if (len &gt;= 5)
+		    printf(&quot;S\t%u\t%u\t%u\t%0.1f\t%0.3f\t%0.3f\n&quot;,
+			   m-&gt;w6.satident3,
+			   m-&gt;w6.udre3,
+			   m-&gt;w7.issuedata3,
+			   zcount,
+			   ((m-&gt;w6.pc3_h &lt;&lt; 8) | (m-&gt;w7.pc3_l)) *
+			   (m-&gt;w6.scale3 ? PCLARGE : PCSMALL),
+			   m-&gt;w7.rangerate3 * (m-&gt;w6.scale3 ?
+					       RRLARGE : RRSMALL));
+		/*@ +shiftimplementation @*/
+		len -= 5;
+		m = (struct rtcm_msg1 *) (((RTCMWORD *) m) + 5);
+ 8048a83:	85 f6                	test   %esi,%esi
+ 8048a85:	0f 88 e8 01 00 00    	js     8048c73 &lt;rtcm_print_msg+0x275&gt;
+ 8048a8b:	83 fe 01             	cmp    $0x1,%esi
+ 8048a8e:	0f 8e 91 00 00 00    	jle    8048b25 &lt;rtcm_print_msg+0x127&gt;
+ 8048a94:	83 ec 08             	sub    $0x8,%esp
+ 8048a97:	66 8b 43 0e          	mov    0xe(%ebx),%ax
+ 8048a9b:	c1 e0 02             	shl    $0x2,%eax
+ 8048a9e:	0f be c4             	movsbl %ah,%eax
+ 8048aa1:	50                   	push   %eax
+ 8048aa2:	db 04 24             	fildl  (%esp)
+ 8048aa5:	8d 64 24 04          	lea    0x4(%esp),%esp
+ 8048aa9:	f6 43 0b 20          	testb  $0x20,0xb(%ebx)
+ 8048aad:	74 08                	je     8048ab7 &lt;rtcm_print_msg+0xb9&gt;
+ 8048aaf:	dc 0d 20 8f 04 08    	fmull  0x8048f20
+ 8048ab5:	eb 06                	jmp    8048abd &lt;rtcm_print_msg+0xbf&gt;
+ 8048ab7:	dc 0d 28 8f 04 08    	fmull  0x8048f28
+ 8048abd:	8d 64 24 f8          	lea    0xfffffff8(%esp),%esp
+ 8048ac1:	dd 1c 24             	fstpl  (%esp)
+ 8048ac4:	8b 43 08             	mov    0x8(%ebx),%eax
+ 8048ac7:	c1 e0 0a             	shl    $0xa,%eax
+ 8048aca:	c1 f8 10             	sar    $0x10,%eax
+ 8048acd:	50                   	push   %eax
+ 8048ace:	db 04 24             	fildl  (%esp)
+ 8048ad1:	8d 64 24 04          	lea    0x4(%esp),%esp
+ 8048ad5:	f6 43 0b 20          	testb  $0x20,0xb(%ebx)
+ 8048ad9:	74 08                	je     8048ae3 &lt;rtcm_print_msg+0xe5&gt;
+ 8048adb:	dc 0d 30 8f 04 08    	fmull  0x8048f30
+ 8048ae1:	eb 06                	jmp    8048ae9 &lt;rtcm_print_msg+0xeb&gt;
+ 8048ae3:	dc 0d 38 8f 04 08    	fmull  0x8048f38
+ 8048ae9:	8d 64 24 f8          	lea    0xfffffff8(%esp),%esp
+ 8048aed:	dd 1c 24             	fstpl  (%esp)
+ 8048af0:	ff 75 f4             	pushl  0xfffffff4(%ebp)
+ 8048af3:	ff 75 f0             	pushl  0xfffffff0(%ebp)
+ 8048af6:	8b 43 0c             	mov    0xc(%ebx),%eax
+ 8048af9:	c1 e8 0e             	shr    $0xe,%eax
+ 8048afc:	25 ff 00 00 00       	and    $0xff,%eax
+ 8048b01:	50                   	push   %eax
+ 8048b02:	8a 43 0b             	mov    0xb(%ebx),%al
+ 8048b05:	c0 e8 03             	shr    $0x3,%al
+ 8048b08:	83 e0 03             	and    $0x3,%eax
+ 8048b0b:	50                   	push   %eax
+ 8048b0c:	66 8b 43 0a          	mov    0xa(%ebx),%ax
+ 8048b10:	66 c1 e8 06          	shr    $0x6,%ax
+ 8048b14:	83 e0 1f             	and    $0x1f,%eax
+ 8048b17:	50                   	push   %eax
+ 8048b18:	68 91 8e 04 08       	push   $0x8048e91
+ 8048b1d:	e8 22 f9 ff ff       	call   8048444 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">printf at plt</A>&gt;
+ 8048b22:	83 c4 30             	add    $0x30,%esp
+ 8048b25:	83 fe 03             	cmp    $0x3,%esi
+ 8048b28:	0f 8e 91 00 00 00    	jle    8048bbf &lt;rtcm_print_msg+0x1c1&gt;
+ 8048b2e:	83 ec 08             	sub    $0x8,%esp
+ 8048b31:	66 8b 43 10          	mov    0x10(%ebx),%ax
+ 8048b35:	c1 e0 02             	shl    $0x2,%eax
+ 8048b38:	0f be c4             	movsbl %ah,%eax
+ 8048b3b:	50                   	push   %eax
+ 8048b3c:	db 04 24             	fildl  (%esp)
+ 8048b3f:	8d 64 24 04          	lea    0x4(%esp),%esp
+ 8048b43:	f6 43 0d 20          	testb  $0x20,0xd(%ebx)
+ 8048b47:	74 08                	je     8048b51 &lt;rtcm_print_msg+0x153&gt;
+ 8048b49:	dc 0d 20 8f 04 08    	fmull  0x8048f20
+ 8048b4f:	eb 06                	jmp    8048b57 &lt;rtcm_print_msg+0x159&gt;
+ 8048b51:	dc 0d 28 8f 04 08    	fmull  0x8048f28
+ 8048b57:	8d 64 24 f8          	lea    0xfffffff8(%esp),%esp
+ 8048b5b:	dd 1c 24             	fstpl  (%esp)
+ 8048b5e:	8b 43 10             	mov    0x10(%ebx),%eax
+ 8048b61:	c1 e0 02             	shl    $0x2,%eax
+ 8048b64:	c1 f8 10             	sar    $0x10,%eax
+ 8048b67:	50                   	push   %eax
+ 8048b68:	db 04 24             	fildl  (%esp)
+ 8048b6b:	8d 64 24 04          	lea    0x4(%esp),%esp
+ 8048b6f:	f6 43 0d 20          	testb  $0x20,0xd(%ebx)
+ 8048b73:	74 08                	je     8048b7d &lt;rtcm_print_msg+0x17f&gt;
+ 8048b75:	dc 0d 30 8f 04 08    	fmull  0x8048f30
+ 8048b7b:	eb 06                	jmp    8048b83 &lt;rtcm_print_msg+0x185&gt;
+ 8048b7d:	dc 0d 38 8f 04 08    	fmull  0x8048f38
+ 8048b83:	8d 64 24 f8          	lea    0xfffffff8(%esp),%esp
+ 8048b87:	dd 1c 24             	fstpl  (%esp)
+ 8048b8a:	ff 75 f4             	pushl  0xfffffff4(%ebp)
+ 8048b8d:	ff 75 f0             	pushl  0xfffffff0(%ebp)
+ 8048b90:	66 8b 43 16          	mov    0x16(%ebx),%ax
+ 8048b94:	66 c1 e8 06          	shr    $0x6,%ax
+ 8048b98:	0f b6 c0             	movzbl %al,%eax
+ 8048b9b:	50                   	push   %eax
+ 8048b9c:	8a 43 0d             	mov    0xd(%ebx),%al
+ 8048b9f:	c0 e8 03             	shr    $0x3,%al
+ 8048ba2:	83 e0 03             	and    $0x3,%eax
+ 8048ba5:	50                   	push   %eax
+ 8048ba6:	66 8b 43 0c          	mov    0xc(%ebx),%ax
+ 8048baa:	66 c1 e8 06          	shr    $0x6,%ax
+ 8048bae:	83 e0 1f             	and    $0x1f,%eax
+ 8048bb1:	50                   	push   %eax
+ 8048bb2:	68 91 8e 04 08       	push   $0x8048e91
+ 8048bb7:	e8 88 f8 ff ff       	call   8048444 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">printf at plt</A>&gt;
+ 8048bbc:	83 c4 30             	add    $0x30,%esp
+ 8048bbf:	83 fe 04             	cmp    $0x4,%esi
+ 8048bc2:	0f 8e 9f 00 00 00    	jle    8048c67 &lt;rtcm_print_msg+0x269&gt;
+ 8048bc8:	83 ec 08             	sub    $0x8,%esp
+ 8048bcb:	8b 43 18             	mov    0x18(%ebx),%eax
+ 8048bce:	c1 e0 0a             	shl    $0xa,%eax
+ 8048bd1:	c1 f8 18             	sar    $0x18,%eax
+ 8048bd4:	50                   	push   %eax
+ 8048bd5:	db 04 24             	fildl  (%esp)
+ 8048bd8:	8d 64 24 04          	lea    0x4(%esp),%esp
+ 8048bdc:	f6 43 16 20          	testb  $0x20,0x16(%ebx)
+ 8048be0:	74 08                	je     8048bea &lt;rtcm_print_msg+0x1ec&gt;
+ 8048be2:	dc 0d 20 8f 04 08    	fmull  0x8048f20
+ 8048be8:	eb 06                	jmp    8048bf0 &lt;rtcm_print_msg+0x1f2&gt;
+ 8048bea:	dc 0d 28 8f 04 08    	fmull  0x8048f28
+ 8048bf0:	8d 64 24 f8          	lea    0xfffffff8(%esp),%esp
+ 8048bf4:	dd 1c 24             	fstpl  (%esp)
+ 8048bf7:	66 8b 53 14          	mov    0x14(%ebx),%dx
+ 8048bfb:	c1 e2 02             	shl    $0x2,%edx
+ 8048bfe:	0f be d6             	movsbl %dh,%edx
+ 8048c01:	c1 e2 08             	shl    $0x8,%edx
+ 8048c04:	66 8b 43 1a          	mov    0x1a(%ebx),%ax
+ 8048c08:	66 c1 e8 06          	shr    $0x6,%ax
+ 8048c0c:	0f b6 c0             	movzbl %al,%eax
+ 8048c0f:	09 c2                	or     %eax,%edx
+ 8048c11:	52                   	push   %edx
+ 8048c12:	db 04 24             	fildl  (%esp)
+ 8048c15:	8d 64 24 04          	lea    0x4(%esp),%esp
+ 8048c19:	f6 43 16 20          	testb  $0x20,0x16(%ebx)
+ 8048c1d:	74 08                	je     8048c27 &lt;rtcm_print_msg+0x229&gt;
+ 8048c1f:	dc 0d 30 8f 04 08    	fmull  0x8048f30
+ 8048c25:	eb 06                	jmp    8048c2d &lt;rtcm_print_msg+0x22f&gt;
+ 8048c27:	dc 0d 38 8f 04 08    	fmull  0x8048f38
+ 8048c2d:	8d 64 24 f8          	lea    0xfffffff8(%esp),%esp
+ 8048c31:	dd 1c 24             	fstpl  (%esp)
+ 8048c34:	ff 75 f4             	pushl  0xfffffff4(%ebp)
+ 8048c37:	ff 75 f0             	pushl  0xfffffff0(%ebp)
+ 8048c3a:	66 8b 43 18          	mov    0x18(%ebx),%ax
+ 8048c3e:	66 c1 e8 06          	shr    $0x6,%ax
+ 8048c42:	0f b6 c0             	movzbl %al,%eax
+ 8048c45:	50                   	push   %eax
+ 8048c46:	8a 43 16             	mov    0x16(%ebx),%al
+ 8048c49:	c0 e8 03             	shr    $0x3,%al
+ 8048c4c:	83 e0 03             	and    $0x3,%eax
+ 8048c4f:	50                   	push   %eax
+ 8048c50:	8b 43 14             	mov    0x14(%ebx),%eax
+ 8048c53:	c1 e8 0e             	shr    $0xe,%eax
+ 8048c56:	83 e0 1f             	and    $0x1f,%eax
+ 8048c59:	50                   	push   %eax
+ 8048c5a:	68 91 8e 04 08       	push   $0x8048e91
+ 8048c5f:	e8 e0 f7 ff ff       	call   8048444 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">printf at plt</A>&gt;
+ 8048c64:	83 c4 30             	add    $0x30,%esp
+ 8048c67:	83 c3 14             	add    $0x14,%ebx
+ 8048c6a:	83 ee 05             	sub    $0x5,%esi
+ 8048c6d:	0f 89 18 fe ff ff    	jns    8048a8b &lt;rtcm_print_msg+0x8d&gt;
+	    }
+	}
+	break;
+    default:
+	break;
+    }
+}
+ 8048c73:	8d 65 f8             	lea    0xfffffff8(%ebp),%esp
+ 8048c76:	5b                   	pop    %ebx
+ 8048c77:	5e                   	pop    %esi
+ 8048c78:	c9                   	leave  
+ 8048c79:	c3                   	ret    
+
+08048c7a &lt;main&gt;:
+
+int main(int argc, char **argv)
+{
+ 8048c7a:	55                   	push   %ebp
+ 8048c7b:	89 e5                	mov    %esp,%ebp
+ 8048c7d:	57                   	push   %edi
+ 8048c7e:	56                   	push   %esi
+ 8048c7f:	53                   	push   %ebx
+ 8048c80:	81 ec 1c 02 00 00    	sub    $0x21c,%esp
+ 8048c86:	8b 75 08             	mov    0x8(%ebp),%esi
+ 8048c89:	8b 5d 0c             	mov    0xc(%ebp),%ebx
+ 8048c8c:	83 e4 f0             	and    $0xfffffff0,%esp
+ 8048c8f:	83 ec 10             	sub    $0x10,%esp
+    int             c;
+    struct rtcm_ctx ctxbuf, *ctx = &ctxbuf;
+ 8048c92:	8d bd d8 fd ff ff    	lea    0xfffffdd8(%ebp),%edi
+    struct rtcm_msghdr *res;
+
+    while ((c = getopt(argc, argv, &quot;v:&quot;)) != EOF) {
+ 8048c98:	eb 21                	jmp    8048cbb &lt;main+0x41&gt;
+	switch (c) {
+ 8048c9a:	83 fa 76             	cmp    $0x76,%edx
+ 8048c9d:	75 1c                	jne    8048cbb &lt;main+0x41&gt;
+extern __inline long int
+__NTH (strtol (__const char *__restrict __nptr, char **__restrict __endptr,
+	       int __base))
+{
+  return __strtol_internal (__nptr, __endptr, __base, 0);
+ 8048c9f:	6a 00                	push   $0x0
+ 8048ca1:	6a 0a                	push   $0xa
+ 8048ca3:	6a 00                	push   $0x0
+ 8048ca5:	ff 35 68 93 04 08    	pushl  0x8049368
+ 8048cab:	e8 74 f7 ff ff       	call   8048424 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">__strtol_internal at plt</A>&gt;
+ 8048cb0:	83 c4 10             	add    $0x10,%esp
+}
+extern __inline unsigned long int
+__NTH (strtoul (__const char *__restrict __nptr, char **__restrict __endptr,
+		int __base))
+{
+  return __strtoul_internal (__nptr, __endptr, __base, 0);
+}
+__END_NAMESPACE_STD
+
+# ifdef __USE_ISOC99
+__BEGIN_NAMESPACE_C99
+extern __inline float
+__NTH (strtof (__const char *__restrict __nptr, char **__restrict __endptr))
+{
+  return __strtof_internal (__nptr, __endptr, 0);
+}
+extern __inline long double
+__NTH (strtold (__const char *__restrict __nptr, char **__restrict __endptr))
+{
+  return __strtold_internal (__nptr, __endptr, 0);
+}
+__END_NAMESPACE_C99
+# endif
+
+# ifdef __USE_BSD
+__extension__ extern __inline long long int
+__NTH (strtoq (__const char *__restrict __nptr, char **__restrict __endptr,
+	       int __base))
+{
+  return __strtoll_internal (__nptr, __endptr, __base, 0);
+}
+__extension__ extern __inline unsigned long long int
+__NTH (strtouq (__const char *__restrict __nptr, char **__restrict __endptr,
+		int __base))
+{
+  return __strtoull_internal (__nptr, __endptr, __base, 0);
+}
+# endif
+
+# if defined __USE_MISC || defined __USE_ISOC99
+__BEGIN_NAMESPACE_C99
+__extension__ extern __inline long long int
+__NTH (strtoll (__const char *__restrict __nptr, char **__restrict __endptr,
+		int __base))
+{
+  return __strtoll_internal (__nptr, __endptr, __base, 0);
+}
+__extension__ extern __inline unsigned long long int
+__NTH (strtoull (__const char * __restrict __nptr, char **__restrict __endptr,
+		 int __base))
+{
+  return __strtoull_internal (__nptr, __endptr, __base, 0);
+}
+__END_NAMESPACE_C99
+# endif
+
+__BEGIN_NAMESPACE_STD
+extern __inline double
+__NTH (atof (__const char *__nptr))
+{
+  return strtod (__nptr, (char **) NULL);
+}
+extern __inline int
+__NTH (atoi (__const char *__nptr))
+{
+ 8048cb3:	83 c0 05             	add    $0x5,%eax
+ 8048cb6:	a3 40 91 04 08       	mov    %eax,0x8049140
+	case 'v':		/* verbose */
+	    verbose = 5 + atoi(optarg);
+	    break;
+
+	case '?':
+	default:
+	    /* usage(); */
+	    break;
+ 8048cbb:	83 ec 04             	sub    $0x4,%esp
+ 8048cbe:	68 af 8e 04 08       	push   $0x8048eaf
+ 8048cc3:	53                   	push   %ebx
+ 8048cc4:	56                   	push   %esi
+ 8048cc5:	e8 3a f7 ff ff       	call   8048404 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">getopt at plt</A>&gt;
+ 8048cca:	89 c2                	mov    %eax,%edx
+ 8048ccc:	83 c4 10             	add    $0x10,%esp
+ 8048ccf:	83 f8 ff             	cmp    $0xffffffff,%eax
+ 8048cd2:	75 c6                	jne    8048c9a &lt;main+0x20&gt;
+	}
+    }
+    argc -= optind;
+    argv += optind;
+
+    rtcm_init(ctx);
+ 8048cd4:	57                   	push   %edi
+ 8048cd5:	e8 8a fa ff ff       	call   8048764 &lt;rtcm_init&gt;
+
+    while ((c = getchar()) != EOF) {
+ 8048cda:	83 c4 04             	add    $0x4,%esp
+ 8048cdd:	eb 23                	jmp    8048d02 &lt;main+0x88&gt;
+	res = rtcm_decode(ctx, (unsigned int)c);
+ 8048cdf:	83 ec 08             	sub    $0x8,%esp
+ 8048ce2:	52                   	push   %edx
+ 8048ce3:	57                   	push   %edi
+ 8048ce4:	e8 9e fa ff ff       	call   8048787 &lt;rtcm_decode&gt;
+ 8048ce9:	89 c2                	mov    %eax,%edx
+	if (res != RTCM_NO_SYNC &amp;&amp; res != RTCM_SYNC)
+ 8048ceb:	8d 40 ff             	lea    0xffffffff(%eax),%eax
+ 8048cee:	83 c4 10             	add    $0x10,%esp
+ 8048cf1:	83 f8 fd             	cmp    $0xfffffffd,%eax
+ 8048cf4:	77 0c                	ja     8048d02 &lt;main+0x88&gt;
+	    rtcm_print_msg(res);
+ 8048cf6:	83 ec 0c             	sub    $0xc,%esp
+ 8048cf9:	52                   	push   %edx
+ 8048cfa:	e8 ff fc ff ff       	call   80489fe &lt;rtcm_print_msg&gt;
+ 8048cff:	83 c4 10             	add    $0x10,%esp
+/* Read a character from stdin.  */
+__STDIO_INLINE int
+getchar (void)
+{
+  return _IO_getc (stdin);
+ 8048d02:	83 ec 0c             	sub    $0xc,%esp
+ 8048d05:	ff 35 64 93 04 08    	pushl  0x8049364
+ 8048d0b:	e8 54 f7 ff ff       	call   8048464 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">_IO_getc at plt</A>&gt;
+ 8048d10:	83 c4 10             	add    $0x10,%esp
+ 8048d13:	89 c2                	mov    %eax,%edx
+ 8048d15:	83 f8 ff             	cmp    $0xffffffff,%eax
+ 8048d18:	75 c5                	jne    8048cdf &lt;main+0x65&gt;
+    }
+    exit(0);
+ 8048d1a:	83 ec 0c             	sub    $0xc,%esp
+ 8048d1d:	6a 00                	push   $0x0
+ 8048d1f:	e8 30 f7 ff ff       	call   8048454 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">exit at plt</A>&gt;
+
+08048d24 &lt;__libc_csu_init&gt;:
+ 8048d24:	55                   	push   %ebp
+ 8048d25:	89 e5                	mov    %esp,%ebp
+ 8048d27:	57                   	push   %edi
+ 8048d28:	56                   	push   %esi
+ 8048d29:	53                   	push   %ebx
+ 8048d2a:	83 ec 0c             	sub    $0xc,%esp
+ 8048d2d:	e8 00 00 00 00       	call   8048d32 &lt;__libc_csu_init+0xe&gt;
+ 8048d32:	5b                   	pop    %ebx
+ 8048d33:	81 c3 ae 03 00 00    	add    $0x3ae,%ebx
+ 8048d39:	e8 8e f6 ff ff       	call   80483cc &lt;_init&gt;
+ 8048d3e:	8d 83 20 ff ff ff    	lea    0xffffff20(%ebx),%eax
+ 8048d44:	8d 93 20 ff ff ff    	lea    0xffffff20(%ebx),%edx
+ 8048d4a:	89 45 f0             	mov    %eax,0xfffffff0(%ebp)
+ 8048d4d:	29 d0                	sub    %edx,%eax
+ 8048d4f:	31 f6                	xor    %esi,%esi
+ 8048d51:	c1 f8 02             	sar    $0x2,%eax
+ 8048d54:	39 c6                	cmp    %eax,%esi
+ 8048d56:	73 16                	jae    8048d6e &lt;__libc_csu_init+0x4a&gt;
+ 8048d58:	89 d7                	mov    %edx,%edi
+ 8048d5a:	89 f6                	mov    %esi,%esi
+ 8048d5c:	ff 14 b2             	call   *(%edx,%esi,4)
+ 8048d5f:	8b 4d f0             	mov    0xfffffff0(%ebp),%ecx
+ 8048d62:	29 f9                	sub    %edi,%ecx
+ 8048d64:	46                   	inc    %esi
+ 8048d65:	c1 f9 02             	sar    $0x2,%ecx
+ 8048d68:	39 ce                	cmp    %ecx,%esi
+ 8048d6a:	89 fa                	mov    %edi,%edx
+ 8048d6c:	72 ee                	jb     8048d5c &lt;__libc_csu_init+0x38&gt;
+ 8048d6e:	83 c4 0c             	add    $0xc,%esp
+ 8048d71:	5b                   	pop    %ebx
+ 8048d72:	5e                   	pop    %esi
+ 8048d73:	5f                   	pop    %edi
+ 8048d74:	c9                   	leave  
+ 8048d75:	c3                   	ret    
+ 8048d76:	89 f6                	mov    %esi,%esi
+
+08048d78 &lt;__libc_csu_fini&gt;:
+ 8048d78:	55                   	push   %ebp
+ 8048d79:	89 e5                	mov    %esp,%ebp
+ 8048d7b:	57                   	push   %edi
+ 8048d7c:	56                   	push   %esi
+ 8048d7d:	53                   	push   %ebx
+ 8048d7e:	e8 00 00 00 00       	call   8048d83 &lt;__libc_csu_fini+0xb&gt;
+ 8048d83:	5b                   	pop    %ebx
+ 8048d84:	81 c3 5d 03 00 00    	add    $0x35d,%ebx
+ 8048d8a:	8d 83 20 ff ff ff    	lea    0xffffff20(%ebx),%eax
+ 8048d90:	8d bb 20 ff ff ff    	lea    0xffffff20(%ebx),%edi
+ 8048d96:	29 f8                	sub    %edi,%eax
+ 8048d98:	c1 f8 02             	sar    $0x2,%eax
+ 8048d9b:	83 ec 0c             	sub    $0xc,%esp
+ 8048d9e:	8d 70 ff             	lea    0xffffffff(%eax),%esi
+ 8048da1:	eb 05                	jmp    8048da8 &lt;__libc_csu_fini+0x30&gt;
+ 8048da3:	90                   	nop    
+ 8048da4:	ff 14 b7             	call   *(%edi,%esi,4)
+ 8048da7:	4e                   	dec    %esi
+ 8048da8:	83 fe ff             	cmp    $0xffffffff,%esi
+ 8048dab:	75 f7                	jne    8048da4 &lt;__libc_csu_fini+0x2c&gt;
+ 8048dad:	e8 2e 00 00 00       	call   8048de0 &lt;_fini&gt;
+ 8048db2:	83 c4 0c             	add    $0xc,%esp
+ 8048db5:	5b                   	pop    %ebx
+ 8048db6:	5e                   	pop    %esi
+ 8048db7:	5f                   	pop    %edi
+ 8048db8:	c9                   	leave  
+ 8048db9:	c3                   	ret    
+ 8048dba:	90                   	nop    
+ 8048dbb:	90                   	nop    
+
+08048dbc &lt;__do_global_ctors_aux&gt;:
+ 8048dbc:	55                   	push   %ebp
+ 8048dbd:	89 e5                	mov    %esp,%ebp
+ 8048dbf:	53                   	push   %ebx
+ 8048dc0:	52                   	push   %edx
+ 8048dc1:	bb 00 90 04 08       	mov    $0x8049000,%ebx
+ 8048dc6:	a1 00 90 04 08       	mov    0x8049000,%eax
+ 8048dcb:	eb 0a                	jmp    8048dd7 &lt;__do_global_ctors_aux+0x1b&gt;
+ 8048dcd:	8d 76 00             	lea    0x0(%esi),%esi
+ 8048dd0:	83 eb 04             	sub    $0x4,%ebx
+ 8048dd3:	ff d0                	call   *%eax
+ 8048dd5:	8b 03                	mov    (%ebx),%eax
+ 8048dd7:	83 f8 ff             	cmp    $0xffffffff,%eax
+ 8048dda:	75 f4                	jne    8048dd0 &lt;__do_global_ctors_aux+0x14&gt;
+ 8048ddc:	58                   	pop    %eax
+ 8048ddd:	5b                   	pop    %ebx
+ 8048dde:	c9                   	leave  
+ 8048ddf:	c3                   	ret    
+Disassembly of section .fini:
+
+08048de0 &lt;_fini&gt;:
+ 8048de0:	55                   	push   %ebp
+ 8048de1:	89 e5                	mov    %esp,%ebp
+ 8048de3:	53                   	push   %ebx
+ 8048de4:	e8 00 00 00 00       	call   8048de9 &lt;_fini+0x9&gt;
+ 8048de9:	5b                   	pop    %ebx
+ 8048dea:	81 c3 f7 02 00 00    	add    $0x2f7,%ebx
+ 8048df0:	50                   	push   %eax
+ 8048df1:	e8 c6 f6 ff ff       	call   80484bc &lt;__do_global_dtors_aux&gt;
+ 8048df6:	59                   	pop    %ecx
+ 8048df7:	5b                   	pop    %ebx
+ 8048df8:	c9                   	leave  
+ 8048df9:	c3                   	ret    
+-------------- next part --------------
+
+rtcmdecode:     file format elf32-i386
+
+Disassembly of section .init:
+
+080483cc &lt;_init&gt;:
+ 80483cc:	55                   	push   %ebp
+ 80483cd:	89 e5                	mov    %esp,%ebp
+ 80483cf:	83 ec 08             	sub    $0x8,%esp
+ 80483d2:	e8 c1 00 00 00       	call   8048498 &lt;call_gmon_start&gt;
+ 80483d7:	e8 14 01 00 00       	call   80484f0 &lt;frame_dummy&gt;
+ 80483dc:	e8 63 0a 00 00       	call   8048e44 &lt;__do_global_ctors_aux&gt;
+ 80483e1:	c9                   	leave  
+ 80483e2:	c3                   	ret    
+Disassembly of section .plt:
+
+080483e4 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">vsnprintf at plt-0x10</A>&gt;:
+ 80483e4:	ff 35 e4 90 04 08    	pushl  0x80490e4
+ 80483ea:	ff 25 e8 90 04 08    	jmp    *0x80490e8
+ 80483f0:	00 00                	add    %al,(%eax)
+	...
+
+080483f4 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">vsnprintf at plt</A>&gt;:
+ 80483f4:	ff 25 ec 90 04 08    	jmp    *0x80490ec
+ 80483fa:	68 00 00 00 00       	push   $0x0
+ 80483ff:	e9 e0 ff ff ff       	jmp    80483e4 &lt;_init+0x18&gt;
+
+08048404 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">getopt at plt</A>&gt;:
+ 8048404:	ff 25 f0 90 04 08    	jmp    *0x80490f0
+ 804840a:	68 08 00 00 00       	push   $0x8
+ 804840f:	e9 d0 ff ff ff       	jmp    80483e4 &lt;_init+0x18&gt;
+
+08048414 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">fputs at plt</A>&gt;:
+ 8048414:	ff 25 f4 90 04 08    	jmp    *0x80490f4
+ 804841a:	68 10 00 00 00       	push   $0x10
+ 804841f:	e9 c0 ff ff ff       	jmp    80483e4 &lt;_init+0x18&gt;
+
+08048424 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">__strtol_internal at plt</A>&gt;:
+ 8048424:	ff 25 f8 90 04 08    	jmp    *0x80490f8
+ 804842a:	68 18 00 00 00       	push   $0x18
+ 804842f:	e9 b0 ff ff ff       	jmp    80483e4 &lt;_init+0x18&gt;
+
+08048434 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">__libc_start_main at plt</A>&gt;:
+ 8048434:	ff 25 fc 90 04 08    	jmp    *0x80490fc
+ 804843a:	68 20 00 00 00       	push   $0x20
+ 804843f:	e9 a0 ff ff ff       	jmp    80483e4 &lt;_init+0x18&gt;
+
+08048444 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">printf at plt</A>&gt;:
+ 8048444:	ff 25 00 91 04 08    	jmp    *0x8049100
+ 804844a:	68 28 00 00 00       	push   $0x28
+ 804844f:	e9 90 ff ff ff       	jmp    80483e4 &lt;_init+0x18&gt;
+
+08048454 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">exit at plt</A>&gt;:
+ 8048454:	ff 25 04 91 04 08    	jmp    *0x8049104
+ 804845a:	68 30 00 00 00       	push   $0x30
+ 804845f:	e9 80 ff ff ff       	jmp    80483e4 &lt;_init+0x18&gt;
+
+08048464 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">_IO_getc at plt</A>&gt;:
+ 8048464:	ff 25 08 91 04 08    	jmp    *0x8049108
+ 804846a:	68 38 00 00 00       	push   $0x38
+ 804846f:	e9 70 ff ff ff       	jmp    80483e4 &lt;_init+0x18&gt;
+Disassembly of section .text:
+
+08048474 &lt;_start&gt;:
+ 8048474:	31 ed                	xor    %ebp,%ebp
+ 8048476:	5e                   	pop    %esi
+ 8048477:	89 e1                	mov    %esp,%ecx
+ 8048479:	83 e4 f0             	and    $0xfffffff0,%esp
+ 804847c:	50                   	push   %eax
+ 804847d:	54                   	push   %esp
+ 804847e:	52                   	push   %edx
+ 804847f:	68 00 8e 04 08       	push   $0x8048e00
+ 8048484:	68 ac 8d 04 08       	push   $0x8048dac
+ 8048489:	51                   	push   %ecx
+ 804848a:	56                   	push   %esi
+ 804848b:	68 dc 8c 04 08       	push   $0x8048cdc
+ 8048490:	e8 9f ff ff ff       	call   8048434 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">__libc_start_main at plt</A>&gt;
+ 8048495:	f4                   	hlt    
+ 8048496:	90                   	nop    
+ 8048497:	90                   	nop    
+
+08048498 &lt;call_gmon_start&gt;:
+ 8048498:	55                   	push   %ebp
+ 8048499:	89 e5                	mov    %esp,%ebp
+ 804849b:	53                   	push   %ebx
+ 804849c:	e8 00 00 00 00       	call   80484a1 &lt;call_gmon_start+0x9&gt;
+ 80484a1:	5b                   	pop    %ebx
+ 80484a2:	81 c3 3f 0c 00 00    	add    $0xc3f,%ebx
+ 80484a8:	52                   	push   %edx
+ 80484a9:	8b 83 fc ff ff ff    	mov    0xfffffffc(%ebx),%eax
+ 80484af:	85 c0                	test   %eax,%eax
+ 80484b1:	74 02                	je     80484b5 &lt;call_gmon_start+0x1d&gt;
+ 80484b3:	ff d0                	call   *%eax
+ 80484b5:	58                   	pop    %eax
+ 80484b6:	5b                   	pop    %ebx
+ 80484b7:	c9                   	leave  
+ 80484b8:	c3                   	ret    
+ 80484b9:	90                   	nop    
+ 80484ba:	90                   	nop    
+ 80484bb:	90                   	nop    
+
+080484bc &lt;__do_global_dtors_aux&gt;:
+ 80484bc:	55                   	push   %ebp
+ 80484bd:	89 e5                	mov    %esp,%ebp
+ 80484bf:	83 ec 08             	sub    $0x8,%esp
+ 80484c2:	80 3d 6c 93 04 08 00 	cmpb   $0x0,0x804936c
+ 80484c9:	74 0f                	je     80484da &lt;__do_global_dtors_aux+0x1e&gt;
+ 80484cb:	eb 1f                	jmp    80484ec &lt;__do_global_dtors_aux+0x30&gt;
+ 80484cd:	8d 76 00             	lea    0x0(%esi),%esi
+ 80484d0:	83 c0 04             	add    $0x4,%eax
+ 80484d3:	a3 28 91 04 08       	mov    %eax,0x8049128
+ 80484d8:	ff d2                	call   *%edx
+ 80484da:	a1 28 91 04 08       	mov    0x8049128,%eax
+ 80484df:	8b 10                	mov    (%eax),%edx
+ 80484e1:	85 d2                	test   %edx,%edx
+ 80484e3:	75 eb                	jne    80484d0 &lt;__do_global_dtors_aux+0x14&gt;
+ 80484e5:	c6 05 6c 93 04 08 01 	movb   $0x1,0x804936c
+ 80484ec:	c9                   	leave  
+ 80484ed:	c3                   	ret    
+ 80484ee:	89 f6                	mov    %esi,%esi
+
+080484f0 &lt;frame_dummy&gt;:
+ 80484f0:	55                   	push   %ebp
+ 80484f1:	89 e5                	mov    %esp,%ebp
+ 80484f3:	83 ec 08             	sub    $0x8,%esp
+ 80484f6:	a1 10 90 04 08       	mov    0x8049010,%eax
+ 80484fb:	85 c0                	test   %eax,%eax
+ 80484fd:	74 19                	je     8048518 &lt;frame_dummy+0x28&gt;
+ 80484ff:	b8 00 00 00 00       	mov    $0x0,%eax
+ 8048504:	85 c0                	test   %eax,%eax
+ 8048506:	74 10                	je     8048518 &lt;frame_dummy+0x28&gt;
+ 8048508:	83 ec 0c             	sub    $0xc,%esp
+ 804850b:	68 10 90 04 08       	push   $0x8049010
+ 8048510:	ff d0                	call   *%eax
+ 8048512:	83 c4 10             	add    $0x10,%esp
+ 8048515:	8d 76 00             	lea    0x0(%esi),%esi
+ 8048518:	c9                   	leave  
+ 8048519:	c3                   	ret    
+ 804851a:	90                   	nop    
+ 804851b:	90                   	nop    
+
+0804851c &lt;gpsd_report&gt;:
+static int verbose = 5;
+
+void gpsd_report(int errlevel, const char *fmt, ... )
+/* assemble command in printf(3) style, use stderr or syslog */
+{
+ 804851c:	55                   	push   %ebp
+ 804851d:	89 e5                	mov    %esp,%ebp
+ 804851f:	57                   	push   %edi
+ 8048520:	53                   	push   %ebx
+ 8048521:	81 ec 10 20 00 00    	sub    $0x2010,%esp
+    if (errlevel &lt;= verbose) {
+ 8048527:	a1 40 91 04 08       	mov    0x8049140,%eax
+ 804852c:	39 45 08             	cmp    %eax,0x8(%ebp)
+ 804852f:	7e 07                	jle    8048538 &lt;gpsd_report+0x1c&gt;
+	char buf[BUFSIZ];
+	va_list ap;
+
+	buf[0] = '\0';
+	va_start(ap, fmt) ;
+	(void)vsnprintf(buf + strlen(buf), sizeof(buf)-strlen(buf), fmt, ap);
+	va_end(ap);
+
+	(void)fputs(buf, stderr);
+    }
+}
+ 8048531:	8d 65 f8             	lea    0xfffffff8(%ebp),%esp
+ 8048534:	5b                   	pop    %ebx
+ 8048535:	5f                   	pop    %edi
+ 8048536:	c9                   	leave  
+ 8048537:	c3                   	ret    
+ 8048538:	8d 45 10             	lea    0x10(%ebp),%eax
+ 804853b:	c6 85 f8 df ff ff 00 	movb   $0x0,0xffffdff8(%ebp)
+ 8048542:	31 d2                	xor    %edx,%edx
+ 8048544:	50                   	push   %eax
+ 8048545:	bb ff ff ff ff       	mov    $0xffffffff,%ebx
+ 804854a:	ff 75 0c             	pushl  0xc(%ebp)
+ 804854d:	fc                   	cld    
+ 804854e:	88 d0                	mov    %dl,%al
+ 8048550:	8d bd f8 df ff ff    	lea    0xffffdff8(%ebp),%edi
+ 8048556:	89 d9                	mov    %ebx,%ecx
+ 8048558:	f2 ae                	repnz scas %es:(%edi),%al
+ 804855a:	f7 d1                	not    %ecx
+ 804855c:	b8 01 20 00 00       	mov    $0x2001,%eax
+ 8048561:	29 c8                	sub    %ecx,%eax
+ 8048563:	50                   	push   %eax
+ 8048564:	8d bd f8 df ff ff    	lea    0xffffdff8(%ebp),%edi
+ 804856a:	88 d0                	mov    %dl,%al
+ 804856c:	89 d9                	mov    %ebx,%ecx
+ 804856e:	f2 ae                	repnz scas %es:(%edi),%al
+ 8048570:	f7 d1                	not    %ecx
+ 8048572:	8d 8c 29 f7 df ff ff 	lea    0xffffdff7(%ecx,%ebp,1),%ecx
+ 8048579:	51                   	push   %ecx
+ 804857a:	e8 75 fe ff ff       	call   80483f4 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">vsnprintf at plt</A>&gt;
+ 804857f:	58                   	pop    %eax
+ 8048580:	5a                   	pop    %edx
+ 8048581:	ff 35 60 93 04 08    	pushl  0x8049360
+ 8048587:	8d 85 f8 df ff ff    	lea    0xffffdff8(%ebp),%eax
+ 804858d:	50                   	push   %eax
+ 804858e:	e8 81 fe ff ff       	call   8048414 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">fputs at plt</A>&gt;
+ 8048593:	83 c4 10             	add    $0x10,%esp
+ 8048596:	8d 65 f8             	lea    0xfffffff8(%ebp),%esp
+ 8048599:	5b                   	pop    %ebx
+ 804859a:	5f                   	pop    %edi
+ 804859b:	c9                   	leave  
+ 804859c:	c3                   	ret    
+ 804859d:	8d 76 00             	lea    0x0(%esi),%esi
+
+080485a0 &lt;rtcmparityok&gt;:
+#endif /* TESTMAIN */
+
+#define MAG_SHIFT 6u
+#define MAG_TAG_DATA (1 &lt;&lt; MAG_SHIFT)
+#define MAG_TAG_MASK (3 &lt;&lt; MAG_SHIFT)
+
+#define PREAMBLE_PATTERN 0x66
+#define PREAMBLE_SHIFT 22
+#define PREAMBLE_MASK (0xFF &lt;&lt; PREAMBLE_SHIFT)
+
+#define W_DATA_MASK	0x3fffffc0u
+
+/*@ +charint @*/
+static unsigned char   parity_array[] = {
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0
+};
+
+static unsigned int reverse_bits[] = {
+    0, 32, 16, 48, 8, 40, 24, 56, 4, 36, 20, 52, 12, 44, 28, 60,
+    2, 34, 18, 50, 10, 42, 26, 58, 6, 38, 22, 54, 14, 46, 30, 62,
+    1, 33, 17, 49, 9, 41, 25, 57, 5, 37, 21, 53, 13, 45, 29, 61,
+    3, 35, 19, 51, 11, 43, 27, 59, 7, 39, 23, 55, 15, 47, 31, 63
+};
+/*@ -charint @*/
+
+static unsigned int rtcmparity(RTCMWORD th)
+{
+#define P_30_MASK	0x40000000u
+
+#define	PARITY_25	0xbb1f3480u
+#define	PARITY_26	0x5d8f9a40u
+#define	PARITY_27	0xaec7cd00u
+#define	PARITY_28	0x5763e680u
+#define	PARITY_29	0x6bb1f340u
+#define	PARITY_30	0x8b7a89c0u
+    RTCMWORD        t;
+    unsigned int    p;
+
+    /*
+    if (th &amp; P_30_MASK)
+	th ^= W_DATA_MASK;
+    */
+
+    /*@ +charint @*/
+    t = th &amp; PARITY_25;
+    p = parity_array[t &amp; 0xff] ^ parity_array[(t &gt;&gt; 8) &amp; 0xff] ^
+	parity_array[(t &gt;&gt; 16) &amp; 0xff] ^ parity_array[(t &gt;&gt; 24) &amp; 0xff];
+    t = th &amp; PARITY_26;
+    p = (p &lt;&lt; 1) | (parity_array[t &amp; 0xff] ^ parity_array[(t &gt;&gt; 8) &amp; 0xff] ^
+		  parity_array[(t &gt;&gt; 16) &amp; 0xff] ^ parity_array[(t &gt;&gt; 24) &amp; 0xff]);
+    t = th &amp; PARITY_27;
+    p = (p &lt;&lt; 1) | (parity_array[t &amp; 0xff] ^ parity_array[(t &gt;&gt; 8) &amp; 0xff] ^
+		  parity_array[(t &gt;&gt; 16) &amp; 0xff] ^ parity_array[(t &gt;&gt; 24) &amp; 0xff]);
+    t = th &amp; PARITY_28;
+    p = (p &lt;&lt; 1) | (parity_array[t &amp; 0xff] ^ parity_array[(t &gt;&gt; 8) &amp; 0xff] ^
+		  parity_array[(t &gt;&gt; 16) &amp; 0xff] ^ parity_array[(t &gt;&gt; 24) &amp; 0xff]);
+    t = th &amp; PARITY_29;
+    p = (p &lt;&lt; 1) | (parity_array[t &amp; 0xff] ^ parity_array[(t &gt;&gt; 8) &amp; 0xff] ^
+		  parity_array[(t &gt;&gt; 16) &amp; 0xff] ^ parity_array[(t &gt;&gt; 24) &amp; 0xff]);
+    t = th &amp; PARITY_30;
+    p = (p &lt;&lt; 1) | (parity_array[t &amp; 0xff] ^ parity_array[(t &gt;&gt; 8) &amp; 0xff] ^
+		  parity_array[(t &gt;&gt; 16) &amp; 0xff] ^ parity_array[(t &gt;&gt; 24) &amp; 0xff]);
+    /*@ -charint @*/
+
+    gpsd_report(6, &quot;parity %u\n&quot;, p);
+    return (p);
+}
+
+
+static bool rtcmparityok(RTCMWORD w)
+{
+ 80485a0:	55                   	push   %ebp
+ 80485a1:	89 e5                	mov    %esp,%ebp
+ 80485a3:	57                   	push   %edi
+ 80485a4:	56                   	push   %esi
+ 80485a5:	53                   	push   %ebx
+ 80485a6:	89 c3                	mov    %eax,%ebx
+ 80485a8:	81 e3 80 34 1f bb    	and    $0xbb1f3480,%ebx
+ 80485ae:	c1 eb 08             	shr    $0x8,%ebx
+ 80485b1:	89 c2                	mov    %eax,%edx
+ 80485b3:	83 ec 10             	sub    $0x10,%esp
+ 80485b6:	81 e2 80 00 00 00    	and    $0x80,%edx
+ 80485bc:	89 45 f0             	mov    %eax,0xfffffff0(%ebp)
+ 80485bf:	0f b6 c3             	movzbl %bl,%eax
+ 80485c2:	0f b6 b2 60 92 04 08 	movzbl 0x8049260(%edx),%esi
+ 80485c9:	c1 eb 08             	shr    $0x8,%ebx
+ 80485cc:	8a 80 60 92 04 08    	mov    0x8049260(%eax),%al
+ 80485d2:	0f b6 d3             	movzbl %bl,%edx
+ 80485d5:	31 f0                	xor    %esi,%eax
+ 80485d7:	32 82 60 92 04 08    	xor    0x8049260(%edx),%al
+ 80485dd:	c1 eb 08             	shr    $0x8,%ebx
+ 80485e0:	32 83 60 92 04 08    	xor    0x8049260(%ebx),%al
+ 80485e6:	8b 5d f0             	mov    0xfffffff0(%ebp),%ebx
+ 80485e9:	81 e3 40 9a 8f 5d    	and    $0x5d8f9a40,%ebx
+ 80485ef:	8b 55 f0             	mov    0xfffffff0(%ebp),%edx
+ 80485f2:	c1 eb 08             	shr    $0x8,%ebx
+ 80485f5:	0f b6 f8             	movzbl %al,%edi
+ 80485f8:	83 e2 40             	and    $0x40,%edx
+ 80485fb:	0f b6 c3             	movzbl %bl,%eax
+ 80485fe:	8d 0c 3f             	lea    (%edi,%edi,1),%ecx
+ 8048601:	c1 eb 08             	shr    $0x8,%ebx
+ 8048604:	0f b6 ba 60 92 04 08 	movzbl 0x8049260(%edx),%edi
+ 804860b:	8a 80 60 92 04 08    	mov    0x8049260(%eax),%al
+ 8048611:	0f b6 d3             	movzbl %bl,%edx
+ 8048614:	31 f8                	xor    %edi,%eax
+ 8048616:	32 82 60 92 04 08    	xor    0x8049260(%edx),%al
+ 804861c:	c1 eb 08             	shr    $0x8,%ebx
+ 804861f:	32 83 60 92 04 08    	xor    0x8049260(%ebx),%al
+ 8048625:	8b 5d f0             	mov    0xfffffff0(%ebp),%ebx
+ 8048628:	81 e3 00 cd c7 ae    	and    $0xaec7cd00,%ebx
+ 804862e:	c1 eb 08             	shr    $0x8,%ebx
+ 8048631:	0f b6 c0             	movzbl %al,%eax
+ 8048634:	09 c1                	or     %eax,%ecx
+ 8048636:	0f b6 c3             	movzbl %bl,%eax
+ 8048639:	8a 80 60 92 04 08    	mov    0x8049260(%eax),%al
+ 804863f:	c1 eb 08             	shr    $0x8,%ebx
+ 8048642:	0f b6 d3             	movzbl %bl,%edx
+ 8048645:	32 05 60 92 04 08    	xor    0x8049260,%al
+ 804864b:	32 82 60 92 04 08    	xor    0x8049260(%edx),%al
+ 8048651:	c1 eb 08             	shr    $0x8,%ebx
+ 8048654:	32 83 60 92 04 08    	xor    0x8049260(%ebx),%al
+ 804865a:	d1 e1                	shl    %ecx
+ 804865c:	8b 5d f0             	mov    0xfffffff0(%ebp),%ebx
+ 804865f:	0f b6 c0             	movzbl %al,%eax
+ 8048662:	09 c1                	or     %eax,%ecx
+ 8048664:	81 e3 80 e6 63 57    	and    $0x5763e680,%ebx
+ 804866a:	c1 eb 08             	shr    $0x8,%ebx
+ 804866d:	0f b6 c3             	movzbl %bl,%eax
+ 8048670:	c1 eb 08             	shr    $0x8,%ebx
+ 8048673:	8a 90 60 92 04 08    	mov    0x8049260(%eax),%dl
+ 8048679:	0f b6 c3             	movzbl %bl,%eax
+ 804867c:	31 d6                	xor    %edx,%esi
+ 804867e:	c1 eb 08             	shr    $0x8,%ebx
+ 8048681:	8a 90 60 92 04 08    	mov    0x8049260(%eax),%dl
+ 8048687:	31 d6                	xor    %edx,%esi
+ 8048689:	8a 83 60 92 04 08    	mov    0x8049260(%ebx),%al
+ 804868f:	31 c6                	xor    %eax,%esi
+ 8048691:	8b 5d f0             	mov    0xfffffff0(%ebp),%ebx
+ 8048694:	89 f2                	mov    %esi,%edx
+ 8048696:	81 e3 40 f3 b1 6b    	and    $0x6bb1f340,%ebx
+ 804869c:	0f b6 c2             	movzbl %dl,%eax
+ 804869f:	c1 eb 08             	shr    $0x8,%ebx
+ 80486a2:	d1 e1                	shl    %ecx
+ 80486a4:	09 c1                	or     %eax,%ecx
+ 80486a6:	0f b6 c3             	movzbl %bl,%eax
+ 80486a9:	c1 eb 08             	shr    $0x8,%ebx
+ 80486ac:	8a 90 60 92 04 08    	mov    0x8049260(%eax),%dl
+ 80486b2:	0f b6 c3             	movzbl %bl,%eax
+ 80486b5:	31 d7                	xor    %edx,%edi
+ 80486b7:	c1 eb 08             	shr    $0x8,%ebx
+ 80486ba:	8a 90 60 92 04 08    	mov    0x8049260(%eax),%dl
+ 80486c0:	31 d7                	xor    %edx,%edi
+ 80486c2:	8a 83 60 92 04 08    	mov    0x8049260(%ebx),%al
+ 80486c8:	31 c7                	xor    %eax,%edi
+ 80486ca:	8b 5d f0             	mov    0xfffffff0(%ebp),%ebx
+ 80486cd:	89 fa                	mov    %edi,%edx
+ 80486cf:	81 e3 c0 89 7a 8b    	and    $0x8b7a89c0,%ebx
+ 80486d5:	0f b6 c2             	movzbl %dl,%eax
+ 80486d8:	c1 eb 08             	shr    $0x8,%ebx
+ 80486db:	d1 e1                	shl    %ecx
+ 80486dd:	09 c1                	or     %eax,%ecx
+ 80486df:	8b 55 f0             	mov    0xfffffff0(%ebp),%edx
+ 80486e2:	0f b6 c3             	movzbl %bl,%eax
+ 80486e5:	81 e2 c0 00 00 00    	and    $0xc0,%edx
+ 80486eb:	c1 eb 08             	shr    $0x8,%ebx
+ 80486ee:	8a 80 60 92 04 08    	mov    0x8049260(%eax),%al
+ 80486f4:	32 82 60 92 04 08    	xor    0x8049260(%edx),%al
+ 80486fa:	0f b6 d3             	movzbl %bl,%edx
+ 80486fd:	32 82 60 92 04 08    	xor    0x8049260(%edx),%al
+ 8048703:	c1 eb 08             	shr    $0x8,%ebx
+ 8048706:	32 83 60 92 04 08    	xor    0x8049260(%ebx),%al
+ 804870c:	0f b6 c0             	movzbl %al,%eax
+ 804870f:	8d 3c 09             	lea    (%ecx,%ecx,1),%edi
+ 8048712:	09 c7                	or     %eax,%edi
+ 8048714:	57                   	push   %edi
+ 8048715:	68 90 8e 04 08       	push   $0x8048e90
+ 804871a:	6a 06                	push   $0x6
+ 804871c:	e8 fb fd ff ff       	call   804851c &lt;gpsd_report&gt;
+ 8048721:	83 65 f0 3f          	andl   $0x3f,0xfffffff0(%ebp)
+ 8048725:	83 c4 10             	add    $0x10,%esp
+ 8048728:	31 c0                	xor    %eax,%eax
+ 804872a:	3b 7d f0             	cmp    0xfffffff0(%ebp),%edi
+ 804872d:	0f 94 c0             	sete   %al
+    return (rtcmparity(w) == (w &amp; 0x3f));
+}
+ 8048730:	8d 65 f4             	lea    0xfffffff4(%ebp),%esp
+ 8048733:	5b                   	pop    %ebx
+ 8048734:	5e                   	pop    %esi
+ 8048735:	5f                   	pop    %edi
+ 8048736:	c9                   	leave  
+ 8048737:	c3                   	ret    
+
+08048738 &lt;rtcm_init&gt;:
+
+void rtcm_init(/*@out@*/struct rtcm_ctx * ctx)
+{
+ 8048738:	55                   	push   %ebp
+ 8048739:	89 e5                	mov    %esp,%ebp
+ 804873b:	8b 45 08             	mov    0x8(%ebp),%eax
+    ctx-&gt;curr_word = 0;
+ 804873e:	c7 40 08 00 00 00 00 	movl   $0x0,0x8(%eax)
+    ctx-&gt;curr_offset = 24;	/* first word */
+ 8048745:	c7 40 04 18 00 00 00 	movl   $0x18,0x4(%eax)
+    ctx-&gt;locked = false;
+ 804874c:	c6 00 00             	movb   $0x0,(%eax)
+    ctx-&gt;bufindex = 0;
+ 804874f:	c7 80 0c 02 00 00 00 	movl   $0x0,0x20c(%eax)
+ 8048756:	00 00 00 
+ 8048759:	c9                   	leave  
+ 804875a:	c3                   	ret    
+ 804875b:	90                   	nop    
+
+0804875c &lt;rtcm_decode&gt;:
+}
+
+struct rtcm_msghdr *rtcm_decode(struct rtcm_ctx * ctx, unsigned int c)
+{
+ 804875c:	55                   	push   %ebp
+ 804875d:	89 e5                	mov    %esp,%ebp
+ 804875f:	57                   	push   %edi
+ 8048760:	56                   	push   %esi
+ 8048761:	53                   	push   %ebx
+ 8048762:	83 ec 0c             	sub    $0xc,%esp
+ 8048765:	8b 75 0c             	mov    0xc(%ebp),%esi
+    struct rtcm_msghdr *res;
+
+    if ((c &amp; MAG_TAG_MASK) != MAG_TAG_DATA) {
+ 8048768:	89 f0                	mov    %esi,%eax
+ 804876a:	25 c0 00 00 00       	and    $0xc0,%eax
+	return RTCM_NO_SYNC;
+ 804876f:	31 d2                	xor    %edx,%edx
+ 8048771:	83 f8 40             	cmp    $0x40,%eax
+ 8048774:	8b 5d 08             	mov    0x8(%ebp),%ebx
+ 8048777:	75 5a                	jne    80487d3 &lt;rtcm_decode+0x77&gt;
+    }
+    c = reverse_bits[c &amp; 0x3f];
+ 8048779:	89 f0                	mov    %esi,%eax
+ 804877b:	83 e0 3f             	and    $0x3f,%eax
+
+    /*@ -shiftnegative @*/
+    if (!ctx-&gt;locked) {
+ 804877e:	80 3b 00             	cmpb   $0x0,(%ebx)
+ 8048781:	8b 34 85 60 91 04 08 	mov    0x8049160(,%eax,4),%esi
+ 8048788:	74 56                	je     80487e0 &lt;rtcm_decode+0x84&gt;
+	ctx-&gt;curr_offset = -5;
+	ctx-&gt;bufindex = 0;
+
+	while (ctx-&gt;curr_offset &lt;= 0) {
+	    gpsd_report(7, &quot;syncing&quot;);
+	    ctx-&gt;curr_word &lt;&lt;= 1;
+	    if (ctx-&gt;curr_offset &gt; 0) {
+		ctx-&gt;curr_word |= c &lt;&lt; ctx-&gt;curr_offset;
+	    } else {
+		ctx-&gt;curr_word |= c &gt;&gt; -(ctx-&gt;curr_offset);
+	    }
+	    if (((struct rtcm_msghw1 *) &amp; ctx-&gt;curr_word)-&gt;preamble ==
+		PREAMBLE_PATTERN) {
+		if (rtcmparityok(ctx-&gt;curr_word)) {
+		    gpsd_report(5, &quot;preamble ok, parity ok -- locked\n&quot;);
+		    ctx-&gt;locked = true;
+		    /* ctx-&gt;curr_offset;  XXX - testing */
+		    break;
+		}
+		gpsd_report(5, &quot;preamble ok, parity fail\n&quot;);
+	    }
+	    ctx-&gt;curr_offset++;
+	}			/* end while */
+    }
+    if (ctx-&gt;locked) {
+	res = RTCM_SYNC;
+
+	if (ctx-&gt;curr_offset &gt; 0) {
+ 804878a:	8b 53 04             	mov    0x4(%ebx),%edx
+ 804878d:	85 d2                	test   %edx,%edx
+ 804878f:	c7 45 f0 ff ff ff ff 	movl   $0xffffffff,0xfffffff0(%ebp)
+ 8048796:	89 55 ec             	mov    %edx,0xffffffec(%ebp)
+ 8048799:	0f 8e 0d 01 00 00    	jle    80488ac &lt;rtcm_decode+0x150&gt;
+	    ctx-&gt;curr_word |= c &lt;&lt; ctx-&gt;curr_offset;
+ 804879f:	8a 4d ec             	mov    0xffffffec(%ebp),%cl
+ 80487a2:	89 f0                	mov    %esi,%eax
+ 80487a4:	d3 e0                	shl    %cl,%eax
+	} else {
+	    ctx-&gt;curr_word |= c &gt;&gt; -(ctx-&gt;curr_offset);
+	}
+
+	if (ctx-&gt;curr_offset &lt;= 0) {
+ 80487a6:	8b 4d ec             	mov    0xffffffec(%ebp),%ecx
+ 80487a9:	0b 43 08             	or     0x8(%ebx),%eax
+ 80487ac:	85 c9                	test   %ecx,%ecx
+ 80487ae:	89 c2                	mov    %eax,%edx
+ 80487b0:	0f 8e 13 01 00 00    	jle    80488c9 &lt;rtcm_decode+0x16d&gt;
+ 80487b6:	89 43 08             	mov    %eax,0x8(%ebx)
+	    /* weird-assed inversion */
+	    if (ctx-&gt;curr_word &amp; P_30_MASK)
+		ctx-&gt;curr_word ^= W_DATA_MASK;
+
+	    if (rtcmparityok(ctx-&gt;curr_word)) {
+		if (((struct rtcm_msghw1 *) &amp; ctx-&gt;curr_word)-&gt;preamble ==
+		    PREAMBLE_PATTERN) {
+		    gpsd_report(6, 
+				&quot;Preamble spotted (index: %u)&quot;,
+				ctx-&gt;bufindex);
+		    ctx-&gt;bufindex = 0;
+		}
+		gpsd_report(6,
+			    &quot;processing word %u (offset %d)\n&quot;,
+			    ctx-&gt;bufindex, ctx-&gt;curr_offset);
+		{
+		    struct rtcm_msghdr  *msghdr = (struct rtcm_msghdr *) ctx-&gt;buf;
+
+		    /*
+		     * Guard against a buffer overflow attack.  Just wait for
+		     * the next PREAMBLE_PATTERN and go on from there. 
+		     */
+		    if (ctx-&gt;bufindex &gt;= RTCM_CTX_MAX_MSGSZ){
+			ctx-&gt;bufindex = 0;
+			return RTCM_NO_SYNC;
+		    }
+
+		    ctx-&gt;buf[ctx-&gt;bufindex] = ctx-&gt;curr_word;
+
+		    if ((ctx-&gt;bufindex == 0) &amp;&amp;
+			(msghdr-&gt;w1.preamble != PREAMBLE_PATTERN)) {
+			gpsd_report(6, &quot;word 0 not a preamble- punting\n&quot;);
+			return RTCM_NO_SYNC;
+		    }
+		    ctx-&gt;bufindex++;
+		    /* rtcm_print_msg(msghdr); */
+
+		    if (ctx-&gt;bufindex &gt; 2) {	/* do we have the length yet? */
+			if (ctx-&gt;bufindex &gt;= msghdr-&gt;w2.frmlen + 2) {
+			    res = msghdr;
+			    ctx-&gt;bufindex = 0;
+			}
+		    }
+		}
+		ctx-&gt;curr_word &lt;&lt;= 30;	/* preserve the 2 low bits */
+		ctx-&gt;curr_offset += 30;
+		if (ctx-&gt;curr_offset &gt; 0) {
+		    ctx-&gt;curr_word |= c &lt;&lt; ctx-&gt;curr_offset;
+		} else {
+		    ctx-&gt;curr_word |= c &gt;&gt; -(ctx-&gt;curr_offset);
+		}
+	    } else {
+		gpsd_report(5, &quot;Parity failure, lost lock\n&quot;);
+		ctx-&gt;locked = false;
+	    }
+	}
+	ctx-&gt;curr_offset -= 6;
+ 80487b9:	8b 45 ec             	mov    0xffffffec(%ebp),%eax
+ 80487bc:	83 e8 06             	sub    $0x6,%eax
+ 80487bf:	89 43 04             	mov    %eax,0x4(%ebx)
+	gpsd_report(7, &quot;residual %d&quot;, ctx-&gt;curr_offset);
+ 80487c2:	51                   	push   %ecx
+ 80487c3:	50                   	push   %eax
+ 80487c4:	68 9b 8e 04 08       	push   $0x8048e9b
+ 80487c9:	6a 07                	push   $0x7
+ 80487cb:	e8 4c fd ff ff       	call   804851c &lt;gpsd_report&gt;
+	return res;
+ 80487d0:	8b 55 f0             	mov    0xfffffff0(%ebp),%edx
+    }
+    /*@ +shiftnegative @*/
+
+    /* never achieved lock */
+    return RTCM_NO_SYNC;
+}
+ 80487d3:	8d 65 f4             	lea    0xfffffff4(%ebp),%esp
+ 80487d6:	5b                   	pop    %ebx
+ 80487d7:	5e                   	pop    %esi
+ 80487d8:	89 d0                	mov    %edx,%eax
+ 80487da:	5f                   	pop    %edi
+ 80487db:	c9                   	leave  
+ 80487dc:	c3                   	ret    
+ 80487dd:	8d 76 00             	lea    0x0(%esi),%esi
+ 80487e0:	c7 43 04 fb ff ff ff 	movl   $0xfffffffb,0x4(%ebx)
+ 80487e7:	c7 83 0c 02 00 00 00 	movl   $0x0,0x20c(%ebx)
+ 80487ee:	00 00 00 
+ 80487f1:	eb 24                	jmp    8048817 &lt;rtcm_decode+0xbb&gt;
+ 80487f3:	90                   	nop    
+ 80487f4:	89 f2                	mov    %esi,%edx
+ 80487f6:	8a 4d ec             	mov    0xffffffec(%ebp),%cl
+ 80487f9:	d3 e2                	shl    %cl,%edx
+ 80487fb:	09 c2                	or     %eax,%edx
+ 80487fd:	66 8b 43 0a          	mov    0xa(%ebx),%ax
+ 8048801:	66 c1 e8 06          	shr    $0x6,%ax
+ 8048805:	3c 66                	cmp    $0x66,%al
+ 8048807:	89 53 08             	mov    %edx,0x8(%ebx)
+ 804880a:	74 4c                	je     8048858 &lt;rtcm_decode+0xfc&gt;
+ 804880c:	8b 45 ec             	mov    0xffffffec(%ebp),%eax
+ 804880f:	40                   	inc    %eax
+ 8048810:	85 c0                	test   %eax,%eax
+ 8048812:	89 43 04             	mov    %eax,0x4(%ebx)
+ 8048815:	7f 75                	jg     804888c &lt;rtcm_decode+0x130&gt;
+ 8048817:	83 ec 08             	sub    $0x8,%esp
+ 804881a:	68 a7 8e 04 08       	push   $0x8048ea7
+ 804881f:	6a 07                	push   $0x7
+ 8048821:	e8 f6 fc ff ff       	call   804851c &lt;gpsd_report&gt;
+ 8048826:	8b 53 04             	mov    0x4(%ebx),%edx
+ 8048829:	8b 43 08             	mov    0x8(%ebx),%eax
+ 804882c:	d1 e0                	shl    %eax
+ 804882e:	83 c4 10             	add    $0x10,%esp
+ 8048831:	85 d2                	test   %edx,%edx
+ 8048833:	89 55 ec             	mov    %edx,0xffffffec(%ebp)
+ 8048836:	7f bc                	jg     80487f4 &lt;rtcm_decode+0x98&gt;
+ 8048838:	8b 55 ec             	mov    0xffffffec(%ebp),%edx
+ 804883b:	f7 da                	neg    %edx
+ 804883d:	88 d1                	mov    %dl,%cl
+ 804883f:	89 f7                	mov    %esi,%edi
+ 8048841:	d3 ef                	shr    %cl,%edi
+ 8048843:	89 fa                	mov    %edi,%edx
+ 8048845:	09 c2                	or     %eax,%edx
+ 8048847:	66 8b 43 0a          	mov    0xa(%ebx),%ax
+ 804884b:	66 c1 e8 06          	shr    $0x6,%ax
+ 804884f:	3c 66                	cmp    $0x66,%al
+ 8048851:	89 53 08             	mov    %edx,0x8(%ebx)
+ 8048854:	75 b6                	jne    804880c &lt;rtcm_decode+0xb0&gt;
+ 8048856:	89 f6                	mov    %esi,%esi
+ 8048858:	89 d0                	mov    %edx,%eax
+ 804885a:	e8 41 fd ff ff       	call   80485a0 &lt;rtcmparityok&gt;
+ 804885f:	84 c0                	test   %al,%al
+ 8048861:	0f 85 61 01 00 00    	jne    80489c8 &lt;rtcm_decode+0x26c&gt;
+ 8048867:	83 ec 08             	sub    $0x8,%esp
+ 804886a:	68 af 8e 04 08       	push   $0x8048eaf
+ 804886f:	6a 05                	push   $0x5
+ 8048871:	e8 a6 fc ff ff       	call   804851c &lt;gpsd_report&gt;
+ 8048876:	8b 43 04             	mov    0x4(%ebx),%eax
+ 8048879:	89 45 ec             	mov    %eax,0xffffffec(%ebp)
+ 804887c:	8b 45 ec             	mov    0xffffffec(%ebp),%eax
+ 804887f:	40                   	inc    %eax
+ 8048880:	83 c4 10             	add    $0x10,%esp
+ 8048883:	85 c0                	test   %eax,%eax
+ 8048885:	89 43 04             	mov    %eax,0x4(%ebx)
+ 8048888:	7e 8d                	jle    8048817 &lt;rtcm_decode+0xbb&gt;
+ 804888a:	89 f6                	mov    %esi,%esi
+ 804888c:	31 d2                	xor    %edx,%edx
+ 804888e:	80 3b 00             	cmpb   $0x0,(%ebx)
+ 8048891:	0f 84 3c ff ff ff    	je     80487d3 &lt;rtcm_decode+0x77&gt;
+ 8048897:	8b 53 04             	mov    0x4(%ebx),%edx
+ 804889a:	85 d2                	test   %edx,%edx
+ 804889c:	c7 45 f0 ff ff ff ff 	movl   $0xffffffff,0xfffffff0(%ebp)
+ 80488a3:	89 55 ec             	mov    %edx,0xffffffec(%ebp)
+ 80488a6:	0f 8f f3 fe ff ff    	jg     804879f &lt;rtcm_decode+0x43&gt;
+ 80488ac:	8b 45 ec             	mov    0xffffffec(%ebp),%eax
+ 80488af:	f7 d8                	neg    %eax
+ 80488b1:	88 c1                	mov    %al,%cl
+ 80488b3:	89 f7                	mov    %esi,%edi
+ 80488b5:	d3 ef                	shr    %cl,%edi
+ 80488b7:	89 f8                	mov    %edi,%eax
+ 80488b9:	8b 4d ec             	mov    0xffffffec(%ebp),%ecx
+ 80488bc:	0b 43 08             	or     0x8(%ebx),%eax
+ 80488bf:	85 c9                	test   %ecx,%ecx
+ 80488c1:	89 c2                	mov    %eax,%edx
+ 80488c3:	0f 8f ed fe ff ff    	jg     80487b6 &lt;rtcm_decode+0x5a&gt;
+ 80488c9:	a9 00 00 00 40       	test   $0x40000000,%eax
+ 80488ce:	0f 84 a2 00 00 00    	je     8048976 &lt;rtcm_decode+0x21a&gt;
+ 80488d4:	81 f2 c0 ff ff 3f    	xor    $0x3fffffc0,%edx
+ 80488da:	89 53 08             	mov    %edx,0x8(%ebx)
+ 80488dd:	89 d0                	mov    %edx,%eax
+ 80488df:	e8 bc fc ff ff       	call   80485a0 &lt;rtcmparityok&gt;
+ 80488e4:	84 c0                	test   %al,%al
+ 80488e6:	0f 84 bc 00 00 00    	je     80489a8 &lt;rtcm_decode+0x24c&gt;
+ 80488ec:	66 8b 43 0a          	mov    0xa(%ebx),%ax
+ 80488f0:	66 c1 e8 06          	shr    $0x6,%ax
+ 80488f4:	3c 66                	cmp    $0x66,%al
+ 80488f6:	0f 84 f3 00 00 00    	je     80489ef &lt;rtcm_decode+0x293&gt;
+ 80488fc:	ff 73 04             	pushl  0x4(%ebx)
+ 80488ff:	ff b3 0c 02 00 00    	pushl  0x20c(%ebx)
+ 8048905:	68 3c 8f 04 08       	push   $0x8048f3c
+ 804890a:	6a 06                	push   $0x6
+ 804890c:	e8 0b fc ff ff       	call   804851c &lt;gpsd_report&gt;
+ 8048911:	8b 8b 0c 02 00 00    	mov    0x20c(%ebx),%ecx
+ 8048917:	83 c4 10             	add    $0x10,%esp
+ 804891a:	83 f9 7f             	cmp    $0x7f,%ecx
+ 804891d:	8d 7b 0c             	lea    0xc(%ebx),%edi
+ 8048920:	0f 87 ee 00 00 00    	ja     8048a14 &lt;rtcm_decode+0x2b8&gt;
+ 8048926:	8b 53 08             	mov    0x8(%ebx),%edx
+ 8048929:	85 c9                	test   %ecx,%ecx
+ 804892b:	89 54 8b 0c          	mov    %edx,0xc(%ebx,%ecx,4)
+ 804892f:	74 4d                	je     804897e &lt;rtcm_decode+0x222&gt;
+ 8048931:	41                   	inc    %ecx
+ 8048932:	83 f9 02             	cmp    $0x2,%ecx
+ 8048935:	76 69                	jbe    80489a0 &lt;rtcm_decode+0x244&gt;
+ 8048937:	8a 47 05             	mov    0x5(%edi),%al
+ 804893a:	d0 e8                	shr    %al
+ 804893c:	83 e0 1f             	and    $0x1f,%eax
+ 804893f:	83 c0 02             	add    $0x2,%eax
+ 8048942:	39 c1                	cmp    %eax,%ecx
+ 8048944:	72 5a                	jb     80489a0 &lt;rtcm_decode+0x244&gt;
+ 8048946:	89 7d f0             	mov    %edi,0xfffffff0(%ebp)
+ 8048949:	c7 83 0c 02 00 00 00 	movl   $0x0,0x20c(%ebx)
+ 8048950:	00 00 00 
+ 8048953:	89 d0                	mov    %edx,%eax
+ 8048955:	8b 53 04             	mov    0x4(%ebx),%edx
+ 8048958:	83 c2 1e             	add    $0x1e,%edx
+ 804895b:	c1 e0 1e             	shl    $0x1e,%eax
+ 804895e:	85 d2                	test   %edx,%edx
+ 8048960:	89 53 04             	mov    %edx,0x4(%ebx)
+ 8048963:	7e 7d                	jle    80489e2 &lt;rtcm_decode+0x286&gt;
+ 8048965:	88 d1                	mov    %dl,%cl
+ 8048967:	d3 e6                	shl    %cl,%esi
+ 8048969:	09 f0                	or     %esi,%eax
+ 804896b:	89 43 08             	mov    %eax,0x8(%ebx)
+ 804896e:	89 55 ec             	mov    %edx,0xffffffec(%ebp)
+ 8048971:	e9 43 fe ff ff       	jmp    80487b9 &lt;rtcm_decode+0x5d&gt;
+ 8048976:	89 43 08             	mov    %eax,0x8(%ebx)
+ 8048979:	e9 5f ff ff ff       	jmp    80488dd &lt;rtcm_decode+0x181&gt;
+ 804897e:	66 8b 47 02          	mov    0x2(%edi),%ax
+ 8048982:	66 c1 e8 06          	shr    $0x6,%ax
+ 8048986:	3c 66                	cmp    $0x66,%al
+ 8048988:	74 a7                	je     8048931 &lt;rtcm_decode+0x1d5&gt;
+ 804898a:	83 ec 08             	sub    $0x8,%esp
+ 804898d:	68 5c 8f 04 08       	push   $0x8048f5c
+ 8048992:	6a 06                	push   $0x6
+ 8048994:	e8 83 fb ff ff       	call   804851c &lt;gpsd_report&gt;
+ 8048999:	31 d2                	xor    %edx,%edx
+ 804899b:	e9 33 fe ff ff       	jmp    80487d3 &lt;rtcm_decode+0x77&gt;
+ 80489a0:	89 8b 0c 02 00 00    	mov    %ecx,0x20c(%ebx)
+ 80489a6:	eb ab                	jmp    8048953 &lt;rtcm_decode+0x1f7&gt;
+ 80489a8:	83 ec 08             	sub    $0x8,%esp
+ 80489ab:	68 c9 8e 04 08       	push   $0x8048ec9
+ 80489b0:	6a 05                	push   $0x5
+ 80489b2:	e8 65 fb ff ff       	call   804851c &lt;gpsd_report&gt;
+ 80489b7:	8b 7b 04             	mov    0x4(%ebx),%edi
+ 80489ba:	83 c4 10             	add    $0x10,%esp
+ 80489bd:	c6 03 00             	movb   $0x0,(%ebx)
+ 80489c0:	89 7d ec             	mov    %edi,0xffffffec(%ebp)
+ 80489c3:	e9 f1 fd ff ff       	jmp    80487b9 &lt;rtcm_decode+0x5d&gt;
+ 80489c8:	83 ec 08             	sub    $0x8,%esp
+ 80489cb:	68 7c 8f 04 08       	push   $0x8048f7c
+ 80489d0:	6a 05                	push   $0x5
+ 80489d2:	e8 45 fb ff ff       	call   804851c &lt;gpsd_report&gt;
+ 80489d7:	83 c4 10             	add    $0x10,%esp
+ 80489da:	c6 03 01             	movb   $0x1,(%ebx)
+ 80489dd:	e9 aa fe ff ff       	jmp    804888c &lt;rtcm_decode+0x130&gt;
+ 80489e2:	89 d7                	mov    %edx,%edi
+ 80489e4:	f7 df                	neg    %edi
+ 80489e6:	89 f9                	mov    %edi,%ecx
+ 80489e8:	d3 ee                	shr    %cl,%esi
+ 80489ea:	e9 7a ff ff ff       	jmp    8048969 &lt;rtcm_decode+0x20d&gt;
+ 80489ef:	57                   	push   %edi
+ 80489f0:	ff b3 0c 02 00 00    	pushl  0x20c(%ebx)
+ 80489f6:	68 e4 8e 04 08       	push   $0x8048ee4
+ 80489fb:	6a 06                	push   $0x6
+ 80489fd:	e8 1a fb ff ff       	call   804851c &lt;gpsd_report&gt;
+ 8048a02:	83 c4 10             	add    $0x10,%esp
+ 8048a05:	c7 83 0c 02 00 00 00 	movl   $0x0,0x20c(%ebx)
+ 8048a0c:	00 00 00 
+ 8048a0f:	e9 e8 fe ff ff       	jmp    80488fc &lt;rtcm_decode+0x1a0&gt;
+ 8048a14:	31 d2                	xor    %edx,%edx
+ 8048a16:	c7 83 0c 02 00 00 00 	movl   $0x0,0x20c(%ebx)
+ 8048a1d:	00 00 00 
+ 8048a20:	e9 ae fd ff ff       	jmp    80487d3 &lt;rtcm_decode+0x77&gt;
+ 8048a25:	8d 76 00             	lea    0x0(%esi),%esi
+
+08048a28 &lt;rtcm_print_msg&gt;:
+
+#ifdef TESTMAIN
+void rtcm_print_msg(struct rtcm_msghdr *msghdr)
+{
+ 8048a28:	55                   	push   %ebp
+ 8048a29:	89 e5                	mov    %esp,%ebp
+ 8048a2b:	56                   	push   %esi
+ 8048a2c:	53                   	push   %ebx
+ 8048a2d:	83 ec 10             	sub    $0x10,%esp
+ 8048a30:	8b 5d 08             	mov    0x8(%ebp),%ebx
+    int             len = (int)msghdr-&gt;w2.frmlen;
+ 8048a33:	8a 43 05             	mov    0x5(%ebx),%al
+ 8048a36:	d0 e8                	shr    %al
+ 8048a38:	be 1f 00 00 00       	mov    $0x1f,%esi
+ 8048a3d:	21 c6                	and    %eax,%esi
+    double          zcount = msghdr-&gt;w2.zcnt * ZCOUNT_SCALE;
+ 8048a3f:	66 8b 43 06          	mov    0x6(%ebx),%ax
+ 8048a43:	66 d1 e8             	shr    %ax
+ 8048a46:	25 ff 1f 00 00       	and    $0x1fff,%eax
+ 8048a4b:	50                   	push   %eax
+
+    printf(&quot;H\t%u\t%u\t%0.1f\t%u\t%u\t%u\n&quot;,
+ 8048a4c:	66 8b 43 04          	mov    0x4(%ebx),%ax
+ 8048a50:	66 c1 e8 06          	shr    $0x6,%ax
+ 8048a54:	83 e0 07             	and    $0x7,%eax
+ 8048a57:	dd 05 a0 8f 04 08    	fldl   0x8048fa0
+ 8048a5d:	da 0c 24             	fimull (%esp)
+ 8048a60:	89 04 24             	mov    %eax,(%esp)
+ 8048a63:	56                   	push   %esi
+ 8048a64:	8b 43 04             	mov    0x4(%ebx),%eax
+ 8048a67:	c1 e8 0e             	shr    $0xe,%eax
+ 8048a6a:	83 e0 07             	and    $0x7,%eax
+ 8048a6d:	50                   	push   %eax
+ 8048a6e:	83 ec 08             	sub    $0x8,%esp
+ 8048a71:	dd 14 24             	fstl   (%esp)
+ 8048a74:	66 8b 03             	mov    (%ebx),%ax
+ 8048a77:	66 c1 e8 06          	shr    $0x6,%ax
+ 8048a7b:	0f b7 c0             	movzwl %ax,%eax
+ 8048a7e:	50                   	push   %eax
+ 8048a7f:	0f b6 43 02          	movzbl 0x2(%ebx),%eax
+ 8048a83:	83 e0 3f             	and    $0x3f,%eax
+ 8048a86:	50                   	push   %eax
+ 8048a87:	68 01 8f 04 08       	push   $0x8048f01
+ 8048a8c:	dd 5d f0             	fstpl  0xfffffff0(%ebp)
+ 8048a8f:	e8 b0 f9 ff ff       	call   8048444 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">printf at plt</A>&gt;
+	   msghdr-&gt;w1.msgtype,
+	   msghdr-&gt;w1.refstaid,
+	   zcount,
+	   msghdr-&gt;w2.sqnum,
+	   msghdr-&gt;w2.frmlen,
+	   msghdr-&gt;w2.stathlth);
+    switch (msghdr-&gt;w1.msgtype) {
+ 8048a94:	0f b6 43 02          	movzbl 0x2(%ebx),%eax
+ 8048a98:	83 e0 3f             	and    $0x3f,%eax
+ 8048a9b:	83 c4 20             	add    $0x20,%esp
+ 8048a9e:	83 f8 01             	cmp    $0x1,%eax
+ 8048aa1:	74 0d                	je     8048ab0 &lt;rtcm_print_msg+0x88&gt;
+ 8048aa3:	83 f8 09             	cmp    $0x9,%eax
+ 8048aa6:	74 08                	je     8048ab0 &lt;rtcm_print_msg+0x88&gt;
+    case 1:
+    case 9:
+	{
+	    struct rtcm_msg1    *m = (struct rtcm_msg1 *) msghdr;
+
+	    while (len &gt;= 0) {
+		if (len &gt;= 2)
+		    printf(&quot;S\t%u\t%u\t%u\t%0.1f\t%0.3f\t%0.3f\n&quot;,
+			   m-&gt;w3.satident1,
+			   m-&gt;w3.udre1,
+			   m-&gt;w4.issuedata1,
+			   zcount,
+			   m-&gt;w3.pc1 * (m-&gt;w3.scale1 ? PCLARGE : PCSMALL),
+			   m-&gt;w4.rangerate1 * (m-&gt;w3.scale1 ?
+					       RRLARGE : RRSMALL));
+		if (len &gt;= 4)
+		    printf(&quot;S\t%u\t%u\t%u\t%0.1f\t%0.3f\t%0.3f\n&quot;,
+			   m-&gt;w4.satident2,
+			   m-&gt;w4.udre2,
+			   m-&gt;w6.issuedata2,
+			   zcount,
+			   m-&gt;w5.pc2 * (m-&gt;w4.scale2 ? PCLARGE : PCSMALL),
+			   m-&gt;w5.rangerate2 * (m-&gt;w4.scale2 ?
+					       RRLARGE : RRSMALL));
+		
+		/*@ -shiftimplementation @*/
+		if (len &gt;= 5)
+		    printf(&quot;S\t%u\t%u\t%u\t%0.1f\t%0.3f\t%0.3f\n&quot;,
+			   m-&gt;w6.satident3,
+			   m-&gt;w6.udre3,
+			   m-&gt;w7.issuedata3,
+			   zcount,
+			   ((m-&gt;w6.pc3_h &lt;&lt; 8) | (m-&gt;w7.pc3_l)) *
+			   (m-&gt;w6.scale3 ? PCLARGE : PCSMALL),
+			   m-&gt;w7.rangerate3 * (m-&gt;w6.scale3 ?
+					       RRLARGE : RRSMALL));
+		/*@ +shiftimplementation @*/
+		len -= 5;
+		m = (struct rtcm_msg1 *) (((RTCMWORD *) m) + 5);
+	    }
+	}
+	break;
+    default:
+	break;
+    }
+}
+ 8048aa8:	8d 65 f8             	lea    0xfffffff8(%ebp),%esp
+ 8048aab:	5b                   	pop    %ebx
+ 8048aac:	5e                   	pop    %esi
+ 8048aad:	c9                   	leave  
+ 8048aae:	c3                   	ret    
+ 8048aaf:	90                   	nop    
+ 8048ab0:	85 f6                	test   %esi,%esi
+ 8048ab2:	e9 96 01 00 00       	jmp    8048c4d &lt;rtcm_print_msg+0x225&gt;
+ 8048ab7:	90                   	nop    
+ 8048ab8:	83 ec 08             	sub    $0x8,%esp
+ 8048abb:	dc 0d b0 8f 04 08    	fmull  0x8048fb0
+ 8048ac1:	dd 1c 24             	fstpl  (%esp)
+ 8048ac4:	8b 43 08             	mov    0x8(%ebx),%eax
+ 8048ac7:	c1 e0 0a             	shl    $0xa,%eax
+ 8048aca:	c1 f8 10             	sar    $0x10,%eax
+ 8048acd:	50                   	push   %eax
+ 8048ace:	db 04 24             	fildl  (%esp)
+ 8048ad1:	83 c4 04             	add    $0x4,%esp
+ 8048ad4:	f6 c2 20             	test   $0x20,%dl
+ 8048ad7:	0f 84 c4 01 00 00    	je     8048ca1 &lt;rtcm_print_msg+0x279&gt;
+ 8048add:	dc 0d b8 8f 04 08    	fmull  0x8048fb8
+ 8048ae3:	83 ec 08             	sub    $0x8,%esp
+ 8048ae6:	dd 1c 24             	fstpl  (%esp)
+ 8048ae9:	ff 75 f4             	pushl  0xfffffff4(%ebp)
+ 8048aec:	ff 75 f0             	pushl  0xfffffff0(%ebp)
+ 8048aef:	8b 43 0c             	mov    0xc(%ebx),%eax
+ 8048af2:	c1 e8 0e             	shr    $0xe,%eax
+ 8048af5:	25 ff 00 00 00       	and    $0xff,%eax
+ 8048afa:	c0 ea 03             	shr    $0x3,%dl
+ 8048afd:	50                   	push   %eax
+ 8048afe:	89 d0                	mov    %edx,%eax
+ 8048b00:	83 e0 03             	and    $0x3,%eax
+ 8048b03:	50                   	push   %eax
+ 8048b04:	66 8b 43 0a          	mov    0xa(%ebx),%ax
+ 8048b08:	66 c1 e8 06          	shr    $0x6,%ax
+ 8048b0c:	83 e0 1f             	and    $0x1f,%eax
+ 8048b0f:	50                   	push   %eax
+ 8048b10:	68 19 8f 04 08       	push   $0x8048f19
+ 8048b15:	e8 2a f9 ff ff       	call   8048444 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">printf at plt</A>&gt;
+ 8048b1a:	83 c4 30             	add    $0x30,%esp
+ 8048b1d:	83 fe 03             	cmp    $0x3,%esi
+ 8048b20:	0f 8e 85 00 00 00    	jle    8048bab &lt;rtcm_print_msg+0x183&gt;
+ 8048b26:	66 8b 43 10          	mov    0x10(%ebx),%ax
+ 8048b2a:	c1 e0 02             	shl    $0x2,%eax
+ 8048b2d:	83 ec 08             	sub    $0x8,%esp
+ 8048b30:	0f be c4             	movsbl %ah,%eax
+ 8048b33:	50                   	push   %eax
+ 8048b34:	8a 53 0d             	mov    0xd(%ebx),%dl
+ 8048b37:	db 04 24             	fildl  (%esp)
+ 8048b3a:	83 c4 04             	add    $0x4,%esp
+ 8048b3d:	f6 c2 20             	test   $0x20,%dl
+ 8048b40:	0f 84 8a 01 00 00    	je     8048cd0 &lt;rtcm_print_msg+0x2a8&gt;
+ 8048b46:	dc 0d a8 8f 04 08    	fmull  0x8048fa8
+ 8048b4c:	83 ec 08             	sub    $0x8,%esp
+ 8048b4f:	dd 1c 24             	fstpl  (%esp)
+ 8048b52:	8b 43 10             	mov    0x10(%ebx),%eax
+ 8048b55:	c1 e0 02             	shl    $0x2,%eax
+ 8048b58:	c1 f8 10             	sar    $0x10,%eax
+ 8048b5b:	50                   	push   %eax
+ 8048b5c:	db 04 24             	fildl  (%esp)
+ 8048b5f:	83 c4 04             	add    $0x4,%esp
+ 8048b62:	f6 c2 20             	test   $0x20,%dl
+ 8048b65:	0f 84 59 01 00 00    	je     8048cc4 &lt;rtcm_print_msg+0x29c&gt;
+ 8048b6b:	dc 0d b8 8f 04 08    	fmull  0x8048fb8
+ 8048b71:	83 ec 08             	sub    $0x8,%esp
+ 8048b74:	dd 1c 24             	fstpl  (%esp)
+ 8048b77:	ff 75 f4             	pushl  0xfffffff4(%ebp)
+ 8048b7a:	ff 75 f0             	pushl  0xfffffff0(%ebp)
+ 8048b7d:	66 8b 43 16          	mov    0x16(%ebx),%ax
+ 8048b81:	66 c1 e8 06          	shr    $0x6,%ax
+ 8048b85:	0f b6 c0             	movzbl %al,%eax
+ 8048b88:	c0 ea 03             	shr    $0x3,%dl
+ 8048b8b:	50                   	push   %eax
+ 8048b8c:	89 d0                	mov    %edx,%eax
+ 8048b8e:	83 e0 03             	and    $0x3,%eax
+ 8048b91:	50                   	push   %eax
+ 8048b92:	66 8b 43 0c          	mov    0xc(%ebx),%ax
+ 8048b96:	66 c1 e8 06          	shr    $0x6,%ax
+ 8048b9a:	83 e0 1f             	and    $0x1f,%eax
+ 8048b9d:	50                   	push   %eax
+ 8048b9e:	68 19 8f 04 08       	push   $0x8048f19
+ 8048ba3:	e8 9c f8 ff ff       	call   8048444 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">printf at plt</A>&gt;
+ 8048ba8:	83 c4 30             	add    $0x30,%esp
+ 8048bab:	83 fe 04             	cmp    $0x4,%esi
+ 8048bae:	0f 8e 93 00 00 00    	jle    8048c47 &lt;rtcm_print_msg+0x21f&gt;
+ 8048bb4:	8b 43 18             	mov    0x18(%ebx),%eax
+ 8048bb7:	c1 e0 0a             	shl    $0xa,%eax
+ 8048bba:	83 ec 08             	sub    $0x8,%esp
+ 8048bbd:	c1 f8 18             	sar    $0x18,%eax
+ 8048bc0:	50                   	push   %eax
+ 8048bc1:	8a 4b 16             	mov    0x16(%ebx),%cl
+ 8048bc4:	db 04 24             	fildl  (%esp)
+ 8048bc7:	83 c4 04             	add    $0x4,%esp
+ 8048bca:	f6 c1 20             	test   $0x20,%cl
+ 8048bcd:	0f 84 e5 00 00 00    	je     8048cb8 &lt;rtcm_print_msg+0x290&gt;
+ 8048bd3:	dc 0d a8 8f 04 08    	fmull  0x8048fa8
+ 8048bd9:	83 ec 08             	sub    $0x8,%esp
+ 8048bdc:	dd 1c 24             	fstpl  (%esp)
+ 8048bdf:	66 8b 53 14          	mov    0x14(%ebx),%dx
+ 8048be3:	c1 e2 02             	shl    $0x2,%edx
+ 8048be6:	66 8b 43 1a          	mov    0x1a(%ebx),%ax
+ 8048bea:	66 c1 e8 06          	shr    $0x6,%ax
+ 8048bee:	0f be d6             	movsbl %dh,%edx
+ 8048bf1:	c1 e2 08             	shl    $0x8,%edx
+ 8048bf4:	0f b6 c0             	movzbl %al,%eax
+ 8048bf7:	09 c2                	or     %eax,%edx
+ 8048bf9:	52                   	push   %edx
+ 8048bfa:	db 04 24             	fildl  (%esp)
+ 8048bfd:	83 c4 04             	add    $0x4,%esp
+ 8048c00:	f6 c1 20             	test   $0x20,%cl
+ 8048c03:	0f 84 a3 00 00 00    	je     8048cac &lt;rtcm_print_msg+0x284&gt;
+ 8048c09:	dc 0d b8 8f 04 08    	fmull  0x8048fb8
+ 8048c0f:	83 ec 08             	sub    $0x8,%esp
+ 8048c12:	dd 1c 24             	fstpl  (%esp)
+ 8048c15:	ff 75 f4             	pushl  0xfffffff4(%ebp)
+ 8048c18:	ff 75 f0             	pushl  0xfffffff0(%ebp)
+ 8048c1b:	66 8b 43 18          	mov    0x18(%ebx),%ax
+ 8048c1f:	66 c1 e8 06          	shr    $0x6,%ax
+ 8048c23:	0f b6 c0             	movzbl %al,%eax
+ 8048c26:	c0 e9 03             	shr    $0x3,%cl
+ 8048c29:	50                   	push   %eax
+ 8048c2a:	89 c8                	mov    %ecx,%eax
+ 8048c2c:	83 e0 03             	and    $0x3,%eax
+ 8048c2f:	50                   	push   %eax
+ 8048c30:	8b 43 14             	mov    0x14(%ebx),%eax
+ 8048c33:	c1 e8 0e             	shr    $0xe,%eax
+ 8048c36:	83 e0 1f             	and    $0x1f,%eax
+ 8048c39:	50                   	push   %eax
+ 8048c3a:	68 19 8f 04 08       	push   $0x8048f19
+ 8048c3f:	e8 00 f8 ff ff       	call   8048444 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">printf at plt</A>&gt;
+ 8048c44:	83 c4 30             	add    $0x30,%esp
+ 8048c47:	83 c3 14             	add    $0x14,%ebx
+ 8048c4a:	83 ee 05             	sub    $0x5,%esi
+ 8048c4d:	0f 88 55 fe ff ff    	js     8048aa8 &lt;rtcm_print_msg+0x80&gt;
+ 8048c53:	83 fe 01             	cmp    $0x1,%esi
+ 8048c56:	0f 8e c1 fe ff ff    	jle    8048b1d &lt;rtcm_print_msg+0xf5&gt;
+ 8048c5c:	66 8b 43 0e          	mov    0xe(%ebx),%ax
+ 8048c60:	c1 e0 02             	shl    $0x2,%eax
+ 8048c63:	83 ec 08             	sub    $0x8,%esp
+ 8048c66:	0f be c4             	movsbl %ah,%eax
+ 8048c69:	50                   	push   %eax
+ 8048c6a:	8a 53 0b             	mov    0xb(%ebx),%dl
+ 8048c6d:	db 04 24             	fildl  (%esp)
+ 8048c70:	83 c4 04             	add    $0x4,%esp
+ 8048c73:	f6 c2 20             	test   $0x20,%dl
+ 8048c76:	0f 84 3c fe ff ff    	je     8048ab8 &lt;rtcm_print_msg+0x90&gt;
+ 8048c7c:	83 ec 08             	sub    $0x8,%esp
+ 8048c7f:	dc 0d a8 8f 04 08    	fmull  0x8048fa8
+ 8048c85:	dd 1c 24             	fstpl  (%esp)
+ 8048c88:	8b 43 08             	mov    0x8(%ebx),%eax
+ 8048c8b:	c1 e0 0a             	shl    $0xa,%eax
+ 8048c8e:	c1 f8 10             	sar    $0x10,%eax
+ 8048c91:	50                   	push   %eax
+ 8048c92:	db 04 24             	fildl  (%esp)
+ 8048c95:	83 c4 04             	add    $0x4,%esp
+ 8048c98:	f6 c2 20             	test   $0x20,%dl
+ 8048c9b:	0f 85 3c fe ff ff    	jne    8048add &lt;rtcm_print_msg+0xb5&gt;
+ 8048ca1:	dc 0d c0 8f 04 08    	fmull  0x8048fc0
+ 8048ca7:	e9 37 fe ff ff       	jmp    8048ae3 &lt;rtcm_print_msg+0xbb&gt;
+ 8048cac:	dc 0d c0 8f 04 08    	fmull  0x8048fc0
+ 8048cb2:	e9 58 ff ff ff       	jmp    8048c0f &lt;rtcm_print_msg+0x1e7&gt;
+ 8048cb7:	90                   	nop    
+ 8048cb8:	dc 0d b0 8f 04 08    	fmull  0x8048fb0
+ 8048cbe:	e9 16 ff ff ff       	jmp    8048bd9 &lt;rtcm_print_msg+0x1b1&gt;
+ 8048cc3:	90                   	nop    
+ 8048cc4:	dc 0d c0 8f 04 08    	fmull  0x8048fc0
+ 8048cca:	e9 a2 fe ff ff       	jmp    8048b71 &lt;rtcm_print_msg+0x149&gt;
+ 8048ccf:	90                   	nop    
+ 8048cd0:	dc 0d b0 8f 04 08    	fmull  0x8048fb0
+ 8048cd6:	e9 71 fe ff ff       	jmp    8048b4c &lt;rtcm_print_msg+0x124&gt;
+ 8048cdb:	90                   	nop    
+
+08048cdc &lt;main&gt;:
+
+int main(int argc, char **argv)
+{
+ 8048cdc:	55                   	push   %ebp
+ 8048cdd:	89 e5                	mov    %esp,%ebp
+ 8048cdf:	57                   	push   %edi
+ 8048ce0:	56                   	push   %esi
+ 8048ce1:	53                   	push   %ebx
+ 8048ce2:	81 ec 1c 02 00 00    	sub    $0x21c,%esp
+ 8048ce8:	83 e4 f0             	and    $0xfffffff0,%esp
+ 8048ceb:	8b 75 08             	mov    0x8(%ebp),%esi
+ 8048cee:	8b 5d 0c             	mov    0xc(%ebp),%ebx
+ 8048cf1:	83 ec 10             	sub    $0x10,%esp
+    int             c;
+    struct rtcm_ctx ctxbuf, *ctx = &ctxbuf;
+ 8048cf4:	8d bd d8 fd ff ff    	lea    0xfffffdd8(%ebp),%edi
+ 8048cfa:	89 f6                	mov    %esi,%esi
+    struct rtcm_msghdr *res;
+
+    while ((c = getopt(argc, argv, &quot;v:&quot;)) != EOF) {
+	switch (c) {
+	case 'v':		/* verbose */
+	    verbose = 5 + atoi(optarg);
+	    break;
+
+	case '?':
+	default:
+	    /* usage(); */
+	    break;
+ 8048cfc:	50                   	push   %eax
+ 8048cfd:	68 37 8f 04 08       	push   $0x8048f37
+ 8048d02:	53                   	push   %ebx
+ 8048d03:	56                   	push   %esi
+ 8048d04:	e8 fb f6 ff ff       	call   8048404 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">getopt at plt</A>&gt;
+ 8048d09:	83 c4 10             	add    $0x10,%esp
+ 8048d0c:	83 f8 ff             	cmp    $0xffffffff,%eax
+ 8048d0f:	74 36                	je     8048d47 &lt;main+0x6b&gt;
+ 8048d11:	83 f8 76             	cmp    $0x76,%eax
+ 8048d14:	75 e6                	jne    8048cfc &lt;main+0x20&gt;
+extern __inline long int
+__NTH (strtol (__const char *__restrict __nptr, char **__restrict __endptr,
+	       int __base))
+{
+  return __strtol_internal (__nptr, __endptr, __base, 0);
+ 8048d16:	6a 00                	push   $0x0
+ 8048d18:	6a 0a                	push   $0xa
+ 8048d1a:	6a 00                	push   $0x0
+ 8048d1c:	ff 35 68 93 04 08    	pushl  0x8049368
+ 8048d22:	e8 fd f6 ff ff       	call   8048424 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">__strtol_internal at plt</A>&gt;
+}
+extern __inline unsigned long int
+__NTH (strtoul (__const char *__restrict __nptr, char **__restrict __endptr,
+		int __base))
+{
+  return __strtoul_internal (__nptr, __endptr, __base, 0);
+}
+__END_NAMESPACE_STD
+
+# ifdef __USE_ISOC99
+__BEGIN_NAMESPACE_C99
+extern __inline float
+__NTH (strtof (__const char *__restrict __nptr, char **__restrict __endptr))
+{
+  return __strtof_internal (__nptr, __endptr, 0);
+}
+extern __inline long double
+__NTH (strtold (__const char *__restrict __nptr, char **__restrict __endptr))
+{
+  return __strtold_internal (__nptr, __endptr, 0);
+}
+__END_NAMESPACE_C99
+# endif
+
+# ifdef __USE_BSD
+__extension__ extern __inline long long int
+__NTH (strtoq (__const char *__restrict __nptr, char **__restrict __endptr,
+	       int __base))
+{
+  return __strtoll_internal (__nptr, __endptr, __base, 0);
+}
+__extension__ extern __inline unsigned long long int
+__NTH (strtouq (__const char *__restrict __nptr, char **__restrict __endptr,
+		int __base))
+{
+  return __strtoull_internal (__nptr, __endptr, __base, 0);
+}
+# endif
+
+# if defined __USE_MISC || defined __USE_ISOC99
+__BEGIN_NAMESPACE_C99
+__extension__ extern __inline long long int
+__NTH (strtoll (__const char *__restrict __nptr, char **__restrict __endptr,
+		int __base))
+{
+  return __strtoll_internal (__nptr, __endptr, __base, 0);
+}
+__extension__ extern __inline unsigned long long int
+__NTH (strtoull (__const char * __restrict __nptr, char **__restrict __endptr,
+		 int __base))
+{
+  return __strtoull_internal (__nptr, __endptr, __base, 0);
+}
+__END_NAMESPACE_C99
+# endif
+
+__BEGIN_NAMESPACE_STD
+extern __inline double
+__NTH (atof (__const char *__nptr))
+{
+  return strtod (__nptr, (char **) NULL);
+}
+extern __inline int
+__NTH (atoi (__const char *__nptr))
+{
+ 8048d27:	83 c0 05             	add    $0x5,%eax
+ 8048d2a:	83 c4 10             	add    $0x10,%esp
+ 8048d2d:	a3 40 91 04 08       	mov    %eax,0x8049140
+ 8048d32:	50                   	push   %eax
+ 8048d33:	68 37 8f 04 08       	push   $0x8048f37
+ 8048d38:	53                   	push   %ebx
+ 8048d39:	56                   	push   %esi
+ 8048d3a:	e8 c5 f6 ff ff       	call   8048404 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">getopt at plt</A>&gt;
+ 8048d3f:	83 c4 10             	add    $0x10,%esp
+ 8048d42:	83 f8 ff             	cmp    $0xffffffff,%eax
+ 8048d45:	75 ca                	jne    8048d11 &lt;main+0x35&gt;
+	}
+    }
+    argc -= optind;
+    argv += optind;
+
+    rtcm_init(ctx);
+ 8048d47:	57                   	push   %edi
+ 8048d48:	e8 eb f9 ff ff       	call   8048738 &lt;rtcm_init&gt;
+
+    while ((c = getchar()) != EOF) {
+ 8048d4d:	5b                   	pop    %ebx
+ 8048d4e:	89 f6                	mov    %esi,%esi
+/* Read a character from stdin.  */
+__STDIO_INLINE int
+getchar (void)
+{
+  return _IO_getc (stdin);
+ 8048d50:	83 ec 0c             	sub    $0xc,%esp
+ 8048d53:	ff 35 64 93 04 08    	pushl  0x8049364
+ 8048d59:	e8 06 f7 ff ff       	call   8048464 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">_IO_getc at plt</A>&gt;
+ 8048d5e:	83 c4 10             	add    $0x10,%esp
+ 8048d61:	83 f8 ff             	cmp    $0xffffffff,%eax
+ 8048d64:	74 39                	je     8048d9f &lt;main+0xc3&gt;
+	res = rtcm_decode(ctx, (unsigned int)c);
+ 8048d66:	83 ec 08             	sub    $0x8,%esp
+ 8048d69:	50                   	push   %eax
+ 8048d6a:	57                   	push   %edi
+ 8048d6b:	e8 ec f9 ff ff       	call   804875c &lt;rtcm_decode&gt;
+ 8048d70:	89 c2                	mov    %eax,%edx
+	if (res != RTCM_NO_SYNC &amp;&amp; res != RTCM_SYNC)
+ 8048d72:	8d 40 ff             	lea    0xffffffff(%eax),%eax
+ 8048d75:	83 c4 10             	add    $0x10,%esp
+ 8048d78:	83 f8 fd             	cmp    $0xfffffffd,%eax
+ 8048d7b:	77 d3                	ja     8048d50 &lt;main+0x74&gt;
+	    rtcm_print_msg(res);
+ 8048d7d:	83 ec 0c             	sub    $0xc,%esp
+ 8048d80:	52                   	push   %edx
+ 8048d81:	e8 a2 fc ff ff       	call   8048a28 &lt;rtcm_print_msg&gt;
+ 8048d86:	83 c4 10             	add    $0x10,%esp
+/* Read a character from stdin.  */
+__STDIO_INLINE int
+getchar (void)
+{
+  return _IO_getc (stdin);
+ 8048d89:	83 ec 0c             	sub    $0xc,%esp
+ 8048d8c:	ff 35 64 93 04 08    	pushl  0x8049364
+ 8048d92:	e8 cd f6 ff ff       	call   8048464 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">_IO_getc at plt</A>&gt;
+ 8048d97:	83 c4 10             	add    $0x10,%esp
+ 8048d9a:	83 f8 ff             	cmp    $0xffffffff,%eax
+ 8048d9d:	75 c7                	jne    8048d66 &lt;main+0x8a&gt;
+    }
+    exit(0);
+ 8048d9f:	83 ec 0c             	sub    $0xc,%esp
+ 8048da2:	6a 00                	push   $0x0
+ 8048da4:	e8 ab f6 ff ff       	call   8048454 &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">exit at plt</A>&gt;
+ 8048da9:	90                   	nop    
+ 8048daa:	90                   	nop    
+ 8048dab:	90                   	nop    
+
+08048dac &lt;__libc_csu_init&gt;:
+ 8048dac:	55                   	push   %ebp
+ 8048dad:	89 e5                	mov    %esp,%ebp
+ 8048daf:	57                   	push   %edi
+ 8048db0:	56                   	push   %esi
+ 8048db1:	53                   	push   %ebx
+ 8048db2:	83 ec 0c             	sub    $0xc,%esp
+ 8048db5:	e8 00 00 00 00       	call   8048dba &lt;__libc_csu_init+0xe&gt;
+ 8048dba:	5b                   	pop    %ebx
+ 8048dbb:	81 c3 26 03 00 00    	add    $0x326,%ebx
+ 8048dc1:	e8 06 f6 ff ff       	call   80483cc &lt;_init&gt;
+ 8048dc6:	8d 83 20 ff ff ff    	lea    0xffffff20(%ebx),%eax
+ 8048dcc:	8d 93 20 ff ff ff    	lea    0xffffff20(%ebx),%edx
+ 8048dd2:	89 45 f0             	mov    %eax,0xfffffff0(%ebp)
+ 8048dd5:	29 d0                	sub    %edx,%eax
+ 8048dd7:	31 f6                	xor    %esi,%esi
+ 8048dd9:	c1 f8 02             	sar    $0x2,%eax
+ 8048ddc:	39 c6                	cmp    %eax,%esi
+ 8048dde:	73 16                	jae    8048df6 &lt;__libc_csu_init+0x4a&gt;
+ 8048de0:	89 d7                	mov    %edx,%edi
+ 8048de2:	89 f6                	mov    %esi,%esi
+ 8048de4:	ff 14 b2             	call   *(%edx,%esi,4)
+ 8048de7:	8b 4d f0             	mov    0xfffffff0(%ebp),%ecx
+ 8048dea:	29 f9                	sub    %edi,%ecx
+ 8048dec:	46                   	inc    %esi
+ 8048ded:	c1 f9 02             	sar    $0x2,%ecx
+ 8048df0:	39 ce                	cmp    %ecx,%esi
+ 8048df2:	89 fa                	mov    %edi,%edx
+ 8048df4:	72 ee                	jb     8048de4 &lt;__libc_csu_init+0x38&gt;
+ 8048df6:	83 c4 0c             	add    $0xc,%esp
+ 8048df9:	5b                   	pop    %ebx
+ 8048dfa:	5e                   	pop    %esi
+ 8048dfb:	5f                   	pop    %edi
+ 8048dfc:	c9                   	leave  
+ 8048dfd:	c3                   	ret    
+ 8048dfe:	89 f6                	mov    %esi,%esi
+
+08048e00 &lt;__libc_csu_fini&gt;:
+ 8048e00:	55                   	push   %ebp
+ 8048e01:	89 e5                	mov    %esp,%ebp
+ 8048e03:	57                   	push   %edi
+ 8048e04:	56                   	push   %esi
+ 8048e05:	53                   	push   %ebx
+ 8048e06:	e8 00 00 00 00       	call   8048e0b &lt;__libc_csu_fini+0xb&gt;
+ 8048e0b:	5b                   	pop    %ebx
+ 8048e0c:	81 c3 d5 02 00 00    	add    $0x2d5,%ebx
+ 8048e12:	8d 83 20 ff ff ff    	lea    0xffffff20(%ebx),%eax
+ 8048e18:	8d bb 20 ff ff ff    	lea    0xffffff20(%ebx),%edi
+ 8048e1e:	29 f8                	sub    %edi,%eax
+ 8048e20:	c1 f8 02             	sar    $0x2,%eax
+ 8048e23:	83 ec 0c             	sub    $0xc,%esp
+ 8048e26:	8d 70 ff             	lea    0xffffffff(%eax),%esi
+ 8048e29:	eb 05                	jmp    8048e30 &lt;__libc_csu_fini+0x30&gt;
+ 8048e2b:	90                   	nop    
+ 8048e2c:	ff 14 b7             	call   *(%edi,%esi,4)
+ 8048e2f:	4e                   	dec    %esi
+ 8048e30:	83 fe ff             	cmp    $0xffffffff,%esi
+ 8048e33:	75 f7                	jne    8048e2c &lt;__libc_csu_fini+0x2c&gt;
+ 8048e35:	e8 2e 00 00 00       	call   8048e68 &lt;_fini&gt;
+ 8048e3a:	83 c4 0c             	add    $0xc,%esp
+ 8048e3d:	5b                   	pop    %ebx
+ 8048e3e:	5e                   	pop    %esi
+ 8048e3f:	5f                   	pop    %edi
+ 8048e40:	c9                   	leave  
+ 8048e41:	c3                   	ret    
+ 8048e42:	90                   	nop    
+ 8048e43:	90                   	nop    
+
+08048e44 &lt;__do_global_ctors_aux&gt;:
+ 8048e44:	55                   	push   %ebp
+ 8048e45:	89 e5                	mov    %esp,%ebp
+ 8048e47:	53                   	push   %ebx
+ 8048e48:	52                   	push   %edx
+ 8048e49:	bb 00 90 04 08       	mov    $0x8049000,%ebx
+ 8048e4e:	a1 00 90 04 08       	mov    0x8049000,%eax
+ 8048e53:	eb 0a                	jmp    8048e5f &lt;__do_global_ctors_aux+0x1b&gt;
+ 8048e55:	8d 76 00             	lea    0x0(%esi),%esi
+ 8048e58:	83 eb 04             	sub    $0x4,%ebx
+ 8048e5b:	ff d0                	call   *%eax
+ 8048e5d:	8b 03                	mov    (%ebx),%eax
+ 8048e5f:	83 f8 ff             	cmp    $0xffffffff,%eax
+ 8048e62:	75 f4                	jne    8048e58 &lt;__do_global_ctors_aux+0x14&gt;
+ 8048e64:	58                   	pop    %eax
+ 8048e65:	5b                   	pop    %ebx
+ 8048e66:	c9                   	leave  
+ 8048e67:	c3                   	ret    
+Disassembly of section .fini:
+
+08048e68 &lt;_fini&gt;:
+ 8048e68:	55                   	push   %ebp
+ 8048e69:	89 e5                	mov    %esp,%ebp
+ 8048e6b:	53                   	push   %ebx
+ 8048e6c:	e8 00 00 00 00       	call   8048e71 &lt;_fini+0x9&gt;
+ 8048e71:	5b                   	pop    %ebx
+ 8048e72:	81 c3 6f 02 00 00    	add    $0x26f,%ebx
+ 8048e78:	50                   	push   %eax
+ 8048e79:	e8 3e f6 ff ff       	call   80484bc &lt;__do_global_dtors_aux&gt;
+ 8048e7e:	59                   	pop    %ecx
+ 8048e7f:	5b                   	pop    %ebx
+ 8048e80:	c9                   	leave  
+ 8048e81:	c3                   	ret    
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002469.html">[Gpsd-dev] Re: splint is obsessive
+</A></li>
+	<LI>Next message: <A HREF="002471.html">[Gpsd-dev] Re: splint is obsessive
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2470">[ date ]</a>
+              <a href="thread.html#2470">[ thread ]</a>
+              <a href="subject.html#2470">[ subject ]</a>
+              <a href="author.html#2470">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

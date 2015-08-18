@@ -1,0 +1,131 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] setting oncore timing parameters with gpsctl
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20setting%20oncore%20timing%20parameters%20with%20gpsctl&In-Reply-To=%3Calpine.DEB.1.10.1010301310350.12700%40org-pc51.fy.chalmers.se%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008219.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] setting oncore timing parameters with gpsctl</H1>
+    <B>H&#229;kan Johansson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20setting%20oncore%20timing%20parameters%20with%20gpsctl&In-Reply-To=%3Calpine.DEB.1.10.1010301310350.12700%40org-pc51.fy.chalmers.se%3E"
+       TITLE="[Gpsd-dev] setting oncore timing parameters with gpsctl">f96hajo at chalmers.se
+       </A><BR>
+    <I>Sat Oct 30 13:11:17 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008219.html">[Gpsd-dev] gpsctl fails to identify device when talking to gpsd
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8220">[ date ]</a>
+              <a href="thread.html#8220">[ thread ]</a>
+              <a href="subject.html#8220">[ subject ]</a>
+              <a href="author.html#8220">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+The attached patch adds an option -y opt=val to gpsctl for setting a few 
+device-specific parameters for motorola oncore devices.  The options are
+
+-y poshold=lat,lon,alt
+
+switch position hold mode on with given parameters. This mode improves 
+timing performance for a stationary antenna. Note: N and E are positive (i 
+attemped to make it parse N/S and W/E postfixes, but ran into trouble with 
+scanf and 'E' after a double being treated as part of scientific 
+notation). The altitude (in m) is in raw numbers, i.e. no geoid 
+correction, for compatibility with gpsmon output.
+
+-y poshold=0
+
+switch position hold mode off
+
+-y poshold=survey
+
+enable the internal oncore position survey mode (10000 samples), after 
+which it automatically goes into position hold mode
+
+-y traim=limit
+
+TRAIM (Time Receiver Autonomous Integrity Monitoring) is used to assess 
+the quality of the timing solution.  Removal of bad measurements (SVs) is 
+possible in position-hold mode.  limit (in us) is the alarm limit.  When 
+given as a positive number, the module pps ctrl is set to only give a PPS 
+pulse if the limit is not exceeded.  Minimum value is .3 us (which 
+according to manual requires all 8 channels to have locks on satellites). 
+At 1 us limit, 2 SVs are enough to detect and with 3 one bad can be 
+removed.  Remark: with 3-4 SVs, the time solution sigma is ususally 
+reported in the range 40-60 ns.  Timing with this sub-us precision will 
+likely also require the sawtooth-correction.
+
+With limit given as 0, the TRAIM is switched off and the PPS pulse always 
+emitted.  With limit &lt; 0, the TRAIM is switched off, but the PPS set to 
+only be emitted if at least one SV delivers time.
+
+-y ppsoffset=offset
+
+Shifts (delays) the PPS pulse by offset us (0 - 1 s possible).  Useful if 
+several GPS receivers are connected to the same computer.
+
+--
+
+I'm not sure if the new -y option to gpsctl is the best idea.  I also 
+dabbled with -p 0|survey|lat,lon,alt -q limit -o offset, but that felt 
+less intuitive and consumed more command line option name space.
+
+The actual formatting of the serial messages have been placed in 
+driver_oncore.c Here, also the handling of the pps_offset response message 
+was corrected from pps_delay.  (There is an oncore pps (negative) delay 
+option also, allowing cable delay adjustment in the 0 - 1 ms range, not 
+used.  The old naming was an mistake.)
+
+The automatic mangling of the oncore TRAIM settings on gpsd startup has 
+been removed.
+
+Should one make gpsctl accept several -y options in the same invokation? 
+Also for the -x option?
+
+Documentation for the above (mail rehashed) to come if accepted.
+
+Cheers,
+H&#229;kan
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: set_oncore_params.diff
+Type: text/x-diff
+Size: 11483 bytes
+Desc: 
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20101030/8cae677d/attachment.diff">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20101030/8cae677d/attachment.diff</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008219.html">[Gpsd-dev] gpsctl fails to identify device when talking to gpsd
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8220">[ date ]</a>
+              <a href="thread.html#8220">[ thread ]</a>
+              <a href="subject.html#8220">[ subject ]</a>
+              <a href="author.html#8220">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

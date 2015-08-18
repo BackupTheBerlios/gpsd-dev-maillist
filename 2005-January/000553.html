@@ -1,0 +1,104 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd loops when last client disconnects..
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20loops%20when%20last%20client%20disconnects..&In-Reply-To=%3C2flsm51qu25.fsf%40saruman.uio.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000552.html">
+   <LINK REL="Next"  HREF="000555.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd loops when last client disconnects..</H1>
+    <B>Petter Reinholdtsen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20loops%20when%20last%20client%20disconnects..&In-Reply-To=%3C2flsm51qu25.fsf%40saruman.uio.no%3E"
+       TITLE="[Gpsd-dev] gpsd loops when last client disconnects..">pere at hungry.com
+       </A><BR>
+    <I>Sun Jan 16 16:20:50 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000552.html">[Gpsd-dev] [patch] Fix X11 resource files
+</A></li>
+        <LI>Next message: <A HREF="000555.html">[Gpsd-dev] gpsd loops when last client disconnects..
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#553">[ date ]</a>
+              <a href="thread.html#553">[ thread ]</a>
+              <a href="subject.html#553">[ subject ]</a>
+              <a href="author.html#553">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I just noticed something.  The latest version of of gpsd seem to go
+into a endless loop logging lines like this when the last client
+disconnect.  You can test this by starting gpsd, connecting one client
+and quit the client.  This is the syslog entries from one such
+session:
+
+Jan 16 16:18:13 minerva gpsd[2969]: gpsd: launching (Version 2.7)
+Jan 16 16:18:13 minerva gpsd[2969]: gpsd: listening on port 2947
+Jan 16 16:18:26 minerva gpsd[2969]: gpsd: closed GPS
+Jan 16 16:18:26 minerva gpsd[2969]: gpsd: opening GPS data source at /dev/gps
+Jan 16 16:18:26 minerva gpsd[2969]: gpsd: setting speed 4800, 8 bits, no parity
+Jan 16 16:18:26 minerva gpsd[2969]: gpsd: gpsd_activate: opened GPS (6)
+Jan 16 16:18:26 minerva gpsd[2969]: gpsd: &lt;= client: w+x
+Jan 16 16:18:26 minerva gpsd[2969]: gpsd: unknown exception: &quot;N,01047.0195,E,0,00,,,M,,M,,*48&quot;
+Jan 16 16:18:26 minerva gpsd[2969]: gpsd: Bad NMEA checksum: '$' should be 00
+Jan 16 16:18:26 minerva last message repeated 3 times
+Jan 16 16:18:28 minerva gpsd[2969]: gpsd: &lt;= client: w+x
+Jan 16 16:18:30 minerva gpsd[2969]: gpsd: &lt;= client: w+x
+Jan 16 16:18:30 minerva gpsd[2969]: gpsd: closed GPS
+
+Jan 16 16:18:31 minerva gpsd[2969]: gpsd: closed GPS
+Jan 16 16:18:31 minerva gpsd[2969]: gpsd: opening GPS data source at /dev/gps
+Jan 16 16:18:31 minerva gpsd[2969]: gpsd: setting speed 4800, 8 bits, no parity
+Jan 16 16:18:31 minerva gpsd[2969]: gpsd: gpsd_activate: opened GPS (5)
+Jan 16 16:18:31 minerva gpsd[2969]: gpsd: closed GPS
+
+Jan 16 16:18:32 minerva gpsd[2969]: gpsd: closed GPS
+Jan 16 16:18:32 minerva gpsd[2969]: gpsd: opening GPS data source at /dev/gps
+Jan 16 16:18:32 minerva gpsd[2969]: gpsd: setting speed 4800, 8 bits, no parity
+Jan 16 16:18:32 minerva gpsd[2969]: gpsd: gpsd_activate: opened GPS (7)
+Jan 16 16:18:32 minerva gpsd[2969]: gpsd: closed GPS
+
+Jan 16 16:18:33 minerva gpsd[2969]: gpsd: closed GPS
+Jan 16 16:18:33 minerva gpsd[2969]: gpsd: opening GPS data source at /dev/gps
+Jan 16 16:18:33 minerva gpsd[2969]: gpsd: setting speed 4800, 8 bits, no parity
+Jan 16 16:18:33 minerva gpsd[2969]: gpsd: gpsd_activate: opened GPS (8)
+Jan 16 16:18:33 minerva gpsd[2969]: gpsd: closed GPS
+
+The groups of five lines will repeat forever (or until a new client
+connects to the server :).
+
+Am I the only one seeing this?
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000552.html">[Gpsd-dev] [patch] Fix X11 resource files
+</A></li>
+	<LI>Next message: <A HREF="000555.html">[Gpsd-dev] gpsd loops when last client disconnects..
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#553">[ date ]</a>
+              <a href="thread.html#553">[ thread ]</a>
+              <a href="subject.html#553">[ subject ]</a>
+              <a href="author.html#553">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,138 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Time for a fast release?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Time%20for%20a%20fast%20release%3F&In-Reply-To=%3CPine.LNX.4.63.0504291342380.17505%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001475.html">
+   <LINK REL="Next"  HREF="001477.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Time for a fast release?</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Time%20for%20a%20fast%20release%3F&In-Reply-To=%3CPine.LNX.4.63.0504291342380.17505%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] Time for a fast release?">gem at rellim.com
+       </A><BR>
+    <I>Fri Apr 29 23:03:54 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001475.html">[Gpsd-dev] Time for a fast release?
+</A></li>
+        <LI>Next message: <A HREF="001477.html">[Gpsd-dev] Time for a fast release?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1476">[ date ]</a>
+              <a href="thread.html#1476">[ thread ]</a>
+              <a href="subject.html#1476">[ subject ]</a>
+              <a href="author.html#1476">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Eric!
+
+On Fri, 29 Apr 2005, Eric S. Raymond wrote:
+
+&gt;<i> &gt; Well, the hotplug such on that machine is plain vanilla Slackware
+</I>&gt;<i> &gt; 10.0.  Personally I am not too hot on group writable devices, so I think
+</I>&gt;<i> &gt; Slackware did the right thing.  In any case the usage is common enough
+</I>&gt;<i> &gt; that gpsd has to work with it.
+</I>&gt;<i>
+</I>&gt;<i> &quot;Work with it&quot; how?
+</I>
+Dunno, just saying that gpsd can not blow off a large percentage if it's
+current working systems.  If the breakage is justified then it needs to
+be well documented with the workarounds.
+
+&gt;<i> &gt; No /etc/udev on Slackware, no udev of any kind anywhere.  Slackware uses
+</I>&gt;<i> &gt; /etc/hotplug, but there is nothing about ttyUSB or garmin in there.  Not
+</I>&gt;<i> &gt; even sure hotplug works in Slackware because I never use it.  I suspect
+</I>&gt;<i> &gt; Slackware just leaves the kernel alone when it creates a new device.
+</I>&gt;<i>
+</I>&gt;<i> Well, your fix is simple, then.  &quot;chmod g+w /dev/tty*&quot; should do it.
+</I>
+Not so simple.  I was just digging in to the Slackware MAKEDEV script.
+Looks like slackwre creats /dev/tty* as 666 root.tty.  So I am not
+sure how the /dev/ttyUSB0 got created as 644 root.uucp.  My /dev/ttyUSB1
+is 666 root.uucp.
+
+I can change the perms on a system with a static /dev.  That will not
+persist over a reboot on a devfs based /dev.  So there I am stuck
+doing things to devfsd.  Maybe I can test it on a devfs system next week.
+
+If some of my gps are group tty and some uucp can you handle that?
+
+&gt;<i> I wouldn't recommend that on a distro that uses either udev to create
+</I>&gt;<i> ttyUSB devices or hotplug to initialize them.  In the former case
+</I>&gt;<i> fixing /etc/udev/permissions.d is the right thing; in the latter case
+</I>&gt;<i> an explicit chmod in the hotplug script would be the right thing (hm...
+</I>&gt;<i> maybe I'll add that anyway).
+</I>
+Dunno, never used a udev system, and avoid hotplug as much as I can...
+Sorta burned by the abrupt entry, then exit, of the devfs.  Waiting to
+see if udev sticks around a bit before makeing that jump.  Hotplug has
+been through so many changes hard to know which way is up with that.
+Getting one guys hotplug scripts to work with a different version is
+a good way to kill an evening for no good reason.
+
+So, I changed my /dev/ttyU* to 666.  Now I get a tinier bit further.
+
+# ./gpsd -nN -p /dev/ttyUSB0 -D 4
+gpsd: launching (Version 2.22)
+gpsd: listening on port 2947
+gpsd: changing to group 14
+gpsd: running with effective group ID 14
+gpsd: running with effective user ID 99
+gpsd: opening GPS data source at '/dev/ttyUSB0'
+gpsd: No USB serial drivers found.
+gpsd: no probe matched...
+gpsd: hunting at speed 4800, 8N1
+
+For some reason it looks like it is not even trying to use the garmin driver...
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.2.3 (GNU/Linux)
+
+iD8DBQFCcqE98KZibdeR3qURAu5yAJoDNobpTPEcFCLxj4aESDqDnd8IzgCgpOry
+Kfnl1+nVrR75Dhq9qlLgOL0=
+=65fD
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001475.html">[Gpsd-dev] Time for a fast release?
+</A></li>
+	<LI>Next message: <A HREF="001477.html">[Gpsd-dev] Time for a fast release?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1476">[ date ]</a>
+              <a href="thread.html#1476">[ thread ]</a>
+              <a href="subject.html#1476">[ subject ]</a>
+              <a href="author.html#1476">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

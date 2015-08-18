@@ -1,0 +1,137 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] odd bug with gps_device string being lost/overwritten
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20odd%20bug%20with%20gps_device%20string%20being%20lost/overwritten&In-Reply-To=%3C20050518224841.GA9418%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001745.html">
+   <LINK REL="Next"  HREF="001748.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] odd bug with gps_device string being lost/overwritten</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20odd%20bug%20with%20gps_device%20string%20being%20lost/overwritten&In-Reply-To=%3C20050518224841.GA9418%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] odd bug with gps_device string being lost/overwritten">esr at thyrsus.com
+       </A><BR>
+    <I>Thu May 19 00:48:41 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001745.html">[Gpsd-dev] odd bug with gps_device string being lost/overwritten
+</A></li>
+        <LI>Next message: <A HREF="001748.html">[Gpsd-dev] odd bug with gps_device string being lost/overwritten
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1747">[ date ]</a>
+              <a href="thread.html#1747">[ thread ]</a>
+              <a href="subject.html#1747">[ subject ]</a>
+              <a href="author.html#1747">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Lonnie Mendez &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">lmendez19 at austin.rr.com</A>&gt;:
+&gt;<i> gpsd: &lt;= GPS: $GPGSV,3,2,09,10,30,142,00,15,22,170,00,18,19,114,00,08,17,315,*7A
+</I>&gt;<i> Hardware watchpoint 3: device-&gt;gpsdata.gps_device != 0
+</I>&gt;<i> 
+</I>&gt;<i> Old value = 1
+</I>&gt;<i> New value = 0
+</I>&gt;<i> processGPGSV (count=20, field=0xbfff6be0, out=0x8056db8) at nmea_parse.c:363
+</I>&gt;<i> 363             if (out-&gt;PRN[out-&gt;satellites])
+</I>&gt;<i> (gdb) bt
+</I>&gt;<i> #0  processGPGSV (count=20, field=0xbfff6be0, out=0x8056db8) at nmea_parse.c:363
+</I>&gt;<i> #1  0x4003b289 in nmea_parse (
+</I>&gt;<i>     sentence=0x8057234 &quot;$GPGSV,3,2,09,10,30,142,00,15,22,170,00,18,19,114,00,08,17,315,*7A\r\n&quot;, outdata=0x8056db8) at nmea_parse.c:525
+</I>&gt;<i> #2  0x4003ba38 in nmea_parse_input (session=0x8056db8) at drivers.c:27
+</I>&gt;<i> #3  0x4003e385 in handle_packet (session=0x8056db8) at libgpsd_core.c:146
+</I>&gt;<i> #4  0x4003e75d in gpsd_poll (session=0x8056db8) at libgpsd_core.c:287
+</I>&gt;<i> #5  0x0804bea5 in main (argc=134573496, argv=0x400) at gpsd.c:1061
+</I>&gt;<i> (gdb)
+</I>
+And that abso-fucking-lutely makes sense, if only because the GPGSV parsing
+his historically had more bugs than the rest of the parser put together --
+I was already suspecting it would turn out to be there when you
+reported an NMEA-mode-only bug.  Look at the relevant code section:
+
+    for (fldnum = 4; fldnum &lt; count; ) {
+	out-&gt;PRN[out-&gt;satellites]       = atoi(field[fldnum++]);
+	out-&gt;elevation[out-&gt;satellites] = atoi(field[fldnum++]);
+	out-&gt;azimuth[out-&gt;satellites]   = atoi(field[fldnum++]);
+	out-&gt;ss[out-&gt;satellites]        = atoi(field[fldnum++]);
+	/*
+	 * Incrementing this unconditionally falls afoul of chipsets like 
+	 * the Motorola Oncore GT+ that emit empty fields at the end of the
+	 * last sentence in a GPGSV set if the number of satellites is not
+	 * a multiiple of 4.
+	 */
+	if (out-&gt;PRN[out-&gt;satellites])
+	    out-&gt;satellites++;
+    }
+    if (out-&gt;part == out-&gt;await &amp;&amp; atoi(field[3]) != out-&gt;satellites)
+	gpsd_report(0, &quot;GPGSV field 3 value of %d != actual count %d\n&quot;,
+		    atoi(field[3]), out-&gt;satellites);
+
+I think that the watchpoint firing on line 363 means that the stomping is
+actually happening on the previous line.  That's easy to believe.
+Look at the layout of the gps_data structure:
+
+    /* satellite status -- valid when satellites &gt; 0 */
+    int satellites;		/* # of satellites in view */
+    int PRN[MAXCHANNELS];	/* PRNs of satellite */
+    int elevation[MAXCHANNELS];	/* elevation of satellite */
+    int azimuth[MAXCHANNELS];	/* azimuth */
+    int ss[MAXCHANNELS];	/* signal strength */
+    int part, await;		/* for tracking GSV parts */
+
+    /* where and what gpsd thinks the device is */
+    char	*gps_device;	/* only valid if non-null. */
+
+If the ss array got overrun by as few as 8 bytes the GPS device name
+would be stomped.
+
+&gt;<i> I'll have the gdb session open still, so let me know if you need anything else.
+</I>
+The burning question is *what is the current value of out-&gt;satellites*?
+
+Looks to me like it;s somehow going over MAXCHANNELS-1 = 11.
+
+  Also, if you want, I can set up an ssh account
+&gt;<i> on the machine exhibiting this bug.
+</I>
+I may take you up on that in a couple of hours.  Right now I have to run off
+to kung-fu class.
+
+While I'm gone, it would be really cool if you could instrument the GSV 
+parsing and maybe figure out where it's fooing up.  You seem to have the
+magic make-it-reproduce touch that has eluded me.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001745.html">[Gpsd-dev] odd bug with gps_device string being lost/overwritten
+</A></li>
+	<LI>Next message: <A HREF="001748.html">[Gpsd-dev] odd bug with gps_device string being lost/overwritten
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1747">[ date ]</a>
+              <a href="thread.html#1747">[ thread ]</a>
+              <a href="subject.html#1747">[ subject ]</a>
+              <a href="author.html#1747">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

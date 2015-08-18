@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] netbsd/i386 runtime issues
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20netbsd/i386%20runtime%20issues&In-Reply-To=%3C20100415212113.GA9374%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007676.html">
+   <LINK REL="Next"  HREF="007678.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] netbsd/i386 runtime issues</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20netbsd/i386%20runtime%20issues&In-Reply-To=%3C20100415212113.GA9374%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] netbsd/i386 runtime issues">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Apr 15 23:21:13 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007676.html">[Gpsd-dev] netbsd/i386 runtime issues
+</A></li>
+        <LI>Next message: <A HREF="007678.html">[Gpsd-dev] netbsd/i386 runtime issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7677">[ date ]</a>
+              <a href="thread.html#7677">[ thread ]</a>
+              <a href="subject.html#7677">[ subject ]</a>
+              <a href="author.html#7677">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;:
+&gt;<i> 
+</I>&gt;<i> good news: ublox antaris 4 on usb works fine with gpsd
+</I>&gt;<i> 
+</I>&gt;<i> minor troubles 1:
+</I>&gt;<i> 
+</I>&gt;<i> gpsmon has an issue with trueNorth
+</I>&gt;<i> 
+</I>&gt;<i> fnord gdt 14 ~/SOFTWARE/GPSD/gpsd &gt; ldd /usr/y0/bin/gpsmon 
+</I>&gt;<i> /usr/y0/bin/gpsmon:
+</I>&gt;<i>         -lc.12 =&gt; /usr/lib/libc.so.12
+</I>&gt;<i>         -lncurses.5 =&gt; /usr/pkg/lib/libncurses.so.5
+</I>&gt;<i>         -lstdc++.6 =&gt; /usr/lib/libstdc++.so.6
+</I>&gt;<i>         -lm.0 =&gt; /usr/lib/libm.so.0
+</I>&gt;<i>         -lgcc_s.1 =&gt; /usr/lib/libgcc_s.so.1
+</I>&gt;<i>         -lpthread.0 =&gt; /usr/lib/libpthread.so.0
+</I>&gt;<i>         -lgps.19 =&gt; /usr/pkg/lib/libgps.so.19
+</I>&gt;<i> fnord gdt 15 ~/SOFTWARE/GPSD/gpsd &gt; gpsmon 
+</I>&gt;<i> Undefined symbol &quot;trueNorth&quot; referenced from COPY relocation in gpsmon
+</I>
+trueNorth is the name of the TNT driver table.
+
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at snark</A>:~/software/gpsd$ grep -C 3 trueNorth *.c
+drivers.c-}
+drivers.c-
+drivers.c-/* *INDENT-OFF* */
+drivers.c:const struct gps_type_t trueNorth = {
+drivers.c-    .type_name      = &quot;True North&quot;,	/* full name of type */
+drivers.c-    .packet_type    = NMEA_PACKET,	/* associated lexer packet type */
+drivers.c-    .trigger	    = &quot;$PTNTHTM&quot;,	/* their proprietary sentence */
+--
+drivers.c-    &amp;fv18,
+drivers.c-#endif /* FV18_ENABLE */
+drivers.c-#ifdef TNT_ENABLE
+drivers.c:    &amp;trueNorth,
+drivers.c-#endif /* TNT_ENABLE */
+drivers.c-#ifdef AIVDM_ENABLE
+drivers.c-    &amp;aivdm,
+--
+monitor_tnt.c-#include &quot;gpsmon.h&quot;
+monitor_tnt.c-
+monitor_tnt.c-#ifdef TNT_ENABLE
+monitor_tnt.c:extern const struct gps_type_t trueNorth;
+monitor_tnt.c-
+monitor_tnt.c-static WINDOW *thtmwin;
+monitor_tnt.c-
+--
+monitor_tnt.c-    .command = tnt_command,
+monitor_tnt.c-    .wrap = tnt_wrap,
+monitor_tnt.c-    .min_y = 6,.min_x = 80,	/* size of the device window */
+monitor_tnt.c:    .driver = &amp;trueNorth,
+monitor_tnt.c-};
+monitor_tnt.c-#endif /* TNT_ENABLE */
+monitor_tnt.c-
+
+Is TNT_ENABLE on in your config?
+ 
+&gt;<i> minor troubles 2:
+</I>&gt;<i> 
+</I>&gt;<i> fnord gdt 18 ~/SOFTWARE/GPSD/gpsd &gt; xgps
+</I>&gt;<i> env: python: No such file or directory
+</I>&gt;<i> 
+</I>&gt;<i> so it needs @PYTHON@ substitution.  It really needs this anyway,
+</I>&gt;<i> becausee it loads a module that it installed in a version-specific
+</I>&gt;<i> site-packages directory.  (Plus I need to point PYTHONPATH because the
+</I>&gt;<i> prefix for python and the prefix for gpsd are different, but that's more
+</I>&gt;<i> of a general issue.)
+</I>&gt;<i> 
+</I>&gt;<i> I know how to fix xgps - just move it to xgps.in, change the first line,
+</I>&gt;<i> and add it to configure.ac.    Shall I go ahead?
+</I>
+Yes, go ahead.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 189 bytes
+Desc: Digital signature
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100415/e8f8a469/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100415/e8f8a469/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007676.html">[Gpsd-dev] netbsd/i386 runtime issues
+</A></li>
+	<LI>Next message: <A HREF="007678.html">[Gpsd-dev] netbsd/i386 runtime issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7677">[ date ]</a>
+              <a href="thread.html#7677">[ thread ]</a>
+              <a href="subject.html#7677">[ subject ]</a>
+              <a href="author.html#7677">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

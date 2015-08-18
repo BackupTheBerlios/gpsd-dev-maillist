@@ -1,0 +1,80 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Error in geoid.c?!
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2008-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Error%20in%20geoid.c%3F%21&In-Reply-To=%3C489615CE.2090008%40gmx.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="006113.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Error in geoid.c?!</H1>
+    <B>Alexander Stapff</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Error%20in%20geoid.c%3F%21&In-Reply-To=%3C489615CE.2090008%40gmx.de%3E"
+       TITLE="[Gpsd-dev] Error in geoid.c?!">A.Stapff at gmx.de
+       </A><BR>
+    <I>Sun Aug  3 22:32:14 CEST 2008</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="006113.html">[Gpsd-dev] EVK-5H log and patches
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6112">[ date ]</a>
+              <a href="thread.html#6112">[ thread ]</a>
+              <a href="subject.html#6112">[ subject ]</a>
+              <a href="author.html#6112">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+first of all many thanks for your good work!
+
+I am using code from the gpsd geoid.c for writing a filter for gpsbabel. 
+While porting the code I found a possible error in the 
+wgs84_separation() function of geoid.c
+
+In this function there are two checks (if ( ( ilat &gt; 90 ) || ( ilat &lt; 
+-90 ) ) ... ,  if ( ( ilon &gt; 180 ) || ( ilon &lt; -180 ) )...,) to prevent 
+access outside the bounds of the geoid_delta array, defined in the same 
+function)
+
+ilat and ilon are calculated as ilat=(int)floor(( 90.+lat)/10);  
+ilon=(int)floor((180.+lon)/10); so the test triggers at values well 
+outside the bounds of the array.
+
+I think, that either lat and lon should be used in the test, or that the 
+test is done against GEOID_ROW and GEOID_COL.
+
+Alexander
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="006113.html">[Gpsd-dev] EVK-5H log and patches
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6112">[ date ]</a>
+              <a href="thread.html#6112">[ thread ]</a>
+              <a href="subject.html#6112">[ subject ]</a>
+              <a href="author.html#6112">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

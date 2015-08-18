@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] regression failures
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20regression%20failures&In-Reply-To=%3Crmiljhj7w90.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007226.html">
+   <LINK REL="Next"  HREF="007228.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] regression failures</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20regression%20failures&In-Reply-To=%3Crmiljhj7w90.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] regression failures">gdt at ir.bbn.com
+       </A><BR>
+    <I>Thu Dec  3 19:22:51 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007226.html">[Gpsd-dev] regression failures
+</A></li>
+        <LI>Next message: <A HREF="007228.html">[Gpsd-dev] regression failures
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7227">[ date ]</a>
+              <a href="thread.html#7227">[ thread ]</a>
+              <a href="subject.html#7227">[ subject ]</a>
+              <a href="author.html#7227">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+&gt;<i> You need to look at line 509 of libgpsd_core.c to understand why it is  
+</I>&gt;<i> or isn't showing.
+</I>&gt;<i>
+</I>&gt;<i> What you'll see if that the output for earth_distance() is being used  
+</I>&gt;<i> to determine if it is larger than the error of the last epx or epy.  
+</I>&gt;<i> The problem is that adj coming out of earth_distance() is,  
+</I>&gt;<i> significantly, less than the larger of epx or epy which prevents epd  
+</I>&gt;<i> from being calculated. Thus prevents it from being output.
+</I>&gt;<i>
+</I>&gt;<i> Here is a sample of some debug logging I did on Eric's box:
+</I>&gt;<i>
+</I>&gt;<i> gpsd_error_model(): 0.250433356939081419589854249352 =  
+</I>&gt;<i> earth_distance(30.341683171590169365572364768013,  
+</I>&gt;<i> 12.228735936482747703735185496043, 30.341683180067274605562488432042,  
+</I>&gt;<i> 12.228735885620118040151282912120)
+</I>&gt;<i> gpsd_error_model(): fix-&gt;epx = 0.221748686580101272980414250924; fix- 
+</I>&gt;<i>  &gt;epy = 0.221748686580101272980414250924
+</I>&gt;<i>
+</I>&gt;<i> Here is the same sample of debug logging being run on my Mac OS X box:
+</I>&gt;<i>
+</I>&gt;<i> gpsd_error_model(): 0.211654817143009932323138855281 =  
+</I>&gt;<i> earth_distance(30.341683171590169365572364768013,  
+</I>&gt;<i> 12.228735936482747703735185496043, 30.341683180067274605562488432042,  
+</I>&gt;<i> 12.228735885620118040151282912120)
+</I>&gt;<i> gpsd_error_model(): fix-&gt;epx = 0.221748686580101272980414250924; fix- 
+</I>&gt;<i>  &gt;epy = 0.221748686580101272980414250924
+</I>&gt;<i>
+</I>&gt;<i> I did more logging that shows the differences of calculations coming  
+</I>&gt;<i> from the sin() and cos() functions inside earth_distance(). And as you  
+</I>&gt;<i> can tell they add (or multiply) to a bigger difference coming out of  
+</I>&gt;<i> the function.
+</I>
+Thanks.  I will admit to not following the algorithm in earth_distance.
+Without understanding, it strikes me as numerically unstable to come out
+at 21cm vs 25cm for the same inputs.
+
+So, perhaps we can overlook this now, and replace the algorithm with
+something more suitable.
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091203/8e5777f0/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091203/8e5777f0/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007226.html">[Gpsd-dev] regression failures
+</A></li>
+	<LI>Next message: <A HREF="007228.html">[Gpsd-dev] regression failures
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7227">[ date ]</a>
+              <a href="thread.html#7227">[ thread ]</a>
+              <a href="subject.html#7227">[ subject ]</a>
+              <a href="author.html#7227">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

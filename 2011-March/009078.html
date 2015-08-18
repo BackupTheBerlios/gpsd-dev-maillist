@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Possible shm problem: Structure alignment?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Possible%20shm%20problem%3A%20Structure%20alignment%3F&In-Reply-To=%3C4D8CEA75.9020604%40tmsw.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009075.html">
+   <LINK REL="Next"  HREF="009077.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Possible shm problem: Structure alignment?</H1>
+    <B>Terje Mathisen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Possible%20shm%20problem%3A%20Structure%20alignment%3F&In-Reply-To=%3C4D8CEA75.9020604%40tmsw.no%3E"
+       TITLE="[Gpsd-dev] Possible shm problem: Structure alignment?">terje at tmsw.no
+       </A><BR>
+    <I>Fri Mar 25 20:18:13 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009075.html">[Gpsd-dev] Possible shm problem: Structure alignment?
+</A></li>
+        <LI>Next message: <A HREF="009077.html">[Gpsd-dev] Possible shm problem: Structure alignment?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9078">[ date ]</a>
+              <a href="thread.html#9078">[ thread ]</a>
+              <a href="subject.html#9078">[ subject ]</a>
+              <a href="author.html#9078">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>tz wrote:
+&gt;<i> On Fri, Mar 25, 2011 at 2:49 PM, Terje Mathisen&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">terje at tmsw.no</A>&gt;  wrote:
+</I>&gt;&gt;<i> I have started to look more closely at the shm driver, and one issue that's
+</I>&gt;&gt;<i> quite obvious is in the shmTime{} struct:
+</I>&gt;<i>
+</I>&gt;&gt;<i> My suggestion is therefore to change it like this:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> struct timeStamp {
+</I>&gt;&gt;<i>         int64_t clockTimeStampSec;
+</I>&gt;&gt;<i>         int64_t receiveTimeStampSec;
+</I>&gt;&gt;<i>         int32_t clockTimeStampUSec;
+</I>&gt;&gt;<i>         int32_t receiveTimeStampUSec;
+</I>&gt;&gt;<i> };
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> #define TIMESTAMP_BUFFER_SIZE 4
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> struct shmTime {
+</I>&gt;&gt;<i>         int32_t mode; /* 0, 1 or 2 */
+</I>&gt;&gt;<i>         int32_t count;
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>         int32_ tleap;
+</I>&gt;&gt;<i>         int32_t precision;
+</I>&gt;&gt;<i>         int32_t nsamples;
+</I>&gt;&gt;<i>         int32_t valid;
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>         timestamp ts[TIMESTAMP_BUFFER_SIZE];
+</I>&gt;&gt;<i> };
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Even if you guys don't agree with my wish for a multi-sample buffer, we
+</I>&gt;&gt;<i> should still reorder the layout this way but with a single buffer entry.
+</I>&gt;<i>
+</I>&gt;<i> You could also just put the two int64_t or time_t entries at the top
+</I>&gt;<i> of the structure.
+</I>
+This is effectively what I am doing, I have carefully counted them to 
+make sure that I have an even number of 32-bit entries before the paired 
+64-bit time_t values. I wanted to keep the timestamps at the very end in 
+order to make it possible to change the size of the buffer.
+&gt;<i>
+</I>&gt;<i> I'm not sure about 64 bit alignment, but it is probably something we
+</I>&gt;<i> should protect for (or 128 - what does the iTanium use?).
+</I>
+The only systems that require more than 64-bit alignment are some of the 
+SIMD opcode sets, like Intel/AMD SSE and PPC Altivec, but they are all 
+moving towards relaxing this to only require the same alignment as the 
+individual entries in a vector.
+
+I.e. loading 4 32-bit float values can be done starting from any 32-bit 
+boundary. (Please note that this isn't the case right now, but it is 
+where most of the cpu architects I know is telling me we have to go.)
+
+What it means is that an interface which uses a 64-bit aligned buffer 
+with all 64-bit values properly aligned will be portable.
+
+Since shm works on a single platform we don't need to worry about endian 
+issues, except to make sure that on those few cpus where you can compile 
+for the opposite byte order both gpsd and ntpd needs to use the cpu default.
+
+Terje
+-- 
+- &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Terje at tmsw.no</A>&gt;
+&quot;almost all programming can be viewed as an exercise in caching&quot;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009075.html">[Gpsd-dev] Possible shm problem: Structure alignment?
+</A></li>
+	<LI>Next message: <A HREF="009077.html">[Gpsd-dev] Possible shm problem: Structure alignment?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9078">[ date ]</a>
+              <a href="thread.html#9078">[ thread ]</a>
+              <a href="subject.html#9078">[ subject ]</a>
+              <a href="author.html#9078">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

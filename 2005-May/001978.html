@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] splint just turned up a third bug
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20splint%20just%20turned%20up%20a%20third%20bug&In-Reply-To=%3CPine.LNX.4.63.0505301844370.2919%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001976.html">
+   <LINK REL="Next"  HREF="001981.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] splint just turned up a third bug</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20splint%20just%20turned%20up%20a%20third%20bug&In-Reply-To=%3CPine.LNX.4.63.0505301844370.2919%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] splint just turned up a third bug">gem at rellim.com
+       </A><BR>
+    <I>Tue May 31 04:14:00 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001976.html">[Gpsd-dev] splint just turned up a third bug
+</A></li>
+        <LI>Next message: <A HREF="001981.html">[Gpsd-dev] splint just turned up a third bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1978">[ date ]</a>
+              <a href="thread.html#1978">[ thread ]</a>
+              <a href="subject.html#1978">[ subject ]</a>
+              <a href="author.html#1978">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Rob!
+
+On Tue, 31 May 2005, Rob Janssen wrote:
+
+&gt;<i> &gt; So you think the glibc people put in all thos optimizations to make it
+</I>&gt;<i> &gt; slower? :-)
+</I>&gt;<i>
+</I>&gt;<i> The pow() function does not consider it is always called with exponent 2.
+</I>&gt;<i> So it may well be that x*x is much more efficient than pow(x,2).
+</I>
+Never.  The whole point of pow is that to raise a number to an integer
+power only requires simple addition to the exponent.  It is usually
+hundreds of times faster than the fmuls.  For one thing the way
+IEEE requires fmuls to operate FISTPL to be executed.  that flushes the
+instruction pipeline on a P4 and kills performance.
+
+In any case, since everyone now has GHz++ machines not doing any work
+at all this is not really relevant to a desktop project.
+
+&gt;<i> sin() etc), the optimizer will recognize the fixed exponent and will
+</I>&gt;<i> generate some clever code.
+</I>&gt;<i>
+</I>&gt;<i> &gt; I agree with you when talking about integer and branch code.  FPU code is
+</I>&gt;<i> &gt; a very different beast.  A P4 class CPU may executre more than
+</I>&gt;<i> &gt; one non-FPU instruction per clock, It may still take hundreds of clocks
+</I>&gt;<i> &gt; to perform heavy FPU ops like fdiv.
+</I>&gt;<i>
+</I>&gt;<i> fdiv, yes.  but fmul is probably very fast.
+</I>
+gcc almost always adds that nasty FISTPL and all is lost after that.
+Sure FMUL is faster than FDIV, but it still consumes hundreds of cycles.
+Just flushing the pipeline with the FISTPL can cost that, then you have
+the multiply.
+
+Sadly the new Intel doc no longer gives instruction timing.  Got the
+IA-32 manuals right here and it is nowhere to be found.  I'll try to dig
+out some old Intel manuals when I get in to my office on Tuesday.  If
+someone has a pointer to clock info on the P4 I would really appreciate
+it.
+
+&gt;<i> &gt; I would argue instead not to use a tool that imposes such silly contraints
+</I>&gt;<i> &gt; on the code.
+</I>&gt;<i>
+</I>&gt;<i> IMHO, the current problem is the feverishness in which the warnings are
+</I>&gt;<i> hunted down and removed.  It may be that the tool has uncovered 3
+</I>&gt;<i> potential problems, the hacking of the code has also introduced at least 2
+</I>&gt;<i> new bugs and possibly more.  That is not a good score.
+</I>
+Agreed.  The tweaking of FP math is merely a remembrance of when I got
+paid to count clocks for a living.
+
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.2.3 (GNU/Linux)
+
+iD8DBQFCm8hr8KZibdeR3qURAnzKAKDj+F43aK/uCyfRPOEgqbIps/5RQQCfYpYm
+g/fTOLd51a5NiGr52VZNXfg=
+=7coD
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001976.html">[Gpsd-dev] splint just turned up a third bug
+</A></li>
+	<LI>Next message: <A HREF="001981.html">[Gpsd-dev] splint just turned up a third bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1978">[ date ]</a>
+              <a href="thread.html#1978">[ thread ]</a>
+              <a href="subject.html#1978">[ subject ]</a>
+              <a href="author.html#1978">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

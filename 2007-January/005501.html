@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] ubx protocol improvements
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20ubx%20protocol%20improvements&In-Reply-To=%3C91981b3e0701050948n6690e173v23ef8fc2a70f9e45%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005496.html">
+   <LINK REL="Next"  HREF="005502.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] ubx protocol improvements</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20ubx%20protocol%20improvements&In-Reply-To=%3C91981b3e0701050948n6690e173v23ef8fc2a70f9e45%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [PATCH] ubx protocol improvements">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Fri Jan  5 18:48:01 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005496.html">[Gpsd-dev] [PATCH] ubx protocol improvements
+</A></li>
+        <LI>Next message: <A HREF="005502.html">[Gpsd-dev] [PATCH] ubx protocol improvements
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5501">[ date ]</a>
+              <a href="thread.html#5501">[ thread ]</a>
+              <a href="subject.html#5501">[ subject ]</a>
+              <a href="author.html#5501">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Good idea.
+
+On 1/5/07, Andreas Stricker &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">andy at knitter.ch</A>&gt; wrote:
+&gt;<i> -----BEGIN PGP SIGNED MESSAGE-----
+</I>&gt;<i> Hash: SHA1
+</I>&gt;<i>
+</I>&gt;<i> I think it makes sense that ntpshm_put is only called if date is
+</I>&gt;<i> valid.
+</I>&gt;<i>
+</I>&gt;<i> The second part adds a check to the channel number field. Just to
+</I>&gt;<i> be sure...
+</I>&gt;<i>
+</I>&gt;<i> Index: ubx.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> - --- ubx.c     (Revision 4217)
+</I>&gt;<i> +++ ubx.c       (Arbeitskopie)
+</I>&gt;<i> @@ -54,6 +54,10 @@
+</I>&gt;<i>         session-&gt;gpsdata.sentence_time = t;
+</I>&gt;<i>         session-&gt;gpsdata.fix.time = t;
+</I>&gt;<i>         mask |= TIME_SET;
+</I>&gt;<i> +#ifdef NTPSHM_ENABLE
+</I>&gt;<i> +       if (session-&gt;context-&gt;enable_ntpshm)
+</I>&gt;<i> +           (void)ntpshm_put(session, session-&gt;gpsdata.sentence_time); /* TODO overhead */
+</I>&gt;<i> +#endif
+</I>&gt;<i>      }
+</I>&gt;<i>
+</I>&gt;<i>      epx = (double)(getsl(buf, 12)/100.0);
+</I>&gt;<i> @@ -68,11 +72,6 @@
+</I>&gt;<i>      session-&gt;gpsdata.fix.eps = (double)(getsl(buf, 40)/100.0);
+</I>&gt;<i>      session-&gt;gpsdata.pdop = (double)(getuw(buf, 44)/100.0);
+</I>&gt;<i>      session-&gt;gpsdata.satellites_used = getub(buf, 47);
+</I>&gt;<i> - -#ifdef NTPSHM_ENABLE
+</I>&gt;<i> - -    if (session-&gt;context-&gt;enable_ntpshm)
+</I>&gt;<i> - -     (void)ntpshm_put(session, session-&gt;gpsdata.sentence_time); /* TODO overhead */
+</I>&gt;<i> - -#endif
+</I>&gt;<i> - -
+</I>&gt;<i>      navmode = getub(buf, 10);
+</I>&gt;<i>      switch (navmode){
+</I>&gt;<i>      case UBX_MODE_3D:
+</I>&gt;<i> @@ -142,8 +141,12 @@
+</I>&gt;<i>      tow = getul(buf, 0);
+</I>&gt;<i>  //    session-&gt;gpsdata.sentence_time = gpstime_to_unix(gps_week, tow)
+</I>&gt;<i>  //                             - session-&gt;context-&gt;leap_seconds;
+</I>&gt;<i> +    nchan = getub(buf, 4);
+</I>&gt;<i> +    if (nchan &gt; 16) {
+</I>&gt;<i> +       gpsd_report(LOG_WARN, &quot;Invalid NAV SVINFO message, nchan exceeds maximum&quot;);
+</I>&gt;<i> +       return 0;
+</I>&gt;<i> +    }
+</I>&gt;<i>      gpsd_zero_satellites(&amp;session-&gt;gpsdata);
+</I>&gt;<i> - -    nchan = getub(buf, 4);
+</I>&gt;<i>      st = nsv = 0;
+</I>&gt;<i>      for (i = 0; i &lt; nchan; i++) {
+</I>&gt;<i>         int off = 8 + 12 * i;
+</I>&gt;<i> -----BEGIN PGP SIGNATURE-----
+</I>&gt;<i> Version: GnuPG v1.4.6 (GNU/Linux)
+</I>&gt;<i>
+</I>&gt;<i> iD8DBQFFnnBAbJa6vxmEnbARAmimAJ4poTRHOmxN35VbZllu/4l7LIYMQQCaAgxj
+</I>&gt;<i> 6A5v6VFDXu2w5VJgMOaclqE=
+</I>&gt;<i> =iJDH
+</I>&gt;<i> -----END PGP SIGNATURE-----
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005496.html">[Gpsd-dev] [PATCH] ubx protocol improvements
+</A></li>
+	<LI>Next message: <A HREF="005502.html">[Gpsd-dev] [PATCH] ubx protocol improvements
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5501">[ date ]</a>
+              <a href="thread.html#5501">[ thread ]</a>
+              <a href="subject.html#5501">[ subject ]</a>
+              <a href="author.html#5501">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

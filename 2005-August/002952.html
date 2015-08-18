@@ -1,0 +1,136 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] curses xgps
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20curses%20xgps&In-Reply-To=%3C20050818173141.GH3513%40www%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002940.html">
+   <LINK REL="Next"  HREF="002953.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] curses xgps</H1>
+    <B>Jeff Francis</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20curses%20xgps&In-Reply-To=%3C20050818173141.GH3513%40www%3E"
+       TITLE="[Gpsd-dev] curses xgps">jeff at gritch.org
+       </A><BR>
+    <I>Thu Aug 18 19:31:41 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002940.html">[Gpsd-dev] curses xgps
+</A></li>
+        <LI>Next message: <A HREF="002953.html">[Gpsd-dev] curses xgps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2952">[ date ]</a>
+              <a href="thread.html#2952">[ thread ]</a>
+              <a href="subject.html#2952">[ subject ]</a>
+              <a href="author.html#2952">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>  Thanks.  I've attached a patch that make ^C and the letter 'q' both
+quit the program.  Having fun getting back into the C systems coding
+routine.  It's been a long long long time...
+
+
+On Wed, Aug 17, 2005 at 08:45:07PM -0400, Eric S. Raymond wrote:
+&gt;<i> Andreas Schneider &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mail at cynapses.org</A>&gt;:
+</I>&gt;<i> &gt; Here is a patch to spin arround a select instead of polling every second.
+</I>&gt;<i> 
+</I>&gt;<i> Good change.  Merged.
+</I>&gt;<i> 
+</I>&gt;<i> Note: When you want a loop forever, use &quot;for (;;) {}&quot; rather than 
+</I>&gt;<i> &quot;do {} while (1);&quot;; the former avoids an always-true test on each loop.
+</I>&gt;<i> I changed your code to do this.
+</I>&gt;<i> -- 
+</I>&gt;<i> 		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="http://lists.berlios.de/mailman/listinfo/gpsd-dev">http://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>
+-- 
++--------------------------+
+|<i>   Jeff Francis - N0GQ    |
+</I>|<i> Snohomish, WA USA, Earth |
+</I>|<i>     <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>      |
+</I>|<i>  <A HREF="http://www.gritch.org">http://www.gritch.org</A>   |
+</I>+--------------------------+
+-------------- next part --------------
+Index: cgps.c
+===================================================================
+--- cgps.c	(revision 3141)
++++ cgps.c	(working copy)
+@@ -63,7 +63,6 @@
+ 
+     /* Put input attributes back the way they were. */
+     (void)echo();
+-    (void)noraw();
+ 
+     /* Done with curses. */
+     (void)endwin();
+@@ -251,6 +250,7 @@
+     int option;
+     char *arg = NULL, *colon1, *colon2, *device = NULL, *server = NULL, *port = DEFAULT_GPSD_PORT;
+     char *err_str = NULL;
++    char c;
+ 
+     struct timeval timeout;
+     fd_set rfds;
+@@ -346,8 +346,8 @@
+ 
+     /* Set up the curses screen (if using curses). */
+     (void)initscr();
+-    (void)raw();
+     (void)noecho();
++    (void)nodelay(stdscr,TRUE);
+     (void)signal(SIGINT,die);
+ 
+     /* Here's where updates go. */
+@@ -395,7 +395,15 @@
+ 	else {
+ 	    fprintf(stderr, &quot;cgps: No data\n&quot;);
+ 	}
++
++	/* Check for user input. */
++	c=getch();
++
++	/* Quit if 'q'. */
++	if(c=='q') {
++	  die(NULL);
++	}
++
+     }
+-    //die(0);
+ }
+ 
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002940.html">[Gpsd-dev] curses xgps
+</A></li>
+	<LI>Next message: <A HREF="002953.html">[Gpsd-dev] curses xgps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2952">[ date ]</a>
+              <a href="thread.html#2952">[ thread ]</a>
+              <a href="subject.html#2952">[ subject ]</a>
+              <a href="author.html#2952">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

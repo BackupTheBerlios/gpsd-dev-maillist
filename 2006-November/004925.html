@@ -1,0 +1,219 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] RFC: making xmlto a build requirement
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20RFC%3A%20making%20xmlto%20a%20build%20requirement&In-Reply-To=%3C454DEED1.6080906%40knitter.ch%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004924.html">
+   <LINK REL="Next"  HREF="004936.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] RFC: making xmlto a build requirement</H1>
+    <B>Andreas Stricker</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20RFC%3A%20making%20xmlto%20a%20build%20requirement&In-Reply-To=%3C454DEED1.6080906%40knitter.ch%3E"
+       TITLE="[Gpsd-dev] RFC: making xmlto a build requirement">andy at knitter.ch
+       </A><BR>
+    <I>Sun Nov  5 15:01:53 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004924.html">[Gpsd-dev] RFC: making xmlto a build requirement
+</A></li>
+        <LI>Next message: <A HREF="004936.html">[Gpsd-dev] RFC: making xmlto a build requirement
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4925">[ date ]</a>
+              <a href="thread.html#4925">[ thread ]</a>
+              <a href="subject.html#4925">[ subject ]</a>
+              <a href="author.html#4925">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Gary E. Miller wrote:
+&gt;&gt;<i> On 11/4/06, Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt; wrote:
+</I>&gt;&gt;&gt;<i> Unless you have this xls installed in your catalog this will trigger a
+</I>&gt;&gt;&gt;<i> download from sourceforge for the template.  This will be a problem for
+</I>&gt;&gt;&gt;<i> anyone developing w/o a live internet connection.  Then SF can be slow,
+</I>&gt;&gt;&gt;<i> unreachable, or just plain down and that hangs the make.  I would prefer
+</I>&gt;&gt;&gt;<i> that any dependencies be kept local.
+</I>&gt;&gt;<i> xsltproc --nonet
+</I>
+Yes I thought about the --nonet switch.
+
+&gt;<i> Yes, but then the xsltproc will fail to convert the xml to a man page.
+</I>&gt;<i> The solution is to provide the .xsl file with the rest of gpsd.
+</I>
+I don't like to ship too much third party elements. This makes the
+tarball bigger and needs some maintenance.
+
+&gt;&gt;<i> FYI, this XSL should come with any reasonable distribution of
+</I>&gt;&gt;<i> xsltproc. Then again, this is all about coping with unreasonable
+</I>&gt;&gt;<i> configurations, isn't it? ;)
+</I>&gt;<i> 
+</I>&gt;<i> Yep.
+</I>
+Yep.
+
+Ok, here is the next version. I don't need the stylesheet link in
+the .xml files anymore. I've added a conftest for xsltproc to fail
+if the is no local usable stylesheet. If a local stylesheet is
+shipped, this is the place to add it conditionally.
+I think we should not add more complexity.
+
+Cheers, Andy
+
+Index: configure.ac
+===================================================================
+- --- configure.ac	(Revision 3783)
++++ configure.ac	(Arbeitskopie)
+@@ -508,7 +508,44 @@
+   AC_MSG_RESULT([no])
+ fi
+
++dnl Test for XSLT processor (xsltproc or xmlto)
++AC_CHECK_PROG(WITH_XSLTPROC,[xsltproc],[yes],[no])
++MANGENERATOR=
++MANTARGET=
++MANFLAGS=
++if test &quot;x$WITH_XSLTPROC&quot; = &quot;xyes&quot;; then
++    AC_MSG_CHECKING([whether xsltproc knows about docbook xsl])
++    DOCBOOK_URI='<A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A>'
++    cat &gt;conftest.xml &lt;&lt;_EOF
++        &lt;refentry id=&quot;foo.1&quot;&gt;&lt;/refentry&gt;
++_EOF
++    if xsltproc --nonet --noout &quot;$DOCBOOK_URI&quot; conftest.xml &gt;/dev/null 2&gt;&amp;1; then
++        MANGENERATOR=xsltproc
++        MANTARGET=&quot;$DOCBOOK_URI&quot;
++        MANFLAGS=&quot;--nonet&quot;
++        AC_MSG_RESULT([yes])
++    else
++        AC_MSG_RESULT([no])
++    fi
++    rm -f conftest.xml
++fi
++if test x&quot;$MANGENERATOR&quot; = x; then
++    AC_CHECK_PROG(WITH_XMLTO,[xmlto],[yes],[no])
++    if test &quot;x$WITH_XMLTO&quot; = &quot;xyes&quot;; then
++        MANGENERATOR=xmlto
++        MANTARGET=man
++        MANFLAGS=
++    else
++        AC_MSG_WARN([Neither xsltproc nor xmlto works: I will not build man pages])
++    fi
++fi
++AM_CONDITIONAL([HAVE_XSLT_PROCESSOR],
++               [test x&quot;$MANGENERATOR&quot; != x])
++AC_SUBST(MANGENERATOR)
++AC_SUBST(MANTARGET)
++AC_SUBST(MANFLAGS)
+
++
+ dnl Output the configuration summary
+ echo &quot;&quot;
+ echo &quot;==========================================&quot;
+Index: Makefile.am
+===================================================================
+- --- Makefile.am	(Revision 3783)
++++ Makefile.am	(Arbeitskopie)
+@@ -184,48 +184,47 @@
+ 	rtcm-104.5 \
+ 	srec.5
+
++if HAVE_XSLT_PROCESSOR
++
++.xml.1:
++	$(MANGENERATOR) $(MANFLAGS) $(MANTARGET) $&lt;
++
++.xml.3:
++	$(MANGENERATOR) $(MANFLAGS) $(MANTARGET) $&lt;
++
++.xml.8:
++	$(MANGENERATOR) $(MANFLAGS) $(MANTARGET) $&lt;
++
+ gpsd.8: gpsd.xml
+- -	-$(XMLTO) man gpsd.xml
+
+ gps.1 xgps.1 xgpsspeed.1 cgps.1 cgpxlogger.1: gps.xml
+- -	-$(XMLTO) man gps.xml
+
+ libgps.3: libgps.xml
+- -	-$(XMLTO) man libgps.xml
+
+ libgpsmm.3: libgpsmm.xml
+- -	-$(XMLTO) man libgpsmm.xml
+
+ libgpsd.3: libgpsd.xml
+- -	-$(XMLTO) man libgpsd.xml
+
+ gpsctrl.1: gpsctrl.xml
+- -	-$(XMLTO) man gpsctrl.xml
+
+ gpsprof.1: gpsprof.xml
+- -	-$(XMLTO) man gpsprof.xml
+
+ gpsfake.1: gpsfake.xml
+- -	-$(XMLTO) man gpsfake.xml
+
+ sirfmon.1: sirfmon.xml
+- -	-$(XMLTO) man sirfmon.xml
+
+ gpspipe.1: gpspipe.xml
+- -	-$(XMLTO) man gpspipe.xml
+
+ rtcmdecode.1: rtcmdecode.xml
+- -	-$(XMLTO) man rtcmdecode.xml
+
+ rtcm-104.5: rtcm-104.xml
+- -	-$(XMLTO) man rtcm-104.xml
+
+ srec.5: srec.xml
+- -	-$(XMLTO) man srec.xml
+
+ gpsflash.1: gpsflash.xml
+- -	-$(XMLTO) man gpsflash.xml
+
++endif
++
+ include_HEADERS = gps.h gpsd.h libgpsmm.h rtcm.h gpsd_config.h
+
+ EXTRA_DIST = \
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.5 (GNU/Linux)
+
+iD8DBQFFTe7ObJa6vxmEnbARAudBAKCFZ9CaoXM4HXXgLKLDBAxSyr+mjwCfZYb+
+9O9Qs3qSyu2gopXpu7dytNs=
+=yz59
+-----END PGP SIGNATURE-----
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004924.html">[Gpsd-dev] RFC: making xmlto a build requirement
+</A></li>
+	<LI>Next message: <A HREF="004936.html">[Gpsd-dev] RFC: making xmlto a build requirement
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4925">[ date ]</a>
+              <a href="thread.html#4925">[ thread ]</a>
+              <a href="subject.html#4925">[ subject ]</a>
+              <a href="author.html#4925">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

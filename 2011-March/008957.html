@@ -1,0 +1,111 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-users] 2.96 has shipped
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-users%5D%202.96%20has%20shipped&In-Reply-To=%3CAANLkTi%3DoNkJ%3D_x8RX8j2jLFx52sMbuhb1d3D%3DnYm-RS%2B%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008952.html">
+   <LINK REL="Next"  HREF="008960.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-users] 2.96 has shipped</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-users%5D%202.96%20has%20shipped&In-Reply-To=%3CAANLkTi%3DoNkJ%3D_x8RX8j2jLFx52sMbuhb1d3D%3DnYm-RS%2B%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [Gpsd-users] 2.96 has shipped">thomas at mich.com
+       </A><BR>
+    <I>Tue Mar 22 13:12:09 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008952.html">[Gpsd-dev] [Gpsd-users] 2.96 has shipped
+</A></li>
+        <LI>Next message: <A HREF="008960.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8957">[ date ]</a>
+              <a href="thread.html#8957">[ thread ]</a>
+              <a href="subject.html#8957">[ subject ]</a>
+              <a href="author.html#8957">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Tue, Mar 22, 2011 at 5:10 AM, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+</I>&gt;&gt;<i> Yo Eric!
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On Mon, 21 Mar 2011, Eric Raymond wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> &gt; I may write a shm-based interface for C clients. &#160;Not a major undertaking;
+</I>&gt;&gt;<i> &gt; less than 30 lines of daemon-side code, I think.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Yeah, but we need to figure out a portable solution to memory barriers first.
+</I>&gt;<i>
+</I>&gt;<i> Why won't a semaphore be enough?
+</I>
+I assume this is a broadcast mechanism - gpsd writes, any number of
+clients read.
+
+Also, is the data going to be NOFLOAT?  The internal structures are
+one thing but if you are going to do a shared memory segment, it will
+have to be one or the other.
+
+Semaphores are the most obvious mechanism but it starts to defeat the
+simplicity of using a SHM.  You need both the readers and writers to
+use the semaphore, and you have to do it so readers won't block the
+writer nor each other, at least not for very long, and that gets
+tricky.  Linux's RCU mechanism doesn't have a user analog I've found.
+
+The way I did it for the Nokia tablets (so my instrument cluster could
+pick out speed, direction, etc whenever without blicking) is to use
+the 32 bit integers for everything so reads were atomic, and use a
+memory mapped file (mmap.h).  I did it with an actual file in /tmp,
+but it should be just as doable with a file descriptor from a named
+shm from shm_open.
+
+I would do an lseek to 0 then a write of the entire structure in the
+daemon - this would update the mapped page atomically since it was
+smaller than a page or sector (multicore might be a problem, but the
+shm usage was noncritical).  The readers would have the file mmaped to
+a local structure (python made this really easy).  On a processor with
+native floating point (so it reads the float or double atomically) you
+could use those instead of the 32 bit integers.
+
+(quick explanation - I could do userland memcpy to the memory segment,
+but that is interruptable whereas the internal memcpy in the OS write
+won't be, at least not in a way that will leave it partially written
+for a reader).
+
+There can still be problems since it is volatile, but the routines
+would need to check if anything changes, e.g. number of satellites.
+Conversely, the readers could also do the lseek and read() and get the
+data atomically.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008952.html">[Gpsd-dev] [Gpsd-users] 2.96 has shipped
+</A></li>
+	<LI>Next message: <A HREF="008960.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8957">[ date ]</a>
+              <a href="thread.html#8957">[ thread ]</a>
+              <a href="subject.html#8957">[ subject ]</a>
+              <a href="author.html#8957">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

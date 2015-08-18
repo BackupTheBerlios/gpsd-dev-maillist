@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Hello from Tim and gspd ntp interface issues
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Hello%20from%20Tim%20and%20gspd%20ntp%20interface%20issues&In-Reply-To=%3CKJEAKDJOMACLJIHFIMPFIEPACAAA.tj%40telensa.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006463.html">
+   <LINK REL="Next"  HREF="006466.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Hello from Tim and gspd ntp interface issues</H1>
+    <B>Tim Jackson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Hello%20from%20Tim%20and%20gspd%20ntp%20interface%20issues&In-Reply-To=%3CKJEAKDJOMACLJIHFIMPFIEPACAAA.tj%40telensa.com%3E"
+       TITLE="[Gpsd-dev] Hello from Tim and gspd ntp interface issues">tj at telensa.com
+       </A><BR>
+    <I>Fri Mar  6 13:58:50 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006463.html">[Gpsd-dev] Hello from Tim and gspd ntp interface issues
+</A></li>
+        <LI>Next message: <A HREF="006466.html">[Gpsd-dev] garmin serial
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6465">[ date ]</a>
+              <a href="thread.html#6465">[ thread ]</a>
+              <a href="subject.html#6465">[ subject ]</a>
+              <a href="author.html#6465">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+
+-----Original Message-----
+From: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev-bounces at lists.berlios.de</A>
+[mailto:<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev-bounces at lists.berlios.de</A>]On Behalf Of Eric S. Raymond
+Sent: 06 March 2009 00:24
+To: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>
+Subject: Re: [Gpsd-dev] Hello from Tim and gspd ntp interface issues
+
+
+Tim Jackson &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">tj at telensa.com</A>&gt;:
+&gt;<i> I attach tweaked (from 2.38) versions of  ntpshm and libgpsd_core with my
+</I>&gt;<i> fixes for these issues
+</I>
+For the convenience of our PPS experts, I have diffed your code against
+2.38.  This mattered because libgpsd_core.c had changed somewhat since
+Derived patch is enclosed.
+
+Two questions for Tim:
+
+1. Does this capture all the changes you intended?
+
+The two files I attached (ie ntpshm.c and libgpsd_core.c) do contain all my
+mods
+
+2. What does the magic number in that condition guard mean? Looks like
+it's supposed to be one tick over a half a second, but a comment explaining
+why would be a good thing.
+
+Fair enough, I put in a magic number because that seemed to be the style of
+the code ...(!) see lines above my mod
+
+The value comes from the logic and values in the preceeding code see 11
+lines up
+	&quot;if (duration &gt; 499000 &amp;&amp; duration &lt; 501000&quot;
+The preceeding code calculates two values at each edge of the 1pps signal
+&quot;cycle&quot; that is the period to the preceeding equivalent edge and &quot;duration&quot;
+that is the period to the preceeding alternate edge. These values are then
+used to determine what kind of pulse we have. Firstly if is cycle short we
+have a 5Hz signal, then if we have a one second cycle  is it a 1:1 duty cyle
+(duration is between 499000 and 501000)? If none of these then we have the
+'normal case' where its a one second cycle with uneven duty cycle. We only
+want to call ntpshm_pps on the active edge. This is assumed to be the case
+where (for either polarity case) the preceeding period (duration) is greater
+than half a second. However if duration is between 499000 and 501000 we have
+already decided its a square wave so I simply used the upper limit here. In
+fact, of course, I could have said 500000 because between 500000 and 501000
+you should never reach the test.
+
+I attach a more commented version hope this is ok
+
+
+--
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: libgpsd_core.c
+Type: application/octet-stream
+Size: 30016 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090306/30a9ea7e/attachment.obj">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090306/30a9ea7e/attachment.obj</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006463.html">[Gpsd-dev] Hello from Tim and gspd ntp interface issues
+</A></li>
+	<LI>Next message: <A HREF="006466.html">[Gpsd-dev] garmin serial
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6465">[ date ]</a>
+              <a href="thread.html#6465">[ thread ]</a>
+              <a href="subject.html#6465">[ subject ]</a>
+              <a href="author.html#6465">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

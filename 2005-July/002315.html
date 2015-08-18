@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd-2.26, cannot parse NMEA sentences that are not perfect
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd-2.26%2C%20cannot%20parse%20NMEA%20sentences%20that%20are%20not%20perfect&In-Reply-To=%3C043JgeVAc3504S03.1120598762%40uwdvg003.cms.usa.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002320.html">
+   <LINK REL="Next"  HREF="002319.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd-2.26, cannot parse NMEA sentences that are not perfect</H1>
+    <B>Petr Slansky</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd-2.26%2C%20cannot%20parse%20NMEA%20sentences%20that%20are%20not%20perfect&In-Reply-To=%3C043JgeVAc3504S03.1120598762%40uwdvg003.cms.usa.net%3E"
+       TITLE="[Gpsd-dev] gpsd-2.26, cannot parse NMEA sentences that are not perfect">slansky at usa.net
+       </A><BR>
+    <I>Tue Jul  5 23:26:02 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002320.html">[Gpsd-dev] gpsd-2.26 crash
+</A></li>
+        <LI>Next message: <A HREF="002319.html">[Gpsd-dev] gpsd-2.26, cannot parse NMEA sentences that are not perfect
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2315">[ date ]</a>
+              <a href="thread.html#2315">[ thread ]</a>
+              <a href="subject.html#2315">[ subject ]</a>
+              <a href="author.html#2315">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hello,
+
+EverMore based GPS sends in NMEA some ID string, that looks like this:
+
+$PEMT,100,05.42g,100303,001,05,1,20,15,08,0,0,2,1*52
+
+This ID is send every 10 minutes, it contains firmware version, etc, it could
+be used to identify EverMore GPS (like Hicom Hi-203E).
+
+This is perfect situation. More often, this string is send in the way it
+interface with sentence that is just sending.
+
+Like this:
+$GPGGA,002820.000,$PEMT,100,05.42g,100303,001,05,1,20,15,08,0,0,2,1*52
+
+GPSD cannot recognize PEMT sentense in this case. It is valid but not
+recognised. Could be NMEA parser modified to recognise this sentense? From the
+last '$' character to the end of line?
+
+More examples of demaged records:
+
+$GPGGA,002820.000,$PEMT,100,05.42g,100303,001,05,1,20,15,08,0,0,2,1*52
+$GPGGA,003821.000,5004.6857,N,01425.0898,E$PEMT,100,05.42g,100303,001,05,1,20,15
+,08,0,0,2,1*52
+$GPGGA,010$PEMT,100,05.42g,100303,001,05,1,20,15,08,0,0,2,1*52
+$GPGGA,011$PEMT,100,05.42g,100303,001,05,1,20,15,08,0,0,2,1*52
+$GPGGA,012832.000,$PEMT,100,05.42g,100303,001,05,1,20,15,08,0,0,2,1*52
+$GPGGA,013$PEMT,100,05.42g,100303,001,05,1,20,15,08,0,0,2,1*52
+$GPGGA,01$PEMT,100,05.42g,100303,001,05,1,20,15,08,0,0,2,1*52
+$GPGGA,020$PEMT,100,05.42g,100303,001,05,1,20,15,08,0,0,2,1*52
+$GPGGA,195839.000,5004.6482,N,01$PEMT,100,05.42g,100303,001,05,1,20,15,08,0,0,2,
+1*52
+$GPGGA,235815.000$PEMT,100,05.42g,100303,001,05,1,20,15,08,0,0,2,1*52
+
+Some statistic: from 63 PEMT sentences were 42 formated in bad way. Too
+many... It looks like EvermMore bug but it could be handled in GPSD and other
+GPS could have similar problem too.
+
+Regards,
+Petr
+
+
+---------------------------------
+  Petr Slansky, <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">slansky at usa.net</A>
+---------------------------------
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002320.html">[Gpsd-dev] gpsd-2.26 crash
+</A></li>
+	<LI>Next message: <A HREF="002319.html">[Gpsd-dev] gpsd-2.26, cannot parse NMEA sentences that are not perfect
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2315">[ date ]</a>
+              <a href="thread.html#2315">[ thread ]</a>
+              <a href="subject.html#2315">[ subject ]</a>
+              <a href="author.html#2315">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

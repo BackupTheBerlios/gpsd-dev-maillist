@@ -1,0 +1,219 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [RFC][PATCH] Add device activation/deactivation hook
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BRFC%5D%5BPATCH%5D%20Add%20device%20activation/deactivation%20hook&In-Reply-To=%3C1294692513-25069-1-git-send-email-fercerpav%40gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008483.html">
+   <LINK REL="Next"  HREF="008486.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [RFC][PATCH] Add device activation/deactivation hook</H1>
+    <B>Paul Fertser</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BRFC%5D%5BPATCH%5D%20Add%20device%20activation/deactivation%20hook&In-Reply-To=%3C1294692513-25069-1-git-send-email-fercerpav%40gmail.com%3E"
+       TITLE="[Gpsd-dev] [RFC][PATCH] Add device activation/deactivation hook">fercerpav at gmail.com
+       </A><BR>
+    <I>Mon Jan 10 21:48:33 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008483.html">[Gpsd-dev] Subframe JSON
+</A></li>
+        <LI>Next message: <A HREF="008486.html">[Gpsd-dev] [RFC][PATCH] Add device activation/deactivation hook
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8484">[ date ]</a>
+              <a href="thread.html#8484">[ thread ]</a>
+              <a href="subject.html#8484">[ subject ]</a>
+              <a href="author.html#8484">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>This adds possibility for a system integrator to define custom hooks that
+are executed on device activation and deactivation.
+
+Since there's no standard way to control power consumption of different gps
+devices out there, the designers of embedded appliances usually provide a
+system-specific way to do power management of a GPS module. This might be
+e.g. a power_on sysfs node. This patch adds an opportunity for a system
+integrator to transparently enable power for device as soon as any client
+starts requesting data from it and to disable power on deactivation (which
+normally happens 60 seconds after the last client who needed it
+disconnected).
+
+Signed-off-by: Paul Fertser &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">fercerpav at gmail.com</A>&gt;
+---
+While testing this patch i noticed one case when activate/deactivate is
+assymmetric: it happens when i try to activate a device but it's not
+recognised. In this case deactivate will not be called even after the 60
+seconds timeout.
+
+Other question i have no idea how to answer is about the way of using
+$(sysconfdir) during documentation generation so that the path in the
+binary would be consistent with the path in the docs.
+
+ Makefile.am    |    4 ++--
+ gpsd.h-tail    |    2 ++
+ gpsd.xml       |   14 ++++++++++++++
+ libgpsd_core.c |   27 +++++++++++++++++++++++++++
+ 4 files changed, 45 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile.am b/Makefile.am
+index b7ad6a5..88d5bd4 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -6,7 +6,7 @@
+ #
+ 
+ # The deheader production uses this to pass in stop-on-error flags
+-CFLAGS += $(MORECFLAGS)
++CFLAGS += $(MORECFLAGS) -DSYSCONFDIR=\&quot;$(sysconfdir)\&quot;
+ 
+ ACLOCAL_AMDFLAGS = -I m4
+ 
+@@ -607,7 +607,7 @@ libgps: libgps_core.c gps.h .libs/libgps.a
+ 
+ 
+ # Report splint warnings
+-SPLINTOPTS = -I/usr/include/dbus-1.0/ $(LIBUSB_CFLAGS) +quiet
++SPLINTOPTS = -I/usr/include/dbus-1.0/ -DSYSCONFDIR=\&quot;$(sysconfdir)\&quot; $(LIBUSB_CFLAGS) +quiet
+ splint: gpsd.h packet_names.h
+ 	@echo &quot;Running splint on daemon...&quot;
+ 	-splint $(SPLINTOPTS) -exportlocal -redef $(gpsd_c_sources)
+diff --git a/gpsd.h-tail b/gpsd.h-tail
+index af1fc30..91da352 100644
+--- a/gpsd.h-tail
++++ b/gpsd.h-tail
+@@ -672,6 +672,8 @@ extern float roundf(float x);
+ void cfmakeraw(struct termios *);
+ #endif /* defined(__CYGWIN__) */
+ 
++#define DEVICEHOOKPATH SYSCONFDIR&quot;/gpsd/device-hook&quot;
++
+ #endif /* _GPSD_H_ */
+ // Local variables:
+ // mode: c
+diff --git a/gpsd.xml b/gpsd.xml
+index b474e11..75e06cf 100644
+--- a/gpsd.xml
++++ b/gpsd.xml
+@@ -303,6 +303,13 @@ added by a control-socket command (see &lt;xref linkend='devices'/&gt; for
+ details on this).  Daemon startup will abort with an error if neither
+ any devices nor a control socket are specified.&lt;/para&gt;
+ 
++&lt;para&gt;When a device is activated (i.e. a client requests data from it),
++gpsd attempts to execute a hook from
++&lt;filename&gt;/etc/gpsd/device-hook&lt;/filename&gt; with first command line argument
++set to the pathname of the device and the second to
++&lt;option&gt;ACTIVATE&lt;/option&gt;. On deactivatation it does the same passing
++&lt;option&gt;DEACTIVATE&lt;/option&gt; for the second argument.&lt;/para&gt;
++
+ &lt;para&gt;Clients communicate with the daemon via textual request and
+ responses. It is a bad idea for applications to speak the protocol
+ directly: rather, they should use the
+@@ -1866,6 +1873,13 @@ device if no GPS device was specified on the command line does not
+ exist.&lt;/para&gt;
+ &lt;/listitem&gt;
+ &lt;/varlistentry&gt;
++&lt;varlistentry&gt;
++&lt;term&gt;&lt;filename&gt;/etc/gpsd/device-hook&lt;/filename&gt;&lt;/term&gt;
++&lt;listitem&gt;
++&lt;para&gt;Optional file containing the device activation/deactivation script.
++&lt;/para&gt;
++&lt;/listitem&gt;
++&lt;/varlistentry&gt;
+ &lt;!--
+ &lt;varlistentry&gt;
+ &lt;term&gt;&lt;filename&gt;/usr/share/gpsd/dgpsip-servers&lt;/filename&gt;&lt;/term&gt;
+diff --git a/libgpsd_core.c b/libgpsd_core.c
+index c8d1c62..c246bae 100644
+--- a/libgpsd_core.c
++++ b/libgpsd_core.c
+@@ -8,6 +8,10 @@
+ #include &lt;math.h&gt;
+ #include &lt;string.h&gt;
+ #include &lt;fcntl.h&gt;
++#include &lt;sys/types.h&gt;
++#include &lt;sys/stat.h&gt;
++#include &lt;stdio.h&gt;
++#include &lt;stdlib.h&gt;
+ #include &lt;libgen.h&gt;
+ #ifndef S_SPLINT_S
+ #include &lt;sys/socket.h&gt;
+@@ -95,6 +99,27 @@
+ extern const struct gps_type_t oncore_binary;
+ #endif
+ 
++static void gpsd_run_device_hook(char *device_name, char *hook)
++{
++    struct stat statbuf;
++    if (stat(DEVICEHOOKPATH, &amp;statbuf) == -1)
++	gpsd_report(LOG_PROG, &quot;no %s present, skipped running hook\n&quot;,
++	    DEVICEHOOKPATH); 
++    else {
++	char buf[PATH_MAX];
++	int status;
++	(void)snprintf(buf, sizeof(buf), &quot;%s %s %s&quot;,
++	    DEVICEHOOKPATH, device_name, hook);
++	gpsd_report(LOG_INF, &quot;running %s\n&quot;, buf);
++	status = system(buf);
++	if (status == -1)
++	    gpsd_report(LOG_ERROR, &quot;error running %s\n&quot;, buf);
++	else
++	    gpsd_report(LOG_INF, &quot;%s returned %d\n&quot;, DEVICEHOOKPATH,
++		WEXITSTATUS(status));
++    }
++}
++
+ int gpsd_switch_driver(struct gps_device_t *session, char *type_name)
+ {
+     const struct gps_type_t **dp;
+@@ -195,6 +220,7 @@ void gpsd_deactivate(struct gps_device_t *session)
+     gpsd_report(LOG_INF, &quot;closing GPS=%s (%d)\n&quot;,
+ 		session-&gt;gpsdata.dev.path, session-&gt;gpsdata.gps_fd);
+     (void)gpsd_close(session);
++    gpsd_run_device_hook(session-&gt;gpsdata.dev.path, &quot;DEACTIVATE&quot;);
+ }
+ 
+ #if defined(PPS_ENABLE) &amp;&amp; defined(TIOCMIWAIT)
+@@ -646,6 +672,7 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
+ int gpsd_activate(struct gps_device_t *session)
+ /* acquire a connection to the GPS device */
+ {
++    gpsd_run_device_hook(session-&gt;gpsdata.dev.path, &quot;ACTIVATE&quot;);
+     /* special case: source may be a URI to a remote GNSS or DGPS service */
+     if (netgnss_uri_check(session-&gt;gpsdata.dev.path)) {
+ 	session-&gt;gpsdata.gps_fd = netgnss_uri_open(session-&gt;context,
+-- 
+1.7.2.2
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008483.html">[Gpsd-dev] Subframe JSON
+</A></li>
+	<LI>Next message: <A HREF="008486.html">[Gpsd-dev] [RFC][PATCH] Add device activation/deactivation hook
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8484">[ date ]</a>
+              <a href="thread.html#8484">[ thread ]</a>
+              <a href="subject.html#8484">[ subject ]</a>
+              <a href="author.html#8484">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

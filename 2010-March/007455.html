@@ -1,0 +1,109 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] ncurses probelm
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ncurses%20probelm&In-Reply-To=%3C20100327141128.GB9350%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007451.html">
+   <LINK REL="Next"  HREF="007456.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] ncurses probelm</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ncurses%20probelm&In-Reply-To=%3C20100327141128.GB9350%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] ncurses probelm">esr at thyrsus.com
+       </A><BR>
+    <I>Sat Mar 27 15:11:28 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007451.html">[Gpsd-dev] bashisms
+</A></li>
+        <LI>Next message: <A HREF="007456.html">[Gpsd-dev] [PATCH] Fix gpsdecode compilation when one of rtcm104	versions is	disabled
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7455">[ date ]</a>
+              <a href="thread.html#7455">[ thread ]</a>
+              <a href="subject.html#7455">[ subject ]</a>
+              <a href="author.html#7455">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;: 
+&gt;<i> I think I know what's wrong (with the ncurses configuration):
+</I>
+I think you do, too.  I've been staring at this report, and the truth
+is that (a) I loathe having to touch autoconf at the best of times,
+and (b) I am way too chicken to try modifying it to do the right thing
+in a NetBSD environment without a live test machine.
+
+&gt;<i> This is bogus, because it can find -lncurses without finding the
+</I>&gt;<i> headers, and then build with HAVE_NCURSES=no which means 'curses.h' is
+</I>&gt;<i> included instead, rather than no curses support, and then link against
+</I>&gt;<i> ncurses anyway.
+</I>&gt;<i> 
+</I>&gt;<i> What I think we want to do is:
+</I>&gt;<i> 
+</I>&gt;<i>    search for one of
+</I>&gt;<i> 
+</I>&gt;<i>       ncurses.h and -lncurses
+</I>&gt;<i>       curses.h and -lcurses
+</I>&gt;<i> 
+</I>&gt;<i>     if either found, include/link consistently (preferring ncurses probably)
+</I>&gt;<i> 
+</I>&gt;<i>     if none found, then don't even try to use any curses procedures, and
+</I>&gt;<i>     omit whole programs if that's what it takes.
+</I>&gt;<i> 
+</I>&gt;<i> So above we need to have the -lncurses CHECK_LIB include ncurses.h in
+</I>&gt;<i> addition, so it fails if that isn't found.  And then to check for
+</I>&gt;<i> curses.h/-lcurses, and to define HAVE_CURSES intead.  Then code should
+</I>&gt;<i> switch on those.
+</I>
+Yep. But you're either going to have to do this yourself or talk ckuethe
+into it; I ain't touching it.  I will test your mods to make sure they 
+don't break Linux configuration.
+ 
+&gt;<i> Perhaps there should be a feature test for the ACS stuff; I'm not sure
+</I>&gt;<i> how far back that goes.
+</I>
+I am.  There are no live curses implementations left that don't have it;
+Keith Bostic and I put a bullet through the head of BSD curses to ensure
+this would be true way back around 1993, when I was working on ncurses.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 189 bytes
+Desc: Digital signature
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100327/065adaf9/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100327/065adaf9/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007451.html">[Gpsd-dev] bashisms
+</A></li>
+	<LI>Next message: <A HREF="007456.html">[Gpsd-dev] [PATCH] Fix gpsdecode compilation when one of rtcm104	versions is	disabled
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7455">[ date ]</a>
+              <a href="thread.html#7455">[ thread ]</a>
+              <a href="subject.html#7455">[ subject ]</a>
+              <a href="author.html#7455">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,117 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-users] Release of 2.35 is imminent
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-users%5D%20Release%20of%202.35%20is%20imminent&In-Reply-To=%3C20090105011415.GA24448%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006256.html">
+   <LINK REL="Next"  HREF="006223.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-users] Release of 2.35 is imminent</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-users%5D%20Release%20of%202.35%20is%20imminent&In-Reply-To=%3C20090105011415.GA24448%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] [Gpsd-users] Release of 2.35 is imminent">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Jan  5 02:14:15 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006256.html">[Gpsd-dev] bug with callbacks and gpsd_close
+</A></li>
+        <LI>Next message: <A HREF="006223.html">[Gpsd-dev] rtcm 3.0
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6219">[ date ]</a>
+              <a href="thread.html#6219">[ thread ]</a>
+              <a href="subject.html#6219">[ subject ]</a>
+              <a href="author.html#6219">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Sascha Silbe &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">sascha-ml-gis-gpsd at silbe.org</A>&gt;:
+&gt;<i> On Wed, Dec 12, 2007 at 07:19:20AM -0500, Eric S. Raymond wrote:
+</I>&gt;<i>
+</I>&gt;<i> [Bugs on BerliOS]
+</I>&gt;&gt;<i> I think I've addressed and closed both of yours now.  I've also added
+</I>&gt;&gt;<i> &quot;check the Berlios bug tracker&quot; to our pre-release procedure.
+</I>&gt;<i> Thanks!
+</I>&gt;<i>
+</I>&gt;<i> [gps.py: self.valid not set correctly]
+</I>&gt;&gt;<i> One of the Berlios reports implied that the submitter *wasn't* seeing  
+</I>&gt;&gt;<i> behavior
+</I>&gt;&gt;<i> like this. Can you reconstruct your gripe using the svn head code?
+</I>&gt;<i> Having just refactored my GPS handling code to do all the buffering  
+</I>&gt;<i> inside a separate class, I've been reminded of the hacks I had to do to  
+</I>&gt;<i> get around self.valid not being set properly. Especially annoying for  
+</I>&gt;<i> the time attribute, where gps.isnan() returns True even for valid data.
+</I>&gt;<i> Just had a quick look at the SVN version, it doesn't seem fixed. Some of  
+</I>&gt;<i> the code parts that caught my eye (all in __unpack()):
+</I>&gt;<i>
+</I>&gt;&gt;<i>   if len(fields) &gt; 14:
+</I>&gt;&gt;<i>       self.fix.mode = default(14, int)
+</I>&gt;&gt;<i>   else:
+</I>&gt;&gt;<i>       if not isnan(self.fix.altitude):
+</I>&gt;&gt;<i>           self.fix.mode = MODE_2D
+</I>&gt;&gt;<i>       else:
+</I>&gt;&gt;<i>           self.fix.mode = MODE_3D
+</I>&gt;<i>
+</I>&gt;<i> The second condition seems to be inverted (2D if altitude IS set, 3D  
+</I>&gt;<i> otherwise). It's probably never used though, since O= lines seem to  
+</I>&gt;<i> always include the mode field.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;&gt;<i>    if self.fix.eph:
+</I>&gt;&gt;<i>        self.valid |= HERR_SET
+</I>&gt;<i>
+</I>&gt;<i> Since default() sets undefined values to NaN (i.e. 1e10), this will  
+</I>&gt;<i> cause HERR_SET to always be set in self.valid. Same for many other  
+</I>&gt;<i> parameters.
+</I>&gt;<i>
+</I>&gt;<i> Also, self.valid is only set, never reset, even if values are set to  
+</I>&gt;<i> NaN. I don't think this is on purpose, since it makes the attribute  
+</I>&gt;<i> rather useless.
+</I>&gt;<i>
+</I>&gt;<i> Time handling is suspicious, too: For 'd' lines self.utc and  
+</I>&gt;<i> self.gps_time are set; for 'o' lines self.fix.time is set. But in both  
+</I>&gt;<i> cases TIME_SET is set on self.valid.
+</I>
+I've made some small fixes for 2.38 that should address these problems.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 189 bytes
+Desc: Digital signature
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090104/c36647fc/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090104/c36647fc/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006256.html">[Gpsd-dev] bug with callbacks and gpsd_close
+</A></li>
+	<LI>Next message: <A HREF="006223.html">[Gpsd-dev] rtcm 3.0
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6219">[ date ]</a>
+              <a href="thread.html#6219">[ thread ]</a>
+              <a href="subject.html#6219">[ subject ]</a>
+              <a href="author.html#6219">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

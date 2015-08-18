@@ -1,0 +1,151 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH 7/9] gps.py: Improve setting the valid bits in O	responses
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%207/9%5D%20gps.py%3A%20Improve%20setting%20the%20valid%20bits%20in%20O%0A%09responses&In-Reply-To=%3C1242993621-6082-6-git-send-email-bbolli%40ewanet.ch%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006723.html">
+   <LINK REL="Next"  HREF="006729.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH 7/9] gps.py: Improve setting the valid bits in O	responses</H1>
+    <B>Beat Bolli</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%207/9%5D%20gps.py%3A%20Improve%20setting%20the%20valid%20bits%20in%20O%0A%09responses&In-Reply-To=%3C1242993621-6082-6-git-send-email-bbolli%40ewanet.ch%3E"
+       TITLE="[Gpsd-dev] [PATCH 7/9] gps.py: Improve setting the valid bits in O	responses">bbolli at ewanet.ch
+       </A><BR>
+    <I>Fri May 22 14:00:19 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006723.html">[Gpsd-dev] [PATCH 6/9] gps.py: Allow host and port command line	parameters
+</A></li>
+        <LI>Next message: <A HREF="006729.html">[Gpsd-dev] [PATCH 6/9] gps.py: Allow host and port command line parameters
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6724">[ date ]</a>
+              <a href="thread.html#6724">[ thread ]</a>
+              <a href="subject.html#6724">[ subject ]</a>
+              <a href="author.html#6724">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Instead of checking each value twice for NaN, this commit integrates
+setting the valid bit with the conversion in function default().
+
+Is it correct that there's no valid bit for the track error (fix.epd)?
+---
+ gps.py |   55 +++++++++++++++++++++++++++----------------------------
+ 1 files changed, 27 insertions(+), 28 deletions(-)
+
+diff --git a/gps.py b/gps.py
+index 01a4887..56c5e75 100755
+--- a/gps.py
++++ b/gps.py
+@@ -306,47 +306,46 @@ class gps(gpsdata):
+                         self.fix.mode = MODE_NO_FIX
+                     else:
+                         self.timings.sentence_tag = fields[0]
+-                        def default(i, cnv=float):
++                        def default(i, vbit=0, cnv=float):
+                             if fields[i] == '?':
+                                 return NaN
+                             else:
+-                                return cnv(fields[i])
++                                try:
++                                    value = cnv(fields[i])
++                                except ValueError:
++                                    return NaN
++                                self.valid |= vbit
++                                return value
++                        # clear all valid bits that might be set again below
++                        self.valid &amp;= ~(
++                            TIME_SET | TIMERR_SET | LATLON_SET | ALTITUDE_SET |
++                            HERR_SET | VERR_SET | TRACK_SET | SPEED_SET |
++                            CLIMB_SET | SPEEDERR_SET | CLIMBERR_SET | MODE_SET
++                        )
+                         self.utc = fields[1]
+-                        self.fix.time = default(1)
++                        self.fix.time = default(1, TIME_SET)
+                         if not isnan(self.fix.time):
+                             self.utc = isotime(self.fix.time)
+-                        self.fix.ept = default(2)
+-                        self.fix.latitude = default(3)
++                        self.fix.ept = default(2, TIMERR_SET)
++                        self.fix.latitude = default(3, LATLON_SET)
+                         self.fix.longitude = default(4)
+-                        self.fix.altitude = default(5)
+-                        self.fix.eph = default(6)
+-                        self.fix.epv = default(7)
+-                        self.fix.track = default(8)
+-                        self.fix.speed = default(9)
+-                        self.fix.climb = default(10)
++                        self.fix.altitude = default(5, ALTITUDE_SET)
++                        self.fix.eph = default(6, HERR_SET)
++                        self.fix.epv = default(7, VERR_SET)
++                        self.fix.track = default(8, TRACK_SET)
++                        self.fix.speed = default(9, SPEED_SET)
++                        self.fix.climb = default(10, CLIMB_SET)
+                         self.fix.epd = default(11)
+-                        self.fix.eps = default(12)
+-                        self.fix.epc = default(13)
++                        self.fix.eps = default(12, SPEEDERR_SET)
++                        self.fix.epc = default(13, CLIMBERR_SET)
+                         if len(fields) &gt; 14:
+-                            self.fix.mode = default(14, int)
++                            self.fix.mode = default(14, MODE_SET, int)
+                         else:
+-                            if isnan(self.fix.altitude):
++                            if self.valid &amp; ALTITUDE_SET:
+                                 self.fix.mode = MODE_2D
+                             else:
+                                 self.fix.mode = MODE_3D
+-                        self.valid = TIME_SET | TIMERR_SET | LATLON_SET | MODE_SET
+-                        if self.fix.mode == MODE_3D:
+-                            self.valid |= ALTITUDE_SET | CLIMB_SET
+-                        if not isnan(self.fix.eph):
+-                            self.valid |= HERR_SET
+-                        if not isnan(self.fix.epv):
+-                            self.valid |= VERR_SET
+-                        if not isnan(self.fix.track):
+-                            self.valid |= TRACK_SET | SPEED_SET
+-                        if not isnan(self.fix.eps):
+-                            self.valid |= SPEEDERR_SET
+-                        if not isnan(self.fix.epc):
+-                            self.valid |= CLIMBERR_SET
++                            self.valid |= MODE_SET
+                 elif cmd == 'P':
+                     (self.fix.latitude, self.fix.longitude) = map(float, data.split())
+                     self.valid |= LATLON_SET
+-- 
+1.6.1
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006723.html">[Gpsd-dev] [PATCH 6/9] gps.py: Allow host and port command line	parameters
+</A></li>
+	<LI>Next message: <A HREF="006729.html">[Gpsd-dev] [PATCH 6/9] gps.py: Allow host and port command line parameters
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6724">[ date ]</a>
+              <a href="thread.html#6724">[ thread ]</a>
+              <a href="subject.html#6724">[ subject ]</a>
+              <a href="author.html#6724">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

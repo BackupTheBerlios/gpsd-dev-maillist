@@ -1,0 +1,176 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH 5/5] added &quot;json_noise_dump&quot; to send noise	statistics
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%205/5%5D%20added%20%22json_noise_dump%22%20to%20send%20noise%0A%09statistics&In-Reply-To=%3C1295499308.17762.38142.camel%40rudd%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008509.html">
+   <LINK REL="Next"  HREF="008511.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH 5/5] added &quot;json_noise_dump&quot; to send noise	statistics</H1>
+    <B>Thomas Sprinkmeier</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%205/5%5D%20added%20%22json_noise_dump%22%20to%20send%20noise%0A%09statistics&In-Reply-To=%3C1295499308.17762.38142.camel%40rudd%3E"
+       TITLE="[Gpsd-dev] [PATCH 5/5] added &quot;json_noise_dump&quot; to send noise	statistics">thomas.sprinkmeier at cohdawireless.com
+       </A><BR>
+    <I>Thu Jan 20 05:55:08 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008509.html">[Gpsd-dev] [PATCH 4/5] Added JSON parsing code for NOISE.
+</A></li>
+        <LI>Next message: <A HREF="008511.html">[Gpsd-dev] [PATCH 6/7] Added NOISE_IS flag.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8510">[ date ]</a>
+              <a href="thread.html#8510">[ thread ]</a>
+              <a href="subject.html#8510">[ subject ]</a>
+              <a href="author.html#8510">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>server-side JSON encoding of GPGST data.
+
+I'm missing the initialisation code (doing that manually during testing for now.
+
+When I run
+
+$ sudo ./gpsd -F /var/run/gpsd.sock -P /var/run/gpsd.pid -n -N -D 3 -G /dev/ttyGPS
+
+I get the GST information parsed:
+
+gpsd:DATA: GST: utc = 45248.00, rms = 21.00, maj = nan, min = nan, ori = nan, lat = 3.60, lon = 1.20, alt = 6.60
+
+but nothing client-side yet.
+
+
+Still working on that, but I'd appreciate any feedback on what I have so far.
+
+
+
+Thomas
+
+---
+ gps_json.h  |    1 +
+ gpsd.c      |   14 ++++++++++++++
+ gpsd_json.c |   35 +++++++++++++++++++++++++++++++++++
+ 3 files changed, 50 insertions(+), 0 deletions(-)
+
+diff --git a/gps_json.h b/gps_json.h
+index 8202a7d..6c1bd27 100644
+--- a/gps_json.h
++++ b/gps_json.h
+@@ -15,6 +15,7 @@ extern &quot;C&quot; {
+ #endif
+ char *json_stringify(/*@out@*/char *, size_t, /*@in@*/const char *);
+ void json_tpv_dump(const struct gps_data_t *, /*@out@*/char *, size_t);
++void json_noise_dump(const struct gps_data_t *, /*@out@*/char *, size_t);
+ void json_sky_dump(const struct gps_data_t *, /*@out@*/char *, size_t);
+ void json_att_dump(const struct gps_data_t *, /*@out@*/char *, size_t);
+ void json_device_dump(const struct gps_device_t *, /*@out@*/char *, size_t);
+diff --git a/gpsd.c b/gpsd.c
+index 4163535..4cd735b 100644
+--- a/gpsd.c
++++ b/gpsd.c
+@@ -1166,6 +1166,20 @@ static void handle_request(struct subscriber_t *sub,
+ 	}
+ 	if (reply[strlen(reply) - 1] == ',')
+ 	    reply[strlen(reply) - 1] = '\0';	/* trim trailing comma */
++	(void)strlcat(reply, &quot;],\&quot;noise_stats\&quot;:[&quot;, replylen);
++	for (devp = devices; devp &lt; devices + MAXDEVICES; devp++) {
++	    if (allocated_device(devp) &amp;&amp; subscribed(sub, devp)) {
++		if ((devp-&gt;observed &amp; GPS_TYPEMASK) != 0) {
++		    json_noise_dump(&amp;devp-&gt;gpsdata,
++				  reply + strlen(reply),
++				  replylen - strlen(reply));
++		    rstrip(reply);
++		    (void)strlcat(reply, &quot;,&quot;, replylen);
++		}
++	    }
++	}
++	if (reply[strlen(reply) - 1] == ',')
++	    reply[strlen(reply) - 1] = '\0';	/* trim trailing comma */
+ 	(void)strlcat(reply, &quot;],\&quot;skyviews\&quot;:[&quot;, replylen);
+ 	for (devp = devices; devp &lt; devices + MAXDEVICES; devp++) {
+ 	    if (allocated_device(devp) &amp;&amp; subscribed(sub, devp)) {
+diff --git a/gpsd_json.c b/gpsd_json.c
+index d949970..94be268 100644
+--- a/gpsd_json.c
++++ b/gpsd_json.c
+@@ -199,6 +199,41 @@ void json_tpv_dump(const struct gps_data_t *gpsdata,
+     (void)strlcat(reply, &quot;}\r\n&quot;, sizeof(reply) - strlen(reply));
+ }
+ 
++void json_noise_dump(const struct gps_data_t *gpsdata,
++		   /*@out@*/ char *reply, size_t replylen)
++{
++    assert(replylen &gt; 2);
++    (void)strlcpy(reply, &quot;{\&quot;class\&quot;:\&quot;NOISE\&quot;,&quot;, replylen);
++    (void)snprintf(reply + strlen(reply),
++		   replylen - strlen(reply),
++		   &quot;\&quot;tag\&quot;:\&quot;%s\&quot;,&quot;,
++		   gpsdata-&gt;tag[0] != '\0' ? gpsdata-&gt;tag : &quot;-&quot;);
++    (void)snprintf(reply + strlen(reply),
++		   replylen - strlen(reply),
++		   &quot;\&quot;device\&quot;:\&quot;%s\&quot;,&quot;, gpsdata-&gt;dev.path);
++#define ADD_NOISE_FIELD(tag, field) do {                     \
++    if (isnan(gpsdata-&gt;noise_stats.field) == 0)              \
++	(void)snprintf(reply + strlen(reply),                \
++		       replylen - strlen(reply),             \
++		       &quot;\&quot;&quot; tag &quot;\&quot;:%.3f,&quot;, gpsdata-&gt;noise_stats.field); \
++    } while(0)
++
++    ADD_NOISE_FIELD(&quot;time&quot;,   utctime);
++    ADD_NOISE_FIELD(&quot;rms&quot;,    rms_deviation);
++    ADD_NOISE_FIELD(&quot;major&quot;,  smajor_deviation);
++    ADD_NOISE_FIELD(&quot;minor&quot;,  sminor_deviation);
++    ADD_NOISE_FIELD(&quot;orient&quot;, smajor_orientation);
++    ADD_NOISE_FIELD(&quot;lat&quot;,    lat_err_deviation);
++    ADD_NOISE_FIELD(&quot;longt&quot;,  longt_err_deviation);
++    ADD_NOISE_FIELD(&quot;alt&quot;,    alt_err_deviation);
++
++#undef ADD_NOISE_FIELD
++
++    if (reply[strlen(reply) - 1] == ',')
++	reply[strlen(reply) - 1] = '\0';	/* trim trailing comma */
++    (void)strlcat(reply, &quot;}\r\n&quot;, sizeof(reply) - strlen(reply));
++}
++
+ void json_sky_dump(const struct gps_data_t *datap,
+ 		   /*@out@*/ char *reply, size_t replylen)
+ {
+-- 
+1.7.0.4
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008509.html">[Gpsd-dev] [PATCH 4/5] Added JSON parsing code for NOISE.
+</A></li>
+	<LI>Next message: <A HREF="008511.html">[Gpsd-dev] [PATCH 6/7] Added NOISE_IS flag.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8510">[ date ]</a>
+              <a href="thread.html#8510">[ thread ]</a>
+              <a href="subject.html#8510">[ subject ]</a>
+              <a href="author.html#8510">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

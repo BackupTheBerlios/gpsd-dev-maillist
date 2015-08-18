@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] ntp-pps
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntp-pps&In-Reply-To=%3CPine.LNX.4.64.0609141023410.7734%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004327.html">
+   <LINK REL="Next"  HREF="004354.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] ntp-pps</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntp-pps&In-Reply-To=%3CPine.LNX.4.64.0609141023410.7734%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] ntp-pps">gem at rellim.com
+       </A><BR>
+    <I>Thu Sep 14 19:41:58 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004327.html">[Gpsd-dev] ntp-pps
+</A></li>
+        <LI>Next message: <A HREF="004354.html">[Gpsd-dev] ntp-pps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4329">[ date ]</a>
+              <a href="thread.html#4329">[ thread ]</a>
+              <a href="subject.html#4329">[ subject ]</a>
+              <a href="author.html#4329">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Rob!
+
+On Thu, 14 Sep 2006, Rob Janssen wrote:
+
+&gt;<i> &gt; Agreed.  I also see anothre problem in the saniuty checks in the ntp-pps
+</I>&gt;<i> &gt; code that makes assumptions about the relationship between fix time and
+</I>&gt;<i> &gt; pps time.  After we get this I'll work on those.
+</I>&gt;<i> &gt;
+</I>&gt;<i>
+</I>&gt;<i> I hope you don't mind that I mention that it was designed this way, and
+</I>&gt;<i> that I prefer you to lay down and discuss the &quot;problems&quot; you find in it
+</I>&gt;<i> over abusing your commit privileges and modifying the code to relax the
+</I>&gt;<i> designed checks (as you did before).
+</I>
+Well, I only wanted to work on one problem at a time, but since you ae
+in a hurry again lets do it.
+
+This is community debugging.  You have had a long time to fix it and it
+is still broken.
+
+&gt;<i> The code was written with the intention to first have the NTP daemon lock
+</I>&gt;<i> to the message-based time and be well within a second (I chose 400ms
+</I>&gt;<i> because I feel it should stay far away from possible plus-or-minus one
+</I>&gt;<i> second confusion), and after that lock to the nearest second using the PPS
+</I>&gt;<i> pulse.
+</I>
+Well, see that is my problem.  The time from my PPS to my NMEA time
+seems to be about 550mS (as gpsd computes it with the fudge factors).
+That has been pretty rock solid for a long time.  So the +/- 400mS is
+just plain wrong for my setup.
+
+&gt;<i> When you allow NTP to lock onto PPS and at the same time allow the
+</I>&gt;<i> message-based time to be 800ms off (for example), it is very likely that
+</I>&gt;<i> the system clock locks off-by-one-second.
+</I>
+I do not see how this can be so.  I have my NMEA time set to a few mS.
+and it is in total agreement with my other chimers.  When my pps gets more
+than 10mS out my ntp throws it away.  Yet your sanity check throws away
+my good data.  My trust in the ntp sanity checks is borne out by my
+real world experience.  Conversely the existing checks have been proven,
+in my case, to be flat wrong.
+
+PPS has no idea of WHAT second this is, so the worst damage it could do is
+move things under the one second window fixed by the NMEA time.
+
+&gt;<i> There are hardcoded offsets from message time to real time in the code.  I
+</I>&gt;<i> am not too happy with that, because the offsets are not the same for every
+</I>&gt;<i> receiver.  But additional offset can be added in the ntp config file using
+</I>&gt;<i> fudge, when required.
+</I>
+And as I recall that was an agreed solution, but I have not seen any working
+code from you.  Talk is cheap, show us some code that fixes it your way
+or let someone else fix it.  Leaving it broken is not an option.
+
+My solution would be to remove the fudge factors from gpsd and let the
+tuning and sanity checking mostly be done by the ntpd code which is what it
+was designed to do.
+
+If you have a solution then please commit some code.  Quickly.
+
+&gt;<i> Maybe there should be a survey to determine the optimal offset hardwired
+</I>&gt;<i> in the code for every protocol supported (the median value for all offsets
+</I>&gt;<i> reported for different receivers).
+</I>
+Well, right now the code adds 675mS and them I have to subtract back out
+550mS in ntp.  So the real delay is about 125mS.  The ntp offset for my
+pps is .0003 mS.  Unless I set PUT_MAX_OFFSET to 600000 my pps is locked
+out.  Notice how 550mS is not conveniently in +/- 400mS ?
+
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFFCZRp8KZibdeR3qURAutQAJ9ywT5FzqV2j3QbnxZ0S7T4L0HNXgCgmUr2
+Zho1vsKX9BzC7aqq8h8pOOE=
+=qDCQ
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004327.html">[Gpsd-dev] ntp-pps
+</A></li>
+	<LI>Next message: <A HREF="004354.html">[Gpsd-dev] ntp-pps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4329">[ date ]</a>
+              <a href="thread.html#4329">[ thread ]</a>
+              <a href="subject.html#4329">[ subject ]</a>
+              <a href="author.html#4329">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

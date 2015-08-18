@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd now hunts baud rates
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20now%20hunts%20baud%20rates&In-Reply-To=%3C20050213220904.GA6367%40us.netrek.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000626.html">
+   <LINK REL="Next"  HREF="000627.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd now hunts baud rates</H1>
+    <B>James Cameron</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20now%20hunts%20baud%20rates&In-Reply-To=%3C20050213220904.GA6367%40us.netrek.org%3E"
+       TITLE="[Gpsd-dev] gpsd now hunts baud rates">quozl at us.netrek.org
+       </A><BR>
+    <I>Sun Feb 13 23:09:04 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000626.html">[Gpsd-dev] Re: gpsd now hunts baud rates
+</A></li>
+        <LI>Next message: <A HREF="000627.html">[Gpsd-dev] Success!  (was: gpsd now hunts baud rates)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#624">[ date ]</a>
+              <a href="thread.html#624">[ thread ]</a>
+              <a href="subject.html#624">[ subject ]</a>
+              <a href="author.html#624">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sun, Feb 13, 2005 at 10:56:18AM -0500, Eric S. Raymond wrote:
+&gt;<i> For those who understand serial programming better than I, a question:
+</I>&gt;<i> what are the input variables in this settle time?  Is it likely to be
+</I>&gt;<i> just a function of UART performance, or does host-processor speed
+</I>&gt;<i> matter?
+</I>
+It should have nothing to do with host-processor speed, provided you're
+talking about something faster than a 33MHz 486.
+
+It is more to do with the serial port hardware implementation and the
+operating system drivers.  Most motherboard ports these days on the PC
+architecture are 16550 UARTs, but some are different.  They also
+implement the 16550-style differently.  They have an internal buffer,
+which can only be cleared (if I recall correctly) by reading it.
+
+The baud rate is used to divide an oscillator into time periods; the
+derived baud rate clock.  This is a wave that determines when the bits
+are sampled.  It's usually ten (or more) cycles per bit time.  Another
+two divisions of this clock are used to align the unpacking to the bit
+edges that are experienced on the input.  Yet another division of the
+clock is used to count the number of bits in the byte.
+
+When the baud rate is changed, a new divisor for the oscillator is sent
+to the UART (as an I/O memory port write, see drivers/serial/8250.c:1701
+of 2.6.10).  This changes all the derived clocks.  The changes are not
+synchronised.  If data is arriving at the time, the resulting data read
+from the chip buffer is considered unpredictable.  The UART may also
+report framing errors.  There's a settling time during which the clocks
+are invalid, which varies according to the chip model.  Some chips clear
+their buffers, some do not.  The kernel may also have characters
+buffered; but these will have been sampled at the prior baud rate.
+
+A framing error is when the UART expected to see a stop bit but instead
+saw activity.  Framing errors do not normally occur with correctly
+operating devices set on the right baud rate.  Framing errors will occur
+frequently if the baud rate of the receiver (the UART) is set higher
+than the baud rate of the transmitter (the GPS).  The converse is not
+always true; it depends on the length of the data being transmitted.
+You may be able to add a heuristic to detect framing errors.
+
+Automatic baud rate detection (ABR, or autobaud) is where a receiving
+device figures it all out from someone hitting Return or Enter; the
+combination of the misread data and the framing error flag can be enough
+to determine the baud rate predictably.  VMS did this.  ;-)  This
+technique isn't an option for NMEA; the range of characters you might
+get is quite large.
+
+It is possible for a UART to become synchronised to the incoming bit
+stream a few bits out of kilter.  This is especially possible with NMEA
+if the data being sent is 8-bits but with the most significant bit
+clear.  The UART is looking for a particular pattern in order to accept
+a byte, and the matching bit patterns exist in some bit streams at an
+offset to what the transmitter intended.
+
+Do you only test baud rate?  Other factors are number of bits in the
+word, parity existence and polarity, and number of stop bits.  There can
+be multiple working combinations.  There can be combinations that work
+for most bytes read and then fail on one.  Verify the NMEA checksum.
+
+Do you shut off the receiver before changing the baud rate?  Toggle
+CREAD, read all data received in a second, flush, then change the baud
+rate, then toggle CREAD back again.  This will reduce the chances of
+unpredictable data; the flood gates will open in the middle of a bit
+stream and the UART should resynchronise more predictably.
+
+-- 
+James Cameron    mailto:<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">quozl at us.netrek.org</A>     <A HREF="http://quozl.netrek.org/">http://quozl.netrek.org/</A>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000626.html">[Gpsd-dev] Re: gpsd now hunts baud rates
+</A></li>
+	<LI>Next message: <A HREF="000627.html">[Gpsd-dev] Success!  (was: gpsd now hunts baud rates)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#624">[ date ]</a>
+              <a href="thread.html#624">[ thread ]</a>
+              <a href="subject.html#624">[ subject ]</a>
+              <a href="author.html#624">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

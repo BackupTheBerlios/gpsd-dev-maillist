@@ -1,0 +1,105 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from  meters/sec to knots
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Re%3A%20accuracy%20in%20conversion%20from%20%0A%20meters/sec%20to%20knots&In-Reply-To=%3Cp06230915c0af7fe31e66%40%5B192.168.11.10%5D%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003696.html">
+   <LINK REL="Next"  HREF="003592.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from  meters/sec to knots</H1>
+    <B>Robin L Darroch</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Re%3A%20accuracy%20in%20conversion%20from%20%0A%20meters/sec%20to%20knots&In-Reply-To=%3Cp06230915c0af7fe31e66%40%5B192.168.11.10%5D%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from  meters/sec to knots">robin at spade-men.com
+       </A><BR>
+    <I>Fri Jun  9 21:57:25 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003696.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+        <LI>Next message: <A HREF="003592.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3703">[ date ]</a>
+              <a href="thread.html#3703">[ thread ]</a>
+              <a href="subject.html#3703">[ subject ]</a>
+              <a href="author.html#3703">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>At 3:10 +0800 10/6/06, Robin L Darroch wrote:
+&gt;<i>At 0:18 -0400 9/6/06, Eric S. Raymond wrote:
+</I>&gt;&gt;<i>Robin L Darroch &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>&gt;:
+</I>&gt;&gt;&gt;<i> Careful about making claims of changes that will &quot;break existing
+</I>&gt;&gt;&gt;<i> apps&quot; - remember, no-one who hasn't downloaded and built from SVN in
+</I>&gt;&gt;&gt;<i> the past &lt;24hrs has a daemon which does clear-at-start-of-cycle
+</I>&gt;&gt;&gt;<i> correctly... so I think it's pretty fair to say that no existing app
+</I>&gt;&gt;&gt;<i> could depend on CaSoC, or it would be broken already.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>But only broken when connected to a device that issues GGA at start
+</I>&gt;&gt;<i>of cycle.  That's pretty rare; even leaving out the SiRF 80%, most
+</I>&gt;&gt;<i>NMEA GPSes start cycle with GPRMC.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>
+I've just been going through a patch I'm working on for my new proposed solution to the buffer-clearing option (as discussed, for future expansion)... and discovered that one key line has still not been removed.  Therefore, for all the discussion we've been having about &quot;clear at start of cycle&quot;, what people with the release versions have actually been getting is &quot;clear after every timestamped packet that checks if it should clear&quot;.  In existing release versions prior to 2.33, that meant &quot;clear on every RMC&quot;, and in version 2.33 it means &quot;clear on every timestamped packet&quot;.  The trick is, the following part of every patch on this issue that I've sent is required to prevent gpsd setting CYCLE_START_SET every time it checks a timestamped packet:
+
+Index: libgpsd_core.c
+===================================================================
+--- libgpsd_core.c	(revision 3329)
++++ libgpsd_core.c	(working copy)
+@@ -574,7 +573,6 @@
+ 				      (char *)session-&gt;outbuffer,
+ 				      (size_t)session-&gt;outbuflen, 2);
+ 	/*@ -nullstate @*/
+-	session-&gt;gpsdata.sentence_time = NAN;
+ 	session-&gt;gpsdata.sentence_length = session-&gt;outbuflen;
+ 	session-&gt;gpsdata.d_recv_time = timestamp();
+ 
+
+So, pending some testing, my new patch will allow us two new experiments for the price of one: true clear-at-start-of-cycle, and never-clear.
+
+I hadn't realised until just now that that line hadn't been removed from the trunk, and I'll be the first to admit that it weakens my claim that hardly anyone would be affected by changing away from the current broken logic - people with GPS units that return RMC at start of cycle have been getting clear-at-start-of-cycle.  People that have GPS units that begin cycles with another sentence have been getting mixed-fix data, cleared mid-cycle.  Now, they all get clear-after-every-timestamped-packet.
+
+Anyway, if my patch shortly to be posted is accepted, we'll have both the desired options, and for the time being it will be up to the person who installs it to choose which they prefer.
+
+Cheers,
+Robin
+-- 
+
+-------------------------------------------------------------------------
+ Robin L. Darroch - PO Box 2715, South Hedland WA 6722 - +61 421 503 966
+      <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at darroch.id.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at nyca.org.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>
+    
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003696.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+	<LI>Next message: <A HREF="003592.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3703">[ date ]</a>
+              <a href="thread.html#3703">[ thread ]</a>
+              <a href="subject.html#3703">[ subject ]</a>
+              <a href="author.html#3703">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

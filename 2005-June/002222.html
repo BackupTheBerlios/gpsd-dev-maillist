@@ -1,0 +1,92 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Fix from future?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Fix%20from%20future%3F&In-Reply-To=%3C14242.213.84.187.156.1119597831.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002221.html">
+   <LINK REL="Next"  HREF="002233.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Fix from future?</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Fix%20from%20future%3F&In-Reply-To=%3C14242.213.84.187.156.1119597831.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] Fix from future?">gpsd at xs4all.nl
+       </A><BR>
+    <I>Fri Jun 24 09:23:51 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002221.html">[Gpsd-dev] Fix from future?
+</A></li>
+        <LI>Next message: <A HREF="002233.html">[Gpsd-dev] Fix from future?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2222">[ date ]</a>
+              <a href="thread.html#2222">[ thread ]</a>
+              <a href="subject.html#2222">[ subject ]</a>
+              <a href="author.html#2222">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+</I>&gt;&gt;<i> Well, I think many applications would prefer not to bother with
+</I>&gt;&gt;<i> buffering.
+</I>&gt;&gt;<i>  It would be best when gpsd somehow does this, and xgps shows stable
+</I>&gt;&gt;<i> data
+</I>&gt;&gt;<i> without its own buffering.
+</I>&gt;<i>
+</I>&gt;<i> The daemon is the wrong place for it, I think.  Suppose some clients want
+</I>&gt;<i> buffering but others want minimum latency?  Seems to me that would be
+</I>&gt;<i> best handled in the client library.
+</I>
+IMHO, the way the data is shipped now by the daemon (everyting in a single
+packet) suggests that it is a complete set.  A ? in a single location
+infers that the value in that location has gone from known to unknown.
+If you buffer at the client side, there is no real way to know (for each
+separate value) whether the receiver has announced that a certain value is
+no longer valid. So you need to solely rely upon timeouts.
+When you do the buffering at the daemon side, you can (depending on the
+receiver protocol in use) more or less quickly communicate any &quot;unknown&quot;
+status to the client.
+For really purist clients there could be a command to &quot;turn off buffering&quot;.
+
+Of course the data sent from daemon to client should have been in the form
+of keyed, not positional, parameters so you can communicate a change in
+location without inferring that you no longer know its accuracy (for
+example).
+With such a protocol, buffering at the client side would be much easier
+and you would not lose any info.  Sending eph=? would be different from
+not sending an eph at all.
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002221.html">[Gpsd-dev] Fix from future?
+</A></li>
+	<LI>Next message: <A HREF="002233.html">[Gpsd-dev] Fix from future?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2222">[ date ]</a>
+              <a href="thread.html#2222">[ thread ]</a>
+              <a href="subject.html#2222">[ subject ]</a>
+              <a href="author.html#2222">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

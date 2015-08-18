@@ -1,0 +1,118 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Cross-architecture portability in bits.h -- heads up, Rob
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Cross-architecture%20portability%20in%20bits.h%20--%20heads%20up%2C%20Rob&In-Reply-To=%3C200506101656.j5AGu996030374%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002104.html">
+   <LINK REL="Next"  HREF="002081.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Cross-architecture portability in bits.h -- heads up, Rob</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Cross-architecture%20portability%20in%20bits.h%20--%20heads%20up%2C%20Rob&In-Reply-To=%3C200506101656.j5AGu996030374%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Cross-architecture portability in bits.h -- heads up, Rob">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Fri Jun 10 18:56:09 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002104.html">[Gpsd-dev] The gpsd bug list is empty
+</A></li>
+        <LI>Next message: <A HREF="002081.html">[Gpsd-dev] Cross-architecture portability in bits.h -- heads      up, Rob
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2078">[ date ]</a>
+              <a href="thread.html#2078">[ thread ]</a>
+              <a href="subject.html#2078">[ subject ]</a>
+              <a href="author.html#2078">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rob, in bits.h you wrote:
+
+- * it would be possible to use types like int16_t from header files to enforce
+- * these assumptions, but splint does not understand those and will scream.
+- * also, using such explicitly sized types usually causes warnings at many
+- * other places in a program (like when calling library routines).  we will
+- * need to consider this again when we want to port to an architecture which
+- * implements differently sized types.
+
+This can be fixed.  I'm now running with a version of bits.h that
+looks like this:
+
+#define getsb(buf, off)	((int8_t)buf[GET_ORIGIN+(off)])
+#define getub(buf, off)	((u_int8_t)buf[GET_ORIGIN+(off)])
+#define getsw(buf, off)	((int16_t)(((u_int16_t)getub(buf, off) &lt;&lt; 8) | (u_int16_t)getub(buf, off+1)))
+#define getuw(buf, off)	((u_int16_t)(((u_int16_t)getub(buf, off) &lt;&lt; 8) | (u_int16_t)getub(buf, off+1)))
+#define getsl(buf, off)	((int32_t)(((u_int16_t)getuw(buf, off) &lt;&lt; 16) | getuw(buf, off+2)))
+#define getul(buf, off)	((u_int32_t)(((u_int16_t)getuw(buf, off) &lt;&lt; 16) | getuw(buf, off+2)))
+#define getsL(buf, off)	((int64_t)(((u_int64_t)getul(buf, off) &lt;&lt; 32) | getul(buf, off+4)))
+#define getuL(buf, off)	((u_int64_t)(((u_int64_t)getul(buf, off) &lt;&lt; 32) | getul(buf, off+4)))
+#define getf(buf, off)	(i_f.i = getsl(buf, off), i_f.f)
+#define getd(buf, off)	(l_d.l = getsL(buf, off), l_d.d)
+
+and, to shut splint up, directives in .splintrc like this:
+
+-Dint8_t=char
+-Du_int8_t=uchar
+-Dint16_t=short
+-Du_int16_t=ushort
+-Dint32_t=int
+-Du_int32_t=uint
+-Dint64_t=long
+-Du_int64_t=ulong
+
+This change passes all regression tests and splints clean.
+
+This appears to me to do what you were aiming at -- both enforcing the
+correct type widths and pacifying splint.  And I didn't even have to
+tell splint anyting questionable, except for telling it the 64-bit
+types are long rather than long long. (I haven't found a way to get a
+2-word type accepted in the .splintrc syntax yet.)
+
+I have not yet committed this because:
+
+(a) You said &quot;using such explicitly sized types usually causes warnings at many
+other places in a program (like when calling library routines)&quot;, and
+
+(b) I consider that you own bits.h.
+
+Given that neither the compiler nor splint seems to object to this
+setup, is (a) still a potential problem in your view?   Do you see
+any reason not to commit this?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+Love your country, but never trust its government.
+	-- Robert A. Heinlein.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002104.html">[Gpsd-dev] The gpsd bug list is empty
+</A></li>
+	<LI>Next message: <A HREF="002081.html">[Gpsd-dev] Cross-architecture portability in bits.h -- heads      up, Rob
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2078">[ date ]</a>
+              <a href="thread.html#2078">[ thread ]</a>
+              <a href="subject.html#2078">[ subject ]</a>
+              <a href="author.html#2078">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

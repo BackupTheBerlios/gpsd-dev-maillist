@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] The long-awaited buffering white paper
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20The%20long-awaited%20buffering%20white%20paper&In-Reply-To=%3C446D8802.2090306%40esitcom.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003492.html">
+   <LINK REL="Next"  HREF="003489.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] The long-awaited buffering white paper</H1>
+    <B>Rapha&#235;l Jacquot</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20The%20long-awaited%20buffering%20white%20paper&In-Reply-To=%3C446D8802.2090306%40esitcom.org%3E"
+       TITLE="[Gpsd-dev] The long-awaited buffering white paper">sxpert at esitcom.org
+       </A><BR>
+    <I>Fri May 19 10:55:30 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003492.html">[Gpsd-dev] The long-awaited buffering white paper
+</A></li>
+        <LI>Next message: <A HREF="003489.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3503">[ date ]</a>
+              <a href="thread.html#3503">[ thread ]</a>
+              <a href="subject.html#3503">[ subject ]</a>
+              <a href="author.html#3503">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Eric S. Raymond wrote:
+&gt;<i> If GPS hardware were ideally designed, we'd get exactly one report
+</I>&gt;<i> like this per cycle from our device. That's what we get from SiRF-II
+</I>&gt;<i> protocol (all PVT data is in packet type 02) and with the Zodiac
+</I>&gt;<i> protocol (all PVT data is in the type 1000 packet).  These, together,
+</I>&gt;<i> account for a share of the GPS market that is 80% and rising in 2006.
+</I>
+interesting. that's what the antaris modules from u-blox appear to do
+with their proprietary messages :
+
+====
+
+PUBX 00 - Lat/Long Position Data
+
+$PUBX,00,hhmmss.ss,Latitude,N,Longitude,E,AltRef,NavStat,Hacc,Vacc,SOG,COG,Vvel,ageC,HDOP,VDOP,TDOP,GU,RU,DR,*cs&lt;CR&gt;&lt;LF&gt;
+
+example:
+$PUBX,00,081350.00,4717.113210,N,00833.915187,E,546.589,G3,2.1,2.0,0.007,77.52,0.007,,0.92,1.19,0.77,9,0,0*5F&lt;CR&gt;&lt;LF&gt;
+
+
+====
+
+PUBX 01 - UTM Position Data
+The $PUBX,01 is a UTM (Universal Transverse Mercator projection) version
+of the $PUBX,00 sentence.
+
+$PUBX,01,hhmmss.ss,Easting,E,Northing,N,AltMSL,NavStat,Hacc,Vacc,SOG,COG,Vvel,ageC,HDOP,VDOP,TDOP,GU,RU,DR,*cs&lt;CR&gt;&lt;LF&gt;
+
+example:
+$PUBX,01,075142.00,467125.245,E,5236949.763,N,498.235,G3,2.1,1.9,0.005,85.63,0.000,,0.78,0.90,0.52,12,0,0*65
+
+
+====
+[there's no PUBX 02 apparently]
+
+PUBX 03 - Satellite Status
+
+$PUBX,03,GT{,ID,s,AZM,EL,SN,LK},*cs&lt;CR&gt;&lt;LF&gt;
+
+example:
+$PUBX,03,11,23,-,,,45,010,29,-,,,46,013,07,-,,,42,015,08,U,067,31,42,025,10,U,195,33,46,026,18,U,326,08,39,026,17,-,,,32,015,26,U,306,66,48,025,27,U,073,10,36,026,28,U,089,61,46,024,15,-,,,39,014*0D
+
+
+====
+
+PUBX 04 - Time of Day and Clock Information
+
+$PUBX,04,hhmmss.ss,ddmmyy,UTC_TOW,week,reserved,Clk_B,Clk_D,PG,*cs&lt;CR&gt;&lt;LF&gt;
+
+exemple:
+$PUBX,04,073731.00,091202,113851.00,1196,113851.00,1930035,-2660.664,43,*3C&lt;CR&gt;&lt;LF&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003492.html">[Gpsd-dev] The long-awaited buffering white paper
+</A></li>
+	<LI>Next message: <A HREF="003489.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3503">[ date ]</a>
+              <a href="thread.html#3503">[ thread ]</a>
+              <a href="subject.html#3503">[ subject ]</a>
+              <a href="author.html#3503">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

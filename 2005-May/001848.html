@@ -1,0 +1,180 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] making gosdrive haoot
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20making%20gosdrive%20haoot&In-Reply-To=%3C20050523213031.GA24239%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001847.html">
+   <LINK REL="Next"  HREF="001849.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] making gosdrive haoot</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20making%20gosdrive%20haoot&In-Reply-To=%3C20050523213031.GA24239%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] making gosdrive haoot">esr at thyrsus.com
+       </A><BR>
+    <I>Mon May 23 23:30:31 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001847.html">[Gpsd-dev] making gosdrive haoot
+</A></li>
+        <LI>Next message: <A HREF="001849.html">[Gpsd-dev] making gosdrive haoot
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1848">[ date ]</a>
+              <a href="thread.html#1848">[ thread ]</a>
+              <a href="subject.html#1848">[ subject ]</a>
+              <a href="author.html#1848">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+&gt;<i> Would it be possible to be a little more patient and allow people to send
+</I>&gt;<i> in reports and/or to find problems?
+</I>
+What good would patience do?  That is, what do you believe we would
+accomplish by slowing the release tempo?  
+
+Do you believe that this would somehow increase the amount or quality of
+bug reports and fixes we get?  If so, why do you believe that?
+
+My experience suggests the opposite, that frequent releases is better
+for flushing bugs out into the open.  I wrote a paper about this once :-).
+
+&gt;<i> I see an urge to release a new version every week, which does not seem to
+</I>&gt;<i> be warranted by new features.
+</I>
+Indeed it is not warranted by &quot;new features&quot;.  I am proposing to
+release 2.26 specifically to get a bugfix shipped -- gpsdrive wants a
+leading zero if longitude is &lt;100.
+
+&gt;<i> I doubt that the audience is looking for a new version to install.
+</I>&gt;<i> When you want to have an easily accessed version for people to try the
+</I>&gt;<i> newest fixes, I think it is better to put a &quot;nightly build&quot; up for
+</I>&gt;<i> download.
+</I>
+Well, we could tell people to pull svn head for the latest version.  But
+since I don't presently anticipate any benefit from slowing down the 
+release tempo, I don't see why we should make testers jump through that
+extra hoop.  Perhaps you will change my mind, though.
+
+In fact, I'll go further than that: if you persuade me that you have 
+a compelling theory about how and when to time releases, I will
+cheerfully hand you the release-manager baton.  It's not a job I
+feel any real need to hang on to.
+
+&gt;<i> My opinion is that a current priority should be to walk through the code
+</I>&gt;<i> to find possible inconsistencies, to try to validate returned data, and to
+</I>&gt;<i> investigate the functionality we are trying to provide and see what things
+</I>&gt;<i> are still missing there.
+</I>
+Quite reasonable, but I don't see what it has to do with changing the
+release tempo.  My feeling is, anyway, that we're about done adding
+features; this is part of what I was getting at when I write about the
+to-do list shrinking.
+
+&gt;<i> Examples are:
+</I>&gt;<i> 
+</I>&gt;<i> - validate that all received values are correctly scaled to the documented
+</I>&gt;<i> units.  I have been busy with this but then someone else still found an
+</I>&gt;<i> error (NMEA speed)
+</I>
+I think that one is pretty well knocked on the head at this point.  There
+aren't that many values that get scaled, and we've walked through them all.
+ 
+&gt;<i> - check that &quot;xxx_NOT_VALID&quot; values are outside the normal range for that
+</I>&gt;<i> value. 
+</I>
+OK.  grepping....
+
+gps.h:48:#define TIME_NOT_VALID	0
+gps.h:55:#define UNCERTAINTY_NOT_VALID	-1
+gps.h:57:#define LATITUDE_NOT_VALID	-1
+gps.h:59:#define LONGITUDE_NOT_VALID	-1
+gps.h:62:#define ALTITUDE_NOT_VALID	-999
+gps.h:65:#define TRACK_NOT_VALID	-1	/* No course data yet */
+gps.h:68:#define SPEED_NOT_VALID	-1	/* No speed data yet */
+
+There, that wasn't very hard, was it?  About the only subtle bit is noticing
+that it's OK to use 0 as a time value  because GPSes didn't exist in 1969.
+
+&gt;<i>       check if we could use magic values like &quot;nan&quot; instead of arbitrary
+</I>&gt;<i> constant values
+</I>
+OK, I like that idea, but I have some portability reservations.  Do
+POSIX or X3J11 describe #defines for max or min values?
+
+&gt;<i> - work a bit on the demo applications to provide a good first experience
+</I>&gt;<i> after installation, and also make them more useful for our own testing
+</I>
+Here I'm in complete agreement with you.  I would like to see somebody
+take a lead on this.  Preferably somebody other than me, so I can 
+concentrate on the daemon.
+
+&gt;<i> There also are some problems that need additional investigation.
+</I>&gt;<i> For example, when having two receivers connected and disconnecting one,
+</I>&gt;<i> when a packet error occurs the program starts to hunt for correct data
+</I>&gt;<i> from that specific receiver and completely forgets about the other.
+</I>&gt;<i> It also does not handle client requests anymore.
+</I>&gt;<i> Of course this is because while doing packet_sniff the program does not
+</I>&gt;<i> walk through the main select loop.  I think we either need to modify the
+</I>&gt;<i> packet_sniff code so that it becomes part of the main loop, or we change
+</I>&gt;<i> to multithreading and start a separate thread  for every receiver while
+</I>&gt;<i> the main loop concentrates on handling the clients.
+</I>
+Hm.  This is a significant problem with the multi-session
+architecture.  I wish you had prought it to my attention sooner.
+
+I lean towards the former.  Threading makes me uncomfortable.  I don't mind the
+use of it we've made so far because it's for features that are, basically,
+optional.  I don't want to make it part of the normal organization of control
+if we can help it.
+
+&gt;<i> I have also noticed today that while the system is heavily loaded the
+</I>&gt;<i> program can be forced into such an error situation where it ends up doing
+</I>&gt;<i> packet_sniff all the time and not recovering.  Because the usleep in
+</I>&gt;<i> packet_sniff is very small, the CPU usage is high, and the heavy loading
+</I>&gt;<i> problem is worsened.
+</I>
+I think increasing the usleep() would be an acceptable fix.
+ 
+&gt;<i> At the moment I am working on a driver for my Trimble receiver.  It
+</I>&gt;<i> handles a few received packets, but I need to decode more and also handle
+</I>&gt;<i> the sending of control packets (to enable sending of other messages).  I
+</I>&gt;<i> will require a day or two to finish it.
+</I>
+OK.  Is this a reason not to release?  Doesn't seem so to me.  Releases
+aren't expensive.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001847.html">[Gpsd-dev] making gosdrive haoot
+</A></li>
+	<LI>Next message: <A HREF="001849.html">[Gpsd-dev] making gosdrive haoot
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1848">[ date ]</a>
+              <a href="thread.html#1848">[ thread ]</a>
+              <a href="subject.html#1848">[ subject ]</a>
+              <a href="author.html#1848">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,187 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] FreeBSD porting problems of gpsd-3.0
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20FreeBSD%20porting%20problems%20of%20gpsd-3.0&In-Reply-To=%3C20110825110836.GA62480%40hades.panopticon%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009448.html">
+   <LINK REL="Next"  HREF="009460.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] FreeBSD porting problems of gpsd-3.0</H1>
+    <B>Dmitry Marakasov</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20FreeBSD%20porting%20problems%20of%20gpsd-3.0&In-Reply-To=%3C20110825110836.GA62480%40hades.panopticon%3E"
+       TITLE="[Gpsd-dev] FreeBSD porting problems of gpsd-3.0">amdmi3 at amdmi3.ru
+       </A><BR>
+    <I>Thu Aug 25 13:08:37 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009448.html">[Gpsd-dev] FreeBSD porting problems of gpsd-3.0
+</A></li>
+        <LI>Next message: <A HREF="009460.html">[Gpsd-dev] FreeBSD porting problems of gpsd-3.0
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9456">[ date ]</a>
+              <a href="thread.html#9456">[ thread ]</a>
+              <a href="subject.html#9456">[ subject ]</a>
+              <a href="author.html#9456">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>* Eric Raymond (<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>) wrote:
+
+&gt;<i> I added Depends relations that should fix this.
+</I>
+Didn't run into it anymore, so I believe it's fixed.
+
+&gt;<i> &gt; 2. Build failures with some options disabled: netfeed=no, reconfigure=no
+</I>&gt;<i> &gt; or socket_export=no:
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; <A HREF="http://people.freebsd.org/~amdmi3/gpsd-nonetfeed-3.0.log">http://people.freebsd.org/~amdmi3/gpsd-nonetfeed-3.0.log</A>
+</I>&gt;<i> &gt; <A HREF="http://people.freebsd.org/~amdmi3/gpsd-noreconfigure-3.0.log">http://people.freebsd.org/~amdmi3/gpsd-noreconfigure-3.0.log</A>
+</I>&gt;<i> &gt; <A HREF="http://people.freebsd.org/~amdmi3/gpsd-nosockexport-3.0.log">http://people.freebsd.org/~amdmi3/gpsd-nosockexport-3.0.log</A>
+</I>&gt;<i> 
+</I>&gt;<i> I was able to reproduce and fix minor problems with netfeed=no 
+</I>&gt;<i> and reconfigure=no, but not sockexport=no. Please try this build again from the
+</I>&gt;<i> repo head version and explain the difficulties you run into.
+</I>
+netfeed=no and reconfigure=no are fixed, thanks.
+
+nosockexport=no still doesn't build.
+
+As I understant, when socket_export=no, SOCKET_EXPORT_ENABLE is not
+defined, thus implementation of libgps_json_unpack is not compiled, as
+if's wrapped into #ifdef SOCKET_EXPORT_ENABLE (libgps_json.c), but
+in libgps_sock.c it is called regardless of SOCKET_EXPORT_ENABLED, thus
+
+./libgps.so: undefined reference to `libgps_json_unpack'
+
+The same thing happens in gpsdecode.c, so I guess it's affected as well.
+
+&gt;<i> &gt; 3. As I understand pydistutils (setup.py) is called right from
+</I>&gt;<i> &gt; SCons. Normally, when some port (for example, of some python module)
+</I>&gt;<i> &gt; uses pydistutils, it provides setup.py with certain arguments, for
+</I>&gt;<i> &gt; example, -c -O1 so python bytecode files (.pyc, .pyo) are created.
+</I>&gt;<i> &gt; Obviously this can't be done in this case.
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; This results in only *.py files installed, so if some python program
+</I>&gt;<i> &gt; which uses `gps' module is run by root user, python will create
+</I>&gt;<i> &gt; .pyc/.pyo files on its own, polluting system directory and making a
+</I>&gt;<i> &gt; port unable to deinstall cleanly.
+</I>&gt;<i> 
+</I>&gt;<i> You say &quot;Obviously this can't be done in this case.&quot; but it's not obvious
+</I>&gt;<i> to me, and I am reluctant to attempt a fix without that understanding.
+</I>&gt;<i> Can you explain further?
+</I>
+That `obviosly' meant that setup.py is not called by the ports system in
+this case, so flags set there won't affect the build.
+
+Btw, you've removed named setup.py completely, which could not be a good
+idea. There are distros which separated python part of gpsd into
+separate package (<A HREF="http://packages.debian.org/squeeze/python-gps">http://packages.debian.org/squeeze/python-gps</A>)
+and we though of doing the same thing. This both removes python
+dependency from gpsd port, which will benefit users not using any python
+modules or programs, and it will make it possible to install the module
+in a standard way through setup.py.
+
+&gt;<i> &gt; I've solved this with calling python from a port after the installation
+</I>&gt;<i> &gt; to create the bytecode.
+</I>&gt;<i> 
+</I>&gt;<i> It would be better if the build recipe did not require this, of course.
+</I>
+I don't know anything about pydistutils, so I have no idea how to do
+this.
+
+&gt;<i> &gt; 5. Some warnings are enabled if the compiler is gcc. However on FreeBSD,
+</I>&gt;<i> &gt; gcc is named cc, so:
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; -if env['CC'] == 'gcc':
+</I>&gt;<i> &gt; +if env['CC'] == 'gcc' or env['CC'] == 'cc':
+</I>&gt;<i> &gt;      # Enable all GCC warnings except uninitialized and
+</I>&gt;<i> &gt;      # missing-field-initializers, which we can't help triggering because
+</I>&gt;<i> &gt;      # of the way some of the JSON-parsing code is generated.
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; This is not the solution though, as gcc (and other gcc-compatible
+</I>&gt;<i> &gt; compilers) may have other names, such as gcc45 or clang. This
+</I>&gt;<i> &gt; condition should not be based on a compiler binary name.
+</I>&gt;<i> 
+</I>&gt;<i> I have added a check for freebsd platform and name cc. I am reluctant
+</I>&gt;<i> to add a fragile and complex test for this capability; I'll do it only
+</I>&gt;<i> if the guard becomes unreasonably complex.
+</I>
+Well it shouldn't be more complex than CheckPKG/CheckExecutable,
+and actually checking compiler binary name is what is fragile.
+Anyway while this only affects warnings, so this is not really
+important, so the current solution is ok.
+
+&gt;<i> &gt; -        usblibs = []
+</I>&gt;<i> &gt; +if env['usb']:
+</I>&gt;<i> &gt; +    usblibs = [ &quot;-lusb&quot; ]
+</I>&gt;<i> &gt;  else:
+</I>&gt;<i> &gt;       confdefs.append(&quot;/* #undef HAVE_LIBUSB */\n&quot;)
+</I>&gt;<i> &gt;            usblibs = []
+</I>&gt;<i> 
+</I>&gt;<i> I have modified the conditional in a way that handles both cases.
+</I>
+In addition to the patch I've submitted on IRC which you've already
+merged, here's another one:
+
+<A HREF="http://people.freebsd.org/~amdmi3/gpsd.1.patch">http://people.freebsd.org/~amdmi3/gpsd.1.patch</A>
+
+it reorders check order for libusb as well, which silences misleading
+'Checking for libusb-1.0... no' message.
+
+Also, it provides empty usblibs, in case of USB is disabled. If that's
+not done, there'll be python error in e.g. 'usblibs + rtlibs + bluezlibs'
+as usblibs is undefined.
+
+&gt;<i> &gt; 8. Last but not least, the only problem I couldn't solve is dbus
+</I>&gt;<i> &gt; support. On FreeBSD dbus is installed from the ports, so pkg-config
+</I>&gt;<i> &gt; knows about it. However gpsd doesn't build with dbus_export=yes:
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; cc -o ais_json.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -Wimplicit-function-declaration -D_GNU_SOURCE -O2 -pipe -fno-strict-aliasing -O2 -fPIC ais_json.c
+</I>&gt;<i> &gt; In file included from ais_json.c:18:
+</I>&gt;<i> &gt; gpsd.h:979:23: error: dbus/dbus.h: No such file or directory
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; looks like SCons doesn't take cflags from pkgconfig at all, and I
+</I>&gt;<i> &gt; couldn't figure out how to make it do so.
+</I>&gt;<i> 
+</I>&gt;<i> Try raising bzed (Bernd Zeimetz) on IRC. He's our pkgconfig expert
+</I>&gt;<i> and can probably fix this faster than I could.
+</I>
+Will do, as the problem is unfortunately still there.
+
+-- 
+Dmitry Marakasov   .   55B5 0596 FF1E 8D84 5F56  9510 D35A 80DD F9D2 F77D
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">amdmi3 at amdmi3.ru</A>  ..:  jabber: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">amdmi3 at jabber.ru</A>    <A HREF="http://www.amdmi3.ru">http://www.amdmi3.ru</A>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009448.html">[Gpsd-dev] FreeBSD porting problems of gpsd-3.0
+</A></li>
+	<LI>Next message: <A HREF="009460.html">[Gpsd-dev] FreeBSD porting problems of gpsd-3.0
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9456">[ date ]</a>
+              <a href="thread.html#9456">[ thread ]</a>
+              <a href="subject.html#9456">[ subject ]</a>
+              <a href="author.html#9456">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,155 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] extending the gpsd protocol some more
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20extending%20the%20gpsd%20protocol%20some%20more&In-Reply-To=%3CPine.LNX.4.64.0609241301210.18493%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004400.html">
+   <LINK REL="Next"  HREF="004403.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] extending the gpsd protocol some more</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20extending%20the%20gpsd%20protocol%20some%20more&In-Reply-To=%3CPine.LNX.4.64.0609241301210.18493%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] extending the gpsd protocol some more">gem at rellim.com
+       </A><BR>
+    <I>Sun Sep 24 22:15:24 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004400.html">[Gpsd-dev] extending the gpsd protocol some more
+</A></li>
+        <LI>Next message: <A HREF="004403.html">[Gpsd-dev] extending the gpsd protocol some more
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4401">[ date ]</a>
+              <a href="thread.html#4401">[ thread ]</a>
+              <a href="subject.html#4401">[ subject ]</a>
+              <a href="author.html#4401">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Chris!
+
+BTW, I clearly see this as a port 2.34 issue.
+
+On Sun, 24 Sep 2006, Chris Kuethe wrote:
+
+&gt;<i> On 9/24/06, Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt; wrote:
+</I>&gt;<i> &gt; I think we are about out of single letters.
+</I>&gt;<i>
+</I>&gt;<i> Pretty much, but I wasn't sure if I should allow 3, or 8 or n
+</I>&gt;<i> characters. Y'know... for parser simplicity.
+</I>
+When I did parsers in assembly I would care about this.  Not now.
+Even CKermit could do shortest unambiguous match.   Over the 4800
+baud link keeping it short is important, but once we are running
+at TCP/IP speeds to cgps speed is not an issue.
+
+I see no way to make it back compatible to the old stacked single letters
+so we might as well do it the best we see fit.
+
+&gt;<i> &gt; Makes it easy to stream the data.  Could work.  Might be nice to also
+</I>&gt;<i> &gt; allow for -2.  So a line ending of CR, or CR/LF works.
+</I>&gt;<i>
+</I>&gt;<i> I suppose we can do something like php's rtrim() first. basically
+</I>&gt;<i> ensure the last nonblank character is ';'. I was going for parser
+</I>&gt;<i> simplicity and easy format tests.
+</I>
+You just know someone will grab this data with a CR/LF instead of a
+LF then wonder why things are broken.
+
+Of course all this would be trivial with a few REGEXP, but I am sure the
+embedded folks would kill us if we did that. :-)
+
+&gt;<i> &gt; Or how about just allow the ; anywhere in the buffer, then you can stack
+</I>&gt;<i> &gt; more than one item on a line or in a buffer.
+</I>&gt;<i>
+</I>&gt;<i> I thought about that too. Hence point 3. But the parser would be
+</I>&gt;<i> simpler if we didn't have to cope with that. The protocol would be
+</I>&gt;<i> more useful if we could.
+</I>
+Just use a strchr() in a while() loop  to chop the string at each ';'.
+
+&gt;<i> &gt; I prefer protocols I can fit on an editor.  Much easier to do
+</I>&gt;<i> &gt; regressions and checks by hand.  I like what SMTP does in its headers,
+</I>&gt;<i> &gt; lines less then 76 preferred and 256 max.
+</I>&gt;<i>
+</I>&gt;<i> You mean you prefer protocols where you can fit the MTU into one
+</I>&gt;<i> screenful, preferably one line? I was thinking the same. First I
+</I>&gt;<i> though 80 characters, then I though maybe 256 if we're uploading an
+</I>&gt;<i> hexdump of an ephemeris, and then I though I might want more. But I
+</I>&gt;<i> wanted to go bounded. Either a one-time malloc buffer or a static
+</I>&gt;<i> buffer. I'm tempted to allow 4K, because that's a modern memory page.
+</I>
+I can see the empheris issue.  So I could go with &lt;76 bytes long
+preferred and &lt;4096 mandatory.
+
+&gt;<i> &gt; One per line means you can easily parse lines with simple parsers.  But
+</I>&gt;<i> &gt; the trend to the long line is already set in gpsd.  So I would allow
+</I>&gt;<i> &gt; mix/match.
+</I>&gt;<i>
+</I>&gt;<i> ie. you're voting for multiple commands per line. gpsd does indeed
+</I>&gt;<i> support multiple commands in the single character command set. As this
+</I>&gt;<i> is a new command protocol, I don't feel any pressing urge to do the
+</I>&gt;<i> same thing. I was thinking about parser simplicity, and the extended
+</I>&gt;<i> protocol is going to be complicated enough.
+</I>
+I much prefer one command per line.  Much easier to debug.  But eric
+has been moving the other way.  If we allow commands to stack on ';',
+like in SQL, then each person can do it his way.
+
+&gt;<i> I think we should reserve commands of the form &quot;GPSD[A-Z]&quot; which map
+</I>&gt;<i> to the version 3 single character commands. I guess that's another
+</I>&gt;<i> argument in favor of stackable commands.
+</I>
+I like that.  That would be a nice gesture to allow quick upgrading of
+clients while opening the door to major updates as well.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFFFudh8KZibdeR3qURAom9AJ9LhUuV9jIfbQt6q/FggqvkIM8L0QCgwzlD
+HibTIn0v2G4n1R0T+P7qsZM=
+=BW4c
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004400.html">[Gpsd-dev] extending the gpsd protocol some more
+</A></li>
+	<LI>Next message: <A HREF="004403.html">[Gpsd-dev] extending the gpsd protocol some more
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4401">[ date ]</a>
+              <a href="thread.html#4401">[ thread ]</a>
+              <a href="subject.html#4401">[ subject ]</a>
+              <a href="author.html#4401">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

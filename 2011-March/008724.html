@@ -1,0 +1,95 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Have I failed to simplify *enough*?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Have%20I%20failed%20to%20simplify%20%2Aenough%2A%3F&In-Reply-To=%3Crmibp1kq82w.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008723.html">
+   <LINK REL="Next"  HREF="008767.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Have I failed to simplify *enough*?</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Have%20I%20failed%20to%20simplify%20%2Aenough%2A%3F&In-Reply-To=%3Crmibp1kq82w.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] Have I failed to simplify *enough*?">gdt at ir.bbn.com
+       </A><BR>
+    <I>Wed Mar  9 22:48:07 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008723.html">[Gpsd-dev] Have I failed to simplify *enough*?
+</A></li>
+        <LI>Next message: <A HREF="008767.html">[Gpsd-dev] Have I failed to simplify *enough*?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8724">[ date ]</a>
+              <a href="thread.html#8724">[ thread ]</a>
+              <a href="subject.html#8724">[ subject ]</a>
+              <a href="author.html#8724">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+But all of those test programs do very little besides display gpsd
+output (which is fine for a test program).  They aren't dealing with
+fetching maps, or sending baked data someplace (on a socket that might
+block) or doing any other kind of processing or communicating.
+
+  gpxlogger, lcdgps: Don't take input.
+
+This is a toy example - just writes to file, and has no other purpose.
+That's fine to exist, but not a good basis for evaluating the general case.
+
+  cgps: Takes input.  Handled by doing a nonblocking wgetch() after each
+  gps_read().  
+
+So if the gps stops sending, you get a lag as it waits to respond to
+keyboard input?  That seems like bad UI behavior - I think this program
+done right needs to react quickly to user input.  When I type 'q' there
+is a noticeable pause before it exits.
+
+  xgps: Takes input.  The effect of select is implicit through the GTK
+  event-handling loop.
+
+so you are adding gpsd's file descriptor to GTK's select loop, which is
+the normal paradigm (with a library owning the loop).
+
+
+It's not like a select loop is a lot of code, even with error checking.
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110309/ac2a014d/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110309/ac2a014d/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008723.html">[Gpsd-dev] Have I failed to simplify *enough*?
+</A></li>
+	<LI>Next message: <A HREF="008767.html">[Gpsd-dev] Have I failed to simplify *enough*?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8724">[ date ]</a>
+              <a href="thread.html#8724">[ thread ]</a>
+              <a href="subject.html#8724">[ subject ]</a>
+              <a href="author.html#8724">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

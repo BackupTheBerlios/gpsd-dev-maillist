@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] The state of RTCM3 support, and two request for	healp
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20The%20state%20of%20RTCM3%20support%2C%20and%20two%20request%20for%09healp&In-Reply-To=%3C20090105160258.GA23351%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006223.html">
+   <LINK REL="Next"  HREF="006225.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] The state of RTCM3 support, and two request for	healp</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20The%20state%20of%20RTCM3%20support%2C%20and%20two%20request%20for%09healp&In-Reply-To=%3C20090105160258.GA23351%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] The state of RTCM3 support, and two request for	healp">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Jan  5 17:02:58 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006223.html">[Gpsd-dev] rtcm 3.0
+</A></li>
+        <LI>Next message: <A HREF="006225.html">[Gpsd-dev] The state of RTCM3 support, and two request for	healp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6224">[ date ]</a>
+              <a href="thread.html#6224">[ thread ]</a>
+              <a href="subject.html#6224">[ subject ]</a>
+              <a href="author.html#6224">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Matthias Urlichs &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">smurf at smurf.noris.de</A>&gt;:
+&gt;<i> Hi,
+</I>&gt;<i> 
+</I>&gt;<i> Matthias Urlichs:
+</I>&gt;<i> &gt; gpsd: =&gt; GPS: 9fb7e40dd300593f4000a2162402b086b81f7b002b3bfa79a80c0016f0ff1431155830fffc9986968afe57fd54a1ca1458a13887fa783fa89c8160015e9fefc58f9dd0ef00a38fe8b0e03e81c03bfdaa84b49e8d007be7fa3b8810508a7dff640dd4da0d FAILED
+</I>&gt;<i> &gt; gpsd: &lt;= DGPS: 100 bytes of RTCM relayed.
+</I>&gt;<i> 
+</I>&gt;<i> This FAILED is obviously a consequence of
+</I>&gt;<i> 
+</I>&gt;<i> ssize_t gpsd_write(struct gps_device_t *session, void const *buf, size_t len)
+</I>&gt;<i> {
+</I>&gt;<i>      ssize_t status;
+</I>&gt;<i>      bool ok;
+</I>&gt;<i>      if (session-&gt;context-&gt;readonly)
+</I>&gt;<i>         return 0;
+</I>&gt;<i>      status = write(session-&gt;gpsdata.gps_fd, buf, len);
+</I>&gt;<i>      ok = (status == (ssize_t)len);
+</I>&gt;<i>      (void)tcdrain(session-&gt;gpsdata.gps_fd);
+</I>&gt;<i>      /* no test here now, always print as hex */
+</I>&gt;<i>      gpsd_report(LOG_IO, &quot;=&gt; GPS: %s%s\n&quot;, gpsd_hexdump(buf, len), ok?&quot;&quot;:&quot;      + FAILED&quot;);
+</I>&gt;<i>      return status;
+</I>&gt;<i> }
+</I>&gt;<i> 
+</I>&gt;<i> which is unable to send the whole buffer; apparently Bluetooth/rfcomm
+</I>&gt;<i> is somewhat limited here.  strace says much the same thing:
+</I>&gt;<i> 
+</I>&gt;<i> &gt;&gt; write(4, &quot;$PASHQ,RID*28\r\n&quot;, 15)       = 15
+</I>&gt;<i> &gt;&gt; ioctl(4, TCSBRK, 0x1)                   = 0
+</I>&gt;<i> &gt;&gt; write(2, &quot;gpsd: =&gt; GPS: $PASHQ,RID*28\\x0d\n\n&quot;, 33) = 33
+</I>&gt;<i> &gt;&gt; write(2, &quot;gpsd: Navcom: command dump: 0299661c0800040200001203\n&quot;, 53) = 53
+</I>&gt;<i> &gt;&gt; write(4, &quot;\2\231f\34\10\0\4\2\0\0\22\3&quot;, 12) = 12
+</I>&gt;<i> &gt;&gt; ioctl(4, TCSBRK, 0x1)                   = 0
+</I>&gt;<i> &gt;&gt; write(2, &quot;gpsd: =&gt; GPS: 0299661c0800040200001203\n&quot;, 39) = 39
+</I>&gt;<i> &gt;&gt; write(2, &quot;gpsd: Navcom: sent command 0x1c (Test Support Block)\n&quot;, 53) = 53
+</I>&gt;<i> &gt;&gt; write(2, &quot;gpsd: Navcom: command 0x1c mode = 02, length = 0\n&quot;, 49) = 49
+</I>&gt;<i> &gt;&gt; write(2, &quot;gpsd: Navcom: command dump: 029966200e000001ae02000071000000f203\n&quot;, 65) = 65
+</I>&gt;<i> &gt;&gt; write(4, &quot;\2\231f \16\0\0\1\256\2\0\0q\0\0\0\362\3&quot;, 18) = 18
+</I>&gt;<i> &gt;&gt; ioctl(4, TCSBRK, 0x1)                   = 0
+</I>&gt;<i> &gt;&gt; write(2, &quot;gpsd: =&gt; GPS: 029966200e000001ae02000071000000f203\n&quot;, 51) = 51
+</I>&gt;<i> &gt;&gt; write(2, &quot;gpsd: Navcom: sent command 0x20 (Data Request) - data block id = ae at rate 00\n&quot;, 79) = 79
+</I>&gt;<i> &gt;&gt; write(2, &quot;gpsd: Navcom: command dump: 029966200e00000186020a0071000000d003\n&quot;, 65) = 65
+</I>&gt;<i> &gt;&gt; write(4, &quot;\2\231f \16\0\0\1\206\2\n\0q\0\0\0\320\3&quot;, 18) = -1 EAGAIN (Resource temporarily unavailable)
+</I>
+I agree with this diagnosis.
+ 
+&gt;<i> Thus it seems that gpsd_write() needs to buffer its data and hook
+</I>&gt;<i> into the select loop.
+</I>
+I'm not clear what you mean by &quot;hook into the select loop&quot; or what this would
+accomplish.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006223.html">[Gpsd-dev] rtcm 3.0
+</A></li>
+	<LI>Next message: <A HREF="006225.html">[Gpsd-dev] The state of RTCM3 support, and two request for	healp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6224">[ date ]</a>
+              <a href="thread.html#6224">[ thread ]</a>
+              <a href="subject.html#6224">[ subject ]</a>
+              <a href="author.html#6224">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

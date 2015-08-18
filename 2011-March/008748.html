@@ -1,0 +1,144 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Stripping down gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Stripping%20down%20gpsd&In-Reply-To=%3Crmi4o7ar1fo.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008747.html">
+   <LINK REL="Next"  HREF="008758.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Stripping down gpsd</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Stripping%20down%20gpsd&In-Reply-To=%3Crmi4o7ar1fo.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] Stripping down gpsd">gdt at ir.bbn.com
+       </A><BR>
+    <I>Fri Mar 11 00:38:35 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008747.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+        <LI>Next message: <A HREF="008758.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8748">[ date ]</a>
+              <a href="thread.html#8748">[ thread ]</a>
+              <a href="subject.html#8748">[ subject ]</a>
+              <a href="author.html#8748">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+&quot;Gary E. Miller&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt; writes:
+
+&gt;<i> On Thu, 10 Mar 2011, Michael R. Davis wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> This is where I feel we (gpsd-dev folks) need more work.  The concept of
+</I>&gt;&gt;<i>  plug-ins would resolve much of this headache as we could put plug-ins i
+</I>&gt;&gt;<i> n different packages
+</I>&gt;<i>
+</I>&gt;<i> I see this adding to the pain, not reducing it.
+</I>&gt;<i>
+</I>&gt;&gt;<i> (with lesser supported ones out of the main stream build).
+</I>&gt;<i>
+</I>&gt;<i> We know this is a bad idea.  One of our large recurring problems is when
+</I>&gt;<i> people have an odd GPS that their distro does not support for some random
+</I>&gt;<i> reason.
+</I>&gt;<i>
+</I>&gt;<i> We save not even $0.01 of disk space and solve almost no real problems.
+</I>
+I've been packaging many things for pkgsrc, and often end up in split
+package/option discussions.  Almost always the reason for plugins and
+splitting packages is because some plugin depends on something large
+that people won't, like dragging in all of GTK.  Here, gpsd is just not
+very big, in that anyone who can put up with a packaging system will not
+be worrying about the size.   I can see wanting to make gpsd into two
+packages, the one with just the C libs, and the one with all the python
+stuff, but so far this hasn't happened even in pkgsrc, used by all sorts
+of retrocomputing types who keep their Vax 8650s alive.
+
+For a standard build on NetBSD/i386 5.1ish (no --disable, no --enable
+options), the sizes are pretty modest:
+
+$ size /usr/y0/sbin/gpsd /usr/y0/lib/libgps*.so 
+   text    data     bss     dec     hex filename
+  30399     744  127844  158987   26d0b /usr/y0/sbin/gpsd
+  61473    3240    1852   66565   10405 /usr/y0/lib/libgps.so
+ 247658    5952     964  254574   3e26e /usr/y0/lib/libgpsd.so
+
+And looking at libgpsd.so itself, the odd drivers are just not that
+big.  &lt;esr-baiting&gt;The real bloat is json.&lt;/&gt;  So I think Gary is 100%
+right - this is not a problem.
+
+   text	   data	    bss	    dec	    hex	filename
+    420	      0	      0	    420	    1a4	bits.o (ex /usr/y0/lib/libgpsd.a)
+    469	      0	      0	    469	    1d5	srecord.o (ex /usr/y0/lib/libgpsd.a)
+    474	      0	      0	    474	    1da	net_gnss_dispatch.o (ex /usr/y0/lib/libgpsd.a)
+    731	      0	      0	    731	    2db	timebase.o (ex /usr/y0/lib/libgpsd.a)
+    781	      0	    195	    976	    3d0	gpsd_maskdump.o (ex /usr/y0/lib/libgpsd.a)
+    847	      0	      0	    847	    34f	net_dgpsip.o (ex /usr/y0/lib/libgpsd.a)
+   1063	      0	      0	   1063	    427	bsd-base64.o (ex /usr/y0/lib/libgpsd.a)
+   1208	      0	      0	   1208	    4b8	crc24q.o (ex /usr/y0/lib/libgpsd.a)
+   1424	      0	      0	   1424	    590	ntpshm.o (ex /usr/y0/lib/libgpsd.a)
+   2181	      0	      0	   2181	    885	isgps.o (ex /usr/y0/lib/libgpsd.a)
+   2752	      0	      0	   2752	    ac0	driver_garmin_txt.o (ex /usr/y0/lib/libgpsd.a)
+   2864	      0	      0	   2864	    b30	serial.o (ex /usr/y0/lib/libgpsd.a)
+   3080	      0	      0	   3080	    c08	driver_rtcm2.o (ex /usr/y0/lib/libgpsd.a)
+   3564	     52	      0	   3616	    e20	driver_oncore.o (ex /usr/y0/lib/libgpsd.a)
+   4237	      0	      0	   4237	   108d	pseudonmea.o (ex /usr/y0/lib/libgpsd.a)
+   4492	      0	      0	   4492	   118c	driver_zodiac.o (ex /usr/y0/lib/libgpsd.a)
+   4802	      0	      0	   4802	   12c2	driver_evermore.o (ex /usr/y0/lib/libgpsd.a)
+   4929	      6	      0	   4935	   1347	driver_superstar2.o (ex /usr/y0/lib/libgpsd.a)
+   5421	      0	      4	   5425	   1531	net_ntrip.o (ex /usr/y0/lib/libgpsd.a)
+   5739	      0	      0	   5739	   166b	driver_italk.o (ex /usr/y0/lib/libgpsd.a)
+   6737	      0	    516	   7253	   1c55	driver_ubx.o (ex /usr/y0/lib/libgpsd.a)
+   6834	    144	      0	   6978	   1b42	drivers.o (ex /usr/y0/lib/libgpsd.a)
+   7181	      0	      0	   7181	   1c0d	driver_rtcm3.o (ex /usr/y0/lib/libgpsd.a)
+   7617	      0	      0	   7617	   1dc1	subframe.o (ex /usr/y0/lib/libgpsd.a)
+   7958	      0	      0	   7958	   1f16	driver_garmin.o (ex /usr/y0/lib/libgpsd.a)
+   8902	      0	    160	   9062	   2366	libgpsd_core.o (ex /usr/y0/lib/libgpsd.a)
+  10089	      0	      0	  10089	   2769	driver_nmea.o (ex /usr/y0/lib/libgpsd.a)
+  10643	    343	      0	  10986	   2aea	driver_sirf.o (ex /usr/y0/lib/libgpsd.a)
+  11202	      0	      0	  11202	   2bc2	driver_geostar.o (ex /usr/y0/lib/libgpsd.a)
+  11640	      0	      0	  11640	   2d78	driver_aivdm.o (ex /usr/y0/lib/libgpsd.a)
+  15391	      0	      0	  15391	   3c1f	driver_navcom.o (ex /usr/y0/lib/libgpsd.a)
+  16489	      0	      0	  16489	   4069	driver_tsip.o (ex /usr/y0/lib/libgpsd.a)
+  18671	      0	      8	  18679	   48f7	packet.o (ex /usr/y0/lib/libgpsd.a)
+  36089	     60	      0	  36149	   8d35	gpsd_json.o (ex /usr/y0/lib/libgpsd.a)
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110310/44b157e0/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110310/44b157e0/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008747.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+	<LI>Next message: <A HREF="008758.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8748">[ date ]</a>
+              <a href="thread.html#8748">[ thread ]</a>
+              <a href="subject.html#8748">[ subject ]</a>
+              <a href="author.html#8748">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

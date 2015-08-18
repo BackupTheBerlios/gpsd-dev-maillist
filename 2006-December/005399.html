@@ -1,0 +1,220 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Looking for debugging help with Python binding
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Looking%20for%20debugging%20help%20with%20Python%20binding&In-Reply-To=%3C4578009F.7000005%40knitter.ch%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005397.html">
+   <LINK REL="Next"  HREF="005400.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Looking for debugging help with Python binding</H1>
+    <B>Andreas Stricker</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Looking%20for%20debugging%20help%20with%20Python%20binding&In-Reply-To=%3C4578009F.7000005%40knitter.ch%3E"
+       TITLE="[Gpsd-dev] Looking for debugging help with Python binding">andy at knitter.ch
+       </A><BR>
+    <I>Thu Dec  7 12:53:03 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005397.html">[Gpsd-dev] Looking for debugging help with Python binding
+</A></li>
+        <LI>Next message: <A HREF="005400.html">[Gpsd-dev] Looking for debugging help with Python binding
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5399">[ date ]</a>
+              <a href="thread.html#5399">[ thread ]</a>
+              <a href="subject.html#5399">[ subject ]</a>
+              <a href="author.html#5399">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Eric S. Raymond wrote:
+&gt;<i> That seems clear enough.  On looking into the semantics pf
+</I>&gt;<i> PyArgParseTuple further, I probably want to replace &quot;:get&quot; with
+</I>&gt;<i> &quot;;missing or invalid file descriptor argument to gpspacket.get&quot; rather
+</I>&gt;<i> than raising an exceotion of my own.
+</I>
+Make sense.
+
+&gt;<i> Next, I want to set an error-reporting hook.  At the moment, errors
+</I>&gt;<i> are reported through the stub logger near the top of the module, which
+</I>&gt;<i> just writes to standard error.  What would be better would be to
+</I>&gt;<i> redirect gpsd_report to a Python hook function.
+</I>
+This is tricky: There is no way to assign the report callback to a
+gps_packet_t (Getter) instance. We can only register a global callback
+function. This is what I did and attached as patch.
+
+Cheers, Andy
+
+Index: gpspacket.c
+===================================================================
+--- gpspacket.c (Revision 4098)
++++ gpspacket.c (Arbeitskopie)
+@@ -8,6 +8,11 @@
+  #include &quot;gpsd_config.h&quot;
+  #include &quot;gpsd.h&quot;
+
++static PyObject *ErrorObject = NULL;
++
++static PyObject *report_callback = NULL;
++
++#if 0
+  void gpsd_report(int errlevel UNUSED, const char *fmt, ... )
+  /* stub logger -- we should allow redirecting this */
+  {
+@@ -17,14 +22,40 @@
+      (void)vfprintf(stderr, fmt, ap);
+      va_end(ap);
+  }
++#else
++void gpsd_report(int errlevel UNUSED, const char *fmt, ... )
++{
++    char buf[BUFSIZ];  /* TODO hacky! */
++    PyObject *args, *result;
++    va_list ap;
+
++    if (!report_callback || !PyCallable_Check(report_callback)) {
++   PyErr_SetString(ErrorObject, &quot;Cannot call Python callback function&quot;);
++   return;
++    }
++
++    va_start(ap, fmt);
++    (void)vsnprintf(buf, sizeof(buf), fmt, ap);    /* TODO hacky! */
++    va_end(ap);
++
++    args = Py_BuildValue(&quot;(s)&quot;, buf);
++    if (!args)
++   return;
++
++    result = PyObject_Call(report_callback, args, NULL);
++    Py_DECREF(args);
++    if (!result)
++   return;
++}
++#endif
++
++static PyTypeObject Getter_Type;
++
+  typedef struct {
+     PyObject_HEAD
+     struct gps_packet_t getter;
+  } GetterObject;
+
+-static PyTypeObject Getter_Type;
+-
+  #define GetterObject_Check(v)  ((v)-&gt;ob_type == &amp;Getter_Type)
+
+  static GetterObject *
+@@ -47,7 +78,6 @@
+      packet_reset(&amp;self-&gt;getter);
+      return 0;
+  }
+-
+  static PyObject *
+  Getter_get(GetterObject *self, PyObject *args)
+  {
+@@ -58,6 +88,8 @@
+          return NULL;
+
+      type = packet_get(fd, &amp;self-&gt;getter);
++    if (PyErr_Occurred())
++   return NULL;
+
+      return Py_BuildValue(&quot;(i, s)&quot;, type, self-&gt;getter.outbuffer);
+  }
+@@ -66,6 +98,8 @@
+  Getter_reset(GetterObject *self)
+  {
+      packet_reset(&amp;self-&gt;getter);
++    if (PyErr_Occurred())
++   return NULL;
+      return 0;
+  }
+
+@@ -156,11 +190,39 @@
+      return (PyObject *)rv;
+  }
+
++static PyObject *
++register_report(GetterObject *self, PyObject *args)
++{
++    PyObject *callback = NULL;
++
++    if (!PyArg_ParseTuple(args, &quot;O:registerReport&quot;, &amp;callback))
++   return NULL;
++
++    if (!PyCallable_Check(callback)) {
++   PyErr_SetString(PyExc_TypeError, &quot;First argument must be callable&quot;);
++   return NULL;
++    }
++
++    if (report_callback) {
++   Py_DECREF(report_callback);
++   report_callback = NULL;
++    }
++
++    report_callback = callback;
++    Py_INCREF(report_callback);
++
++    Py_INCREF(Py_None);
++    return Py_None;
++}
++
++
+  /* List of functions defined in the module */
+
+  static PyMethodDef gpspacket_methods[] = {
+      {&quot;new&quot;,        gpspacket_new,      METH_VARARGS,
+       PyDoc_STR(&quot;new() -&gt; new packet-getter object&quot;)},
++    {&quot;registerReport&quot;, (PyCFunction)register_report, METH_VARARGS,
++           PyDoc_STR(&quot;Register a report callback function&quot;)},
+      {NULL,     NULL}       /* sentinel */
+  };
+
+@@ -178,6 +240,14 @@
+      /* Create the module and add the functions */
+      m = Py_InitModule3(&quot;gpspacket&quot;, gpspacket_methods, module_doc);
+
++    if (ErrorObject == NULL) {
++   ErrorObject = PyErr_NewException(&quot;gpspacket.error&quot;, NULL, NULL);
++   if (ErrorObject == NULL)
++       return;
++    }
++    Py_INCREF(ErrorObject);
++    PyModule_AddObject(m, &quot;error&quot;, ErrorObject);
++
+      PyModule_AddIntConstant(m, &quot;BAD_PACKET&quot;, BAD_PACKET);
+      PyModule_AddIntConstant(m, &quot;COMMENT_PACKET&quot;, COMMENT_PACKET);
+      PyModule_AddIntConstant(m, &quot;NMEA_PACKET&quot;, NMEA_PACKET);
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005397.html">[Gpsd-dev] Looking for debugging help with Python binding
+</A></li>
+	<LI>Next message: <A HREF="005400.html">[Gpsd-dev] Looking for debugging help with Python binding
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5399">[ date ]</a>
+              <a href="thread.html#5399">[ thread ]</a>
+              <a href="subject.html#5399">[ subject ]</a>
+              <a href="author.html#5399">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

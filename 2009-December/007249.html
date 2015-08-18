@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] sin/cos issues
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20sin/cos%20issues&In-Reply-To=%3Calpine.DEB.1.10.0912042325540.23250%40org-pc51.fy.chalmers.se%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007244.html">
+   <LINK REL="Next"  HREF="007251.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] sin/cos issues</H1>
+    <B>H&#229;kan Johansson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20sin/cos%20issues&In-Reply-To=%3Calpine.DEB.1.10.0912042325540.23250%40org-pc51.fy.chalmers.se%3E"
+       TITLE="[Gpsd-dev] sin/cos issues">f96hajo at chalmers.se
+       </A><BR>
+    <I>Sat Dec  5 00:09:35 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007244.html">[Gpsd-dev] sin/cos issues
+</A></li>
+        <LI>Next message: <A HREF="007251.html">[Gpsd-dev] sin/cos issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7249">[ date ]</a>
+              <a href="thread.html#7249">[ thread ]</a>
+              <a href="subject.html#7249">[ subject ]</a>
+              <a href="author.html#7249">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+I have not tested the code itself, this is just 'theoretical' 
+considerations:
+
+sin/cos are not at fault, but the algortihm as such for small distances.
+
+Assume a distance b of 1 dm, then the 'normalized' dot product called a 
+in the routine will have a value of approximately 1-b^2/R^2, R being the 
+radius.  I.e. 1 - 2.46e-16, where 2.46e-16 is close to the epsilon of a 
+double (2.22e-16).
+
+For such small distances it should be much better to just use Pythagoras 
+directly, i.e. evaluate
+
+R = CalcRad((lat1+lat2)/2);
+d = sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) + (z1-z2)*(z1-z2));
+if (d &lt; 10000) // comment on this value below
+   return d * (1 + (d/R)*(d/R) / 24);
+
+a similar issue appears for points on opposite sides of the globe, where a 
+is ~= -1.  acos(a) should then be close to pi and the result about 20000 
+km, so the loss of accuracy of a dm should not matter.  but it makes no 
+sense to return nans, rather do
+
+if (a &lt; -1)
+   a = -1;
+
+before the final calculation.
+
+The simple use a Pythagoras above sort of defies the fact the the earth is 
+not flat.  If b is the distance along the surface and we call d the 
+straight distance between the two points, and theta the angle between 
+them (where a = cos (theta), approximately), we have:
+
+b = R * theta
+d = 2 * R * sin(theta / 2)
+
+since  sin x = x - x^2/3! + x^5/5! + O(x^7)
+
+and with theta = b/R we get
+
+d = 2 * R * ((b/2R) - (b/2R)^2/3! + (b/2R)^5/5! + ...)
+
+d = b - b^3/(2R)^2/3! + b^5/(2R)^4/5! + ...
+
+now, to solve for b, set b=d for the correction terms:
+
+b = d + d^3/(2R)^2/3! + d^5/(2R)^4/5! - ...
+
+If we do not want an error larger than say 1e-8 in b (relative to d), then 
+look for
+
+d^3/(2R)^2/3!/d = 1e-8  ==&gt; d = 3.1 km
+
+for the next term:
+
+d^5/(2R)^4/5!/d = 1e-8  ==&gt; d = 421 km
+
+b = d + d^3/R*2*2*3*2*1 = d + 1/24 * d^3/R^2
+
+So I opted for a 10 km cut and applying a first term correction.  At d = 
+10 km, a = 0.9999987 so I think the original should work.
+
+Of course, one could probably skip the correction altogether, as a 
+correction of 1e-8 on 10 km is just 1 mm...  :-)
+
+--
+
+Some further notes:
+
+with such a cut, the routine will certainly not be continous.  would that 
+matter?
+
+I wrote 'normalized' dot product in the above as it divides not by the 
+product of the two vector lengths, but some square of an 'average' of the 
+two.
+
+It's late night here, factors of 2 and 3 may easily be wrong.
+
+Cheers,
+H&#229;kan
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007244.html">[Gpsd-dev] sin/cos issues
+</A></li>
+	<LI>Next message: <A HREF="007251.html">[Gpsd-dev] sin/cos issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7249">[ date ]</a>
+              <a href="thread.html#7249">[ thread ]</a>
+              <a href="subject.html#7249">[ subject ]</a>
+              <a href="author.html#7249">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

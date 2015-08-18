@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] mkgmtime
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20mkgmtime&In-Reply-To=%3C9782.213.84.187.156.1112037844.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001086.html">
+   <LINK REL="Next"  HREF="001096.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] mkgmtime</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20mkgmtime&In-Reply-To=%3C9782.213.84.187.156.1112037844.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] mkgmtime">gpsd at xs4all.nl
+       </A><BR>
+    <I>Mon Mar 28 21:24:04 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001086.html">[Gpsd-dev] Leap-second correction for SiRF-II binary
+</A></li>
+        <LI>Next message: <A HREF="001096.html">[Gpsd-dev] mkgmtime
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1092">[ date ]</a>
+              <a href="thread.html#1092">[ thread ]</a>
+              <a href="subject.html#1092">[ subject ]</a>
+              <a href="author.html#1092">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Ok here is a conversion function from broken down gmt/utc time to time_t
+that looks more reasonable than the successive-approximation code in libc.
+
+It is from the lynx source and is GPL.  I think it can be copied into
+gpsutil.c and the call to mktime replaced by it (and the offset removed),
+
+Rob
+
+/*
+ * mktime.c -- converts a struct tm into a time_t
+ *
+ * Copyright (C) 1997 Free Software Foundation, Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+under
+ * the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+with
+ * this program; if not, write to the Free Software Foundation, Inc., 59
+ * Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ */
+
+/* Written by Philippe De Muyter &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">phdm at macqel.be</A>&gt;.  */
+
+#include        &lt;time.h&gt;
+
+time_t mkgmtime(register struct tm *t)
+{
+    register short month, year;
+    register time_t result;
+    static int m_to_d[12] =
+    {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
+
+    month = t-&gt;tm_mon;
+    year = t-&gt;tm_year + month / 12 + 1900;
+    month %= 12;
+    if (month &lt; 0) {
+        year -= 1;
+        month += 12;
+    }
+    result = (year - 1970) * 365 + (year - 1969) / 4 + m_to_d[month];
+    result = (year - 1970) * 365 + m_to_d[month];
+    if (month &lt;= 1)
+        year -= 1;
+    result += (year - 1968) / 4;
+    result -= (year - 1900) / 100;
+    result += (year - 1600) / 400;
+    result += t-&gt;tm_mday;
+    result -= 1;
+    result *= 24;
+    result += t-&gt;tm_hour;
+    result *= 60;
+    result += t-&gt;tm_min;
+    result *= 60;
+    result += t-&gt;tm_sec;
+    return (result);
+}
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001086.html">[Gpsd-dev] Leap-second correction for SiRF-II binary
+</A></li>
+	<LI>Next message: <A HREF="001096.html">[Gpsd-dev] mkgmtime
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1092">[ date ]</a>
+              <a href="thread.html#1092">[ thread ]</a>
+              <a href="subject.html#1092">[ subject ]</a>
+              <a href="author.html#1092">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

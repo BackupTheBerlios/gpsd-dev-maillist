@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20A%20lightweight%20synchronization%0A%20mechanism%20for%20shared%20memory&In-Reply-To=%3C4D8CC43B.90401%40tmsw.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009064.html">
+   <LINK REL="Next"  HREF="009066.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory</H1>
+    <B>Terje Mathisen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20A%20lightweight%20synchronization%0A%20mechanism%20for%20shared%20memory&In-Reply-To=%3C4D8CC43B.90401%40tmsw.no%3E"
+       TITLE="[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory">terje at tmsw.no
+       </A><BR>
+    <I>Fri Mar 25 17:35:07 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009064.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+        <LI>Next message: <A HREF="009066.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9065">[ date ]</a>
+              <a href="thread.html#9065">[ thread ]</a>
+              <a href="subject.html#9065">[ subject ]</a>
+              <a href="author.html#9065">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>tz wrote:
+&gt;<i> On Fri, Mar 25, 2011 at 11:53 AM, Terje Mathisen&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">terje at tmsw.no</A>&gt;  wrote:
+</I>&gt;&gt;<i> OK, let's take a look at the corresponding writer code:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>   cnt = (shm-&gt;count + 1)&amp;  mask
+</I>&gt;&gt;<i>   shm-&gt;timestamp[cnt] = timestamp;
+</I>&gt;&gt;<i>   memory_barrier(); // All preceding writes must finish at this point
+</I>&gt;&gt;<i>   shm-&gt;count++;     // Now the client(s) can read the timestamp
+</I>&gt;<i>
+</I>&gt;<i> This is the first time you mentioned the write barrier here.  I didn't
+</I>&gt;<i> know it was implied.
+</I>
+Sorry about that!
+&gt;<i>
+</I>&gt;&gt;&gt;<i> For that matter, the CPU might reorder it to do the two counter reads
+</I>&gt;&gt;&gt;<i> before or after the timestamp read or read cached values.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> With the barrier operation that is (and must be) impossible.
+</I>&gt;<i>
+</I>&gt;<i> A write barrier means the external RAM and/or caches are synced with CPU1.
+</I>&gt;<i>
+</I>&gt;<i> The loads in CPU2 aren't guaranteed anything without a corresponding
+</I>&gt;<i> read barrier.
+</I>&gt;<i>
+</I>&gt;<i> If I understand correctly,
+</I>
+I believe you are wrong, at least on x86 which provides pretty strong 
+memory ordering guarantees, but Alpha and some other architectures might 
+indeed be even stricter.
+
+&gt;<i> <A HREF="http://www.kernel.org/doc/Documentation/memory-barriers.txt">http://www.kernel.org/doc/Documentation/memory-barriers.txt</A>
+</I>&gt;<i>
+</I>&gt;<i> SMP BARRIER PAIRING
+</I>&gt;<i> -------------------
+</I>&gt;<i>
+</I>&gt;<i> When dealing with CPU-CPU interactions, certain types of memory barrier should
+</I>&gt;<i> always be paired.  A lack of appropriate pairing is almost certainly an error.
+</I>&gt;<i>
+</I>&gt;<i> A write barrier should always be paired with a data dependency barrier or read
+</I>&gt;<i> barrier, though a general barrier would also be viable.  Similarly a read
+</I>&gt;<i> barrier or a data dependency barrier should always be paired with at least an
+</I>&gt;<i> write barrier, though, again, a general barrier is viable:
+</I>&gt;<i>
+</I>&gt;<i> 	CPU 1		CPU 2
+</I>&gt;<i> 	===============	===============
+</I>&gt;<i> 	a = 1;
+</I>&gt;<i> 	&lt;write barrier&gt;
+</I>&gt;<i> 	b = 2;		x = b;
+</I>&gt;<i> 			&lt;read barrier&gt;
+</I>&gt;<i> 			y = a;
+</I>
+Which means that having a read_barrier in client between the read of the 
+counter and the read of the timestamps would be required in order to 
+know that you read the just updated counter value, right:
+
+In the scenario above (a) is the timestamp and (b) is the counter.
+
+Without the barrier you could, on some architectures, indeed read a 
+stale (b) value, but the only thing that happens (since we have room for 
+multiple timestamps) is that you would then go on to read the matching 
+stale timestamp: You would not get a partially updated time.
+
+&gt;<i> Or:
+</I>&gt;<i>
+</I>&gt;<i> 	CPU 1		CPU 2
+</I>&gt;<i> 	===============	===============================
+</I>&gt;<i> 	a = 1;
+</I>&gt;<i> 	&lt;write barrier&gt;
+</I>&gt;<i> 	b =&a;		x = b;
+</I>&gt;<i> 			&lt;data dependency barrier&gt;
+</I>&gt;<i> 			y = *x;
+</I>
+Since both the old and the new (b) value is valid, the second barrier 
+isn't absolutely required, right?
+
+The next timestamp read will go on to get the updated set.
+
+The idea is that except for the record currently being updated, all 
+other buffer entries are always consistent/valid, this is the big 
+benefit of having room for more than one.
+
+Terje
+
+
+-- 
+- &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Terje at tmsw.no</A>&gt;
+&quot;almost all programming can be viewed as an exercise in caching&quot;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009064.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+	<LI>Next message: <A HREF="009066.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9065">[ date ]</a>
+              <a href="thread.html#9065">[ thread ]</a>
+              <a href="subject.html#9065">[ subject ]</a>
+              <a href="author.html#9065">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

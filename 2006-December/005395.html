@@ -1,0 +1,109 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Looking for debugging help with Python binding
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Looking%20for%20debugging%20help%20with%20Python%20binding&In-Reply-To=%3C4576B019.9010901%40knitter.ch%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005394.html">
+   <LINK REL="Next"  HREF="005397.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Looking for debugging help with Python binding</H1>
+    <B>Andreas Stricker</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Looking%20for%20debugging%20help%20with%20Python%20binding&In-Reply-To=%3C4576B019.9010901%40knitter.ch%3E"
+       TITLE="[Gpsd-dev] Looking for debugging help with Python binding">andy at knitter.ch
+       </A><BR>
+    <I>Wed Dec  6 12:57:13 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005394.html">[Gpsd-dev] Looking for debugging help with Python binding
+</A></li>
+        <LI>Next message: <A HREF="005397.html">[Gpsd-dev] Looking for debugging help with Python binding
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5395">[ date ]</a>
+              <a href="thread.html#5395">[ thread ]</a>
+              <a href="subject.html#5395">[ subject ]</a>
+              <a href="author.html#5395">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Eric S. Raymond wrote:
+&gt;<i> Beyond just getting it working, one thing I want to understand is how 
+</I>&gt;<i> to throw an exception.  I gather that somehow returning NULL from a 
+</I>&gt;<i> method is supposed to trigger one, but the documentation is not clear
+</I>&gt;<i> on which one or how.
+</I>
+Almost all python function returning a PyObject* are expected to return
+a valid object if no error occurred. If an error is occured the function
+must set one of the error objects assigned to the modules and return NULL.
+
+It's quite simple:
+
+static PyObject *
+a_c_python_function(PyObject *self, PyObject*args)
+{
+
+...
+
+     if (errorcondition)
+         /* set global ErrorObject as assigned to module to an
+          * exception with a string as argument */
+         PyErr_SetString(ErrorObject, &quot;Everything went wrong&quot;);
+         return NULL;
+     }
+     /* fine, nothing happened */
+     Py_INCREF(Py_None);
+     return Py_None;
+}
+
+Instead of using the simple PyErr_SetString function we can append
+arbitrary objects to the exception. e.g:
+
+     ...
+     PyObject *obj;
+     obj = Py_BuildValue(&quot;is&quot;, errorcode, &quot;message&quot;);
+     if (obj == NULL)
+         return NULL;      /* in case of no memory the error is set by BuildValue */
+     PyErr_SetObject(ErrorObject, obj);
+     return NULL;
+     ...
+
+If we call a python function the exception delegation to the caller
+is very simple as we can see with the Py_BuildValue example above:
+If for some reason Py_BuildValue failed, the function itself set an
+exception and we have just to to return NULL if the test for
+obj == NULL is true.
+
+Cheers, Andy
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005394.html">[Gpsd-dev] Looking for debugging help with Python binding
+</A></li>
+	<LI>Next message: <A HREF="005397.html">[Gpsd-dev] Looking for debugging help with Python binding
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5395">[ date ]</a>
+              <a href="thread.html#5395">[ thread ]</a>
+              <a href="subject.html#5395">[ subject ]</a>
+              <a href="author.html#5395">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

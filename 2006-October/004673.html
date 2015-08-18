@@ -1,0 +1,673 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-commit-watch] r3663 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20r3663%20-%20trunk&In-Reply-To=%3C20061026213303.GD3734%40www.gritch.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004667.html">
+   <LINK REL="Next"  HREF="004674.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-commit-watch] r3663 - trunk</H1>
+    <B>Jeff Francis</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20r3663%20-%20trunk&In-Reply-To=%3C20061026213303.GD3734%40www.gritch.org%3E"
+       TITLE="[Gpsd-dev] [Gpsd-commit-watch] r3663 - trunk">jeff at gritch.org
+       </A><BR>
+    <I>Thu Oct 26 23:33:03 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004667.html">[Gpsd-dev] NTP, bathymetry, Garmin binary bug
+</A></li>
+        <LI>Next message: <A HREF="004674.html">[Gpsd-dev] [Gpsd-commit-watch] r3663 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4673">[ date ]</a>
+              <a href="thread.html#4673">[ thread ]</a>
+              <a href="subject.html#4673">[ subject ]</a>
+              <a href="author.html#4673">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>  This one broke the build on the mac:
+
+if gcc -DHAVE_CONFIG_H -I. -I. -I.   -I/usr/X11R6/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/X11R6/include -MT garminctl.o -MD -MP -MF &quot;.deps/garminctl.Tpo&quot; -c -o garminctl.o garminctl.c; \
+then mv -f &quot;.deps/garminctl.Tpo&quot; &quot;.deps/garminctl.Po&quot;; else rm -f &quot;.deps/garminctl.Tpo&quot;; exit 1; fi
+garminctl.c:37: error: static declaration of 'strlcat' follows non-static declaration
+/usr/include/string.h:125: error: previous declaration of 'strlcat' was here
+make[1]: *** [garminctl.o] Error 1
+make: *** [all] Error 2
+
+
+
+
+On Thu, Oct 26, 2006 at 11:06:59PM +0200, esr at BerliOS wrote:
+&gt;<i> Author: esr
+</I>&gt;<i> Date: 2006-10-26 23:06:58 +0200 (Thu, 26 Oct 2006)
+</I>&gt;<i> New Revision: 3663
+</I>&gt;<i> 
+</I>&gt;<i> Modified:
+</I>&gt;<i>    trunk/.splintrc
+</I>&gt;<i>    trunk/dgnss.c
+</I>&gt;<i>    trunk/garmin.c
+</I>&gt;<i>    trunk/garminctl.c
+</I>&gt;<i>    trunk/gps.h
+</I>&gt;<i>    trunk/itraxctl.c
+</I>&gt;<i>    trunk/libgps.c
+</I>&gt;<i>    trunk/libgpsd_core.c
+</I>&gt;<i>    trunk/nmea_parse.c
+</I>&gt;<i>    trunk/packet.c
+</I>&gt;<i>    trunk/sirfmon.c
+</I>&gt;<i>    trunk/zodiac.c
+</I>&gt;<i> Log:
+</I>&gt;<i> Partial splint cleanup.
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> Modified: trunk/.splintrc
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- trunk/.splintrc	2006-10-26 17:31:15 UTC (rev 3662)
+</I>&gt;<i> +++ trunk/.splintrc	2006-10-26 21:06:58 UTC (rev 3663)
+</I>&gt;<i> @@ -20,6 +20,7 @@
+</I>&gt;<i>  -Du_int64_t=ulong
+</I>&gt;<i>  -Din_addr_t=int
+</I>&gt;<i>  -Dcaddr_t=short
+</I>&gt;<i> +-Disgps30bits_t=uint
+</I>&gt;<i>  -DFD_SETSIZE=31
+</I>&gt;<i>  -DB57600=010001
+</I>&gt;<i>  -DB115200=0010011
+</I>&gt;<i> 
+</I>&gt;<i> Modified: trunk/dgnss.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- trunk/dgnss.c	2006-10-26 17:31:15 UTC (rev 3662)
+</I>&gt;<i> +++ trunk/dgnss.c	2006-10-26 21:06:58 UTC (rev 3663)
+</I>&gt;<i> @@ -53,8 +53,8 @@
+</I>&gt;<i>  	context-&gt;rtcmbytes = read(context-&gt;dsock, context-&gt;rtcmbuf, sizeof(context-&gt;rtcmbuf));
+</I>&gt;<i>  	if ((context-&gt;rtcmbytes == -1 &amp;&amp; errno != EAGAIN) ||
+</I>&gt;<i>  	    (context-&gt;rtcmbytes == 0)) {
+</I>&gt;<i> -	    shutdown(context-&gt;dsock, SHUT_RDWR);
+</I>&gt;<i> -	    close(context-&gt;dsock);
+</I>&gt;<i> +	    (void)shutdown(context-&gt;dsock, SHUT_RDWR);
+</I>&gt;<i> +	    (void)close(context-&gt;dsock);
+</I>&gt;<i>  	    return -1;
+</I>&gt;<i>  	} else
+</I>&gt;<i>  	    context-&gt;rtcmtime = timestamp();
+</I>&gt;<i> 
+</I>&gt;<i> Modified: trunk/garmin.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- trunk/garmin.c	2006-10-26 17:31:15 UTC (rev 3662)
+</I>&gt;<i> +++ trunk/garmin.c	2006-10-26 21:06:58 UTC (rev 3663)
+</I>&gt;<i> @@ -245,7 +245,8 @@
+</I>&gt;<i>  
+</I>&gt;<i>      switch( pkt_id ) {
+</I>&gt;<i>      case GARMIN_PKTID_L001_COMMAND_DATA:
+</I>&gt;<i> -	prod_id = get_uint16(buf);
+</I>&gt;<i> +	prod_id = get_uint16((uint8_t *)buf);
+</I>&gt;<i> +	/*@ -branchstate @*/
+</I>&gt;<i>  	switch ( prod_id ) {
+</I>&gt;<i>  	case CMND_ABORT:
+</I>&gt;<i>  	    msg = &quot;Abort current xfer&quot;;
+</I>&gt;<i> @@ -265,14 +266,15 @@
+</I>&gt;<i>  	    msg = msg_buf;
+</I>&gt;<i>  	    break;
+</I>&gt;<i>  	}
+</I>&gt;<i> +	/*@ +branchstate @*/
+</I>&gt;<i>  	gpsd_report(3, &quot;Appl, Command Data: %s\n&quot;, msg);
+</I>&gt;<i>  	break;
+</I>&gt;<i>      case GARMIN_PKTID_PRODUCT_RQST:
+</I>&gt;<i>  	gpsd_report(3, &quot;Appl, Product Data req\n&quot;);
+</I>&gt;<i>  	break;
+</I>&gt;<i>      case GARMIN_PKTID_PRODUCT_DATA:
+</I>&gt;<i> -	prod_id = get_uint16(buf);
+</I>&gt;<i> -	ver = get_uint16(&amp;buf[2]);
+</I>&gt;<i> +	prod_id = get_uint16((uint8_t *)buf);
+</I>&gt;<i> +	ver = get_uint16((uint8_t *)&amp;buf[2]);
+</I>&gt;<i>  	maj_ver = (int)(ver / 100);
+</I>&gt;<i>  	min_ver = (int)(ver - (maj_ver * 100));
+</I>&gt;<i>  	gpsd_report(3, &quot;Appl, Product Data, sz: %d\n&quot;, pkt_len);
+</I>&gt;<i> @@ -432,7 +434,7 @@
+</I>&gt;<i>  	// after a GARMIN_PKTID_PRODUCT_RQST 
+</I>&gt;<i>  	gpsd_report(3, &quot;Appl, Product Capability, sz: %d\n&quot;, pkt_len);
+</I>&gt;<i>  	for ( i = 0; i &lt; pkt_len ; i += 3 ) {
+</I>&gt;<i> -	    gpsd_report(3, &quot;  %c%03d\n&quot;, buf[i], get_uint16( &amp;buf[i+1] ) );
+</I>&gt;<i> +	    gpsd_report(3, &quot;  %c%03d\n&quot;, buf[i], get_uint16((uint8_t *)&amp;buf[i+1] ) );
+</I>&gt;<i>  	}
+</I>&gt;<i>  	break;
+</I>&gt;<i>      default:
+</I>&gt;<i> @@ -492,9 +494,10 @@
+</I>&gt;<i>      case GARMIN_LAYERID_APPL:
+</I>&gt;<i>          /* raw data transport, shared with Garmin Serial Driver */
+</I>&gt;<i>  
+</I>&gt;<i> -        mask = PrintSERPacket(session, (unsigned char)pkt-&gt;mPacketId
+</I>&gt;<i> -		,  (int)mDataSize, pkt-&gt;mData.uchars );
+</I>&gt;<i> -
+</I>&gt;<i> +        mask = PrintSERPacket(session, 
+</I>&gt;<i> +			      (unsigned char)pkt-&gt;mPacketId,  
+</I>&gt;<i> +			      (int)mDataSize, 
+</I>&gt;<i> +			      (unsigned char *)pkt-&gt;mData.uchars);
+</I>&gt;<i>  	break;
+</I>&gt;<i>      case 75:
+</I>&gt;<i>  	// private, garmin USB kernel driver specific
+</I>&gt;<i> @@ -545,7 +548,7 @@
+</I>&gt;<i>          uint8_t *buffer = (uint8_t *)session-&gt;driver.garmin.Buffer;
+</I>&gt;<i>  	Packet_t *thePacket = (Packet_t*)buffer;
+</I>&gt;<i>  	ssize_t theBytesReturned = 0;
+</I>&gt;<i> -	ssize_t theBytesToWrite = 12 + length;
+</I>&gt;<i> +	ssize_t theBytesToWrite = 12 + (ssize_t)length;
+</I>&gt;<i>  
+</I>&gt;<i>  	set_int32(buffer, layer_id);
+</I>&gt;<i>  	set_int32(buffer+4, pkt_id);
+</I>&gt;<i> @@ -563,7 +566,7 @@
+</I>&gt;<i>          (void)PrintUSBPacket ( session,  thePacket);
+</I>&gt;<i>  
+</I>&gt;<i>  	theBytesReturned = write( session-&gt;gpsdata.gps_fd
+</I>&gt;<i> -		    , thePacket, theBytesToWrite);
+</I>&gt;<i> +				  , thePacket, (size_t)theBytesToWrite);
+</I>&gt;<i>  	gpsd_report(4, &quot;SendPacket(), wrote %d bytes\n&quot;, theBytesReturned);
+</I>&gt;<i>  
+</I>&gt;<i>  	// Garmin says:
+</I>&gt;<i> @@ -617,6 +620,7 @@
+</I>&gt;<i>  //    continue;
+</I>&gt;<i>  
+</I>&gt;<i>      for( cnt = 0 ; cnt &lt; 10 ; cnt++ ) {
+</I>&gt;<i> +	size_t pkt_size;
+</I>&gt;<i>  	// Read async data until the driver returns less than the
+</I>&gt;<i>  	// max async data size, which signifies the end of a packet
+</I>&gt;<i>  
+</I>&gt;<i> @@ -648,7 +652,7 @@
+</I>&gt;<i>  	    session-&gt;driver.garmin.BufferLen = 0;
+</I>&gt;<i>  	    break;
+</I>&gt;<i>  	}
+</I>&gt;<i> -	size_t pkt_size = 12 + get_int32((uint8_t*)&amp;thePacket-&gt;mDataSize);
+</I>&gt;<i> +	pkt_size = 12 + get_int32((uint8_t*)&amp;thePacket-&gt;mDataSize);
+</I>&gt;<i>  	if ( 12 &lt;= session-&gt;driver.garmin.BufferLen) {
+</I>&gt;<i>  	    // have enough data to check packet size
+</I>&gt;<i>  	    if ( session-&gt;driver.garmin.BufferLen &gt; pkt_size) {
+</I>&gt;<i> @@ -997,7 +1001,7 @@
+</I>&gt;<i>      data_index = 0;
+</I>&gt;<i>      for ( i = 0; i &lt; 256 ; i++ ) {
+</I>&gt;<i>  
+</I>&gt;<i> -	if ( pkt_len == data_index )  {
+</I>&gt;<i> +	if ( (int)pkt_len == data_index )  {
+</I>&gt;<i>  		// got it all
+</I>&gt;<i>  		break;
+</I>&gt;<i>  	}
+</I>&gt;<i> @@ -1052,6 +1056,7 @@
+</I>&gt;<i>      }
+</I>&gt;<i>  
+</I>&gt;<i>      /* debug */
+</I>&gt;<i> +    /*@ -usedef -compdef @*/
+</I>&gt;<i>      for ( i = 0 ; i &lt; data_index ; i++ ) {
+</I>&gt;<i>  	gpsd_report(6, &quot;Char: %#02x\n&quot;, data_buf[i]);
+</I>&gt;<i>      }
+</I>&gt;<i> @@ -1061,6 +1066,7 @@
+</I>&gt;<i>          , pkt_id, pkt_len, chksum);
+</I>&gt;<i>  
+</I>&gt;<i>      mask = PrintSERPacket(session, pkt_id, pkt_len, data_buf);
+</I>&gt;<i> +    /*@ +usedef +compdef @*/
+</I>&gt;<i>      return mask;
+</I>&gt;<i>  }
+</I>&gt;<i>  /*@ -charint @*/
+</I>&gt;<i> 
+</I>&gt;<i> Modified: trunk/garminctl.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- trunk/garminctl.c	2006-10-26 17:31:15 UTC (rev 3662)
+</I>&gt;<i> +++ trunk/garminctl.c	2006-10-26 21:06:58 UTC (rev 3663)
+</I>&gt;<i> @@ -19,6 +19,7 @@
+</I>&gt;<i>  #include &lt;string.h&gt;
+</I>&gt;<i>  #include &lt;termios.h&gt;
+</I>&gt;<i>  #include &lt;unistd.h&gt;
+</I>&gt;<i> +#include &lt;stdbool.h&gt;
+</I>&gt;<i>  
+</I>&gt;<i>  /* gross - globals */
+</I>&gt;<i>  static struct termios ttyset;
+</I>&gt;<i> @@ -29,11 +30,11 @@
+</I>&gt;<i>  #define GARMIN_PACKET	1
+</I>&gt;<i>  #define NMEA_PACKET	2
+</I>&gt;<i>  
+</I>&gt;<i> -void logit(int , char *, ...);
+</I>&gt;<i> -void nmea_add_checksum(char *);
+</I>&gt;<i> -int nmea_send(int , const char *, ... );
+</I>&gt;<i> +static void logit(int , char *, ...);
+</I>&gt;<i> +static void nmea_add_checksum(char *);
+</I>&gt;<i> +static int nmea_send(int , const char *, ... );
+</I>&gt;<i>  #ifndef HAVE_STRLCAT
+</I>&gt;<i> -     size_t strlcat(char *dst, const char *src, size_t size);
+</I>&gt;<i> +static size_t strlcat(char *dst, const char *src, size_t size);
+</I>&gt;<i>  #endif
+</I>&gt;<i>  
+</I>&gt;<i>  /* how many characters to look at when trying to find baud rate lock */
+</I>&gt;<i> @@ -138,7 +139,7 @@
+</I>&gt;<i>  {
+</I>&gt;<i>      unsigned int	rate, count, state;
+</I>&gt;<i>      int st;
+</I>&gt;<i> -    unsigned char	c;
+</I>&gt;<i> +    char	c;
+</I>&gt;<i>  
+</I>&gt;<i>      (void)tcflush(fd, TCIOFLUSH);	/* toss stale data */
+</I>&gt;<i>  
+</I>&gt;<i> @@ -270,9 +271,10 @@
+</I>&gt;<i>  static unsigned int *ip, rates[] = {0, 4800, 9600, 19200, 38400, 57600};
+</I>&gt;<i>  
+</I>&gt;<i>  /* return speed found */
+</I>&gt;<i> -static unsigned int hunt_open(int fd, int *st)
+</I>&gt;<i> +/*@ -mustdefine @*/
+</I>&gt;<i> +static unsigned int hunt_open(int fd, /*@out@*/int *st)
+</I>&gt;<i>  {
+</I>&gt;<i> -    int speed;
+</I>&gt;<i> +    unsigned int speed;
+</I>&gt;<i>      /*
+</I>&gt;<i>       * Tip from Chris Kuethe: the FTDI chip used in the Trip-Nav
+</I>&gt;<i>       * 200 (and possibly other USB GPSes) gets completely hosed
+</I>&gt;<i> @@ -296,8 +298,9 @@
+</I>&gt;<i>      }
+</I>&gt;<i>      return 0;
+</I>&gt;<i>  }
+</I>&gt;<i> +/*@ +mustdefine @*/
+</I>&gt;<i>  
+</I>&gt;<i> -static void serial_initialize(char *device, int *fd, int *st)
+</I>&gt;<i> +static void serial_initialize(const char *device, /*@out@*/int *fd, /*@out@*/int *st)
+</I>&gt;<i>  {
+</I>&gt;<i>      if ( (*fd = open(device,O_RDWR)) &lt; 0) {
+</I>&gt;<i>  	perror(device);
+</I>&gt;<i> @@ -359,6 +362,17 @@
+</I>&gt;<i>      }
+</I>&gt;<i>  }
+</I>&gt;<i>  
+</I>&gt;<i> +static void settle(void)
+</I>&gt;<i> +{
+</I>&gt;<i> +    struct timespec delay, rem;
+</I>&gt;<i> +    /*@ -type -unrecog @*/
+</I>&gt;<i> +    memset( &amp;delay, 0, sizeof(delay));
+</I>&gt;<i> +    delay.tv_sec = 0;
+</I>&gt;<i> +    delay.tv_nsec = 333000000L;
+</I>&gt;<i> +    nanosleep(&amp;delay, &amp;rem);
+</I>&gt;<i> +    /*@ +type +unrecog @*/
+</I>&gt;<i> +}
+</I>&gt;<i> +
+</I>&gt;<i>  static void usage(void) {
+</I>&gt;<i>  	fprintf(stderr, &quot;Usage: garminctl [OPTIONS] {serial-port}\n\n&quot;
+</I>&gt;<i>  	        &quot;SVN ID: $Id$ \n&quot;
+</I>&gt;<i> @@ -373,16 +387,16 @@
+</I>&gt;<i>  
+</I>&gt;<i>  int main( int argc, char **argv)
+</I>&gt;<i>  {
+</I>&gt;<i> -	struct timespec delay, rem;
+</I>&gt;<i> -	int fd;
+</I>&gt;<i> +	int fd = 0;
+</I>&gt;<i>  	int st;    /* packet type detected */
+</I>&gt;<i>  	int status;
+</I>&gt;<i>  	char *buf;
+</I>&gt;<i>  	int option;
+</I>&gt;<i> -	int to_nmea = 0;
+</I>&gt;<i> -	int to_binary = 0;
+</I>&gt;<i> +	bool to_nmea = false;
+</I>&gt;<i> +	bool to_binary = false;
+</I>&gt;<i>  	char *device = &quot;&quot;;
+</I>&gt;<i>  
+</I>&gt;<i> +	/*@ -branchstate @*/
+</I>&gt;<i>  	while ((option = getopt(argc, argv, &quot;?hbnVD:&quot;)) != -1) {
+</I>&gt;<i>  		switch (option) {
+</I>&gt;<i>  		case 'D':
+</I>&gt;<i> @@ -390,11 +404,11 @@
+</I>&gt;<i>  			break;
+</I>&gt;<i>  		case 'n':
+</I>&gt;<i>  			// go to NMEA mode
+</I>&gt;<i> -			to_nmea = 1;
+</I>&gt;<i> +			to_nmea = true;
+</I>&gt;<i>  			break;
+</I>&gt;<i>  		case 'b':
+</I>&gt;<i>  			// go to Binary mode
+</I>&gt;<i> -			to_binary = 1;
+</I>&gt;<i> +			to_binary = true;
+</I>&gt;<i>  			break;
+</I>&gt;<i>  		case 'V':
+</I>&gt;<i>  	                (void)fprintf(stderr, &quot;%s: SVN ID: $Id$ \n&quot;, argv[0]);
+</I>&gt;<i> @@ -410,7 +424,7 @@
+</I>&gt;<i>  	if (optind &lt; argc) {
+</I>&gt;<i>  		device = argv[optind];
+</I>&gt;<i>  	}
+</I>&gt;<i> -	if ( !device || !strlen(device) ) {
+</I>&gt;<i> +	if ( !device || strlen(device)==0 ) {
+</I>&gt;<i>  		logit(0, &quot;ERROR: missing device name\n&quot;);
+</I>&gt;<i>  		usage();
+</I>&gt;<i>  		exit(1);
+</I>&gt;<i> @@ -421,8 +435,8 @@
+</I>&gt;<i>  		usage();
+</I>&gt;<i>  		exit(1);
+</I>&gt;<i>  	}
+</I>&gt;<i> +	/*@ +branchstate @*/
+</I>&gt;<i>  
+</I>&gt;<i> -
+</I>&gt;<i>  	serial_initialize(device, &amp;fd, &amp;st);
+</I>&gt;<i>  
+</I>&gt;<i>  	if ( st == NO_PACKET ) {
+</I>&gt;<i> @@ -440,23 +454,14 @@
+</I>&gt;<i>  			logit(0, &quot;=&gt; GPS: FAILED\n&quot;);
+</I>&gt;<i>  			return 1;
+</I>&gt;<i>  		}
+</I>&gt;<i> -		// wait 33mS, essential!
+</I>&gt;<i> -		memset( &amp;delay, 0, sizeof(delay));
+</I>&gt;<i> -		delay.tv_sec = 0;
+</I>&gt;<i> -		delay.tv_nsec = 33300000L;
+</I>&gt;<i> -		nanosleep(&amp;delay, &amp;rem);
+</I>&gt;<i> +		settle(); // wait 33mS, essential!
+</I>&gt;<i>  
+</I>&gt;<i>  		/* once a sec, no binary, no averaging, NMEA 2.3, WAAS */
+</I>&gt;<i>  		
+</I>&gt;<i> -		nmea_send(fd, &quot;$PGRMC1,1,1&quot;);
+</I>&gt;<i> -		//nmea_send(fd, &quot;$PGRMC1,1,1,1,,,,2,W,N&quot;);
+</I>&gt;<i> -		nmea_send(fd, &quot;$PGRMI,,,,,,,R&quot;);
+</I>&gt;<i> -		// wait 333mS, essential!
+</I>&gt;<i> -		// then figure out the new speed.
+</I>&gt;<i> -		memset( &amp;delay, 0, sizeof(delay));
+</I>&gt;<i> -		delay.tv_sec = 0;
+</I>&gt;<i> -		delay.tv_nsec = 333000000L;
+</I>&gt;<i> -		nanosleep(&amp;delay, &amp;rem);
+</I>&gt;<i> +		(void)nmea_send(fd, &quot;$PGRMC1,1,1&quot;);
+</I>&gt;<i> +		//(void)nmea_send(fd, &quot;$PGRMC1,1,1,1,,,,2,W,N&quot;);
+</I>&gt;<i> +		(void)nmea_send(fd, &quot;$PGRMI,,,,,,,R&quot;);
+</I>&gt;<i> +		settle();    // wait 333mS, essential!
+</I>&gt;<i>  
+</I>&gt;<i>  		if ( (bps = hunt_open(fd, &amp;st))==0) {
+</I>&gt;<i>  			logit(0, &quot;Can't sync up with device!\n&quot;);
+</I>&gt;<i> @@ -465,17 +470,11 @@
+</I>&gt;<i>  	} else if ( to_binary &amp;&amp; st == GARMIN_PACKET ) {
+</I>&gt;<i>  		logit(0, &quot;GPS already in GARMIN mode\n&quot;);
+</I>&gt;<i>  	} else if ( to_binary ) {
+</I>&gt;<i> -		nmea_send(fd, &quot;$PGRMC1,1,2,1,,,,2,W,N&quot;);
+</I>&gt;<i> -		nmea_send(fd, &quot;$PGRMI,,,,,,,R&quot;);
+</I>&gt;<i> +		(void)nmea_send(fd, &quot;$PGRMC1,1,2,1,,,,2,W,N&quot;);
+</I>&gt;<i> +		(void)nmea_send(fd, &quot;$PGRMI,,,,,,,R&quot;);
+</I>&gt;<i>  		// garmin serial binary is 9600 only!
+</I>&gt;<i>  		logit(0, &quot;NOTE: Garmin binary is 9600 baud only!\n&quot;);
+</I>&gt;<i> -		// wait 333mS, essential!
+</I>&gt;<i> -		// then figure out the new speed.
+</I>&gt;<i> -		memset( &amp;delay, 0, sizeof(delay));
+</I>&gt;<i> -		delay.tv_sec = 0;
+</I>&gt;<i> -		delay.tv_nsec = 333000000L;
+</I>&gt;<i> -		nanosleep(&amp;delay, &amp;rem);
+</I>&gt;<i> -
+</I>&gt;<i> +		settle();	// wait 333mS, essential!
+</I>&gt;<i>  		if ( (bps = hunt_open(fd, &amp;st))==0) {
+</I>&gt;<i>  			logit(0, &quot;Can't sync up with device!\n&quot;);
+</I>&gt;<i>  			exit(1);
+</I>&gt;<i> 
+</I>&gt;<i> Modified: trunk/gps.h
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- trunk/gps.h	2006-10-26 17:31:15 UTC (rev 3662)
+</I>&gt;<i> +++ trunk/gps.h	2006-10-26 21:06:58 UTC (rev 3663)
+</I>&gt;<i> @@ -96,12 +96,14 @@
+</I>&gt;<i>  /* RTCM104 doesn't specify this, so give it the largest reasonable value */
+</I>&gt;<i>  #define MAXHEALTH	(RTCM_WORDS_MAX-2)	
+</I>&gt;<i>  
+</I>&gt;<i> +#ifndef S_SPLINT_S 
+</I>&gt;<i>  /*
+</I>&gt;<i>   * A nominally 30-bit word (24 bits of data, 6 bits of parity)
+</I>&gt;<i>   * used both in the GPS downlink protocol described in IS-GPS-200
+</I>&gt;<i>   * and in the format for DGPS corrections used in RTCM-104.
+</I>&gt;<i>   */
+</I>&gt;<i>  typedef /*@unsignedintegraltype@*/ uint32_t isgps30bits_t;
+</I>&gt;<i> +#endif /* S_SPLINT_S */
+</I>&gt;<i>  
+</I>&gt;<i>  struct rtcm_t {
+</I>&gt;<i>      /* header contents */
+</I>&gt;<i> 
+</I>&gt;<i> Modified: trunk/itraxctl.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- trunk/itraxctl.c	2006-10-26 17:31:15 UTC (rev 3662)
+</I>&gt;<i> +++ trunk/itraxctl.c	2006-10-26 21:06:58 UTC (rev 3663)
+</I>&gt;<i> @@ -61,8 +61,10 @@
+</I>&gt;<i>  
+</I>&gt;<i>  void
+</I>&gt;<i>  itrax_reset(int fd){
+</I>&gt;<i> -	int i, n;
+</I>&gt;<i> +	int i;
+</I>&gt;<i> +	size_t n;
+</I>&gt;<i>  	char buf[BUFSIZ];
+</I>&gt;<i> +	/*@+charint@*/
+</I>&gt;<i>  	char resetstr[18] = {	0x3c, 0x21, /* HEADER */
+</I>&gt;<i>  				0x7f, /* src: NODE_HOST | TASK_HOST */
+</I>&gt;<i>  				0x20, /* dst: NODE_ITRAX | TASK_SYSTEM */
+</I>&gt;<i> @@ -74,6 +76,7 @@
+</I>&gt;<i>  				0x00, 0x00, 0x00, 0x00, /* DUMMY */
+</I>&gt;<i>  				0x17, 0x00, /* CHECKSUM */
+</I>&gt;<i>  				0x3e /* TRAILER */ };
+</I>&gt;<i> +	/*@-charint@*/
+</I>&gt;<i>  	struct resetmsg rm = {
+</I>&gt;<i>  		.h1 = '&lt;',
+</I>&gt;<i>  		.h2 = '!',
+</I>&gt;<i> @@ -90,19 +93,19 @@
+</I>&gt;<i>  	};
+</I>&gt;<i>  
+</I>&gt;<i>  	memcpy(&amp;resetstr, &amp;rm, 18);
+</I>&gt;<i> -	italk_add_checksum((char *)&amp;rm, sizeof(rm));
+</I>&gt;<i> -	write(fd, &amp;rm, sizeof(rm));
+</I>&gt;<i> +	(void)italk_add_checksum((char *)&amp;rm, sizeof(rm));
+</I>&gt;<i> +	(void)write(fd, &amp;rm, sizeof(rm));
+</I>&gt;<i>  	for (i = 0; i &lt; 5; i++){
+</I>&gt;<i> -		n = write(fd, resetstr, sizeof(resetstr));
+</I>&gt;<i> -		tcdrain(fd);
+</I>&gt;<i> -		usleep(1000);
+</I>&gt;<i> +	        (void)write(fd, resetstr, sizeof(resetstr));
+</I>&gt;<i> +		(void)tcdrain(fd);
+</I>&gt;<i> +		(void)usleep(1000);
+</I>&gt;<i>  	}
+</I>&gt;<i>  	/* XXX This is Evil. it will go away when I get reset working */
+</I>&gt;<i> -	read(fd, buf, BUFSIZ);
+</I>&gt;<i> +	(void)read(fd, buf, BUFSIZ);
+</I>&gt;<i>  	for(n = 0; n &lt; BUFSIZ; n++){
+</I>&gt;<i>  		if (0 == n%16)
+</I>&gt;<i> -			printf(&quot;\n%04x   &quot;, n);
+</I>&gt;<i> -		printf(&quot;%02x &quot;, buf[n]&amp;0xff);
+</I>&gt;<i> +		    printf(&quot;\n%04x   &quot;, (unsigned int)n);
+</I>&gt;<i> +		printf(&quot;%02x &quot;, (unsigned int)(buf[n]&amp;0xff));
+</I>&gt;<i>  	}
+</I>&gt;<i>  	printf(&quot;\n&quot;);
+</I>&gt;<i>  }
+</I>&gt;<i> @@ -111,7 +114,8 @@
+</I>&gt;<i>  italk_add_checksum(char *buf, size_t len){
+</I>&gt;<i>  	volatile unsigned long tmp = 0;
+</I>&gt;<i>  	volatile unsigned short sum = 0 , w = 0, *sp;
+</I>&gt;<i> -	int k, n;
+</I>&gt;<i> +	/* +ignoresigns */
+</I>&gt;<i> +	unsigned char k, n;
+</I>&gt;<i>  /*
+</I>&gt;<i>   * XXX this checksum routine is silly. fix it.
+</I>&gt;<i>   * ntohs and htons are my friends
+</I>&gt;<i> @@ -128,6 +132,7 @@
+</I>&gt;<i>  		sum ^= ((tmp &gt;&gt; 16) ^ tmp);
+</I>&gt;<i>  	}
+</I>&gt;<i>  	buf[len-3] = sum;
+</I>&gt;<i> +	/* -ignoresigns */
+</I>&gt;<i>  }
+</I>&gt;<i>  
+</I>&gt;<i>  void
+</I>&gt;<i> 
+</I>&gt;<i> Modified: trunk/libgps.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- trunk/libgps.c	2006-10-26 17:31:15 UTC (rev 3662)
+</I>&gt;<i> +++ trunk/libgps.c	2006-10-26 21:06:58 UTC (rev 3663)
+</I>&gt;<i> @@ -469,7 +469,7 @@
+</I>&gt;<i>  		    gpsdata-&gt;profiling = (sp[2] == '1');
+</I>&gt;<i>  		    break;
+</I>&gt;<i>  		case '$':
+</I>&gt;<i> -		    if (gpsdata-&gt;profiling != 1)
+</I>&gt;<i> +		    if (gpsdata-&gt;profiling != true)
+</I>&gt;<i>  			break;
+</I>&gt;<i>  		    /*@ +matchanyintegral -formatcode @*/
+</I>&gt;<i>  		    (void)sscanf(sp, &quot;$=%8s %zd %lf %lf %lf %lf %lf %lf&quot;, 
+</I>&gt;<i> 
+</I>&gt;<i> Modified: trunk/libgpsd_core.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- trunk/libgpsd_core.c	2006-10-26 17:31:15 UTC (rev 3662)
+</I>&gt;<i> +++ trunk/libgpsd_core.c	2006-10-26 21:06:58 UTC (rev 3663)
+</I>&gt;<i> @@ -715,10 +715,12 @@
+</I>&gt;<i>      const char *ibuf = (const char *)binbuf;
+</I>&gt;<i>      const char *hexchar = &quot;0123456789abcdef&quot;;
+</I>&gt;<i>  
+</I>&gt;<i> +    /*@ -shiftimplementation @*/
+</I>&gt;<i>      for (i = 0; i &lt; len; i++) {
+</I>&gt;<i>  	hexbuf[j++] = hexchar[ ibuf[i]&amp;0x0f ];
+</I>&gt;<i>  	hexbuf[j++] = hexchar[ (ibuf[i]&amp;0xf0)&gt;&gt;4 ];
+</I>&gt;<i>      }
+</I>&gt;<i> +    /*@ +shiftimplementation @*/
+</I>&gt;<i>      hexbuf[j] ='\0';
+</I>&gt;<i>  #else /* SQUELCH defined */
+</I>&gt;<i>      hexbuf[0] = '\0';
+</I>&gt;<i> @@ -729,7 +731,7 @@
+</I>&gt;<i>  int gpsd_hexpack(char *src, char *dst, int len){
+</I>&gt;<i>      int i, k, l;
+</I>&gt;<i>  
+</I>&gt;<i> -    l = strlen(src) / 2;
+</I>&gt;<i> +    l = (int)(strlen(src) / 2);
+</I>&gt;<i>      if ((l &lt; 1) || (l &gt; len))
+</I>&gt;<i>  	return -1;
+</I>&gt;<i>  
+</I>&gt;<i> @@ -742,7 +744,9 @@
+</I>&gt;<i>      return l;
+</I>&gt;<i>  }
+</I>&gt;<i>  
+</I>&gt;<i> -int hex2bin(char *s){
+</I>&gt;<i> +/*@ +charint -shiftimplementation @*/
+</I>&gt;<i> +int hex2bin(char *s)
+</I>&gt;<i> +{
+</I>&gt;<i>      int a, b;
+</I>&gt;<i>  
+</I>&gt;<i>      a = s[0] &amp; 0xff;
+</I>&gt;<i> @@ -768,3 +772,4 @@
+</I>&gt;<i>  
+</I>&gt;<i>      return ((a&lt;&lt;4) + b);
+</I>&gt;<i>  }
+</I>&gt;<i> +/*@ -charint +shiftimplementation @*/
+</I>&gt;<i> 
+</I>&gt;<i> Modified: trunk/nmea_parse.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- trunk/nmea_parse.c	2006-10-26 17:31:15 UTC (rev 3662)
+</I>&gt;<i> +++ trunk/nmea_parse.c	2006-10-26 21:06:58 UTC (rev 3663)
+</I>&gt;<i> @@ -450,9 +450,9 @@
+</I>&gt;<i>       * Garmin won't say, but the general belief is that these are 50% CEP.
+</I>&gt;<i>       * We follow the advice at &lt;<A HREF="http://gpsinformation.net/main/errors.htm">http://gpsinformation.net/main/errors.htm</A>&gt;.
+</I>&gt;<i>       */
+</I>&gt;<i> -    if ((strcmp(field[2], &quot;M&quot;)) ||
+</I>&gt;<i> -	(strcmp(field[4], &quot;M&quot;)) ||
+</I>&gt;<i> -	(strcmp(field[6], &quot;M&quot;))){
+</I>&gt;<i> +    if ((strcmp(field[2], &quot;M&quot;)!=0) ||
+</I>&gt;<i> +	(strcmp(field[4], &quot;M&quot;)!=0) ||
+</I>&gt;<i> +	(strcmp(field[6], &quot;M&quot;)!=0)){
+</I>&gt;<i>  	    session-&gt;gpsdata.fix.eph =
+</I>&gt;<i>  	    session-&gt;gpsdata.fix.epv =
+</I>&gt;<i>  	    session-&gt;gpsdata.epe = 100;
+</I>&gt;<i> @@ -626,7 +626,7 @@
+</I>&gt;<i>  	if (strlen(nmea_phrase[i].name) == 3)
+</I>&gt;<i>  	    s += 2;	/* skip talker ID */
+</I>&gt;<i>          if (strcmp(nmea_phrase[i].name, s) == 0) {
+</I>&gt;<i> -	    if (nmea_phrase[i].decoder &amp;&amp; (count &gt;= nmea_phrase[i].nf)) {
+</I>&gt;<i> +	    if (nmea_phrase[i].decoder!=NULL &amp;&amp; (count &gt;= nmea_phrase[i].nf)) {
+</I>&gt;<i>  		retval = (nmea_phrase[i].decoder)(count, field, session);
+</I>&gt;<i>  		strncpy(session-&gt;gpsdata.tag, nmea_phrase[i].name, MAXTAGLEN);
+</I>&gt;<i>  		session-&gt;gpsdata.sentence_length = strlen(sentence);
+</I>&gt;<i> 
+</I>&gt;<i> Modified: trunk/packet.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- trunk/packet.c	2006-10-26 17:31:15 UTC (rev 3662)
+</I>&gt;<i> +++ trunk/packet.c	2006-10-26 21:06:58 UTC (rev 3663)
+</I>&gt;<i> @@ -688,8 +688,9 @@
+</I>&gt;<i>  	    if ( packetlen &lt; 5) {
+</I>&gt;<i>  		session-&gt;packet_state = GROUND_STATE;
+</I>&gt;<i>              } else {
+</I>&gt;<i> -              unsigned int n, pkt_id, chksum, c, len;
+</I>&gt;<i> -	      bool ok = false;
+</I>&gt;<i> +		unsigned int pkt_id, ch, chksum, len;
+</I>&gt;<i> +		size_t n;
+</I>&gt;<i> +		bool ok = false;
+</I>&gt;<i>                
+</I>&gt;<i>  #ifdef GARMIN_ENABLE
+</I>&gt;<i>  	      n = 0;
+</I>&gt;<i> @@ -711,9 +712,9 @@
+</I>&gt;<i>  	         }
+</I>&gt;<i>  	         if (len &gt; 0) break;
+</I>&gt;<i>  		 /* check sum byte */
+</I>&gt;<i> -	         c = session-&gt;inbuffer[n++];
+</I>&gt;<i> -	         chksum += c;
+</I>&gt;<i> -	         if (c == 0x10) {
+</I>&gt;<i> +	         ch = session-&gt;inbuffer[n++];
+</I>&gt;<i> +	         chksum += ch;
+</I>&gt;<i> +	         if (ch == 0x10) {
+</I>&gt;<i>  		    if (session-&gt;inbuffer[n++] != 0x10) break;
+</I>&gt;<i>  	         }
+</I>&gt;<i>  	         if (session-&gt;inbuffer[n++] != 0x10) break;
+</I>&gt;<i> 
+</I>&gt;<i> Modified: trunk/sirfmon.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- trunk/sirfmon.c	2006-10-26 17:31:15 UTC (rev 3662)
+</I>&gt;<i> +++ trunk/sirfmon.c	2006-10-26 21:06:58 UTC (rev 3663)
+</I>&gt;<i> @@ -445,11 +445,11 @@
+</I>&gt;<i>  
+</I>&gt;<i>  	total               3 x 12 = 36 bytes
+</I>&gt;<i>  	******************************************************************/
+</I>&gt;<i> -	touchwin(mid27win);
+</I>&gt;<i> +	(void)touchwin(mid27win);
+</I>&gt;<i>  	display(mid27win, 1, 14, &quot;                                                                                     &quot;);
+</I>&gt;<i>  	display(mid27win, 1, 14, &quot;%s&quot;, dgpsvec[(int)getub(buf, 1)]);
+</I>&gt;<i>  	for (i = j = 0; i &lt; 12; i++) {
+</I>&gt;<i> -	    touchwin(mid27win);
+</I>&gt;<i> +	    (void)touchwin(mid27win);
+</I>&gt;<i>  	    if (/*@i1@*/getub(buf, 16+3*i) != '\0') {
+</I>&gt;<i>  		(void)wprintw(mid27win, &quot;  %d=%d&quot;, getub(buf, 16+3*i), getsw(buf, 16+3*i+1));
+</I>&gt;<i>  		j++;
+</I>&gt;<i> 
+</I>&gt;<i> Modified: trunk/zodiac.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- trunk/zodiac.c	2006-10-26 17:31:15 UTC (rev 3662)
+</I>&gt;<i> +++ trunk/zodiac.c	2006-10-26 21:06:58 UTC (rev 3663)
+</I>&gt;<i> @@ -413,6 +413,7 @@
+</I>&gt;<i>      .typename       = &quot;Zodiac binary&quot;,	/* full name of type */
+</I>&gt;<i>      .trigger        = NULL,		/* no trigger */
+</I>&gt;<i>      .channels       = 12,		/* consumer-grade GPS */
+</I>&gt;<i> +    .wakeup         = NULL,		/* no probe on baud rate change */
+</I>&gt;<i>      .probe          = NULL,		/* no probe */
+</I>&gt;<i>      .initializer    = NULL,		/* no initialization */
+</I>&gt;<i>      .get_packet     = packet_get,	/* use the generic packet getter */
+</I>&gt;<i> 
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-commit-watch mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-commit-watch at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-commit-watch">https://lists.berlios.de/mailman/listinfo/gpsd-commit-watch</A>
+</I>
+-- 
++--------------------------+------------------------------------------+
+|<i>   Jeff Francis - N0GQ    |                                          |
+</I>|<i> Snohomish, WA USA, Earth | &quot;Yeah, I was a pool guy too.&quot;            |
+</I>|<i>     <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>      |                                - Hawkins |
+</I>|<i>  <A HREF="http://blog.gritch.org">http://blog.gritch.org</A>  |                                          |
+</I>+--------------------------+------------------------------------------+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004667.html">[Gpsd-dev] NTP, bathymetry, Garmin binary bug
+</A></li>
+	<LI>Next message: <A HREF="004674.html">[Gpsd-dev] [Gpsd-commit-watch] r3663 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4673">[ date ]</a>
+              <a href="thread.html#4673">[ thread ]</a>
+              <a href="subject.html#4673">[ subject ]</a>
+              <a href="author.html#4673">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,162 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: logger client
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20logger%20client&In-Reply-To=%3C2flackxbf1e.fsf%40saruman.uio.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002383.html">
+   <LINK REL="Next"  HREF="002409.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: logger client</H1>
+    <B>Petter Reinholdtsen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20logger%20client&In-Reply-To=%3C2flackxbf1e.fsf%40saruman.uio.no%3E"
+       TITLE="[Gpsd-dev] Re: logger client">pere at hungry.com
+       </A><BR>
+    <I>Fri Jul  8 15:31:09 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002383.html">[Gpsd-dev] Re: logger client
+</A></li>
+        <LI>Next message: <A HREF="002409.html">[Gpsd-dev] Re: logger client
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2384">[ date ]</a>
+              <a href="thread.html#2384">[ thread ]</a>
+              <a href="subject.html#2384">[ subject ]</a>
+              <a href="author.html#2384">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>[Amaury Jacquot]
+&gt;<i> man page. that's doable... (and should be pretty shord, considering the
+</I>&gt;<i> very few options :D)
+</I>
+If you, like me, have a problem with the roff notation, you might find
+the manedit program helpful.
+
+The current code in contrib/ give a few compile warnings.  Here are
+patches to solve it.
+
+ - Make all internal functions static to avoid compiler warning about
+   non-prototyped functions.
+
+ - Avoid comparing signed and unsigned value by casting the &quot;smaller&quot;
+   type to the larger type.
+
+Index: gpxlogger.c
+===================================================================
+--- gpxlogger.c	(revisjon 2798)
++++ gpxlogger.c	(arbeidskopi)
+@@ -41,19 +41,19 @@
+ } gpsfix;
+ 
+ 
+-void print_gpx_trk_start (void) {
++static void print_gpx_trk_start (void) {
+ 	fprintf (gpxfile, &quot; &lt;trk&gt;\n&quot;);
+ 	fprintf (gpxfile, &quot;  &lt;trkseg&gt;\n&quot;);
+ 	fflush (gpxfile);
+ }
+ 
+-void print_gpx_trk_end (void) {
++static void print_gpx_trk_end (void) {
+ 	fprintf (gpxfile, &quot;  &lt;/trkseg&gt;\n&quot;);
+ 	fprintf (gpxfile, &quot; &lt;/trk&gt;\n&quot;);
+ 	fflush (gpxfile);
+ }
+ 
+-DBusHandlerResult handle_gps_fix (DBusMessage* message) {
++static DBusHandlerResult handle_gps_fix (DBusMessage* message) {
+ 	DBusMessageIter	iter;
+ 	double		temp_time;
+ 	
+@@ -132,7 +132,7 @@
+ 	return DBUS_HANDLER_RESULT_HANDLED;
+ }
+ 
+-void print_gpx_header (void) {
++static void print_gpx_header (void) {
+ 	if (!gpxfile) return;
+ 
+ 	fprintf (gpxfile, &quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;utf-8\&quot;?&gt;\n&quot;);
+@@ -149,14 +149,14 @@
+ 	fflush (gpxfile);
+ }
+ 
+-void print_gpx_footer (void) {
++static void print_gpx_footer (void) {
+ 	if (intrack)
+ 		print_gpx_trk_end();
+ 	fprintf (gpxfile, &quot;&lt;/gpx&gt;\n&quot;);
+ 	fclose (gpxfile);
+ }
+ 
+-void quit_handler (int signum) {
++static void quit_handler (int signum) {
+ 	syslog (LOG_INFO, &quot;exiting, signal %d received&quot;, signum);
+ 	print_gpx_footer ();
+ 	exit (0);
+Index: gpspipe.c
+===================================================================
+--- gpspipe.c	(revisjon 2798)
++++ gpspipe.c	(arbeidskopi)
+@@ -38,7 +38,7 @@
+ #include &lt;stdlib.h&gt;
+ #include &quot;../gpsd.h&quot;
+ 
+-void usage(const char *prog) {
++static void usage(const char *prog) {
+ 	fprintf(stderr, &quot;%s: connect to local gpsd and dump data to stdout\n\n&quot;
+ 		&quot;-h show this help\n&quot;
+ 		&quot;-r Dump raw NMEA\n&quot;
+@@ -54,7 +54,7 @@
+ 	int s = 0;
+         char buf[4096];
+ 	char *cstr = NULL;
+-        int wrote = 0;
++        ssize_t wrote = 0;
+         int dump_nmea = 0;
+         int dump_gpsd = 0;
+         int timestamp = 0;
+@@ -105,7 +105,7 @@
+ 	}
+ 
+ 	wrote = write( s, cstr, strlen(cstr) );
+-	if ( strlen(cstr) != wrote ) {
++	if ( (ssize_t)strlen(cstr) != wrote ) {
+ 		fprintf( stderr, &quot;%s: write error, %s(%d)\n&quot;, argv[0]
+ 			, strerror(errno), errno);
+ 		exit (1);
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002383.html">[Gpsd-dev] Re: logger client
+</A></li>
+	<LI>Next message: <A HREF="002409.html">[Gpsd-dev] Re: logger client
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2384">[ date ]</a>
+              <a href="thread.html#2384">[ thread ]</a>
+              <a href="subject.html#2384">[ subject ]</a>
+              <a href="author.html#2384">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

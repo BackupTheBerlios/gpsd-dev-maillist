@@ -1,0 +1,90 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Input packets buffering bug(s)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3CAANLkTikWHRz7a1C7fvE7wayUyUxZNCePcIKVMRtOktCp%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007808.html">
+   <LINK REL="Next"  HREF="007813.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Input packets buffering bug(s)</H1>
+    <B>Olivier Cornu</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3CAANLkTikWHRz7a1C7fvE7wayUyUxZNCePcIKVMRtOktCp%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Input packets buffering bug(s)">o.cornu at gmail.com
+       </A><BR>
+    <I>Sat May 29 10:41:37 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007808.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+        <LI>Next message: <A HREF="007813.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7811">[ date ]</a>
+              <a href="thread.html#7811">[ thread ]</a>
+              <a href="subject.html#7811">[ subject ]</a>
+              <a href="author.html#7811">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sat, May 29, 2010 at 02:04, Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt; wrote:
+&gt;<i> It sounds like Olivier and Remco both favor committing, and no one is
+</I>&gt;<i> opposed - just people who aren't 100% sure if regression tests are ok
+</I>&gt;<i> with the change.  I'll spiff up the comment and do that.
+</I>
+Fwiw, the patch is working fine on my setup. Thanks!
+
+&gt;<i> &#160;As for efficiency, I think the concern is overblown. &#160;If one had a
+</I>&gt;<i> &#160;serial port GPSr, then there would be close to one system call per
+</I>&gt;<i> &#160;byte. &#160;On USB, we're talking ~500 bytes/second arriving in a burst,
+</I>&gt;<i> &#160;and it taking 32 reads instead of 2 over an entire second is not a big
+</I>&gt;<i> &#160;deal.
+</I>
+Now that the problem is fixed and the urge gone, we can perhaps
+discuss this input design/efficiency point more deeply.
+Before doing so, i'd like to add i'm conscious that what gets decided
+is not my call anyway, and i don't really mind that much.
+
+In my use-case (RFCOMM over bluetooth) there are ~250 bytes to be read
+(or nothing). That's ~16 chunks of 16 bytes.
+No big deal, but enough paddling in jelly to trigger an inside alarm.
+In fact, going over the entire main loop just to read tty input
+already triggers it.
+What i'd actually like to see is one thread per open COM port reading
+and parsing packets, notifying the rest when there's a packet
+available for processing...
+
+-- 
+Olivier
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007808.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+	<LI>Next message: <A HREF="007813.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7811">[ date ]</a>
+              <a href="thread.html#7811">[ thread ]</a>
+              <a href="subject.html#7811">[ subject ]</a>
+              <a href="author.html#7811">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

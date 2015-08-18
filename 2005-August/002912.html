@@ -1,0 +1,156 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Navman Jupiter Support
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Navman%20Jupiter%20Support&In-Reply-To=%3C52015c9005081709597415dae6%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002907.html">
+   <LINK REL="Next"  HREF="002915.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Navman Jupiter Support</H1>
+    <B>Stefan Raab</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Navman%20Jupiter%20Support&In-Reply-To=%3C52015c9005081709597415dae6%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Navman Jupiter Support">sbraab at gmail.com
+       </A><BR>
+    <I>Wed Aug 17 18:59:11 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002907.html">[Gpsd-dev] Navman Jupiter Support
+</A></li>
+        <LI>Next message: <A HREF="002915.html">[Gpsd-dev] Navman Jupiter Support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2912">[ date ]</a>
+              <a href="thread.html#2912">[ thread ]</a>
+              <a href="subject.html#2912">[ subject ]</a>
+              <a href="author.html#2912">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Ok so I should have looked in to code before asking questions, it
+turned out to be an easy problem. :)
+
+The problem is that it does not send a valid sentence when it doesn't
+see any satellites. I think the best thing to do is probably put a
+check into the parser to make sure all the fields are available so
+misformated sentences don't cause a problem.
+
+Unfortunately, the device is no longer reachable remotely so I am dead
+in the water until I can get it fixed. Once that happens I will look
+try to test a patch and send it back in.
+
+here is the stack trace:
+#0  0x42031d51 in __strtod_internal () from /lib/tls/libc.so.6
+(gdb) 
+(gdb) bt
+#0  0x42031d51 in __strtod_internal () from /lib/tls/libc.so.6
+#1  0x4212b277 in __libc_ptyname2 () from /lib/tls/libc.so.6
+#2  0x420289e1 in atof () from /lib/tls/libc.so.6
+#3  0x4001a910 in processGPGSA (c=7, field=0xbfffb2d0, out=0x8051d60)
+at nmea_parse.c:321
+#4  0x4001b06d in nmea_parse (sentence=0x805325c
+&quot;$GPGSA,,,,,,*42\r\n&quot;, outdata=0x8051d60) at nmea_parse.c:547
+#5  0x4001baaf in nmea_parse_input (session=0x8051d60) at drivers.c:27
+#6  0x40022edf in gpsd_poll (session=0x8051d60) at libgpsd_core.c:514
+#7  0x0804d2e4 in main (argc=5, argv=0xbffff9b4) at gpsd.c:1239
+#8  0x42015704 in __libc_start_main () from /lib/tls/libc.so.6
+
+
+--stefan
+
+
+On 8/17/05, Chris Kuethe &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">chris.kuethe at gmail.com</A>&gt; wrote:
+&gt;<i> I don't have one of these navman receivers, though I wouldn't mind
+</I>&gt;<i> getting one to mess around with.
+</I>&gt;<i> 
+</I>&gt;<i> I would like to call your attention to the FAQ
+</I>&gt;<i> (<A HREF="http://gpsd.berlios.de/faq.html">http://gpsd.berlios.de/faq.html</A>) which says that part of debugging
+</I>&gt;<i> gpsd is:
+</I>&gt;<i> 
+</I>&gt;<i> -------------------------------------
+</I>&gt;<i> Capture a log that triggers the problem
+</I>&gt;<i> 
+</I>&gt;<i> If we can reproduce your gpsd problem, we can usually fix it very
+</I>&gt;<i> rapidly. If we can't reproduce it, you might get lucky or you might
+</I>&gt;<i> not &#8212; and we try hard, but all too often the result is 'not'.
+</I>&gt;<i> 
+</I>&gt;<i> Therefore the most important step you can take is to capture a log of
+</I>&gt;<i> some GPS output that reproduces the bug. If you're using a SiRF chip,
+</I>&gt;<i> the 'l' command of sirfmon will help you. If you're using a GPS that
+</I>&gt;<i> emits NMEA, telnetting to port 2947 and enabling raw mode will do the
+</I>&gt;<i> trick.
+</I>&gt;<i> -------------------------------------
+</I>&gt;<i> 
+</I>&gt;<i> Now I know you just said that it's the simple case where the receiver
+</I>&gt;<i> has no satellites that crashes gpsd. Can you send us a trace of this?
+</I>&gt;<i> It'll make it easier for us to track down where the bug is and it can
+</I>&gt;<i> be committed to our regression test suite so we can make sure the bug
+</I>&gt;<i> never comes back.
+</I>&gt;<i> 
+</I>&gt;<i> You mentioned there were other errors. Are you testing with the latest
+</I>&gt;<i> svn snapshot? If not, check to see if that works. If  so, did it work
+</I>&gt;<i> before? Did we break something?
+</I>&gt;<i> 
+</I>&gt;<i> Really, I'm not trying to be an ass, I'm just trying to help you
+</I>&gt;<i> provide us all the information we need to squash bugs. Off the top,
+</I>&gt;<i> this sounds like socat has nothing to do with the problem, that gpsd
+</I>&gt;<i> is choking on something.
+</I>&gt;<i> 
+</I>&gt;<i> CK
+</I>&gt;<i> 
+</I>&gt;<i> On 8/17/05, Stefan Raab &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">sbraab at gmail.com</A>&gt; wrote:
+</I>&gt;<i> &gt; Has anyone else used the Navman jupiter pico (
+</I>&gt;<i> &gt; <A HREF="http://navman.co.nz/oem/products/gps_receivers/jupiter_pico/index.html">http://navman.co.nz/oem/products/gps_receivers/jupiter_pico/index.html</A>
+</I>&gt;<i> &gt; ) with GPSD? I am seeing some core dumps when it see 0 satellites. I
+</I>&gt;<i> &gt; am also seeing a number of other errors.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; I am wondering because I am using socat to create a virtual tty device
+</I>&gt;<i> &gt; on the GPSd machine because the device is connected to the serial port
+</I>&gt;<i> &gt; on a remote router. When the device is synced up basic functionality
+</I>&gt;<i> &gt; seems to be fine. so I think I can rule out the socat. If nobody else
+</I>&gt;<i> &gt; has worked with the navman I will do some hacking to keep it from
+</I>&gt;<i> &gt; crashing.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; --stefan
+</I>&gt;<i> &gt; _______________________________________________
+</I>&gt;<i> &gt; Gpsd-dev mailing list
+</I>&gt;<i> &gt; <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> &gt; <A HREF="http://lists.berlios.de/mailman/listinfo/gpsd-dev">http://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i> &gt;
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> --
+</I>&gt;<i> GDB has a 'break' feature; why doesn't it have 'fix' too?
+</I>&gt;<i>
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002907.html">[Gpsd-dev] Navman Jupiter Support
+</A></li>
+	<LI>Next message: <A HREF="002915.html">[Gpsd-dev] Navman Jupiter Support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2912">[ date ]</a>
+              <a href="thread.html#2912">[ thread ]</a>
+              <a href="subject.html#2912">[ subject ]</a>
+              <a href="author.html#2912">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

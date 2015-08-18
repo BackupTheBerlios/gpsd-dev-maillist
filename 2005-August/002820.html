@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] PPS
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS&In-Reply-To=%3C9148.213.84.187.156.1123269697.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002818.html">
+   <LINK REL="Next"  HREF="002823.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] PPS</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS&In-Reply-To=%3C9148.213.84.187.156.1123269697.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] PPS">gpsd at xs4all.nl
+       </A><BR>
+    <I>Fri Aug  5 21:21:37 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002818.html">[Gpsd-dev] PPS
+</A></li>
+        <LI>Next message: <A HREF="002823.html">[Gpsd-dev] PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2820">[ date ]</a>
+              <a href="thread.html#2820">[ thread ]</a>
+              <a href="subject.html#2820">[ subject ]</a>
+              <a href="author.html#2820">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> On Friday 05 August 2005 01:01, Rob Janssen wrote:
+</I>&gt;<i> ...
+</I>&gt;&gt;<i> The problem with PPS is that you get exact information about the start
+</I>&gt;&gt;<i> of
+</I>&gt;&gt;<i> a second, but not *which* second.  Because of the unfortunate design of
+</I>&gt;<i>
+</I>&gt;<i> The only thing I have ever found about the relationship between the pps
+</I>&gt;<i> pulse
+</I>&gt;<i> and the time message is that the pulse is for the second of the next time
+</I>&gt;<i> message arriving. Did not say how long it would take for the message to
+</I>&gt;<i> arrive, but implies that it is less than a second.
+</I>&gt;<i>
+</I>&gt;<i> Since I can't find the source of that information any more, it is of low
+</I>&gt;<i> authority.
+</I>&gt;<i>
+</I>&gt;<i> OTOH, it just makes sense.
+</I>&gt;<i>
+</I>&gt;<i> So, which part of the problem do I not understand?
+</I>
+Well, that I don't know, but at least I know what is written above is
+incorrect.
+What I find when analyzing the output of various receivers is that the
+time indicated in messages is always behind the moment they are actually
+sent.
+By how much, that differs from receiver to receiver.
+And also, it often varies a little when looking at one single receiver.
+
+So, looking only at time in messages and at the moment those arrive, you
+get only poor time information.  Do not trust it to remain accurate within
+0.5 second, and without taking measurements don't rely on it being
+accurate within 2 seconds.
+
+What is actually happening is that the time in messages is not the current
+time, and this is usually not claimed either.  The time in messages is a
+timestamp of the measurement taken.  The receiver calculates a fix, and as
+the result of this calculation it has a time and location.  This
+information is stored in memory and a separate process ships out this
+stored information later.  How much later, that varies.
+
+PPS is a different matter, this is locked as well as possible to the
+internally synchronized clock of the receiver.
+And, sometimes there is a special message in binary mode that has a
+specified relation to PPS.   This message is much more accurate than the
+timestamps found in position messages.  I am not aware of such a defined
+message in NMEA.
+
+My experience with receivers (others can add theirs):
+
+SiRF-I: timestamps in messages arrive about 800 ms after indicated time.
+        dedicated PPS message is defined but cannot be sent by my receiver.
+        who has a receiver recent enough to check it?
+
+Zodiac: timestamps arrive about 1100ms after indicated time
+
+Trimble: dedicated time message exists that arrives about 75ms late
+
+NMEA:   someone (don't remember who) had a receiver that lagged 675ms
+        others can be off by more than 1 second.
+        reports on internet indicate that some receivers can vary the
+        delay over more than one second interval.
+
+So it is clear that no reliable PPS synchronization can be done without
+first measuring the delay of timestamps, when that is the only reference.
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002818.html">[Gpsd-dev] PPS
+</A></li>
+	<LI>Next message: <A HREF="002823.html">[Gpsd-dev] PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2820">[ date ]</a>
+              <a href="thread.html#2820">[ thread ]</a>
+              <a href="subject.html#2820">[ subject ]</a>
+              <a href="author.html#2820">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

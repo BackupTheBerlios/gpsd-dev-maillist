@@ -1,0 +1,103 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Time for a fast release?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Time%20for%20a%20fast%20release%3F&In-Reply-To=%3CPine.LNX.4.63.0504291643040.17505%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001483.html">
+   <LINK REL="Next"  HREF="001488.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Time for a fast release?</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Time%20for%20a%20fast%20release%3F&In-Reply-To=%3CPine.LNX.4.63.0504291643040.17505%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] Time for a fast release?">gem at rellim.com
+       </A><BR>
+    <I>Sat Apr 30 01:51:22 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001483.html">[Gpsd-dev] Time for a fast release?
+</A></li>
+        <LI>Next message: <A HREF="001488.html">[Gpsd-dev] Time for a fast release?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1485">[ date ]</a>
+              <a href="thread.html#1485">[ thread ]</a>
+              <a href="subject.html#1485">[ subject ]</a>
+              <a href="author.html#1485">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Eric!
+
+It looks like ntpd creates the shared memory segment that ntpshm.c
+uses as 0700/root.  Like this:
+
+# ipcs
+
+- ------ Shared Memory Segments --------
+key        shmid      owner      perms      bytes      nattch     status
+0x4e545030 0          root      700        80         1
+
+The shmget in ntpshm.c can open sthat segment fine either before or
+after dropping root perms.  The problem is a seg fault when it
+writes to the shared memory as nobody.
+
+One workaround would be to use shmctl() as root to change that to
+666.  Not happy with that solution.  In times past, hackers used to
+break in to systems, clean the logs, the roll back the system clock
+to cover the holes in the logs.  Hate to allow a mere user to get
+at my clock.
+
+This is looking again like a case for a split deamon, a small part
+with root and the rest without.
+
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.2.3 (GNU/Linux)
+
+iD4DBQFCcsiA8KZibdeR3qURAsdYAKCpiQ0OGc6RuCeDh3y5XbxpjgOBFgCYvxVH
+f7QB6+SMdDEpUVtAw0zXFg==
+=fE0/
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001483.html">[Gpsd-dev] Time for a fast release?
+</A></li>
+	<LI>Next message: <A HREF="001488.html">[Gpsd-dev] Time for a fast release?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1485">[ date ]</a>
+              <a href="thread.html#1485">[ thread ]</a>
+              <a href="subject.html#1485">[ subject ]</a>
+              <a href="author.html#1485">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

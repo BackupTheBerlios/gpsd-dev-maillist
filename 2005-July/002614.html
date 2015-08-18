@@ -1,0 +1,104 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] What's going on with rtcm.c
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20What%27s%20going%20on%20with%20rtcm.c&In-Reply-To=%3C91981b3e050724223677c8235e%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002613.html">
+   <LINK REL="Next"  HREF="002616.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] What's going on with rtcm.c</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20What%27s%20going%20on%20with%20rtcm.c&In-Reply-To=%3C91981b3e050724223677c8235e%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] What's going on with rtcm.c">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Mon Jul 25 07:36:18 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002613.html">[Gpsd-dev] What's going on with rtcm.c
+</A></li>
+        <LI>Next message: <A HREF="002616.html">[Gpsd-dev] What's going on with rtcm.c
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2614">[ date ]</a>
+              <a href="thread.html#2614">[ thread ]</a>
+              <a href="subject.html#2614">[ subject ]</a>
+              <a href="author.html#2614">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 7/24/05, Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at snark.thyrsus.com</A>&gt; wrote:
+&gt;<i> My second goal was to enable operation on big-endian machines.  I think I've
+</I>&gt;<i> actually done that, but the results have not yet been tested.  About
+</I>&gt;<i> an hour ago I checked in an autoconf-based test for big-endianness
+</I>&gt;<i> that is much simpler than the one Chris Kuethe was working up.
+</I>
+Good catch there...
+
+&gt;<i> My fifth goal is to separate the RTCM part from the low-level decoder,
+</I>&gt;<i> in hopes of being able to re-use the low-level decoder for 50bps
+</I>&gt;<i> subframe data.  This is why the 30-bit word has gone from being
+</I>&gt;<i> named rtcmword_t to isgps30bit_t; the &quot;isgps&quot; is meant to relate
+</I>&gt;<i> it to the IS-GPS-200 standard.
+</I>
+And I may need to steal that in (unsigned short)order. Kickin' at my
+logs of the 50bps data I'm having a difficult time getting preamble
+matches in the TLM word, leading me to believe that possibly the SS3
+receivers are outputting 50bps data with the parity still all mixed
+in.
+
+&gt;<i> They're tied together is in the function rtcm_decode().  This really
+</I>&gt;<i> ouught to be a thin wrapper around an isgps_decode() function that
+</I>&gt;<i> calls unpack() afterwards when isgps_decode() is successful.  There
+</I>&gt;<i> are two points of adhesion -- the PREAMBLE_TEST macro and the fact that
+</I>&gt;<i> rtcm_decode() uses the frmlen field.  Ideally, PREAMBLE_TEST would
+</I>&gt;<i> be written so it works for both variants and doesn't know anything
+</I>&gt;<i> about struct rtcm_msg_t -- that's unpack's job.
+</I>
+Right, so I'll fill my 80cu. ft. scuba tank with jolt and just start
+to inhale. I really hate all this bit banging. With regard to
+long-term strategy, we may want to consider breaking out all this
+parity stuff and message unpacking into its own &quot;library&quot;. gpsd,
+dgpipd, rtcmd, navmsgd, etc. can all call into the library, and so can
+any other app that just wants to use these @#(*$^@#(*$^ data formats
+without having to link in the rest of gpsd. Purely for separability of
+function, not because some of the code has not/less/more/very[*] scary
+licenses.
+
+[*] are you one of those damn hippie open-source weenies or one of
+those damn cranio-rectally inverted IP sharks? :D
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002613.html">[Gpsd-dev] What's going on with rtcm.c
+</A></li>
+	<LI>Next message: <A HREF="002616.html">[Gpsd-dev] What's going on with rtcm.c
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2614">[ date ]</a>
+              <a href="thread.html#2614">[ thread ]</a>
+              <a href="subject.html#2614">[ subject ]</a>
+              <a href="author.html#2614">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

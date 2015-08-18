@@ -1,0 +1,111 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] garmin driver
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20garmin%20driver&In-Reply-To=%3CPine.LNX.4.63.0508012239510.20943%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002700.html">
+   <LINK REL="Next"  HREF="002702.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] garmin driver</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20garmin%20driver&In-Reply-To=%3CPine.LNX.4.63.0508012239510.20943%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] garmin driver">gem at rellim.com
+       </A><BR>
+    <I>Tue Aug  2 07:42:34 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002700.html">[Gpsd-dev] garmin driver
+</A></li>
+        <LI>Next message: <A HREF="002702.html">[Gpsd-dev] garmin driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2701">[ date ]</a>
+              <a href="thread.html#2701">[ thread ]</a>
+              <a href="subject.html#2701">[ subject ]</a>
+              <a href="author.html#2701">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Eric!
+
+garmin_get_packet() returns 1 if it has a packet, otherwise 0.  So I do not
+think that is it.  I see a new function packet_get(), that reads the
+packet and then parses it.  That is not called for Garmin, instead
+just get_packet() is called, which gets the packet and does not parse it.
+
+I am guessing that I need a packet_get() like yours that does get_packet()
+and parses the packet in one.
+
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+
+On Tue, 2 Aug 2005, Eric S. Raymond wrote:
+
+&gt;<i> Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+</I>&gt;<i> &gt; I am trying to figure out why the latest SVN HEAD does not work with my
+</I>&gt;<i> &gt; Garmin 18.  I see the GetPacket() routine being called, but not the
+</I>&gt;<i> &gt; garmin_parse_input().  Any ideas?  Still digging from this end...
+</I>&gt;<i>
+</I>&gt;<i> I'll bet it was commit 3002 that did it.
+</I>&gt;<i>
+</I>&gt;<i> r3002 | esr | 2005-07-26 19:53:31 -0400 (Tue, 26 Jul 2005) | 12 lines
+</I>&gt;<i>
+</I>&gt;<i> Packetizing RTCM revealed a bug deep in the framework code -- one that only
+</I>&gt;<i> shows up when the device delivers less than one packet per cycle (e.g. normally
+</I>&gt;<i> 1 per second).  It became manifest because gpsfake, unable to packetize RTCM,
+</I>&gt;<i> inserts a delay between each *character* of an RTCM load.
+</I>&gt;<i>
+</I>&gt;<i> The bug was this: the packet getter was returning nz only when it saw a
+</I>&gt;<i> complete packet.  What it needed to be doing (and does now) is return nz
+</I>&gt;<i> when it has new data, whether that new data finishes a packet or not.
+</I>&gt;<i> Otherwise the online check will spuriously fail if the device takes over a
+</I>&gt;<i> second to deliver a packet completion -- even if it's getting new data
+</I>&gt;<i> each time!
+</I>-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.1 (GNU/Linux)
+
+iD8DBQFC7wfN8KZibdeR3qURAq+hAJ4iF/GWenz7Eb8zmxikvt52UQZ5pwCdEwqa
+sVmKFKxeUgsq1GiRvsaadVg=
+=ELgc
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002700.html">[Gpsd-dev] garmin driver
+</A></li>
+	<LI>Next message: <A HREF="002702.html">[Gpsd-dev] garmin driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2701">[ date ]</a>
+              <a href="thread.html#2701">[ thread ]</a>
+              <a href="subject.html#2701">[ subject ]</a>
+              <a href="author.html#2701">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

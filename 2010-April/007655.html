@@ -1,0 +1,186 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-users]  Preparing for 2.93 point release
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-users%5D%20%20Preparing%20for%202.93%20point%20release&In-Reply-To=%3Calpine.DEB.1.10.1004100752140.7576%40org-pc51.fy.chalmers.se%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007646.html">
+   <LINK REL="Next"  HREF="007659.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-users]  Preparing for 2.93 point release</H1>
+    <B>H&#229;kan Johansson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-users%5D%20%20Preparing%20for%202.93%20point%20release&In-Reply-To=%3Calpine.DEB.1.10.1004100752140.7576%40org-pc51.fy.chalmers.se%3E"
+       TITLE="[Gpsd-dev] [Gpsd-users]  Preparing for 2.93 point release">f96hajo at chalmers.se
+       </A><BR>
+    <I>Sat Apr 10 08:02:42 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007646.html">[Gpsd-dev] [Gpsd-users]  Preparing for 2.93 point release
+</A></li>
+        <LI>Next message: <A HREF="007659.html">[Gpsd-dev] [Gpsd-users]  Preparing for 2.93 point release
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7655">[ date ]</a>
+              <a href="thread.html#7655">[ thread ]</a>
+              <a href="subject.html#7655">[ subject ]</a>
+              <a href="author.html#7655">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+On Fri, 9 Apr 2010, Eric Raymond wrote:
+
+&gt;<i> H&#229;kan Johansson &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">f96hajo at chalmers.se</A>&gt;:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> The recent fix for gpsmon eating 100% CPU has some problem:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> For an oncore it works, quits with 'Device went offline' on gpsd exit
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> For a garmin 18 lvc in nmea mode (no clue how to put it in another
+</I>&gt;&gt;<i> mode), gpsmon quits after about 2s with: 'Read error from device' or
+</I>&gt;&gt;<i> 'select(2) failed' (only seen once)
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> The 'select(2) failed' happens if gpsmon is started too early, i.e.
+</I>&gt;&gt;<i> gpsd is started, but has not found the GPS yet.  Also seen for the
+</I>&gt;&gt;<i> oncore.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> For an EM406A (sirfstariii) in nmea mode (using -b), the problem is
+</I>&gt;&gt;<i> the same as with the garmin.  In sirf mode, gpsmon works (= does not
+</I>&gt;&gt;<i> self-exit after ~2s of operation).
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Sorry for the inconvenience,
+</I>&gt;&gt;<i> H&#229;kan
+</I>&gt;<i>
+</I>&gt;<i> That Garmin...USB or serial?  It might make a difference.
+</I>
+serial
+
+&gt;<i> In order to fix the spin bug I had to take out a piece of code that made
+</I>&gt;<i> gpsd tolerate zero-length read for up to twice the device cycle time.
+</I>&gt;<i> Here's my explanation from the log:
+</I>&gt;<i>
+</I>&gt;<i>   Fix the select()-spin bug on disconnected devices.
+</I>&gt;<i>
+</I>&gt;<i>    Addresses Berlios tracker bug #14638: 100% cpu when Bluetooth gps device
+</I>&gt;<i>    vanishes.  Also a couple of reports on the mailing lists.
+</I>&gt;<i>
+</I>&gt;<i>    The underlying problem here was that:
+</I>&gt;<i>
+</I>&gt;<i>    * Disconnecting a USB device causes reads from it to begin returning 0,
+</I>&gt;<i>      in effect an end-of-file condition.
+</I>&gt;<i>
+</I>&gt;<i>    * select(2) sets an active bit not on &quot;I/O is ready&quot; but on &quot;read would not
+</I>&gt;<i>      block&quot; -- including the end-of-file condition.
+</I>&gt;<i>
+</I>&gt;<i>    * Therefore, select() will spin any time its fd set includes a disconnected
+</I>&gt;<i>      device.
+</I>&gt;<i>
+</I>&gt;<i>    The fix is to check for a zero-length read explicitly and always take the
+</I>&gt;<i>    device out of the active set when that happens.
+</I>&gt;<i>
+</I>&gt;<i>    We were actually doing that here, but the test was defective in two ways:
+</I>&gt;<i>
+</I>&gt;<i>    1. The check for a zero return from gpsd_poll(), indicating I/O error
+</I>&gt;<i>       or zero-length read, needed to be *before* the check for full paccket
+</I>&gt;<i>       rather than after. This effectively disabled it.
+</I>&gt;<i>
+</I>&gt;<i>    2. There was a conditional arm in the gpsd_poll() code that made it ignore
+</I>&gt;<i>       zero-length reads for up to a full cycle.  I think this may have been a
+</I>&gt;<i>       fossil from long ago when I experimented with non-blocking reads on
+</I>&gt;<i>       devices.
+</I>&gt;<i>
+</I>&gt;<i>    The fix for the gpsmon spin bug is probably quite similar.  That's up next.
+</I>&gt;<i>
+</I>&gt;<i> Your new bug is almost certainly caused by the analogous change in
+</I>&gt;<i> gpsmon.  The problem is that, the way select(2) works, we seem to be
+</I>&gt;<i> stuck with a choice between two bad behaviors.  Either we keep going
+</I>&gt;<i> on a 0-length read, in which case we're going to burn CPU, or we don't,
+</I>&gt;<i> in which case it's going to be hard to be tolerant in cases where
+</I>&gt;<i> gpsmon/gpsd gets 0-length reads from the underlying device.
+</I>
+Is this really true?  Shouldn't a zero-length read always indicte EOF and 
+nothing else?  How otherwise to detect a socket that has been closed? 
+(According to the select(2) man page, (under Linux) sockets have to be 
+made non-blocking, as select may return that a socket is ready for 
+reading, but in reality is not, which would make the app block in read. 
+In non-blocking mode, this would lead to a error return of EAGAIN, and not 
+a 0-length read.)
+
+&gt;<i>
+</I>&gt;<i> Here's the relevant patch for gpsmon.  That is, if you apply this it will
+</I>&gt;<i> revert to the old behavior of continuing on a 0-length read.
+</I>&gt;<i>
+</I>&gt;<i> diff --git a/gpsmon.c b/gpsmon.c
+</I>&gt;<i> index 1bf988f..051c32c 100644
+</I>&gt;<i> --- a/gpsmon.c
+</I>&gt;<i> +++ b/gpsmon.c
+</I>&gt;<i> @@ -169,7 +169,7 @@ static ssize_t readpkt(void)
+</I>&gt;<i>        return EOF;
+</I>&gt;<i>
+</I>&gt;<i>     changed = gpsd_poll(&amp;session);
+</I>&gt;<i> -    if (changed == 0 || (changed &amp; ERROR_SET) != 0)
+</I>&gt;<i> +    if (changed &amp; ERROR_SET)
+</I>&gt;<i>        return EOF;
+</I>&gt;<i>
+</I>&gt;<i>     if (logfile != NULL) {
+</I>&gt;<i>
+</I>&gt;<i> You might want to try applying that and seeing how the symptoms change.
+</I>
+I have applied it, or rather:
+
+diff --git a/gpsmon.c b/gpsmon.c
+index ff173c4..19f2fcc 100644
+--- a/gpsmon.c
++++ b/gpsmon.c
+@@ -178,8 +178,6 @@ static ssize_t readpkt(void)
+         longjmp(terminate, TERM_SELECT_FAILED);
+
+      changed = gpsd_poll(&amp;session);
+-    if (changed == 0)
+-       longjmp(terminate, TERM_EMPTY_READ);
+
+      if ((changed &amp; ERROR_IS) != 0)
+         longjmp(terminate, TERM_READ_ERROR);
+
+and now have the following:
+
+NMEA mode (garmin serial or the EM406a) still break after about ~2 s with 
+'Read error from device'
+
+The non-breaking ones (oncore and sirf) do indeed go into 100 cpu load.
+
+'select(2) failed' still can happen on startup
+
+Cheers,
+H&#229;kan
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007646.html">[Gpsd-dev] [Gpsd-users]  Preparing for 2.93 point release
+</A></li>
+	<LI>Next message: <A HREF="007659.html">[Gpsd-dev] [Gpsd-users]  Preparing for 2.93 point release
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7655">[ date ]</a>
+              <a href="thread.html#7655">[ thread ]</a>
+              <a href="subject.html#7655">[ subject ]</a>
+              <a href="author.html#7655">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

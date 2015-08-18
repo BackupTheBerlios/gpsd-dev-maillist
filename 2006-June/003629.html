@@ -1,0 +1,97 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Is it time to depreciate the polled interface to GPSd?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Is%20it%20time%20to%20depreciate%20the%20polled%20interface%20to%20GPSd%3F&In-Reply-To=%3C5BA4D0A3-EFE1-45DD-9D34-8350C0645922%40qwest.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003660.html">
+   <LINK REL="Next"  HREF="003638.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Is it time to depreciate the polled interface to GPSd?</H1>
+    <B>Dan Oetting</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Is%20it%20time%20to%20depreciate%20the%20polled%20interface%20to%20GPSd%3F&In-Reply-To=%3C5BA4D0A3-EFE1-45DD-9D34-8350C0645922%40qwest.net%3E"
+       TITLE="[Gpsd-dev] Is it time to depreciate the polled interface to GPSd?">dan_oetting at qwest.net
+       </A><BR>
+    <I>Thu Jun  8 08:45:41 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003660.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from               meters/sec to knots
+</A></li>
+        <LI>Next message: <A HREF="003638.html">[Gpsd-dev] Is it time to depreciate the polled interface to GPSd?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3629">[ date ]</a>
+              <a href="thread.html#3629">[ thread ]</a>
+              <a href="subject.html#3629">[ subject ]</a>
+              <a href="author.html#3629">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>For the clients that want to poll because they require infrequent  
+data, irregular times or they just want somebody else to do the dirty  
+work, there could be a separate facility outside of GPSd. This  
+location services daemon could provide additional services such as  
+synchronizing the requested data to the clients time, interpolating  
+data over several cycles or extrapolating to a future time of  
+interest and computing the error estimate for the result.
+
+The location services needs to be handled by a daemon because it  
+enables tools that are not persistent processes to use location  
+results that would otherwise not be available.
+
+A simple location tagging tool:
+	Some event triggers...
+	Launch process
+	Identify time of event [ie: from network message timestamp]
+	read configuration, do setup
+	do
+		probe location service for delta=(event time - current time)
+		wait for timeout
+	until response or too many retries.
+	do whatever with event
+	quit
+
+Note that the client time does not need to be synchronized with the  
+GPS time (although the location services daemon does). Time in a  
+request can be a delta time +/- several seconds up to a maximum  
+configured for the daemon or a GPS time that falls within the same  
+window.
+
+Even for persistant processes, this type of polled location service  
+will simplify the task of clients whose primary function is something  
+other than being an expert GPS data massager.
+
+-- Dan Oetting
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003660.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from               meters/sec to knots
+</A></li>
+	<LI>Next message: <A HREF="003638.html">[Gpsd-dev] Is it time to depreciate the polled interface to GPSd?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3629">[ date ]</a>
+              <a href="thread.html#3629">[ thread ]</a>
+              <a href="subject.html#3629">[ subject ]</a>
+              <a href="author.html#3629">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

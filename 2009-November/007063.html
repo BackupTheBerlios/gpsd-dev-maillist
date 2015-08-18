@@ -1,0 +1,120 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] recent PPS
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20recent%20PPS&In-Reply-To=%3Calpine.DEB.1.10.0911132251330.975%40org-pc51.fy.chalmers.se%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007062.html">
+   <LINK REL="Next"  HREF="007064.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] recent PPS</H1>
+    <B>H&#229;kan Johansson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20recent%20PPS&In-Reply-To=%3Calpine.DEB.1.10.0911132251330.975%40org-pc51.fy.chalmers.se%3E"
+       TITLE="[Gpsd-dev] recent PPS">f96hajo at chalmers.se
+       </A><BR>
+    <I>Fri Nov 13 23:00:32 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007062.html">[Gpsd-dev] recent PPS
+</A></li>
+        <LI>Next message: <A HREF="007064.html">[Gpsd-dev] recent PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7063">[ date ]</a>
+              <a href="thread.html#7063">[ thread ]</a>
+              <a href="subject.html#7063">[ subject ]</a>
+              <a href="author.html#7063">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Hi Gary,
+
+Attachment: could we add some more logging of the pulses' time of arrival? 
+And also what ntpshm_put provides us with in detail.  (+ splint 
+pacification)
+
+&gt;<i> Now any thought on ntpshm_pps()?
+</I>&gt;<i>
+</I>&gt;<i> I just noticed that the first test is the NMEA time, NOT the PPS time, and
+</I>&gt;<i> thus known to be pretty shakey.  So this part just looks silly to me:
+</I>&gt;<i>
+</I>&gt;<i>    l_offset = shmTime-&gt;receiveTimeStampSec - shmTime-&gt;clockTimeStampSec;
+</I>&gt;<i>    /*@ -ignorequals @*/
+</I>&gt;<i>    l_offset *= 1000000;
+</I>&gt;<i>    l_offset += shmTime-&gt;receiveTimeStampUSec - shmTime-&gt;clockTimeStampUSec;
+</I>&gt;<i>    /*@ +ignorequals @*/
+</I>&gt;<i>    if (labs( l_offset ) &gt; PUT_MAX_OFFSET) {
+</I>&gt;<i>        gpsd_report(LOG_RAW, &quot;PPS ntpshm_pps: not in locking range: %ld\n&quot;
+</I>&gt;<i>                , (long)l_offset);
+</I>&gt;<i>        return -1;
+</I>&gt;<i>    }
+</I>&gt;<i>
+</I>&gt;<i> Any objections to just blowing that off and working at improving the
+</I>&gt;<i> later tests?
+</I>
+Agree.  The above test makes us kill the PPS pulse on really bad initial 
+conditions, just becuase the system clock is badly off, not on any pps 
+quality grounds.
+
+Perhaps the only test required is that the PPS pulse arrived within 1 
+period from the ntpshm_put message, now that the pps_monitor is careful to 
+only deliver the one (correct) edge.
+
+Cheers,
+H&#229;kan
+
+
+&gt;<i>
+</I>&gt;<i> RGDS
+</I>&gt;<i> GARY
+</I>&gt;<i> - ---------------------------------------------------------------------------
+</I>&gt;<i> Gary E. Miller Rellim 109 NW Wilmington Ave., Suite E, Bend, OR 97701
+</I>&gt;<i> 	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+</I>&gt;<i>
+</I>&gt;<i> -----BEGIN PGP SIGNATURE-----
+</I>&gt;<i> Version: GnuPG v1.4.3 (GNU/Linux)
+</I>&gt;<i>
+</I>&gt;<i> iD8DBQFK/cskBmnRqz71OvMRAuQEAJ0SBC1GGlc6Y9LMFPNwxh1ADXAeTgCg4LLG
+</I>&gt;<i> Ia2WSIEQ5uFSBjiCpi/8UOg=
+</I>&gt;<i> =VTRJ
+</I>&gt;<i> -----END PGP SIGNATURE-----
+</I>&gt;<i>
+</I>-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: pps_logging.diff
+Type: text/x-diff
+Size: 1801 bytes
+Desc: 
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091113/b60c26c6/attachment.diff">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091113/b60c26c6/attachment.diff</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007062.html">[Gpsd-dev] recent PPS
+</A></li>
+	<LI>Next message: <A HREF="007064.html">[Gpsd-dev] recent PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7063">[ date ]</a>
+              <a href="thread.html#7063">[ thread ]</a>
+              <a href="subject.html#7063">[ subject ]</a>
+              <a href="author.html#7063">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

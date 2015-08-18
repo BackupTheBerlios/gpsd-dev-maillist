@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] 2.90 release plan
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%202.90%20release%20plan&In-Reply-To=%3C20091214104013.GA7639%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007218.html">
+   <LINK REL="Next"  HREF="007283.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] 2.90 release plan</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%202.90%20release%20plan&In-Reply-To=%3C20091214104013.GA7639%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] 2.90 release plan">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Dec 14 11:40:13 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007218.html">[Gpsd-dev] 2.90 release plan
+</A></li>
+        <LI>Next message: <A HREF="007283.html">[Gpsd-dev] 2.90 release plan
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7282">[ date ]</a>
+              <a href="thread.html#7282">[ thread ]</a>
+              <a href="subject.html#7282">[ subject ]</a>
+              <a href="author.html#7282">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Bartos-Elekes Zsolt &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">muszi at kite.hu</A>&gt;:
+&gt;<i> Hi all!
+</I>&gt;<i> 
+</I>&gt;<i> &gt; Once again, if your know of an unresolved bug, now would be
+</I>&gt;<i> &gt; a good time to speak up.
+</I>&gt;<i> 
+</I>&gt;<i> I just caught a bug (in 2.39): if I start gpsd on computer A and specify 
+</I>&gt;<i> a ntrip data source, start gpsd on computer B and specify the same ntrip 
+</I>&gt;<i> data source, but cannot log in to the server (for example, because I can 
+</I>&gt;<i> log in only once), and connect a client to computer B's gpsd, issuing 
+</I>&gt;<i> any command closes the client's connection.
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> [computer A]# gpsd <A HREF="ntrip://username:password@euref-ip.net/MOUNTPT0">ntrip://username:password@euref-ip.net/MOUNTPT0</A>
+</I>&gt;<i> (gpsd starts OK, logs in to euref-ip.net)
+</I>&gt;<i> 
+</I>&gt;<i> [computer B]# gpsd <A HREF="ntrip://username:password@euref-ip.net/MOUNTPT0">ntrip://username:password@euref-ip.net/MOUNTPT0</A>
+</I>&gt;<i> (gpsd starts OK, but cannot log in to euref-ip.net, because only one 
+</I>&gt;<i> login is allowed for that username)
+</I>&gt;<i> 
+</I>&gt;<i> [computer B]# telnet localhost gpsd
+</I>&gt;<i> Trying 127.0.0.1...
+</I>&gt;<i> Connected to localhost.
+</I>&gt;<i> Escape character is '^]'.
+</I>&gt;<i> k
+</I>&gt;<i> Connection closed by foreign host.
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> I debugged a bit, and found that client is detached by calling 
+</I>&gt;<i> detach_client() on line 1877:
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> /* accept and execute commands for all clients */
+</I>&gt;<i> for (sub = subscribers; sub &lt; subscribers + MAXSUBSCRIBERS; sub++) {
+</I>&gt;<i>    if (sub-&gt;active == 0)
+</I>&gt;<i>      continue;
+</I>&gt;<i> 
+</I>&gt;<i>    if (FD_ISSET(sub-&gt;fd, &amp;rfds)) {
+</I>&gt;<i>      char buf[BUFSIZ];
+</I>&gt;<i>      int buflen;
+</I>&gt;<i> 
+</I>&gt;<i>      gpsd_report(LOG_PROG, &quot;checking client(%d)\n&quot;, sub_index(sub));
+</I>&gt;<i>      if ((buflen = (int)read(sub-&gt;fd, buf, sizeof(buf) - 1)) &lt;= 0) {
+</I>&gt;<i>        detach_client(sub);
+</I>&gt;<i>        ^^^^^^^^^^^^^^^^^^^
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> I don't really understand why does read() fail, so I leave debugging and 
+</I>&gt;<i> fixing it to you :-)
+</I>
+The NTRIP support has, apparently, seriously bitrotted since it was added.
+At commit 6750 (after 2.90 release) I discovered that the way NTRIP 
+casters were being opened was completely wrong. probably because the
+code around gpsd::open_device() mutated so its assumptions weren't valid
+any more.
+
+I tried to fix it, but I don't have any way to test NTRIP operation.  
+You might try rerunning your test with SVN head.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007218.html">[Gpsd-dev] 2.90 release plan
+</A></li>
+	<LI>Next message: <A HREF="007283.html">[Gpsd-dev] 2.90 release plan
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7282">[ date ]</a>
+              <a href="thread.html#7282">[ thread ]</a>
+              <a href="subject.html#7282">[ subject ]</a>
+              <a href="author.html#7282">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

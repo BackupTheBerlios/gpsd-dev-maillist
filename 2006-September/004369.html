@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] ntp-pps
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntp-pps&In-Reply-To=%3CPine.LNX.4.64.0609201210310.6631%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004368.html">
+   <LINK REL="Next"  HREF="004391.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] ntp-pps</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntp-pps&In-Reply-To=%3CPine.LNX.4.64.0609201210310.6631%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] ntp-pps">gem at rellim.com
+       </A><BR>
+    <I>Wed Sep 20 21:23:01 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004368.html">[Gpsd-dev] ntp-pps
+</A></li>
+        <LI>Next message: <A HREF="004391.html">[Gpsd-dev] ntp-pps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4369">[ date ]</a>
+              <a href="thread.html#4369">[ thread ]</a>
+              <a href="subject.html#4369">[ subject ]</a>
+              <a href="author.html#4369">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Tim!
+
+On Wed, 20 Sep 2006, Tim Cwik wrote:
+
+&gt;<i> I was one of the folks who reported that ntpd was not syncing with gpsd
+</I>&gt;<i> about two weeks ago. The svn version from last night is now working with
+</I>&gt;<i> a Garmin 18/lvc. I get
+</I>
+Excellent.
+
+&gt;<i> xSHM(0)    .GPS.     0 l   15   16  377    0.000  171.121 7.523
+</I>
+The 171 mS can be improved on by adjusting the fudge.  The 7.523 jitter
+is a bit high.  To improve the jitter you could try a higher baud rate
+on the GPS, make sure the host is lightly loaded, and maybe renice the
+ntpd and gpsd to -20.
+
+OTOH, the PPS solves all those problems so you could just ignore all but
+the offset.
+
+&gt;<i> # gps and gps pps
+</I>&gt;<i> server 127.127.28.0 minpoll 4 maxpoll 4
+</I>&gt;<i> fudge 127.127.28.0 time1 -0.320 refid GPS
+</I>
+Add the 0.171 to the -0.320 to get -0.149.  Give that a shot.
+
+&gt;<i> Do I want to change the fudge value in ntp.conf to reduce the offset in
+</I>&gt;<i> ntpq?
+</I>
+Yep, -0.320 to -0.148
+
+&gt;<i> I assume this is another way of looking at the current discussion about
+</I>&gt;<i> the fudge value in gpsd. My gps is using 4800 baud. Can gpsd change that
+</I>&gt;<i> during initialization or do I need to use some other program?
+</I>
+At the moment the only way is to edit the constant in drivers.c at line 84:
+
+     /* this magic number is derived from observation */
+     (void)ntpshm_put(session, session-&gt;gpsdata.fix.time + 0.675);
+                                                           ^^^^^
+
+That line assumes a delay of 0.675 and you see a adjust it -0.149.  So
+your real delay from PPS to NMEA time is about 0.526.
+
+
+What does this show after running continuously overnight:
+
+# ntpdc -c sysinfo
+
+Here is mine:
+
+system peer:          SHM(1)
+system peer mode:     client
+leap indicator:       00
+stratum:              1
+precision:            -20
+root distance:        0.00000 s
+root dispersion:      0.00055 s
+reference ID:         [GPS1]
+reference time:       c8bc125a.541abd1a  Wed, Sep 20 2006 12:17:46.328
+system flags:         bclient auth monitor ntp kernel stats
+jitter:               0.000000 s
+stability:            0.021 ppm
+broadcastdelay:       0.007996 s
+authdelay:            0.000002 s
+
+&gt;<i> Thanks for all your work on gpsd and your help with this so far.
+</I>
+NP, we are here 'cause we love this stuff.
+
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFFEZUY8KZibdeR3qURAsZKAJ9CCAv3fp6LoFl6wKs37ENtKoZCcQCeICpl
+QdRUIaI0D79EMNvKC1zalww=
+=/BaW
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004368.html">[Gpsd-dev] ntp-pps
+</A></li>
+	<LI>Next message: <A HREF="004391.html">[Gpsd-dev] ntp-pps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4369">[ date ]</a>
+              <a href="thread.html#4369">[ thread ]</a>
+              <a href="subject.html#4369">[ subject ]</a>
+              <a href="author.html#4369">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

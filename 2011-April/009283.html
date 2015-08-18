@@ -1,0 +1,114 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Test, test, test... RPM
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Test%2C%20test%2C%20test...%20RPM&In-Reply-To=%3C290396.75531.qm%40web32508.mail.mud.yahoo.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009276.html">
+   <LINK REL="Next"  HREF="009284.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Test, test, test... RPM</H1>
+    <B>Michael R. Davis</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Test%2C%20test%2C%20test...%20RPM&In-Reply-To=%3C290396.75531.qm%40web32508.mail.mud.yahoo.com%3E"
+       TITLE="[Gpsd-dev] Test, test, test... RPM">mrdvt92 at yahoo.com
+       </A><BR>
+    <I>Sun Apr 10 07:15:41 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009276.html">[Gpsd-dev] Release plans for 3.0
+</A></li>
+        <LI>Next message: <A HREF="009284.html">[Gpsd-dev] Test, test, test... RPM
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9283">[ date ]</a>
+              <a href="thread.html#9283">[ thread ]</a>
+              <a href="subject.html#9283">[ subject ]</a>
+              <a href="author.html#9283">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>GPSD Folks,
+&gt;<i> 1. Test, test, test.&#160; I'd like 3.0 to be bulletproof
+</I>&gt;<i> even by our historical standards
+</I>
+I'd like to get the RPM build to work in 3.0 since RPM is still broken in the 2.96 tar ball.
+
+...2.96 errors...
+
+$ rpmbuild -ta gpsd-2.96bis.tar.gz
+error: File /home/mdavis/temp/gpsd-2.96.tar.gz: No such file or directory
+
+$ mv gpsd-2.96bis.tar.gz gpsd-2.96.tar.gz
+
+$ rpmbuild -ta gpsd-2.96.tar.gz
+...
+RPM build errors:
+    Installed (but unpackaged) file(s) found:
+   /usr/lib64/libQgpsmm.prl
+
+
+...3.0 errors...
+$ scons dist
+$ rpmbuild -ta gpsd-3.0~dev.tar.gz
+error: Failed to read spec file from gpsd-3.0~dev.tar.gz
+
+So, how do we get packaging/rpm/gpsd.spec.in to be processed to packaging/rpm/gpsd.spec and then included in the tar ball.
+
+$ scons dist-rpm
+
+-    Utility('dist-rpm', dist, 'rpm -ta $SOURCE')
++    Utility('dist-rpm', dist, 'rpmbuild -ta $SOURCE')
+
+Sometime in the past rpmbuild was split out from rpm.  How, do we account for this? Is this portable?
+
+rpmbuild --help &gt; /dev/null; echo $?
+
+$ scons dist-rpm
+rpmbuild -ta dist
+error: failed to create directory %{_topdir}: /rpmbuild: Permission denied
+scons: *** [dist-rpm] Error 1
+
+I see this comment
+
+&quot;We'd like to use the Substfile builtin but it doesn't seem to work in scons 1.20&quot;
+
+It does not appear to work in scons-2.0.1-1.fc12.noarch either.
+
+out of time tonight...
+Thanks,
+Mike
+
+
+mrdvt92
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009276.html">[Gpsd-dev] Release plans for 3.0
+</A></li>
+	<LI>Next message: <A HREF="009284.html">[Gpsd-dev] Test, test, test... RPM
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9283">[ date ]</a>
+              <a href="thread.html#9283">[ thread ]</a>
+              <a href="subject.html#9283">[ subject ]</a>
+              <a href="author.html#9283">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,96 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Subframe data decoded in in SVN head
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Subframe%20data%20decoded%20in%20in%20SVN%20head&In-Reply-To=%3C200504131658.j3DGwZ4X014752%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001356.html">
+   <LINK REL="Next"  HREF="001358.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Subframe data decoded in in SVN head</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Subframe%20data%20decoded%20in%20in%20SVN%20head&In-Reply-To=%3C200504131658.j3DGwZ4X014752%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Subframe data decoded in in SVN head">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Wed Apr 13 18:58:35 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001356.html">[Gpsd-dev] compiling fails with --disable-earthmate
+</A></li>
+        <LI>Next message: <A HREF="001358.html">[Gpsd-dev] Subframe data decoded in in SVN head
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1357">[ date ]</a>
+              <a href="thread.html#1357">[ thread ]</a>
+              <a href="subject.html#1357">[ subject ]</a>
+              <a href="author.html#1357">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Chris Kuethe, this one is especially for you, but I'll take all the
+eyeballs I can get.
+
+I have toiled through the dense thickets of ICD-GPS-200, and sirf.c
+now includes code to extract a leap-second correction from 50BPS
+subframe data after 1 Jan 2006.  But I don't trust this code.  Here's why:
+
+1. In general the subframe decode process is, as Chris previously
+observed, hideously complex and fiddly.
+
+2. I sometimes see messages with an apparent subframe of 6, which
+isn't supposed to be possible.  Chris sees them from his decoder too,
+so either we're both screwing up or this is a symptom of SiRF
+firmware bug.  Neither possibility inspires me with confidence in the
+rest of the data.
+
+3. My first cut spat out leap-second corrections with values of 13
+(correct) and 242 (grossly incorrect) at random.  This puzzled the 
+crap out of me until I noticed that in an 8-bit byte, 242 = ~13.  I
+inserted a kluge that inverts values above 128, but I'm not happy.
+This probably means that either I or the SiRF firmware is messing up the
+inversion step.  Perhaps the firmware is pre-inverting the data and
+not bothering to document the fact!
+
+4. After doing that inversion step, I have -- exactly once! -- seen
+a wrong value come out.  11 seconds rather than 13.  
+
+NOTE: to test, you will have to condition out the check near
+gpsd.c:891 that disables subframe decoding before 1 Jan 2006 (earliest
+date at which another leap second might occur).
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+I do not find in orthodox Christianity one redeeming feature.
+	-- Thomas Jefferson
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001356.html">[Gpsd-dev] compiling fails with --disable-earthmate
+</A></li>
+	<LI>Next message: <A HREF="001358.html">[Gpsd-dev] Subframe data decoded in in SVN head
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1357">[ date ]</a>
+              <a href="thread.html#1357">[ thread ]</a>
+              <a href="subject.html#1357">[ subject ]</a>
+              <a href="author.html#1357">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

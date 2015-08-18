@@ -1,0 +1,94 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Fix for Rob Jannsen's multisession bug
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Fix%20for%20Rob%20Jannsen%27s%20multisession%20bug&In-Reply-To=%3C13016.213.84.187.156.1116925480.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001868.html">
+   <LINK REL="Next"  HREF="001871.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Fix for Rob Jannsen's multisession bug</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Fix%20for%20Rob%20Jannsen%27s%20multisession%20bug&In-Reply-To=%3C13016.213.84.187.156.1116925480.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] Fix for Rob Jannsen's multisession bug">gpsd at xs4all.nl
+       </A><BR>
+    <I>Tue May 24 11:04:40 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001868.html">[Gpsd-dev] Fix for Rob Jannsen's multisession bug
+</A></li>
+        <LI>Next message: <A HREF="001871.html">[Gpsd-dev] Fix for Rob Jannsen's multisession bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1870">[ date ]</a>
+              <a href="thread.html#1870">[ thread ]</a>
+              <a href="subject.html#1870">[ subject ]</a>
+              <a href="author.html#1870">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt;:
+</I>&gt;&gt;<i> &gt; There is a possibility for buffer overflow in packet.c that worries
+</I>&gt;&gt;<i> me.
+</I>&gt;&gt;<i> &gt; I have added a check and indeed trash input at the wrong baudrate
+</I>&gt;&gt;<i> &gt; overflowed the output buffer after mis-recognizing a TSIP packet.
+</I>&gt;&gt;<i> &gt; I'm not convinced it couldn't also happen for other packets.  The
+</I>&gt;&gt;<i> input
+</I>&gt;&gt;<i> &gt; buffer is checked, but after validation of the packet it was blindly
+</I>&gt;&gt;<i> &gt; copied into the output buffer that is smaller.
+</I>&gt;&gt;<i> &gt; The Zodiac and Sirf handlers check the length, but what about NMEA?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I'll look into it now.
+</I>&gt;<i>
+</I>&gt;<i> Answer: Valid NMEA packets are limited to being 82 characters long by the
+</I>&gt;<i> NMEA
+</I>&gt;<i> standard. The output buffer is much larger than that.  No worries.
+</I>
+The problem is not with valid packets.
+The problem is with junk that you receive while peeking at the wrong
+baudrate.
+
+For example, with the TSIP protocol I have seen that when peeking at the
+SiRF receiver at the wrong rate, it will pickup a DLE in the trash, then
+skip 200 bytes or more, then pickup a DLE-ETX pair, and return a valid
+TSIP packet.  This packet is larger than the output buffer and thrashes
+the session struct.
+
+I have added a limit check, but I think the same could happen with NMEA: a
+$G is picked up, then a lot of trash, then a \r.  It would be handled as a
+non-checksummed NMEA packet of arbitrary length.  When this length is
+smaller than the input buffer but larger than the output buffer, bad
+things happen.
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001868.html">[Gpsd-dev] Fix for Rob Jannsen's multisession bug
+</A></li>
+	<LI>Next message: <A HREF="001871.html">[Gpsd-dev] Fix for Rob Jannsen's multisession bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1870">[ date ]</a>
+              <a href="thread.html#1870">[ thread ]</a>
+              <a href="subject.html#1870">[ subject ]</a>
+              <a href="author.html#1870">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

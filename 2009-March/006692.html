@@ -1,0 +1,205 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] ntp interface,	another problem with my fixes and further experience
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntp%20interface%2C%0A%09another%20problem%20with%20my%20fixes%20and%20further%20experience&In-Reply-To=%3CKJEAKDJOMACLJIHFIMPFKEAFCBAA.tj%40telensa.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006691.html">
+   <LINK REL="Next"  HREF="006698.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] ntp interface,	another problem with my fixes and further experience</H1>
+    <B>Tim Jackson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntp%20interface%2C%0A%09another%20problem%20with%20my%20fixes%20and%20further%20experience&In-Reply-To=%3CKJEAKDJOMACLJIHFIMPFKEAFCBAA.tj%40telensa.com%3E"
+       TITLE="[Gpsd-dev] ntp interface,	another problem with my fixes and further experience">tj at telensa.com
+       </A><BR>
+    <I>Fri Mar 27 23:41:32 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006691.html">[Gpsd-dev] Bug in driver_sirf.c
+</A></li>
+        <LI>Next message: <A HREF="006698.html">[Gpsd-dev] new gps report
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6692">[ date ]</a>
+              <a href="thread.html#6692">[ thread ]</a>
+              <a href="subject.html#6692">[ subject ]</a>
+              <a href="author.html#6692">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Folks, especially Gary and Eric
+
+I see that despite some discussion and review it doesn't look like my
+suggested changes got into 2.39. Just as well given that I have to confess
+that I have just found another problem with one of them! I think I have
+caught up now on some of the discussion, sorry I didn't respond earlier, I
+didn't notice it in amongst discussion of other Garmin Serial issues.
+
+Firstly I review the way that the 1pps locking works. I hope this helps to
+explain why one of my fixes wasn't right and then helps explain the logic
+for my other changes. This may be helpful for Gary in reviewing.
+
+You may also have seen in my last email a further observation about getting
+ntp to sync from GPSD alone. I think I've go to the bottom of this and later
+I explain what I think is going on. This may or may not be news to you. In
+the end its an ntp behaviour rather than GPSD and when you look at the ntp
+documentation it does explain it, although I got there by looking at the
+ntpd code and only after discovering what it did, did I look at the
+documentation! I suppose that that's just being an engineer. However I
+suggest below that it may be a kindness to add a pointer in the GPSD
+documentation about this.
+
+So firstly this is how I understand the ntp 1pps locking to work.
+
+gpsd uses the serial data first and then the 1pps pulses. 1pps pulses aren't
+written to the ntp shared memory until the lock is close enough so that
+there can be no ambiguity as to which second the 1pps pulse refers.
+
+The serial data timestamps are always written and give the difference
+between the system clock at the time the serial data was received, and the
+time in the serial data message. Simplistically you might think that when
+ntp has adjusted the system clock so that this difference is zero then you
+are locked. However this is not the case, because in reality there is a
+delay between the actual second boundary and when the serial data arrives,
+so that if ntp actually adjusted the timestamp difference to zero the the
+system clock would be out by the delay. To compensate for this a fudge
+factor delay is used. However this is applied IN NTP NOT GPSD (this is
+important and may be a source of misunderstanding), so that when correctly
+locked the apparent timestamp difference in gpsd (this is l_offset in
+ntpshm_pps) is NOT zero but equal to the fudge delay which should also be
+the delay between the 1pps pulse and the arrival of serial data.
+
+In the original code ntpshm_pps calculates the difference between serial
+data arrival and the system clock and only if it is within 0.5 seconds
+writes the 1pps timestamp. If the 1pps to serial data delay in the gps unit
+is small this may be ok but as it becomes greater than 0.5s then the system
+will cease to write the 1pps timestamps as the system comes into lock. That
+is, just at the moment when you need the 1pps timestamps they will
+disappear. With the old code gpsd cannot solve this problem since the delay
+is fixed in the gps unit and it is only ntp that knows the magic delay fudge
+factor. It seemed to be that for the my Garmin GPS 18/lvc the delay was
+often more that 0.5s (although usually less) so that the above effect was
+seen quite often. It may be that this delay will depend on how the GPS unit
+is configured so I can quite believe that this hasn't been seen in testing,
+although if you Google the issue of ntp locking with gpsd I don't think I'm
+the first to see unreliability.
+
+Of course from the GPS unit's point of view serial data delays of up to a
+second are logically ok since the serial data refers to the preceeding 1pps
+pulse.
+
+My initial fix was simply to up PUT_MAX_OFFSET so that the offset could be
+greater. I thought that this would be ok because of the succeeding test
+which checked for the 1pps offset being less that 100ms (which I put up to
+200ms) and because 700ms plus 200ms was less than 1 second I thought this
+would stop ambiguity. In fact this is wrong, the second test is irrelevant
+in this context and because the test on l_offset takes the absolute value of
+l_offset it is accepting offsets +/- 0.7s a total of 1.4s which does allow
+1pps timestamps to be written when the lock is in fact a second out.
+
+Does this mean that you can't solve the problem ie you just can't deal with
+the case where the gps delay is more than 0.5s? No becuause what is not
+taken into account in the current code is that you know that the serial data
+is ALWAYS LATER than the correct 1pps pulse. So if the aim is that we don't
+write a 1pps pulse until we know that the lock is near enough we need an
+asymetrical test. We want to write the 1pps timestamps at least at +/-
+PPS_MAX_OFFSET around the true lock position. Let us consider the two
+extreme cases where serial data delay is zero or, say, SERIAL_DELAY. In the
+zero case, when we are going to write the 1pps pulses we want l_offset to be
++/- PPS_MAX_OFFSET, in the second case we, ideally, would write 1pps
+timestamps at SERIAL_DELAY +/- PPS_MAX_OFFSET. Gpsd doesn't know what the
+SERIAL_DELAY is but if we test that l_offset is greater than -PPS_MAX_OFFSET
+and less than (SERIAL_DELAY + PPS_MAX_OFFSET) then we cover the whole
+possible range. Provided that SERIAL_DELAY + (2 * PPS_MAX_OFFSET) is less
+than one second then we can be sure that there is no ambiguity about which
+1pps pulse is to be used since there is only one in the valid time window.
+
+You will see in my amended version of ntpshm.c that I have changed the test
+to do this, although in order to keep to the original constant names I have
+assumed that PUT_MAX_OFFSET = (SERIAL_DELAY + PPS_MAX_OFFSET).
+
+Hope the above explanation also helps in further review of my suggested
+changes. Gary, if you want further discussion about this or the other
+suggested changes drop me an email.
+
+As to the issue I explained in my previous email that I couldn't get ntp to
+lock from JUST gpsd because after starting to lock ntp seemed to suddenly
+reject both serial and 1pps timing, however if you had another timeserver in
+the ntp configuration it seemed to be happy even though it wasn't using it
+for timing!
+
+The explaination for this is related to ntp's alogrithm for rejecting
+timeservers that it thinks may be giving the wrong time 'falsetickers'. When
+ntp had only gpsd time sources, what was happening as the system locked was
+that ntp would be happy with first the serial time becuase that was all it
+had, then when the 1pps time appeared it would be happy with that if its
+time was similar to the serial data. However if there was a significnat
+jitter on the serial data ntp was then presented with a difficultly it has
+two clocks of equal stratum which are telling if different time. It has no
+way to know which is right so it rejects BOTH. After the serial jitter has
+reduced it would deicde that it could accept them again and would start
+locking. However if the jitter repeats the cycle will repeat and ntp never
+locks properly. If however ntp has a third clock it can effectively use
+'two out of three' to decide which of the gpsd clocks to believe so it
+doesn't reject the 1pps and continues to lock.
+
+This seems to be a known issue and there is an ntp server configuration that
+allows you to tell ntp which servers to believe. So if you add the 'true'
+keyword in addition to the 'prefer' keyword to the 1pps server configuration
+line in the ntp.conf file then the problem disappears. In fact this
+particular case is discussed in ntp.conf man page under the 'true' keyword
+description.
+
+I know, of course, that one should have read the ntp documentation first but
+it may be worth adding something to the section in gpsd man page where it
+discusses use with ntp to point people at this. Maybe add something like the
+follow at the end of the ntp section:
+
+When using ntpd with gpsd as the only timing source and where the gps unit
+has significant jitter on the serial port it may be helpful to add the
+'true' keyword as well as the 'prefer' keyword to the PPS server
+configuration line. This will prevent ntp from considering BOTH gspd time
+sources bad if jitter occurs. See the ntpd documentation for further
+information.
+
+
+
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: ntpshm.c
+Type: application/octet-stream
+Size: 6168 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090327/c97fa43e/attachment.obj">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090327/c97fa43e/attachment.obj</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006691.html">[Gpsd-dev] Bug in driver_sirf.c
+</A></li>
+	<LI>Next message: <A HREF="006698.html">[Gpsd-dev] new gps report
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6692">[ date ]</a>
+              <a href="thread.html#6692">[ thread ]</a>
+              <a href="subject.html#6692">[ subject ]</a>
+              <a href="author.html#6692">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

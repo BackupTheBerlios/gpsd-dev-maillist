@@ -1,0 +1,98 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Release status?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2008-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Release%20status%3F&In-Reply-To=%3C91981b3e0801221256x3636dfabk7c409a63b17a75a6%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005956.html">
+   <LINK REL="Next"  HREF="005958.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Release status?</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Release%20status%3F&In-Reply-To=%3C91981b3e0801221256x3636dfabk7c409a63b17a75a6%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Release status?">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Tue Jan 22 21:56:34 CET 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005956.html">[Gpsd-dev] Release status?
+</A></li>
+        <LI>Next message: <A HREF="005958.html">[Gpsd-dev] Release status?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5957">[ date ]</a>
+              <a href="thread.html#5957">[ thread ]</a>
+              <a href="subject.html#5957">[ subject ]</a>
+              <a href="author.html#5957">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Jan 21, 2008 11:57 AM, Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt; wrote:
+&gt;<i> I'll try this, but the problem is not (yet) at exit time, but during
+</I>&gt;<i> initialization. pthread_create() does not return, ever, when gpsd is
+</I>&gt;<i> started in the background, so the main loop gets hung after the ntp
+</I>&gt;<i> thread is started.
+</I>
+Try this test program - get it from here if the list strips it...
+<A HREF="https://www.mainframe.cx/~ckuethe/thread-test.c">https://www.mainframe.cx/~ckuethe/thread-test.c</A>
+
+gcc -pthread thread-test.c
+./a.out  # run in foreground
+./a.out  # run as daemon
+
+on both openbsd and ubuntu, i am able run in foreground or background
+and it works correctly. while i do have a daemonize function in libc,
+i'm using the one provided by gpsd so i feel confident that it's not
+fubar-ing process state...
+
+i've got a bad feeling about this:
+        #if defined(PPS_ENABLE) &amp;&amp; defined(TIOCMIWAIT)
+        #ifndef S_SPLINT_S
+        #include &lt;pthread.h&gt;    /* pacifies OpenBSD's compiler */
+        #endif
+        #endif
+is pthread.h actually being included? i've seen kernel panics because
+someone didn't include the right header file so the wrong type was
+being passed into a syscall and it all went pear-shaped inside the
+kernel.
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: thread-test.c
+Type: text/x-csrc
+Size: 2729 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20080122/1aad1b64/attachment.c">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20080122/1aad1b64/attachment.c</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005956.html">[Gpsd-dev] Release status?
+</A></li>
+	<LI>Next message: <A HREF="005958.html">[Gpsd-dev] Release status?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5957">[ date ]</a>
+              <a href="thread.html#5957">[ thread ]</a>
+              <a href="subject.html#5957">[ subject ]</a>
+              <a href="author.html#5957">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

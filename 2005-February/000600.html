@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] (no subject)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%28no%20subject%29&In-Reply-To=%3C20050202064340.GA8918%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000599.html">
+   <LINK REL="Next"  HREF="000601.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] (no subject)</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%28no%20subject%29&In-Reply-To=%3C20050202064340.GA8918%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] (no subject)">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Feb  2 07:43:40 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000599.html">[Gpsd-dev] (no subject)
+</A></li>
+        <LI>Next message: <A HREF="000601.html">[Gpsd-dev] (no subject)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#600">[ date ]</a>
+              <a href="thread.html#600">[ thread ]</a>
+              <a href="subject.html#600">[ subject ]</a>
+              <a href="author.html#600">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+&gt;<i> -----BEGIN PGP SIGNED MESSAGE-----
+</I>&gt;<i> Hash: SHA1
+</I>&gt;<i> 
+</I>&gt;<i> Yo Raymond!
+</I>&gt;<i> 
+</I>&gt;<i> On Tue, 1 Feb 2005, Eric S. Raymond wrote:
+</I>&gt;<i> 
+</I>&gt;<i> &gt; $GPGSV,2,1,07,04,57,069,40,09,41,221,00,24,44,055,42,05,63,303,45*7C
+</I>&gt;<i> &gt; $GPGSV,2,2,07,02,63,171,00,17,38,189,38,30,29,306,45*44
+</I>&gt;<i> 
+</I>&gt;<i> I see the problem in processGPGSV() in the file nmea_parse.c
+</I>&gt;<i> 
+</I>&gt;<i> The problem is in this loop:
+</I>&gt;<i> 
+</I>&gt;<i>     for (fldnum = 4; fldnum &lt; 20; ) {
+</I>&gt;<i>         changed |= update_field_i(field[fldnum++], &amp;out-&gt;PRN[out-&gt;satellites]);
+</I>&gt;<i>         changed |= update_field_i(field[fldnum++], &amp;out-&gt;elevation[out-&gt;satellites]);
+</I>&gt;<i>         changed |= update_field_i(field[fldnum++], &amp;out-&gt;azimuth[out-&gt;satellites]);
+</I>&gt;<i>         changed |= update_field_i(field[fldnum++], &amp;out-&gt;ss[out-&gt;satellites]);
+</I>&gt;<i>         if (!out-&gt;PRN[out-&gt;satellites])
+</I>&gt;<i>             break;
+</I>&gt;<i>         else
+</I>&gt;<i>             out-&gt;satellites++;
+</I>&gt;<i>     }
+</I>&gt;<i> 
+</I>&gt;<i> When reading the second GPGSV line there are only 3 satellites, but the
+</I>&gt;<i> loop is executed 4 times.  when update_field_i() is called for the
+</I>&gt;<i> non-existent 4th satellite the program core dumps.
+</I>&gt;<i> 
+</I>&gt;<i> Looks like this line is supposed to stop the loop after reading one
+</I>&gt;<i> satellite group too far:
+</I>&gt;<i>         if (!out-&gt;PRN[out-&gt;satellites])
+</I>
+Ah, I see.  This can only happen if we're looking at the second or third
+part of a GSV sequence and it has fewer satellites than a previous one.
+ 
+&gt;<i> I am not sure how out-&gt;PRN[out-&gt;satellites] should ever be set to zero
+</I>&gt;<i> with the test data I have?  Maybe field[16] was supposed to be zeroed out
+</I>&gt;<i> so this line worked:
+</I>&gt;<i> 	update_field_i(field[fldnum++], &amp;out-&gt;PRN[out-&gt;satellites]);
+</I>&gt;<i> 
+</I>&gt;<i> But that clearly is not the case since field[16] is clearly never
+</I>&gt;<i> initialized.
+</I>&gt;<i>
+</I>&gt;<i> So I replaces this line:
+</I>&gt;<i>         if (!out-&gt;PRN[out-&gt;satellites])
+</I>&gt;<i> 
+</I>&gt;<i> With this line and it worked:
+</I>&gt;<i> 
+</I>&gt;<i>         if ( fldnum &gt;= (count - 1) )
+</I>&gt;<i> 
+</I>&gt;<i> That breaks the loop before it tries to read the non-existent 4th
+</I>&gt;<i> satellite.  This should work for all well formed GPGSV strings.
+</I>
+Hmmm...I'm not sure that test is right.  Shouldn't it be:
+
+         if ( fldnum &gt;= count)
+
+I think your version might miss the last nonempty field.
+
+You know, there's a reason I avoid C programming these days...
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000599.html">[Gpsd-dev] (no subject)
+</A></li>
+	<LI>Next message: <A HREF="000601.html">[Gpsd-dev] (no subject)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#600">[ date ]</a>
+              <a href="thread.html#600">[ thread ]</a>
+              <a href="subject.html#600">[ subject ]</a>
+              <a href="author.html#600">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

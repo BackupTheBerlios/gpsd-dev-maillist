@@ -1,0 +1,154 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Altitude%20not%20always%20being%20reported&In-Reply-To=%3CPine.LNX.4.64.0604042317560.12811%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003394.html">
+   <LINK REL="Next"  HREF="003397.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Altitude%20not%20always%20being%20reported&In-Reply-To=%3CPine.LNX.4.64.0604042317560.12811%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported">gem at rellim.com
+       </A><BR>
+    <I>Wed Apr  5 08:24:46 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003394.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+        <LI>Next message: <A HREF="003397.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3396">[ date ]</a>
+              <a href="thread.html#3396">[ thread ]</a>
+              <a href="subject.html#3396">[ subject ]</a>
+              <a href="author.html#3396">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Robin!
+
+Can you get some people to test this patch?  The last one caused
+unexpected side effects when someone tried it and I have my fears on
+this one.  What is the point of now setting CYCLE_START_SET when you
+then make sure that it no longer does anything?  How does FIX_SET ever
+get unset?  How does gpsdata.fix ever get initialized?
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+
+On Wed, 5 Apr 2006, Robin L Darroch wrote:
+
+&gt;<i> Date: Wed, 5 Apr 2006 13:56:35 +0800
+</I>&gt;<i> From: Robin L Darroch &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>&gt;
+</I>&gt;<i> To: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>, <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> Subject: Re: [Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</I>&gt;<i>
+</I>&gt;<i> At 14:02 -0800 4/4/06, Remco Treffkorn wrote:
+</I>&gt;<i> &gt;Items should be allowed to live through *their* cycle time.
+</I>&gt;<i>
+</I>&gt;<i> I agree entirely.  Since I don't have commit access, would someone else like to put the diff patches into the SVN repository?
+</I>&gt;<i>
+</I>&gt;<i> Full patch (for this particular set of issues) follows:
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Index: nmea_parse.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- nmea_parse.c        (revision 3276)
+</I>&gt;<i> +++ nmea_parse.c        (working copy)
+</I>&gt;<i> @@ -258,6 +258,9 @@
+</I>&gt;<i>         else {
+</I>&gt;<i>             mask |= TIME_SET;
+</I>&gt;<i>             session-&gt;gpsdata.newdata.time = (double)mkgmtime(&amp;session-&gt;driver.nmea.date)+session-&gt;driver.nmea.subseconds;
+</I>&gt;<i> +               if (session-&gt;gpsdata.sentence_time != session-&gt;gpsdata.newdata.time)
+</I>&gt;<i> +                       mask |= CYCLE_START_SET;
+</I>&gt;<i> +               session-&gt;gpsdata.sentence_time = session-&gt;gpsdata.newdata.time;
+</I>&gt;<i>         }
+</I>&gt;<i>         do_lat_lon(&amp;field[2], &amp;session-&gt;gpsdata);
+</I>&gt;<i>         mask |= LATLON_SET;
+</I>&gt;<i> Index: libgpsd_core.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- libgpsd_core.c      (revision 3276)
+</I>&gt;<i> +++ libgpsd_core.c      (working copy)
+</I>&gt;<i> @@ -556,7 +556,6 @@
+</I>&gt;<i>                                       (char *)session-&gt;outbuffer,
+</I>&gt;<i>                                       (size_t)session-&gt;outbuflen, 2);
+</I>&gt;<i>         /*@ -nullstate @*/
+</I>&gt;<i> -       session-&gt;gpsdata.sentence_time = NAN;
+</I>&gt;<i>         session-&gt;gpsdata.sentence_length = session-&gt;outbuflen;
+</I>&gt;<i>         session-&gt;gpsdata.d_recv_time = timestamp();
+</I>&gt;<i>
+</I>&gt;<i> @@ -568,7 +567,6 @@
+</I>&gt;<i>
+</I>&gt;<i>         /* Clear fix data at start of cycle */
+</I>&gt;<i>         if ((received &amp; CYCLE_START_SET)!=0) {
+</I>&gt;<i> -           gps_clear_fix(&amp;session-&gt;gpsdata.fix);
+</I>&gt;<i>             session-&gt;gpsdata.set &amp;=~ FIX_SET;
+</I>&gt;<i>         }
+</I>&gt;<i>         /*
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> The dysfunctional stub logger in report.c still bugs me, but if the consensus is we still need it, I'll keep that patch to myself.
+</I>&gt;<i> --
+</I>&gt;<i>
+</I>&gt;<i> -------------------------------------------------------------------------
+</I>&gt;<i>  Robin L. Darroch - PO Box 2715, South Hedland WA 6722 - +61 421 503 966
+</I>&gt;<i>       <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at darroch.id.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at nyca.org.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="http://lists.berlios.de/mailman/listinfo/gpsd-dev">http://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.2.1 (GNU/Linux)
+
+iD8DBQFEM2Kx8KZibdeR3qURAuvBAKDxhhz56FTsQ/l9KuXWAb56fkxKtQCeMrfH
+AqFUxitL3M2DHU2vtCQmTTU=
+=bTib
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003394.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+	<LI>Next message: <A HREF="003397.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3396">[ date ]</a>
+              <a href="thread.html#3396">[ thread ]</a>
+              <a href="subject.html#3396">[ subject ]</a>
+              <a href="author.html#3396">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

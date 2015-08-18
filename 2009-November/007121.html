@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] automake error
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20automake%20error&In-Reply-To=%3Crmibpix5iwd.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007120.html">
+   <LINK REL="Next"  HREF="007127.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] automake error</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20automake%20error&In-Reply-To=%3Crmibpix5iwd.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] automake error">gdt at ir.bbn.com
+       </A><BR>
+    <I>Fri Nov 20 16:13:22 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007120.html">[Gpsd-dev] r6570 fails to build
+</A></li>
+        <LI>Next message: <A HREF="007127.html">[Gpsd-dev] automake error
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7121">[ date ]</a>
+              <a href="thread.html#7121">[ thread ]</a>
+              <a href="subject.html#7121">[ subject ]</a>
+              <a href="author.html#7121">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+after updating to eric's json debugging commit, I got:
+
+gdt 12 ~/SOFTWARE/GPSD/gpsd-trunk-https &gt; gmake
+CDPATH=&quot;${ZSH_VERSION+.}:&quot; &amp;&amp; cd . &amp;&amp; /bin/ksh /home/gdt/SOFTWARE/GPSD/gpsd-trunk-https/missing --run aclocal-1.11 -I m4
+aclocal-1.11: couldn't open directory `m4': No such file or directory
+gmake: *** [aclocal.m4] Error 1
+
+
+I think the problem is the combination of:
+
+gdt 13 ~/SOFTWARE/GPSD/gpsd-trunk-https &gt; !eg
+egrep m4 *.ac
+AC_CONFIG_MACRO_DIR([m4])
+gdt 14 ~/SOFTWARE/GPSD/gpsd-trunk-https &gt; svn info m4
+m4:  (Not a versioned resource)
+
+svn: A problem occurred; see other errors for details
+
+plus Makefile.am references it.
+
+So, I'd like to commit the following - ok?
+
+Index: configure.ac
+===================================================================
+--- configure.ac	(revision 6571)
++++ configure.ac	(working copy)
+@@ -3,7 +3,6 @@
+ AM_INIT_AUTOMAKE(gpsd, 2.90dev)
+ dnl AC_PREFIX_PROGRAM(gcc)
+ AM_CONFIG_HEADER(gpsd_config.h)
+-AC_CONFIG_MACRO_DIR([m4])
+ AC_LANG([C])
+ 
+ # ACREQUIRE_BUGFIX
+Index: Makefile.am
+===================================================================
+--- Makefile.am	(revision 6571)
++++ Makefile.am	(working copy)
+@@ -20,8 +20,6 @@
+ 
+ #SUBDIRS = contrib
+ 
+-ACLOCAL_AMFLAGS = -I m4
+-
+ XMLTO = xmlto
+ 
+ #
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091120/3fcbfc05/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091120/3fcbfc05/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007120.html">[Gpsd-dev] r6570 fails to build
+</A></li>
+	<LI>Next message: <A HREF="007127.html">[Gpsd-dev] automake error
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7121">[ date ]</a>
+              <a href="thread.html#7121">[ thread ]</a>
+              <a href="subject.html#7121">[ subject ]</a>
+              <a href="author.html#7121">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

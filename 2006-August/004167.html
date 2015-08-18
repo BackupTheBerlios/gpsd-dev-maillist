@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] performance stats for embedded arm users
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20performance%20stats%20for%20embedded%20arm%20users&In-Reply-To=%3C91981b3e0608192358t73b5b93dpb82052accf938733%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004164.html">
+   <LINK REL="Next"  HREF="004168.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] performance stats for embedded arm users</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20performance%20stats%20for%20embedded%20arm%20users&In-Reply-To=%3C91981b3e0608192358t73b5b93dpb82052accf938733%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] performance stats for embedded arm users">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Sun Aug 20 08:58:21 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004164.html">[Gpsd-dev] performance stats for embedded x86 users
+</A></li>
+        <LI>Next message: <A HREF="004168.html">[Gpsd-dev] wierd behavior of the NMEA parser
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4167">[ date ]</a>
+              <a href="thread.html#4167">[ thread ]</a>
+              <a href="subject.html#4167">[ subject ]</a>
+              <a href="author.html#4167">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>For the embedded users, here are some performance numbers from &quot;slow&quot;
+machines. My test system for this is a Sharp Zaurus SL-C3000, running
+OpenBSD 4.0-beta. I'm running the latest-and-greatest code, compiled
+with gcc 3.3.5, CFLAGS=&quot;-pg -g -O2 -static&quot;, so I could run profiling.
+
+I've noticed that with 3 clients - sirfmon, xgps and cgps - at 416MHz
+gpsd seems to pull about 3% cpu while syncing up, and then 1.5 - 3.5%
+while serving the clients. After about 5400 seconds of wall time, I
+have accumulated about 112s of cpu time.
+
+91MHz, gpsd uses 15-20% serving the same 3 clients. 150s of cpu time
+in 1200s of wall time.
+
+Zaurus:
+cpu0 at mainbus0: PXA27x step C-0 (XScale core)
+cpu0: DC enabled IC enabled WB enabled LABT branch prediction enabled
+cpu0: 32KB(32b/l,32way) I-cache, 32KB(32b/l,32way) wr-back-lock D-cache
+pxaip0 at mainbus0: CPU clock = 416.000 MHz
+
+Caveat: this test was performed in an urban canyon, unlike the x86
+test which was on top of an office building. This will have some
+impact on performance. Looking at the gprof output for x86, we see
+that printf and friends are real hot spots. Seeing as my reciever in
+the canyon wasn't giving me much data, there wasn't much work for gpsd
+to do.
+
+Caveat: ARM doesn't have an FPU. You'll be seeing lots more CPU being
+spent doing arithmetic.
+
+To give you an idea of the performance of this system, here's the
+output of &quot;openssl speed rc4 blowfish aes-128-cbc&quot; at its three
+supported clock speeds.
+
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Zaurus at 416MHz</A>
+type             16 bytes     64 bytes    256 bytes   1024 bytes   8192 bytes
+rc4              17107.37k    20033.58k    20740.11k    21097.13k    21154.47k
+blowfish cbc      6921.32k     7787.48k     8021.16k     8044.97k     8144.31k
+aes-128 cbc       2899.50k     3106.60k     3139.19k     3170.65k     3170.30k
+
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Zaurus at 208MHz</A>
+type             16 bytes     64 bytes    256 bytes   1024 bytes   8192 bytes
+rc4               8570.66k     9966.51k    10422.10k    10531.16k    10510.21k
+blowfish cbc      3454.05k     3902.80k     4008.62k     4016.03k     4049.58k
+aes-128 cbc       1456.74k     1550.40k     1569.21k     1591.74k     1586.52k
+
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Zaurus at 91MHz</A>
+type             16 bytes     64 bytes    256 bytes   1024 bytes   8192 bytes
+rc4               3703.01k     4332.35k     4504.58k     4567.38k     4571.14k
+blowfish cbc      1510.94k     1687.96k     1767.96k     1758.61k     1755.82k
+aes-128 cbc        627.50k      673.01k      679.34k      684.03k      685.40k
+
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: gprof.txt.gz
+Type: application/x-gzip
+Size: 19315 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20060820/8f30f061/attachment.bin">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20060820/8f30f061/attachment.bin</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004164.html">[Gpsd-dev] performance stats for embedded x86 users
+</A></li>
+	<LI>Next message: <A HREF="004168.html">[Gpsd-dev] wierd behavior of the NMEA parser
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4167">[ date ]</a>
+              <a href="thread.html#4167">[ thread ]</a>
+              <a href="subject.html#4167">[ subject ]</a>
+              <a href="author.html#4167">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

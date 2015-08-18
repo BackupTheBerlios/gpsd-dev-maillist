@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Input packets buffering bug(s)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3Crmitypxcl7m.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007770.html">
+   <LINK REL="Next"  HREF="007772.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Input packets buffering bug(s)</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3Crmitypxcl7m.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] Input packets buffering bug(s)">gdt at ir.bbn.com
+       </A><BR>
+    <I>Mon May 24 18:34:37 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007770.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+        <LI>Next message: <A HREF="007772.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7771">[ date ]</a>
+              <a href="thread.html#7771">[ thread ]</a>
+              <a href="subject.html#7771">[ subject ]</a>
+              <a href="author.html#7771">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Remco Treffkorn &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>&gt; writes:
+
+&gt;<i> That is because we are setting the tty to raw mode, which is good for
+</I>&gt;<i> arbitrary binary protocols. In case of NMEA we could just set the tty
+</I>&gt;<i> line mode (cooked, but with most of the processing (including echo)
+</I>&gt;<i> turned off).
+</I>
+I think the problem is not with real serial ports.
+
+&gt;<i> That will make the read to return only single, newline terminated strings per
+</I>&gt;<i> read. Even if another line was already received by the tty. This I tested.
+</I>&gt;<i>
+</I>&gt;<i> If I understand the select man page right you don't have to make special
+</I>&gt;<i> arrangements in the code, you can straight go back to select.
+</I>&gt;<i> Select will just return immediately signaling that another read is ready on
+</I>&gt;<i> this fd.
+</I>
+Yes, if there are more bytes.  The problem is that multiple NMEA
+sentences worth of bytes were ready at once, and we made one read call
+and got them all and put them in the buffer.  select will then return
+false because there are no bytes in the device, but we are sitting on
+bytes in our buffer.
+
+What we really need is
+
+  select
+    if bytes available on device fd
+       try to read as many bytes as we can
+       **while* ( there is a full sentence worth of bytes available)
+         process that sentence
+
+
+I think right now the **while** is an if.
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100524/9ce1bbdf/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100524/9ce1bbdf/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007770.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+	<LI>Next message: <A HREF="007772.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7771">[ date ]</a>
+              <a href="thread.html#7771">[ thread ]</a>
+              <a href="subject.html#7771">[ subject ]</a>
+              <a href="author.html#7771">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

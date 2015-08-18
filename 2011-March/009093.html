@@ -1,0 +1,118 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPSD shared-memory export is working
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20shared-memory%20export%20is%20working&In-Reply-To=%3CAANLkTi%3DbDq5y7au_UEK%2B5_Q5W2JGKAt8Qni4j9oJs9ym%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009104.html">
+   <LINK REL="Next"  HREF="009099.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPSD shared-memory export is working</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20shared-memory%20export%20is%20working&In-Reply-To=%3CAANLkTi%3DbDq5y7au_UEK%2B5_Q5W2JGKAt8Qni4j9oJs9ym%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] GPSD shared-memory export is working">thomas at mich.com
+       </A><BR>
+    <I>Sat Mar 26 15:57:57 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009104.html">[Gpsd-dev] GPSD shared-memory export is working
+</A></li>
+        <LI>Next message: <A HREF="009099.html">[Gpsd-dev] GPSD shared-memory export is working
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9093">[ date ]</a>
+              <a href="thread.html#9093">[ thread ]</a>
+              <a href="subject.html#9093">[ subject ]</a>
+              <a href="author.html#9093">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sat, Mar 26, 2011 at 10:27 AM, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at snark.thyrsus.com</A>&gt; wrote:
+
+&gt;<i> The variation is in the way the copy is done. I blogged about the technique
+</I>&gt;<i> at &lt;<A HREF="http://esr.ibiblio.org/?p=3065">http://esr.ibiblio.org/?p=3065</A>&gt;, and in the first comment Daniel Franke
+</I>&gt;<i> pointed out that as long as the fields in the wrapper structure are written
+</I>&gt;<i> last-to-first, the byte-copy order for the payload itself doesn't matter.
+</I>
+I think I covered that in the generalized version of the algorithm
+with timestamps.
+
+Basically you have A, P, B, and it only matters that the update is B,
+P, A if the read is A, P, B.
+
+Doing a straight inline forward memcpy ( the while(l1--) *d++=*c++; )
+will tend to minimize the possibility of overlapping with the write
+(or when writing backwards, with any ongoing reads) as it is likely 1
+cycle per u32 transferred.
+
+My initial reader sample had it setting a and b out of the loop, but
+the correct way without barriers would be
+
+do {
+  u32 l1 = l;
+  u8 *d1 = d; * c1 = c;
+  while( l1-- ) *d1++ = *c1++;
+} while( d[0] != d[l-1] );
+
+With barriers which can be NOPs when not needed (off the top of my head):
+
+(need to zero sentinels at startup, copying only payload):
+
+do {
+  u32 l1 = l-2;
+  u8 *d1 = d+1; * c1 = c, a, b;
+  a = *c1++;
+  read_barrier()
+  while( l1-- ) *d1++ = *c1++;
+  read_barrier()
+  b = *c1;
+} while( a != b );
+
+The write doesn't need the loop:
+
+d += l;
+c += l;
+l -= 2;
+(*--d)++;
+write_barrier();
+while( l--) *--d = *--c;
+write_barrier();
+(*d)++;
+
+&gt;<i> I have not yet attempted to implement memory barriers, and the reader code
+</I>&gt;<i> may fail on x64 Atom and any other platform that implements memcpy() with
+</I>&gt;<i> a reverse rather than forward byte copy. &#160;It relies on a GCCism to
+</I>&gt;<i> prevent reordering of the copy operations. &#160;An I may yet replace it
+</I>&gt;<i> with a semaphore-based technique.
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009104.html">[Gpsd-dev] GPSD shared-memory export is working
+</A></li>
+	<LI>Next message: <A HREF="009099.html">[Gpsd-dev] GPSD shared-memory export is working
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9093">[ date ]</a>
+              <a href="thread.html#9093">[ thread ]</a>
+              <a href="subject.html#9093">[ subject ]</a>
+              <a href="author.html#9093">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

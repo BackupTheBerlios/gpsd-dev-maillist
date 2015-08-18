@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] State of the J commmand patch.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20State%20of%20the%20J%20commmand%20patch.&In-Reply-To=%3C1157150425.26762.11.camel%40deep-space-9.dsnet%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004205.html">
+   <LINK REL="Next"  HREF="004208.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] State of the J commmand patch.</H1>
+    <B>Stelian Pop</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20State%20of%20the%20J%20commmand%20patch.&In-Reply-To=%3C1157150425.26762.11.camel%40deep-space-9.dsnet%3E"
+       TITLE="[Gpsd-dev] State of the J commmand patch.">stelian at popies.net
+       </A><BR>
+    <I>Sat Sep  2 00:40:25 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004205.html">[Gpsd-dev] State of the J commmand patch.
+</A></li>
+        <LI>Next message: <A HREF="004208.html">[Gpsd-dev] State of the J commmand patch.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4206">[ date ]</a>
+              <a href="thread.html#4206">[ thread ]</a>
+              <a href="subject.html#4206">[ subject ]</a>
+              <a href="author.html#4206">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Le samedi 02 septembre 2006 &#224; 00:33 +0200, Stelian Pop a &#233;crit :
+&gt;<i> Le vendredi 01 septembre 2006 &#224; 18:29 -0400, Eric S. Raymond a &#233;crit :
+</I>&gt;<i> &gt; Stelian Pop &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">stelian at popies.net</A>&gt;:
+</I>&gt;<i> &gt; &gt; Le vendredi 01 septembre 2006 &#224; 15:59 -0400, Eric S. Raymond a &#233;crit :
+</I>&gt;<i> &gt; &gt; &gt; I have committed into SVN a version of the J-command patch that passes
+</I>&gt;<i> &gt; &gt; &gt; regression tests as well as looking good on live data.
+</I>&gt;<i> &gt; &gt; [...]
+</I>&gt;<i> &gt; &gt; &gt; Some cleanup will follow.  There is some now-unused storage in the
+</I>&gt;<i> &gt; &gt; &gt; session structure that can be removed, also some dead code in 
+</I>&gt;<i> &gt; &gt; &gt; libgpsd_core.c.  But what's in SVN now is ready for testing.
+</I>&gt;<i> &gt; &gt; 
+</I>&gt;<i> &gt; &gt; I gave a test to r3439 and I still have my 'lost fix' problems as
+</I>&gt;<i> &gt; &gt; reported in
+</I>&gt;<i> &gt; &gt; <A HREF="https://lists.berlios.de/pipermail/gpsd-dev/2006-August/004182.html">https://lists.berlios.de/pipermail/gpsd-dev/2006-August/004182.html</A>
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; Did you set j=1 in your client? 
+</I>&gt;<i> 
+</I>&gt;<i> I tried with cgps, and tried the 'j' command.
+</I>&gt;<i> 
+</I>&gt;<i> &gt; Another possibility is that your bug is unrelated to buffering policy.
+</I>&gt;<i> 
+</I>&gt;<i> Except that it was fixed with Robin's patch. Did you look at my NMEA
+</I>&gt;<i> traces in the mail referenced above ?
+</I>
+Just in case my problem isn't obvious, the below patch fixes the fix :)
+
+Index: gpsd.c
+===================================================================
+--- gpsd.c	(r&#233;vision 3439)
++++ gpsd.c	(copie de travail)
+@@ -1560,8 +1560,10 @@
+ 			 sub &lt; subscribers + MAXSUBSCRIBERFD;
+ 			 sub++) {
+ 			if (sub-&gt;device == channel) {
++#if 0
+ 			    if ((changed &amp; CYCLE_START_SET)!=0)
+ 				gps_clear_fix(&amp;sub-&gt;fixbuffer);
++#endif
+ 			    if (sub-&gt;buffer_policy == all)
+ 				gps_merge_fix(&amp;sub-&gt;fixbuffer, 
+ 					      FIX_SET,
+
+
+-- 
+Stelian Pop &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">stelian at popies.net</A>&gt;
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004205.html">[Gpsd-dev] State of the J commmand patch.
+</A></li>
+	<LI>Next message: <A HREF="004208.html">[Gpsd-dev] State of the J commmand patch.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4206">[ date ]</a>
+              <a href="thread.html#4206">[ thread ]</a>
+              <a href="subject.html#4206">[ subject ]</a>
+              <a href="author.html#4206">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

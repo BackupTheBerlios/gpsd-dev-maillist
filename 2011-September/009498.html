@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Old PPS code support broken in 3.x
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Old%20PPS%20code%20support%20broken%20in%203.x&In-Reply-To=%3Calpine.LNX.1.00.1109081734110.16152%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009497.html">
+   <LINK REL="Next"  HREF="009499.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Old PPS code support broken in 3.x</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Old%20PPS%20code%20support%20broken%20in%203.x&In-Reply-To=%3Calpine.LNX.1.00.1109081734110.16152%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] Old PPS code support broken in 3.x">gem at rellim.com
+       </A><BR>
+    <I>Fri Sep  9 02:46:18 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009497.html">[Gpsd-dev] Old PPS code support broken in 3.x
+</A></li>
+        <LI>Next message: <A HREF="009499.html">[Gpsd-dev] Old PPS code support broken in 3.x
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9498">[ date ]</a>
+              <a href="thread.html#9498">[ thread ]</a>
+              <a href="subject.html#9498">[ subject ]</a>
+              <a href="author.html#9498">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Eric!
+
+On Thu, 8 Sep 2011, Eric Raymond wrote:
+
+&gt;<i> Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+</I>&gt;<i> &gt; There are two ways to get PPS data into gpsd so gpsd can send it out
+</I>&gt;<i> &gt; to ntpd.  One way using kernel PPS and one using ioctl()s.
+</I>&gt;<i>
+</I>&gt;<i> If I ever knew this, I had forgotten it.
+</I>
+Only just diagnosed.  I would not bet taht the problem is exactly as I
+suggest.
+
+&gt;<i> Thanks for the explanation.  I'll grep for 'ioctl(' and see if I can make
+</I>&gt;<i> anything of what I find.
+</I>
+Basically gpsd_ppsmonitor() needs root perms early in its execution.  Those
+places are noted in comments.
+
+That is called like this:
+
+            (void)pthread_create(&amp;pt, NULL, gpsd_ppsmonitor, (void *)session);
+
+from ntpd_link_activate() which is called from add_device() in turn
+called from handle_control()
+
+Sadly handle_control() is called in main() after the priviledges are dropped.
+
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 109 NW Wilmington Ave., Suite E, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFOaWHhBmnRqz71OvMRAjboAJ9AA7qmXffNVzvSs91mHeIG+TO9LACeM4dV
+QVQXUBA1l+0P9+eiH7qxnS0=
+=YIDD
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009497.html">[Gpsd-dev] Old PPS code support broken in 3.x
+</A></li>
+	<LI>Next message: <A HREF="009499.html">[Gpsd-dev] Old PPS code support broken in 3.x
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9498">[ date ]</a>
+              <a href="thread.html#9498">[ thread ]</a>
+              <a href="subject.html#9498">[ subject ]</a>
+              <a href="author.html#9498">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

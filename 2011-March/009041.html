@@ -1,0 +1,199 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Shared-memory interface.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Shared-memory%20interface.&In-Reply-To=%3CAANLkTinpDVsTnZOoHr4mHpTShEDLfc2vNXwqrKSjyhg3%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009006.html">
+   <LINK REL="Next"  HREF="009043.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Shared-memory interface.</H1>
+    <B>Dave Hart</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Shared-memory%20interface.&In-Reply-To=%3CAANLkTinpDVsTnZOoHr4mHpTShEDLfc2vNXwqrKSjyhg3%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Shared-memory interface.">davehart_gmail_exchange_tee at davehart.net
+       </A><BR>
+    <I>Fri Mar 25 12:18:01 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009006.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+        <LI>Next message: <A HREF="009043.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9041">[ date ]</a>
+              <a href="thread.html#9041">[ thread ]</a>
+              <a href="subject.html#9041">[ subject ]</a>
+              <a href="author.html#9041">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Thu, Mar 24, 2011 at 21:16 PM, Eric Raymond wrote:
+&gt;<i> Dave Hart &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">davehart at gmail.com</A>&gt;:
+</I>&gt;&gt;<i> That sort of reasoning about buffer overflow/truncation seems
+</I>&gt;&gt;<i> inconsistent to me with your stated goal of ensuring a gpsd bug
+</I>&gt;&gt;<i> doesn't kill someone.
+</I>&gt;<i>
+</I>&gt;<i> Um, don't conflate two issues. &#160;We are actually *extremely* careful about
+</I>&gt;<i> overruns. &#160;That's why we consistently use strlcpy/strlcat and *snprintf.
+</I>&gt;<i> I don't think this particular overrun problem is worth worrying about
+</I>&gt;<i> *but we foreclose it anyway* - I should not have let myself sound as
+</I>&gt;<i> though we're being less careful than we are.
+</I>
+Please accept my apology, I didn't study the gpsd code and am
+obviously not familiar with it.  I made an assumption I shouldn't have
+in conflating the two.
+
+&gt;&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;Moreover, it's more thought than it's worth --
+</I>&gt;&gt;<i> just do the right thing every time. &#160;It's an easy habit to get into,
+</I>&gt;&gt;<i> and it allows static analysis tools, for example, to flag questionable
+</I>&gt;&gt;<i> code without triggering &quot;false&quot; positives where you have convinced
+</I>&gt;&gt;<i> yourself a long input is impossible or harmless.
+</I>&gt;<i>
+</I>&gt;<i> We use splint regularly. &#160;It's a pain in the ass, but it tends to catch one
+</I>&gt;<i> or two real bugs per release cycle.
+</I>
+Thanks for mentioning splint, I was unaware of it.  Had I known about
+it during our year-long static analysis gap I probably would have used
+it.  <A HREF="http://www.splint.org/">http://www.splint.org/</A> for the record.
+
+&gt;&gt;<i> You will find very few strcpy() or strcat() or sprintf() remaining in
+</I>&gt;&gt;<i> the NTP reference implementation tarballs, though there were quite a
+</I>&gt;&gt;<i> few two years ago, because I've been hunting down and addressing
+</I>&gt;&gt;<i> potential buffer overruns.
+</I>&gt;<i>
+</I>&gt;<i> Quite right. I'm careful about this, and Chris Keuthe prods me when I slip.
+</I>
+I also was unaware of strlcpy().  Well, I'd seen it, but was unaware
+it wasn't simply an alternate spelling of strncpy().  Sadly, I
+repeated the OpenBSD mistake of converting a bunch of code from
+strcpy()/strcat() to strncpy() and strncat() more than 10 years later
+thanks to that ignorance, and will be converting to the
+less-error-prone strlcpy()/strlcat() form now.  It wasn't a total
+loss, in that I converted some strcpy()/strcat()/strcat() sequences to
+snprintf which is clearer.
+
+&gt;&gt;<i> Coverity did not produce any scans of ntpd for nearly a year ending
+</I>&gt;&gt;<i> this January, and I've never been told why, and had to discover myself
+</I>&gt;&gt;<i> by logging into their site that they had finally picked up again,
+</I>&gt;&gt;<i> where a simple email would have let me react to the issues more than a
+</I>&gt;&gt;<i> month sooner. &#160;Still, I appreciate every scrap of donated static
+</I>&gt;&gt;<i> analysis from them and others and I recognize they have paying
+</I>&gt;&gt;<i> customers which take priority over their open source activities.
+</I>&gt;<i>
+</I>&gt;<i> I haven't been able to get Coverity to respond to requests for a
+</I>&gt;<i> rescan since 2007. &#160;What procedure did you use to successfully
+</I>&gt;<i> wake them up?
+</I>
+First off I should note I was uniquely disadvantaged regarding not
+seeing email about the scans.  Apparently when NTP first signed up
+with Coverity, in addition to creating the coverity user IDs, a
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">ntp at scan.coverity.com</A> mailing list was established with all the
+ntp.org folks having access to Coverity results included.  When I
+joined the project a few years later, I was unaware of the list to
+request addition, and it was overlooked by those who knew or had known
+of it in the process of setting up my coverity user ID.  Around a day
+ago I came across a reference to the list and asked David Maxwell to
+add me to it, which he did about 12 hours ago, and his response hinted
+that had I been subscribed the resumption of analysis would have been
+known to me.
+
+As far as getting service from Coverity Scan, it's been hit or miss to
+say the least.  I believe it took several months and a half dozen
+prods from myself and Harlan Stenn before David Maxwell reached far
+enough down his apparently overflowing to-do list to set me up with
+credentials.  That meant several months before there was any movement
+to correct the most recent analysis, as none of the others maintaining
+ntpd were looking at coverity during that time.
+
+I already mentioned a year without analysis.  I begged and pleaded a
+few times for a more recent scan (probably over a month or two) and
+then decided it wasn't helping to harass and beg.  Who knows if more
+emails might have helped.  And that was the third time I was put off
+by lack of response from David.  The second time was when we were
+moved from rung 1 to rung 2, for several months ntpd saw new coverity
+scans intermittently weeks apart, rather than every few days.  I was
+frustrated that I'd rather have regression coverage ongoing for rung 1
+issues than have such sporadic scans at rung 2.
+
+I don't envy David Maxwell's position.  Every time he pokes his head
+up with some progress, he must be inundated with previously-ignored
+requests for access or other assistance from the 200+ projects, as
+well as new requests from people getting while the getting is good.
+Persistence and patience, unsatisfying as it may be, is the only
+wisdom I can offer.  I do think it's worth pursuing, though, as rung 2
+did uncover latent bugs that rung 1 did not.
+
+&gt;&gt;<i> In over 10 years of NTP4 releases, there have been 4 security hotfixes
+</I>&gt;&gt;<i> issued [2].
+</I>&gt;<i>
+</I>&gt;<i> We've never had one. &#160;The last time we had a bug with known security
+</I>&gt;<i> implications was in 2005, and I think that was our first.
+</I>
+Yes, I don't doubt the gpsd codebase is much cleaner than ntpd even
+today.  One of the two buffer overrun hotfixes I mentioned was in
+new-for-NTP4 code (autokey) but the other was inherited from the xntpd
+code (NTP v3).  The most recent hotfix patch (for DoS not overrun)
+applied cleanly to the oldest tarballs Harlan Stenn could scrape up,
+predating his 15 years in the project and in all likelihood dating to
+20+ years ago.  Dr. Mills has long focused on a few core pieces of the
+distribution and, for the most part, relied on others to write and
+maintain the bulk of the code.  Those others have often been grad
+students and itch-scratchers who crank out code until it works for
+them and leave it to others to worry about niceties like consistent
+style, portability beyond the system(s) the contributor used, and
+maintainability.  Harlan Stenn has done a commendable job over the
+years of tackling many of these tasks, especially portability with the
+switch to autotools from hideous #ifdef forests and hand-rolled
+Makefiles.  Nonetheless, I've found no shortage of cases where I
+started looking at code to add a feature or fix a bug and found myself
+doing a lot of not-directly-needed cleanup &quot;while I'm there&quot;.  I have
+a few items on my to-do list where I see things I want to clean up but
+haven't dug in yet, now including strlcpy() and strlcat() use.
+
+&gt;&gt;<i> If gpsd developers currently having access to Coverity Scan results do
+</I>&gt;&gt;<i> not have time to investigate, please ask <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">dmaxwell at coverity.com</A> to
+</I>&gt;&gt;<i> grant userid davehart access to gpsd scan results.
+</I>
+I happened to read the Coverity Scan &quot;annual report&quot; for 2010 in the
+last day.  It mentioned the upcoming change in 2010 from disclosing
+defects exclusively to project maintainers towards a
+responsible-disclosure-like approach meant to light a fire underneath
+maintainers to re-engage with Coverity. Scan.  It was suggested
+projects would be converted one at a time with 30-60 days notice to
+allow any cleanup desired before the defect reports for that project
+go public.  I'm looking forward to more eyes on our scan results,
+
+Take care,
+Dave Hart
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009006.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+	<LI>Next message: <A HREF="009043.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9041">[ date ]</a>
+              <a href="thread.html#9041">[ thread ]</a>
+              <a href="subject.html#9041">[ subject ]</a>
+              <a href="author.html#9041">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

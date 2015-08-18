@@ -1,0 +1,209 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] replaced getopt.getopt with	argparse.ArgumentParser
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20replaced%20getopt.getopt%20with%0A%09argparse.ArgumentParser&In-Reply-To=%3C1317306617.2112.12.camel%40adelie%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009552.html">
+   <LINK REL="Next"  HREF="009547.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] replaced getopt.getopt with	argparse.ArgumentParser</H1>
+    <B>Thomas Sprinkmeier</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20replaced%20getopt.getopt%20with%0A%09argparse.ArgumentParser&In-Reply-To=%3C1317306617.2112.12.camel%40adelie%3E"
+       TITLE="[Gpsd-dev] [PATCH] replaced getopt.getopt with	argparse.ArgumentParser">thomas.sprinkmeier at gmail.com
+       </A><BR>
+    <I>Thu Sep 29 16:30:17 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009552.html">[Gpsd-dev] build without chrpath on clean system patch
+</A></li>
+        <LI>Next message: <A HREF="009547.html">[Gpsd-dev] [PATCH] replaced getopt.getopt	with	argparse.ArgumentParser
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9546">[ date ]</a>
+              <a href="thread.html#9546">[ thread ]</a>
+              <a href="subject.html#9546">[ subject ]</a>
+              <a href="author.html#9546">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Adds long options, checks choice arguments, generates usage and error messages
+
+---
+ xgps |  100 ++++++++++++++++++++++++++++++++++++++++++++++-------------------
+ 1 files changed, 71 insertions(+), 29 deletions(-)
+
+diff --git a/xgps b/xgps
+index ea53396..214b3e0 100755
+--- a/xgps
++++ b/xgps
+@@ -21,8 +21,22 @@ pygtk.require('2.0')
+ import gtk
+ import cairo
+ 
++import argparse
++import collections
++
+ import gps, gps.clienthelpers
+ 
++# command-line options
++OPTS = collections.namedtuple('OPTS',
++                              #'D:   l:           u:
++                              'debug degreeformat unit_system')
++                              # h ? help, V version
++# defaults and help messages
++DEFAULTS=OPTS(0, 'd', None)
++HELP    =OPTS('Enable debug mode',
++              'Degree Format',
++              'Unit System')
++
+ # how to sort the Satellite List
+ # some of (&quot;PRN&quot;,&quot;el&quot;,&quot;az&quot;,&quot;ss&quot;,&quot;used&quot;) with optional '-' to reverse sort
+ # by default, used at the top, then sort PRN
+@@ -803,32 +817,59 @@ class Base:
+ 
+ if __name__ == &quot;__main__&quot;:
+     try:
+-        (options, arguments) = getopt.getopt(sys.argv[1:], &quot;D:hl:u:V?&quot;,
+-                                             ['verbose'])
+-        debug = 0
+-        degreefmt = 'd'
+-        unit_system = None
+-        for (opt, val) in options:
+-            if opt in '-D':
+-                debug = int(val)
+-            elif opt == '-l':
+-                degreeformat = val
+-            elif opt == '-u':
+-                unit_system = val
+-            elif opt in ('-?', '-h', '--help'):
+-                print __doc__
+-                sys.exit(0)
+-            elif opt == 'V':
+-                sys.stderr.write(&quot;xgps 1.0\n&quot;)
+-                sys.exit(0)
+-
+-        degreefmt = {'d':gps.clienthelpers.deg_dd,
+-                     'm':gps.clienthelpers.deg_ddmm,
+-                     's':gps.clienthelpers.deg_ddmmss}[degreefmt]
++        #[description][, epilog][, prog][, usage][, add_help]
++        #[, argument_default][, parents][, prefix_chars]
++        #[, conflict_handler][, formatter_class]
++        parser = argparse.ArgumentParser(description='xgps -- test client for gpsd',
++                                         add_help=False)
++        
++        #name or flags...[, action][, nargs][, const][, default]
++        #[, type][, choices][, required][, help][, metavar][, dest])
++        parser.add_argument('--version', '-V',
++                            action='version', version='%(prog)s 1.0',
++                            help    = &quot;print version&quot;)
++        parser.add_argument('gpsd', type=str, nargs='?',
++                            help='server[:port[:device]]')
++        parser.add_argument(&quot;--debug&quot;, &quot;-D&quot;,# &quot;--verbose&quot;,
++                            default = DEFAULTS.debug,
++                            help    = HELP.debug)
++        parser.add_argument(&quot;--degreeformat&quot;, &quot;-l&quot;, 
++                            default = DEFAULTS.degreeformat,
++                            choices = 'dms',
++                            help    = HELP.degreeformat)
++        parser.add_argument(&quot;--unit_system&quot;, &quot;-u&quot;,
++                            default = DEFAULTS.unit_system,
++                            choices = ('i','imperial',str(gps.clienthelpers.imperial),
++                                       'n','nautical',str(gps.clienthelpers.nautical),
++                                       'm','metric',  str(gps.clienthelpers.metric)),
++                            help    = HELP.unit_system )
++        parser.add_argument(&quot;--help&quot;, &quot;-h&quot;, &quot;-?&quot;,
++                            action = &quot;store_true&quot;,
++                            help    = &quot;print help&quot;)
++        
++        args = parser.parse_args()
++        print(args)
++        if (args.help):
++            parser.print_help()
++            sys.exit(0)
++
++        def us(x):
++            try:    return int(x)
++            except: return x
++        options = OPTS(int(args.debug),
++                       ({'d':gps.clienthelpers.deg_dd,
++                         'm':gps.clienthelpers.deg_ddmm,
++                         's':gps.clienthelpers.deg_ddmmss}[args.degreeformat]),
++                       us(args.unit_system))
++
++        print(options)
++
++        if (options.debug):
++            print(options)
+ 
+         (host, port, device) = (&quot;localhost&quot;, &quot;2947&quot;, None)
+-        if len(arguments):
+-            args = arguments[0].split(&quot;:&quot;)
++        if len(args.gpsd or ''):
++            args = args.gpsd.split(&quot;:&quot;)
+             if len(args) &gt;= 1:
+                 host = args[0]
+             if len(args) &gt;= 2:
+@@ -836,13 +877,16 @@ if __name__ == &quot;__main__&quot;:
+             if len(args) &gt;= 3:
+                 device = args[2]
+ 
+-        base = Base(deg_type=degreefmt)
+-        base.set_units(unit_system)
++        if (options.debug):
++            print(host, port, device)
++
++        base = Base(deg_type=options.degreeformat)
++        base.set_units(options.unit_system)
+         try:
+             daemon = gps.gps(host=host,
+                              port=port,
+                              mode=gps.WATCH_ENABLE|gps.WATCH_JSON|gps.WATCH_SCALED,
+-                             verbose=debug)
++                             verbose=options.debug)
+             base.watch(daemon, device)
+             base.main()
+         except socket.error:
+@@ -854,5 +898,3 @@ if __name__ == &quot;__main__&quot;:
+             w.destroy()
+     except KeyboardInterrupt:
+         pass
+-
+-
+-- 
+1.7.4.1
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009552.html">[Gpsd-dev] build without chrpath on clean system patch
+</A></li>
+	<LI>Next message: <A HREF="009547.html">[Gpsd-dev] [PATCH] replaced getopt.getopt	with	argparse.ArgumentParser
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9546">[ date ]</a>
+              <a href="thread.html#9546">[ thread ]</a>
+              <a href="subject.html#9546">[ subject ]</a>
+              <a href="author.html#9546">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,178 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] State of Diego's Navcom driver,	and the regression tests.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20State%20of%20Diego%27s%20Navcom%20driver%2C%0A%09and%20the%20regression%20tests.&In-Reply-To=%3C91981b3e0612250901r7a161f46j1e1e8f2754a4c296%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005435.html">
+   <LINK REL="Next"  HREF="005436.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] State of Diego's Navcom driver,	and the regression tests.</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20State%20of%20Diego%27s%20Navcom%20driver%2C%0A%09and%20the%20regression%20tests.&In-Reply-To=%3C91981b3e0612250901r7a161f46j1e1e8f2754a4c296%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] State of Diego's Navcom driver,	and the regression tests.">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Mon Dec 25 18:01:17 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005435.html">[Gpsd-dev] State of Diego's Navcom driver, and the regression tests.
+</A></li>
+        <LI>Next message: <A HREF="005436.html">[Gpsd-dev] Announcing the release of gpsd 2.34
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5478">[ date ]</a>
+              <a href="thread.html#5478">[ thread ]</a>
+              <a href="subject.html#5478">[ subject ]</a>
+              <a href="author.html#5478">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 12/14/06, Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> The good news is, it patches in and builds clean.
+</I>&gt;<i>
+</I>&gt;<i> The bad news is, it's messing up the TSIP regression tests.
+</I>&gt;<i> I think it's eating Trimble-shaped packets and falsely locking on to
+</I>&gt;<i> Navcom protocol.  When I configure with --disable-navcom the
+</I>&gt;<i> Trimble tests pass again.
+</I>
+I fixed this on the plane home yesterday. The Navcom driver was hooked
+into packet.c in the wrong place, so it effectively assumed it was the
+only DLE-protocol driver.
+
+&gt;<i> Diagnosing this is going to be more difficult
+</I>
+Horsepucky! Run with a high debug level and watch the state
+transitions. DLE_LEADER was hit, the state machine failed to move to
+NAVCOM_???? and dropped back to GROUND_STATE. That was a very strong
+indication that the Navcom test was too soon, too greedy or both...
+
+&gt;<i> because our regression-test
+</I>&gt;<i> infrastructure has problems:
+</I>&gt;<i>
+</I>&gt;<i> 1) There is some race condition in gpsfake that sometime causes
+</I>&gt;<i> spurious failures.  The symptom is regression tests where it appears
+</I>&gt;<i> that the last packet, or the last few packets, didn't get shipped
+</I>&gt;<i> through to gpsd before the daemon terminated.  Lowering the
+</I>&gt;<i> serial-line speed on the pty almost entirely, but not quite,
+</I>&gt;<i> eliminates these.
+</I>
+Consider a 2 second sleep after shipping the last packet?
+Consider sending some random junk that won't be parsed but will force
+gpsd to finish processing whatever it had?
+I wonder if this is some sort of interaction with gpsd's 2 second
+i-haven't-seen-any-data-so-i'm-going-offline behaviour (which I really
+hate, btw).
+
+&gt;<i> 2) If I build the regression tests on a 64-bit machine, they fail
+</I>&gt;<i> weirdly on 32-bit machines, and vice-versa.  Some of these divergences are
+</I>&gt;<i> just round-off errors in the low-order parts of trig functions.  Some
+</I>&gt;<i> of them are more disturbing, like fields that are NaN on 32 bits but not 64
+</I>&gt;<i> or vice-versa.
+</I>
+Yech.
+
+Oddly enough, many of the binary protocols seem to parse quite nicely
+on my 32b machine. My amd64 currently dual-boots win32/bsd64 - i'll
+have to do a live-cd or prepare a usb disk to boot bsd32.
+
+Which reminds me: I think the NMEA generator needs to be taught to
+output &quot;&quot; instead of &quot;NaN&quot; -  I'm pretty sure that if we don't have
+good numbers for a field and we start outputting letters instead,
+we're going to have some very confused consumer processes...
+
+&gt;<i> Things are better than they were before I rewrote gpsfake to work
+</I>&gt;<i> without threading. But they're still bad.  We do not, at the moment,
+</I>&gt;<i> have regression tests that all our developers (32- and 64-bit) can run
+</I>&gt;<i> with sure knowledge of what a good result looks like.  And this is
+</I>&gt;<i> *essential* to fix if we're going to be adding new code paths to
+</I>&gt;<i> the packet sniffer.
+</I>
+&quot;Yech.&quot;
+
+&gt;<i> Now comes the hard part.  Someone needs to take a swing at these
+</I>&gt;<i> problems.  Someone other than me.
+</I>&gt;<i>
+</I>&gt;<i> I've reached the point where I'm just thrashing when I try to tackle them.
+</I>&gt;<i> I'm getting very stale and frustrated, and I think I'm missing things
+</I>&gt;<i> because I'm too close to the code.
+</I>
+I'm slowly prodding the bear with a slightly pointy stick; but the
+more people we can have working on this, the better.
+
+Some things I thought of while I was prodding Navcom/TSIP and UBX this
+past week:
+* for each supported protocol, I would like a capture file containing
+the smallest number of messages required to express a PVT solution
+(error estimates are utterly irrelevant here). iTalk, SiRF, TSIP and
+UBX (for example) can all do this in one packet. NMEA needs a few
+sentences (GGA,GLL,RMC). Feed this capture into gpsd and you get a
+single O message.
+
+* for each supported protocol, I would like a capture file containing
+the smallest number of messages required to describe the
+active/viewable constellation. iTalk, SiRF, TSIP, and UBX (for
+example) can all do this in one packet. NMEA needs a few sentences
+(GSA, n* GSV). Feed this capture into gpsd and you get a single Y
+message.
+
+* for each supported protocol, I would like a capture file containing
+the smallest number of messages required to generate a complete O
+message with error models. iTalk, SiRF, TSIP, and UBX (for example)
+can probably do this in two or three packets - PVT solution, skyview
+and error estimates (if the protocol has such a thing).
+
+* for each supported protocol, I would like a capture file containing
+15 minutes of data, with as many different message types supported by
+that protocol. That means the usual PVT and satellite messages, plus
+raw measurements, almanac, ephemeris, debug output, error messages (if
+you can trigger them)... this is not intended for use in general
+regression test runs, but rather for more involved hacking.
+
+* i don't trust gpsfake/gpscat - i dislike they way they're trying to
+be too clever about recognizing packet types and playing back whole
+packets. I spent a while hand-editing capture files until I got
+something gpsfake would play back. Because of this, I wrote a couple
+of similar utilities in C, but without the smarts. They do the minimum
+required to open a serial line and start logging bytes, or read a
+binary file and spew into a pty. I will happily make these utilities
+available to anyone who wants to get me captures. Think of this as an
+independent check of gpsfake/gpscat - much as the logic in sirfmon was
+designed to be an independent check of the sirf decode routines in
+libgps.
+
+CK
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005435.html">[Gpsd-dev] State of Diego's Navcom driver, and the regression tests.
+</A></li>
+	<LI>Next message: <A HREF="005436.html">[Gpsd-dev] Announcing the release of gpsd 2.34
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5478">[ date ]</a>
+              <a href="thread.html#5478">[ thread ]</a>
+              <a href="subject.html#5478">[ subject ]</a>
+              <a href="author.html#5478">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,222 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [RFC] Fix coveraging mode in SConstruct
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2013-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BRFC%5D%20Fix%20coveraging%20mode%20in%20SConstruct&In-Reply-To=%3C52340700.6020303%40gna.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009616.html">
+   <LINK REL="Next"  HREF="009618.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [RFC] Fix coveraging mode in SConstruct</H1>
+    <B>Christian Gagneraud</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BRFC%5D%20Fix%20coveraging%20mode%20in%20SConstruct&In-Reply-To=%3C52340700.6020303%40gna.org%3E"
+       TITLE="[Gpsd-dev] [RFC] Fix coveraging mode in SConstruct">chgans at gna.org
+       </A><BR>
+    <I>Sat Sep 14 08:49:36 CEST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009616.html">[Gpsd-dev] [RFC] Fix coveraging mode in SConstruct
+</A></li>
+        <LI>Next message: <A HREF="009618.html">[Gpsd-dev] [RFC] Fix coveraging mode in SConstruct
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9617">[ date ]</a>
+              <a href="thread.html#9617">[ thread ]</a>
+              <a href="subject.html#9617">[ subject ]</a>
+              <a href="author.html#9617">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 09/14/2013 06:16 PM, Christian Gagneraud wrote:
+&gt;<i> This patch fixes the coveraging mode, unfortunately the built of the python
+</I>&gt;<i> bindings requires a dirty hack as it doesn't pickup the global gcc flags.
+</I>&gt;<i>
+</I>&gt;<i> Right now, it is possible to get coverage data for some of the testsuites,
+</I>&gt;<i> some fail because the test programs segfault.
+</I>&gt;<i>
+</I>&gt;<i> Passed testsuites:
+</I>&gt;<i>   time-regress
+</I>&gt;<i>   unpack-regress
+</I>&gt;<i>   json-regress
+</I>&gt;<i>   maidenhead-locator-regress
+</I>&gt;<i>   gps-regress
+</I>&gt;<i> Failed testsuites (segfault):
+</I>&gt;<i>   rtcm-regress
+</I>&gt;<i>   aivdm-regress
+</I>&gt;<i>   packet-regress
+</I>&gt;<i>   geoid-regress
+</I>&gt;<i>
+</I>&gt;<i> I still don't know if the segfault is specific to my distro or not
+</I>&gt;<i> (OpenSUSE 13.1-M4/64bits).
+</I>&gt;<i> Any feedback welcome!
+</I>
+The segfault happens in gcov_exit() in libgcov.a, I don't know yet if 
+the problem comes from the build process or from my distro gcc or from 
+mainstream gcc, I would like to investigate a bit further before 
+reporting the issue to OpenSUSE or gcc.
+
+Another problem I&#8217;ve encountered (and that may be related) is a build 
+failure depending on the scons target, for example, I tried first to use:
+
+$ CC=&quot;gcc -coverage&quot; scons check
+[...]
+gcc -coverage -o libgpsd.so.22.0.0 -coverage -shared -Wl,-Bsymbolic 
+-Wl,-soname=libgpsd.so.22 -Wl,-rpath=/home/krys/projects/gpsd 
+-Wl,-rpath=//usr/local/lib bsd_base64.os crc24q.os gpsd_json.os geoid.os 
+isgps.os libgpsd_core.os net_dgpsip.os net_gnss_dispatch.os net_ntrip.os 
+packet.os pseudonmea.os pseudoais.os serial.os subframe.os timebase.os 
+drivers.os driver_ais.os driver_evermore.os driver_garmin.os 
+driver_garmin_txt.os driver_geostar.os driver_italk.os driver_navcom.os 
+driver_nmea0183.os driver_nmea2000.os driver_oncore.os driver_rtcm2.os 
+driver_rtcm3.os driver_sirf.os driver_superstar2.os driver_tsip.os 
+driver_ubx.os driver_zodiac.os -L. -L/usr/local/lib -lm -lgps -lusb-1.0
+/usr/lib64/gcc/x86_64-suse-linux/4.8/../../../../x86_64-suse-linux/bin/ld: 
+./libgps.a(bits.o): relocation R_X86_64_32 against `.rodata' can not be 
+used when making a shared object; recompile with -fPIC
+./libgps.a: could not read symbols: Bad value
+collect2: error: ld returned 1 exit status
+scons: *** [libgpsd.so.22.0.0] Error 1
+scons: building terminated because of errors.
+
+Doing it in 2 stages makes the error disappear:
+$ CC=&quot;gcc -coverage&quot; scons
+[...]
+$ CC=&quot;gcc -coverage&quot; scons check
+[...]
+gcc -coverage -o test_bits -coverage -Wl,-rpath=/home/krys/projects/gpsd 
+-Wl,-rpath=//usr/local/lib test_bits.o -L. -L/usr/local/lib -lgps -lm
+./test_bits --quiet
+Testing bitfield extraction
+./regress-driver test/daemon/*.log
+Testing the daemon...
+Processing test/daemon/GPSmap-76S.log......(1.53 sec) done.
+Processing test/daemon/ac12.log...^Cscons: *** [gps-regress] Build 
+interrupted.
+scons: Build interrupted.
+scons: building terminated because of errors.
+scons: writing .sconsign file.
+...(0.17 sec) done.
+
+
+Now, on the report side, I use to use lcov [1], but I discovered 
+recently gcovr [2], the guys behind this tool even manage to integrate 
+it with their continuous integration system (hudson), see [3] for an 
+example.
+
+Current reports for gpsd (with half of the testsuites failing) can be 
+seen at [4] for lcov and [5] for gcovr.
+
+Regards,
+Chris
+
+[1] <A HREF="http://ltp.sourceforge.net/coverage/lcov.php">http://ltp.sourceforge.net/coverage/lcov.php</A>
+[2] <A HREF="http://gcovr.com/guide.html#_overview">http://gcovr.com/guide.html#_overview</A>
+[3] 
+<A HREF="https://software.sandia.gov/hudson/view/coverage/job/acro-coliny_trunk_coverage/">https://software.sandia.gov/hudson/view/coverage/job/acro-coliny_trunk_coverage/</A>
+[4] <A HREF="http://fjorgyn.chgans.co.nz/pub/gpsd/20130914/lcov/">http://fjorgyn.chgans.co.nz/pub/gpsd/20130914/lcov/</A>
+[5] <A HREF="http://fjorgyn.chgans.co.nz/pub/gpsd/20130914/gcovr/">http://fjorgyn.chgans.co.nz/pub/gpsd/20130914/gcovr/</A>
+
+
+&gt;<i>
+</I>&gt;<i> Signed-off-by: Christian Gagneraud &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">chgans at gna.org</A>&gt;
+</I>&gt;<i> ---
+</I>&gt;<i>   SConstruct | 21 +++++++++++++--------
+</I>&gt;<i>   1 file changed, 13 insertions(+), 8 deletions(-)
+</I>&gt;<i>
+</I>&gt;<i> diff --git a/SConstruct b/SConstruct
+</I>&gt;<i> index 04899ef..bd231ed 100644
+</I>&gt;<i> --- a/SConstruct
+</I>&gt;<i> +++ b/SConstruct
+</I>&gt;<i> @@ -17,6 +17,7 @@
+</I>&gt;<i>
+</I>&gt;<i>   # Unfinished items:
+</I>&gt;<i>   # * Out-of-directory builds: see <A HREF="http://www.scons.org/wiki/UsingBuildDir">http://www.scons.org/wiki/UsingBuildDir</A>
+</I>&gt;<i> +# * Coveraging mode: gcc &quot;-coverage&quot; flag requires a hack for building the python bindings
+</I>&gt;<i>
+</I>&gt;<i>   # Release identification begins here
+</I>&gt;<i>   gpsd_version = &quot;3.10~dev&quot;
+</I>&gt;<i> @@ -250,10 +251,6 @@ for key, value in os.environ.iteritems():
+</I>&gt;<i>       if key.startswith('CCC_'):
+</I>&gt;<i>           env.Append(ENV={key:value})
+</I>&gt;<i>
+</I>&gt;<i> -# FIXME: Set up compilation for gcov - doesn't work yet.
+</I>&gt;<i> -if env['coveraging']:
+</I>&gt;<i> -    env['CFLAGS'].append(['-fprofile-arcs', '-ftest-coverage'])
+</I>&gt;<i> -
+</I>&gt;<i>   # Placeholder so we can kluge together something like VPATH builds.
+</I>&gt;<i>   # $SRCDIR replaces occurrences for $(srcdir) in the autotools build.
+</I>&gt;<i>   env['SRCDIR'] = '.'
+</I>&gt;<i> @@ -294,9 +291,16 @@ if not 'CCFLAGS' in os.environ:
+</I>&gt;<i>       if env['profiling']:
+</I>&gt;<i>           env.Append(CCFLAGS=['-pg'])
+</I>&gt;<i>           env.Append(LDFLAGS=['-pg'])
+</I>&gt;<i> +    # Should we build with coveraging?
+</I>&gt;<i> +    if env['coveraging']:
+</I>&gt;<i> +        env.Append(CFLAGS=['-coverage'])
+</I>&gt;<i> +        env.Append(LDFLAGS=['-coverage'])
+</I>&gt;<i> +        env.Append(LINKFLAGS=['-coverage'])
+</I>&gt;<i>       # Should we build with debug symbols?
+</I>&gt;<i>       if env['debug']:
+</I>&gt;<i>           env.Append(CCFLAGS=['-g'])
+</I>&gt;<i> +    # Should we build with optimisation?
+</I>&gt;<i> +    if env['debug'] or env['coveraging']:
+</I>&gt;<i>           env.Append(CCFLAGS=['-O0'])
+</I>&gt;<i>       else:
+</I>&gt;<i>           env.Append(CCFLAGS=['-O2'])
+</I>&gt;<i> @@ -948,10 +952,6 @@ gpsmon_sources = [
+</I>&gt;<i>   if not env['shared'] or not env[&quot;implicit_link&quot;]:
+</I>&gt;<i>       env.MergeFlags(&quot;-lm&quot;)
+</I>&gt;<i>
+</I>&gt;<i> -# FIXME: Part of an attempt to support coverage testing.
+</I>&gt;<i> -if env['coveraging']:
+</I>&gt;<i> -    env.MergeFlags(&quot;-lgcov&quot;)
+</I>&gt;<i> -
+</I>&gt;<i>   gpsd_env = env.Clone()
+</I>&gt;<i>   gpsd_env.MergeFlags(&quot;-pthread&quot;)
+</I>&gt;<i>
+</I>&gt;<i> @@ -1036,6 +1036,11 @@ else:
+</I>&gt;<i>           if vars[i] is None:
+</I>&gt;<i>               vars[i] = []
+</I>&gt;<i>       (cc, cxx, opt, basecflags, ccshared, ldshared, so_ext, includepy, ldflags) = vars
+</I>&gt;<i> +    # FIXME: build of python wrappers doesn't pickup flags set for coveraging, manually add them here
+</I>&gt;<i> +    if env['coveraging']:
+</I>&gt;<i> +        basecflags += ' -coverage'
+</I>&gt;<i> +        ldflags += ' -coverage'
+</I>&gt;<i> +        ldshared += ' -coverage'
+</I>&gt;<i>       # in case CC/CXX was set to the scan-build wrapper,
+</I>&gt;<i>       # ensure that we build the python modules with scan-build, too
+</I>&gt;<i>       if env['CC'] is None or env['CC'].find('scan-build') &lt; 0:
+</I>&gt;<i>
+</I>
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009616.html">[Gpsd-dev] [RFC] Fix coveraging mode in SConstruct
+</A></li>
+	<LI>Next message: <A HREF="009618.html">[Gpsd-dev] [RFC] Fix coveraging mode in SConstruct
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9617">[ date ]</a>
+              <a href="thread.html#9617">[ thread ]</a>
+              <a href="subject.html#9617">[ subject ]</a>
+              <a href="author.html#9617">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

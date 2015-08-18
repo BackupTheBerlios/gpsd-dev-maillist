@@ -1,0 +1,133 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPRMC bug?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPRMC%20bug%3F&In-Reply-To=%3CPine.LNX.4.63.0509261140140.21228%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003076.html">
+   <LINK REL="Next"  HREF="003078.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPRMC bug?</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPRMC%20bug%3F&In-Reply-To=%3CPine.LNX.4.63.0509261140140.21228%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] GPRMC bug?">gem at rellim.com
+       </A><BR>
+    <I>Mon Sep 26 20:42:12 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003076.html">[Gpsd-dev] GPRMC bug?
+</A></li>
+        <LI>Next message: <A HREF="003078.html">[Gpsd-dev] GPRMC bug?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3077">[ date ]</a>
+              <a href="thread.html#3077">[ thread ]</a>
+              <a href="subject.html#3077">[ subject ]</a>
+              <a href="author.html#3077">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Jeff!
+
+On second thought, you are probably right.  Not sure that solves all
+speed problems, but if fix.speed is mps and the NMEA is knots then you
+patch does make sense.  Sorry not enough coffee before I sent my first
+email.  I do not even know the Garmin actully works for speed.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+
+On Mon, 26 Sep 2005, Gary E. Miller wrote:
+
+&gt;<i> Nope, that breaks the garmin, and probably other drivers.  That changes
+</I>&gt;<i> the meaning of fix.speed and that is a bad place to go.
+</I>&gt;<i>
+</I>&gt;<i> What you need to do is find where the NMEA drivers writes in to fix.speed
+</I>&gt;<i> and make the conversion there.
+</I>&gt;<i>
+</I>&gt;<i> RGDS
+</I>&gt;<i> GARY
+</I>&gt;<i> ---------------------------------------------------------------------------
+</I>&gt;<i> Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+</I>&gt;<i> 	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+</I>&gt;<i>
+</I>&gt;<i> On Mon, 26 Sep 2005, Jeff Francis wrote:
+</I>&gt;<i>
+</I>&gt;<i> &gt; Date: Mon, 26 Sep 2005 09:35:59 -0700
+</I>&gt;<i> &gt; From: Jeff Francis &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>&gt;
+</I>&gt;<i> &gt; To: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> &gt; Subject: Re: [Gpsd-dev] GPRMC bug?
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;   Ok, major patch here to fix issue #1:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Index: libgpsd_core.c
+</I>&gt;<i> &gt; ===================================================================
+</I>&gt;<i> &gt; --- libgpsd_core.c      (revision 3207)
+</I>&gt;<i> &gt; +++ libgpsd_core.c      (working copy)
+</I>&gt;<i> &gt; @@ -268,7 +268,7 @@
+</I>&gt;<i> &gt;             ((session-&gt;gpsdata.fix.latitude &gt; 0) ? 'N' : 'S'),
+</I>&gt;<i> &gt;             degtodm(fabs(session-&gt;gpsdata.fix.longitude)),
+</I>&gt;<i> &gt;             ((session-&gt;gpsdata.fix.longitude &gt; 0) ? 'E' : 'W'),
+</I>&gt;<i> &gt; -           session-&gt;gpsdata.fix.speed,
+</I>&gt;<i> &gt; +           session-&gt;gpsdata.fix.speed * MPS_TO_KNOTS,
+</I>&gt;<i> &gt;             session-&gt;gpsdata.fix.track,
+</I>&gt;<i> &gt;             tm.tm_mday,
+</I>&gt;<i> &gt;             tm.tm_mon + 1,
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="http://lists.berlios.de/mailman/listinfo/gpsd-dev">http://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>&gt;<i> ------------ Output from gpg ------------
+</I>&gt;<i> gpg: Signature made Mon Sep 26 10:50:20 2005 PDT using DSA key ID D791DEA5
+</I>&gt;<i> gpg: Good signature from &quot;Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.biz</A>&gt;&quot;
+</I>&gt;<i> gpg:                 aka &quot;Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;&quot;
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.1 (GNU/Linux)
+
+iD8DBQFDOEEH8KZibdeR3qURAjD6AJ0STbTDeH0w5RERGKfkhQTaFwyjQwCgyGil
+c9XymTFdGsUdoXwJf71qGFs=
+=VCau
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003076.html">[Gpsd-dev] GPRMC bug?
+</A></li>
+	<LI>Next message: <A HREF="003078.html">[Gpsd-dev] GPRMC bug?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3077">[ date ]</a>
+              <a href="thread.html#3077">[ thread ]</a>
+              <a href="subject.html#3077">[ subject ]</a>
+              <a href="author.html#3077">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

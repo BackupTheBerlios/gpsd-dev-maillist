@@ -1,0 +1,191 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Pre-announcing gpssim, a GPS simulator
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Pre-announcing%20gpssim%2C%20a%20GPS%20simulator&In-Reply-To=%3C20061214055844.72010.qmail%40web32510.mail.mud.yahoo.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005419.html">
+   <LINK REL="Next"  HREF="005421.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Pre-announcing gpssim, a GPS simulator</H1>
+    <B>Michael R. Davis</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Pre-announcing%20gpssim%2C%20a%20GPS%20simulator&In-Reply-To=%3C20061214055844.72010.qmail%40web32510.mail.mud.yahoo.com%3E"
+       TITLE="[Gpsd-dev] Pre-announcing gpssim, a GPS simulator">mrdvt92 at yahoo.com
+       </A><BR>
+    <I>Thu Dec 14 06:58:44 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005419.html">[Gpsd-dev] Pre-announcing gpssim, a GPS simulator
+</A></li>
+        <LI>Next message: <A HREF="005421.html">[Gpsd-dev] Subtle, nasty bug in NMEA handling may account for 2D/3D jitter
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5420">[ date ]</a>
+              <a href="thread.html#5420">[ thread ]</a>
+              <a href="subject.html#5420">[ subject ]</a>
+              <a href="author.html#5420">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>So, I prototyped a Y command simulator  Here's what I got when using the location of Chris' gps.
+
+echo y| nc gpsd.mainframe.cx 2947
+GPSD,Y=MID52 1166100786.000 9:19 22 246 36 1:31 6 174 0 0:1 33 222 37 1:18 22 97 36 1:14 78 183 37 1:9 21 42 35 1:11 27 304 37 1:22 60 96 37 1:135 26 202 28 0:
+
+./navstar-read.pl gps-ops.txt
+GPSD,Y=FAKE 1166075617 10:14 78 183 38 1:22 60 96 38 1:01 33 223 38 1:11 27 305 38 1:18 22 97 38 1:19 22 246 38 1:09 21 42 38 1:31 6 174 38 1:03 4 223 38 1:25 2 182 38 1
+
+ See <A HREF="http://gpsd.davisnetworks.com/bin/view/Main/ProjectGPSDSimulator">http://gpsd.davisnetworks.com/bin/view/Main/ProjectGPSDSimulator</A>
+ 
+ Bed time!
+ 
+ Mike (mrdvt92)
+
+----- Original Message ----
+From: Michael R. Davis &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mrdvt92 at yahoo.com</A>&gt;
+To: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>
+Sent: Wednesday, December 13, 2006 10:01:51 PM
+Subject: Re: [Gpsd-dev] Pre-announcing gpssim, a GPS simulator
+
+Oh, my plan to support the Y command is to leverage the data from the Perl Astro::SpaceTrack package and the Astro::Coord::ECI::TLE package.  The things I haven't figured out yet is how to do the elevation and the azimuth calculations. And how to get PRN from a 3 line TLE.
+ 
+Given a 3line TLE 
+ NAVSTAR 59 (USA 192)
+ 1 29601U 06052A   06341.72902936  .00000032  00000-0  00000+0 0   178
+ 2 29601 055.0538 134.9800 0030175 245.5042 114.1560 01.99393616   420
+ 
+Turns into 
+
+Lat: -55.0805926907431      Lon: -82.9886544996858      HAE? 20232.6131240488
+Mike
+
+----- Original Message ----
+From: Michael R. Davis &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mrdvt92 at yahoo.com</A>&gt;
+To: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>
+Sent: Wednesday, December 13, 2006 9:19:57 PM
+Subject: Re: [Gpsd-dev] Pre-announcing gpssim, a GPS simulator
+
+I've written a simulator called Net::GPSD::Server::Fake.  I have Circle, Stationary and Track providers .  You can write your own.  You can run as many on a host as you have open ports (and processor power). 
+ 
+ Just download the packages from CPAN and you're good to go. 
+ 
+ perl -e ' 
+  use Net::GPSD::Server::Fake; 
+ use Net::GPSD::Server::Fake::Stationary; 
+ my $server=Net::GPSD::Server::Fake-&gt;new(port=&gt;2948); 
+ my $stationary=Net::GPSD::Server::Fake::Stationary-&gt;new(lat=&gt;38.865826, 
+                                                         lon=&gt;-77.108574); 
+ $server-&gt;start($stationary); 
+' 
+ 
+ 
+----- Original Message ---- 
+From: Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; 
+To: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>; <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-users at lists.berlios.de</A> 
+Sent: Wednesday, December 13, 2006 5:47:13 PM 
+Subject: [Gpsd-dev] Pre-announcing gpssim, a GPS simulator 
+ 
+More on after 2.34 ships... 
+ 
+I've done serious design work, and a little coding, on a GPS simulator 
+application that will take track descriptions in a simple, Logo-like 
+language and generate NMEA (and, eventually, vendor-protocol) outputs. 
+The uses as a test tool for gpsd and GPS-aware application should be 
+obvious. 
+ 
+The working (and probably final) name for this tool is gpssim.  Yes, 
+there is at least one other program by that name, but it's 
+closed-source for Windows.   
+ 
+Most of my energy will probably be going into this after 2.34 release. 
+What I have now is a design document, which you can read at 
+ 
+    <A HREF="http://gpsd.berlios.de/gpssim-plan.html">http://gpsd.berlios.de/gpssim-plan.html</A> 
+ 
+and some very scratchy, incomplete, and not-yet-runnable Python code,  
+The core simulator classes and TDL parser are in good shape, but the NMEA 
+report generator is a mess of half-transcribed C code lifted from 
+libgpsd_core.c. 
+ 
+At this point, the major piece missing is satellite orrery code capable 
+of generating a correct simulated skyview from orbital elements and a 
+time mark.  Chris has expressed a desire to tackle this, but neither 
+of us will be at all upset if someone else jumps in with a solution first. 
+ 
+I'll put the code in the SVN repo as soon as it's runnable, even if 
+I have to stub out the skyview stuff. 
+--  
+        &lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt; 
+_______________________________________________ 
+Gpsd-dev mailing list 
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A> 
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A> 
+ 
+ 
+
+
+
+
+ 
+____________________________________________________________________________________
+Need a quick answer? Get one in minutes from people who know.
+Ask your question on www.Answers.yahoo.com
+_______________________________________________
+Gpsd-dev mailing list
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+
+
+
+
+
+ 
+____________________________________________________________________________________
+Have a burning question?  
+Go to www.Answers.yahoo.com and get answers from real people who know.
+_______________________________________________
+Gpsd-dev mailing list
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+
+
+
+
+
+ 
+____________________________________________________________________________________
+Cheap talk?
+Check out Yahoo! Messenger's low PC-to-Phone call rates.
+<A HREF="http://voice.yahoo.com">http://voice.yahoo.com</A>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005419.html">[Gpsd-dev] Pre-announcing gpssim, a GPS simulator
+</A></li>
+	<LI>Next message: <A HREF="005421.html">[Gpsd-dev] Subtle, nasty bug in NMEA handling may account for 2D/3D jitter
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5420">[ date ]</a>
+              <a href="thread.html#5420">[ thread ]</a>
+              <a href="subject.html#5420">[ subject ]</a>
+              <a href="author.html#5420">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

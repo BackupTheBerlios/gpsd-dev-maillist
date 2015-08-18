@@ -1,0 +1,104 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Input packets buffering bug(s)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3CAANLkTimX12aWdebkYXeOJg8NjVImpKkMOeRRXY3vZOKG%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007775.html">
+   <LINK REL="Next"  HREF="007780.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Input packets buffering bug(s)</H1>
+    <B>Olivier Cornu</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3CAANLkTimX12aWdebkYXeOJg8NjVImpKkMOeRRXY3vZOKG%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Input packets buffering bug(s)">o.cornu at gmail.com
+       </A><BR>
+    <I>Tue May 25 00:39:54 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007775.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+        <LI>Next message: <A HREF="007780.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7777">[ date ]</a>
+              <a href="thread.html#7777">[ thread ]</a>
+              <a href="subject.html#7777">[ subject ]</a>
+              <a href="author.html#7777">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Mon, May 24, 2010 at 14:28, Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt; wrote:
+&gt;<i> I think your analysis is at least basically right.
+</I>&gt;<i>
+</I>&gt;<i> On an actual serial port, characters arrive one at a time, and then the
+</I>&gt;<i> host is interrupted either per character or every few characters. &#160;Then,
+</I>&gt;<i> characters are placed in the input buffer, and finally a process does
+</I>&gt;<i> read(2) which reads some number. &#160;Depending on timing this could be a
+</I>&gt;<i> single byte or it could be 300 bytes and several NMEA sentences.
+</I>&gt;<i>
+</I>&gt;<i> With your test program, I think you are saying characters arrive in bulk
+</I>&gt;<i> From a write(2) call from the generator.
+</I>
+Sorry i missed that at first, but it may be an interesting bit in case
+there is still doubt about the reality of this bug:
+  - the logs published above indeed used a single write() of
+concatenated NMEA sentences (purely for demonstration purposes)
+  - similar tests with one write() per sentence showed similar wrong
+behavior, yet less systematic (as you would expect)
+  - introducing a small wait() between writes() did the trick and made
+gpsd process sentences properly
+
+
+Concerning the solution, here are the few practical problems i see:
+  1. we need to be able to tell if a packet is complete or not,
+without dropping it. Currently, packet_parse() (500 lines with 17 exit
+points!) processes incomplete packets as bad packets, and arbitrarily
+discard() them (another related bug). packet_parse() should have a
+return value indicating if current packet is complete or not.
+  2. packet_get() is used all around, so changing its interface is
+quite intrusive (current contract is: grab the next packet, even if
+you need to block). We can update the implementation to return an
+inbuffer packet when there is a complete one available, if not read()
+one from tty.
+  3. main() loop still needs to call a non-blocking packet_get() of
+some sort to empty inbuffer. If we keep packet_get() interface intact,
+that would mean a new similar function.
+  4. main() loop has to be changed to loop through inbuffer packets
+and broadcast them. Simply calling gps_poll() multiple times might
+have side effects.
+
+
+-- 
+Olivier
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007775.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+	<LI>Next message: <A HREF="007780.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7777">[ date ]</a>
+              <a href="thread.html#7777">[ thread ]</a>
+              <a href="subject.html#7777">[ subject ]</a>
+              <a href="author.html#7777">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

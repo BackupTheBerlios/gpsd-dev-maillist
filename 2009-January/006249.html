@@ -1,0 +1,140 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] The state of RTCM3 support, and two request	for?healp
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%0A%09%3D%3Fiso-8859-1%3Fq%3FThe_state_of_RTCM3_support%3D2C_and_two_r%3F%3D%0A%09%3D%3Fiso-8859-1%3Fq%3Fequest%3D09for%3D3Fhealp%3F%3D&In-Reply-To=%3C200901071022.06462.remco%40rvt.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006231.html">
+   <LINK REL="Next"  HREF="006257.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] The state of RTCM3 support, and two request	for?healp</H1>
+    <B>Remco Treffkorn</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%0A%09%3D%3Fiso-8859-1%3Fq%3FThe_state_of_RTCM3_support%3D2C_and_two_r%3F%3D%0A%09%3D%3Fiso-8859-1%3Fq%3Fequest%3D09for%3D3Fhealp%3F%3D&In-Reply-To=%3C200901071022.06462.remco%40rvt.com%3E"
+       TITLE="[Gpsd-dev] The state of RTCM3 support, and two request	for?healp">remco at rvt.com
+       </A><BR>
+    <I>Wed Jan  7 19:22:06 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006231.html">[Gpsd-dev] The state of RTCM3 support, and two request	for?healp
+</A></li>
+        <LI>Next message: <A HREF="006257.html">[Gpsd-dev] The state of RTCM3 support, and two	request?for?healp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6249">[ date ]</a>
+              <a href="thread.html#6249">[ thread ]</a>
+              <a href="subject.html#6249">[ subject ]</a>
+              <a href="author.html#6249">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Hi,
+
+You pruned this quite aggressively, which makes it harder to respond.
+
+On Tuesday 06 January 2009, Matthias Urlichs wrote:
+&gt;<i> Hi,
+</I>&gt;<i>
+</I>&gt;<i> Remco Treffkorn:
+</I>&gt;<i> &gt; You seem to run out of tx buffer on a slow link. That means that either
+</I>&gt;<i> &gt; your average bandwidth requirements are too high for the channel, or your
+</I>&gt;<i> &gt; peak usage is bigger than the tx buffer.
+</I>&gt;<i>
+</I>&gt;<i> There's a third possible reason. The driver has one &quot;send&quot; slot which is
+</I>&gt;<i> filled by the first write(); the second write call will have to wait until
+</I>&gt;<i> the data from the first one is transmitted.
+</I>&gt;<i>
+</I>&gt;<i> In fact, that's exactly what happens.
+</I>
+This is covered under &quot;or your peak usage is bigger than the tx buffer&quot;.
+More information about how exactly the resource is limited does not help.
+
+I thought that was what the ioctl(4, TCSBRK, 0x1) took care of? Has been many 
+years, but I seem to remember that is what it does.
+
+&gt;<i> Bluetooth bandwidth in itself is sufficient. The driver simply cannot
+</I>&gt;<i> coalesce write calls (either because the driver's author was lazy, or
+</I>&gt;<i> because some protocols you run over BT serial profile need to preserve
+</I>&gt;<i> packet boundaries; I suspect the latter).
+</I>
+To work around this you suggest we buffer remaining data for an arbitrary 
+amount of time and an arbitrary number of buffers, and we add quite a bit of 
+complexity to the select loop.
+
+&gt;<i> I am not going to hack the kernel Bluetooth serial code to add an
+</I>&gt;<i> arbitrary number of send buffers just for gpsd. That way lies madness.
+</I>
+I don't blame you, but that would be the right thing to do.
+Since it is *not* just for gpsd. Not fixing it there means every application 
+that transmits data via this channel has to solve the problem for itself. And 
+don't tell me gpsd is the only app having that problem. 
+
+&gt;<i> -EAGAIN means &quot;try again later&quot;, and that's exactly what gpsd should do.
+</I>
+It means you may try again later, not you must try again later.
+
+Maybe I should have been more verbose the first time. I wanted to point out a 
+few alternatives:
+
+1. Don't write before the previous write has finished. I thought that was what 
+the ioctl was for. Just wondering what's going on with that.
+
+2. Just toss the whole message, if it can not be completely written at this 
+time. There will be another soon.
+
+3. Coalesce everything that belongs together into a single write. Slot problem 
+solved, as long as your bandwidth assumption is correct. (Rats! This is where 
+knowing more about how the resource is constrained does actually help. O 
+well ;-)
+
+4. Fix the BT serial code (by means of a bug report).
+
+5. I am sure there is more...
+
+Adding the code you suggest is extremely complex for the general case. It can 
+be made less so by making special case assumptions, which I am not a fan of. 
+That's what created the problem to start with. A lazy developer making 
+special assumptions to ease his life.
+
+Or maybe it's simply a bug...
+
+Cheers,
+Remco
+
+-- 
+Remco Treffkorn (RT445)
+HAM DC2XT
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006231.html">[Gpsd-dev] The state of RTCM3 support, and two request	for?healp
+</A></li>
+	<LI>Next message: <A HREF="006257.html">[Gpsd-dev] The state of RTCM3 support, and two	request?for?healp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6249">[ date ]</a>
+              <a href="thread.html#6249">[ thread ]</a>
+              <a href="subject.html#6249">[ subject ]</a>
+              <a href="author.html#6249">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

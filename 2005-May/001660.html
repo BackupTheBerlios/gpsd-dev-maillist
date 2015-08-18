@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] SiRF GPRMC bug? and GPGGA format
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20SiRF%20GPRMC%20bug%3F%20and%20GPGGA%20format&In-Reply-To=%3CPine.GSO.4.61-042.0505151723020.19042%40johnstown.andrew.cmu.edu%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001658.html">
+   <LINK REL="Next"  HREF="001675.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] SiRF GPRMC bug? and GPGGA format</H1>
+    <B>Derrick J Brashear</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20SiRF%20GPRMC%20bug%3F%20and%20GPGGA%20format&In-Reply-To=%3CPine.GSO.4.61-042.0505151723020.19042%40johnstown.andrew.cmu.edu%3E"
+       TITLE="[Gpsd-dev] SiRF GPRMC bug? and GPGGA format">shadow at dementia.org
+       </A><BR>
+    <I>Sun May 15 23:26:23 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001658.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+        <LI>Next message: <A HREF="001675.html">[Gpsd-dev] SiRF GPRMC bug? and GPGGA format
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1660">[ date ]</a>
+              <a href="thread.html#1660">[ thread ]</a>
+              <a href="subject.html#1660">[ subject ]</a>
+              <a href="author.html#1660">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sun, 15 May 2005, Derrick J Brashear wrote:
+
+&gt;<i> On Sun, 15 May 2005, Richard E. Polivka wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> The GPS unit will work in NMEA and SI-RF binary modes. Whenever I have gpsd 
+</I>&gt;&gt;<i> running, it puts the GPS into binary mode. So, IMO, it would have to take 
+</I>&gt;&gt;<i> the binary data and recreate and serve NMEA strings for clients to use upon 
+</I>&gt;&gt;<i> the client's request. I will check to see if I can keep gpsd from switching 
+</I>&gt;&gt;<i> to binary and see if that helps.
+</I>&gt;<i>
+</I>&gt;<i> Oh. SiRF. I forgot SiRF. Let me see if I can fix it.
+</I>&gt;<i>
+</I>&gt;&gt;&gt;<i> Note also, is GPSD generating that string? Only Zodiac (earthmate) 
+</I>&gt;&gt;&gt;<i> generates the strings, otherwise it just passes you what the receiver 
+</I>&gt;&gt;&gt;<i> sends. If that's what the receiver is sending, gpsd does not, and really, 
+</I>&gt;&gt;&gt;<i> should not, be patching the strings.
+</I>
+So, 1) GPRMC specified 07.4f, which means a total field width of 7, 
+padded at left with zeroes, and 4 digits to the right of the .
+
+So how does 179.5430 render? That's an 8 character field.
+
+2) GPGGA should have the same padding applied.
+
+Comments?
+
+--- libgpsd_core.c      (revision 2404)
++++ libgpsd_core.c      (working copy)
+@@ -321,7 +321,7 @@
+      gmtime_r(&amp;intfixtime, &amp;tm);
+      if (session-&gt;gpsdata.fix.mode &gt; 1) {
+         sprintf(bufp,
+-               &quot;$GPGGA,%02d%02d%02d,%.4f,%c,%.4f,%c,%d,%02d,%s,%.1f,%c,&quot;,
++     		&quot;$GPGGA,%02d%02d%02d,%08.4f,%c,%08.4f,%c,%d,%02d,%s,%.1f,%c,&quot;,
+                 tm.tm_hour,
+                 tm.tm_min,
+                 tm.tm_sec,
+@@ -349,7 +349,7 @@
+         bufp += strlen(bufp);
+      }
+      sprintf(bufp,
+-           &quot;$GPRMC,%02d%02d%02d,%c,%07.4f,%c,%07.4f,%c,%.4f,%.3f,%02d%02d%02d,,&quot;,
++           &quot;$GPRMC,%02d%02d%02d,%c,%08.4f,%c,%08.4f,%c,%.4f,%.3f,%02d%02d%02d,,&quot;,
+             tm.tm_hour,
+             tm.tm_min,
+             tm.tm_sec,
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001658.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+	<LI>Next message: <A HREF="001675.html">[Gpsd-dev] SiRF GPRMC bug? and GPGGA format
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1660">[ date ]</a>
+              <a href="thread.html#1660">[ thread ]</a>
+              <a href="subject.html#1660">[ subject ]</a>
+              <a href="author.html#1660">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

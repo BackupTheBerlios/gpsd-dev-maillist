@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd Architecture
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20Architecture&In-Reply-To=%3C200705202156.20086.remco%40rvt.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005654.html">
+   <LINK REL="Next"  HREF="005657.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd Architecture</H1>
+    <B>Remco Treffkorn</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20Architecture&In-Reply-To=%3C200705202156.20086.remco%40rvt.com%3E"
+       TITLE="[Gpsd-dev] gpsd Architecture">remco at rvt.com
+       </A><BR>
+    <I>Mon May 21 06:56:19 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005654.html">[Gpsd-dev] gpsd Architecture
+</A></li>
+        <LI>Next message: <A HREF="005657.html">[Gpsd-dev] gpsd Architecture
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5655">[ date ]</a>
+              <a href="thread.html#5655">[ thread ]</a>
+              <a href="subject.html#5655">[ subject ]</a>
+              <a href="author.html#5655">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sunday 20 May 2007, Russ Nelson wrote:
+&gt;<i> Eric S. Raymond writes:
+</I>&gt;<i>  &gt; Sunil Bhatia &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Sunil.Bhatia at aricent.com</A>&gt;:
+</I>&gt;<i>  &gt; &gt;          1) How GPSd is receiving  data from GPS H/W.
+</I>&gt;<i>  &gt; &gt;
+</I>&gt;<i>  &gt; &gt;               a)it is polling based  or interrupt driven?
+</I>&gt;<i>  &gt;
+</I>&gt;<i>  &gt; Polling-based.
+</I>&gt;<i>
+</I>&gt;<i> ?  I'd say that it's interrupt driven.  The character arrives in the
+</I>&gt;<i> device driver's input buffer because the processor was interrupted by
+</I>&gt;<i> the device (USB or serial).  After the character is placed there, the
+</I>&gt;<i> kernel is told that that device now has data ready.  If any process
+</I>&gt;<i> (e.g. gpsd) is waiting on that device, then that process's status is
+</I>&gt;<i> changed in the scheduler from waiting on I/O to ready.  The scheduler
+</I>&gt;<i> then runs it as soon as is appropriate.
+</I>&gt;<i>
+</I>&gt;<i> I gloss over many details in this process because it pleases me to not
+</I>&gt;<i> think about them.
+</I>&gt;<i>
+</I>&gt;<i> On a lightly loaded machine, it is quite possible that processor was
+</I>&gt;<i> halted, waiting for the next interrupt.  That doesn't call out
+</I>&gt;<i> &quot;polling&quot; to me.
+</I>
+And then there is the 'poll()' system call to muddy the water. Twenty years 
+ago on small embedded systems (maybe even today) this question had meaning in 
+the 'real men' sense. Today all low level i/o on a Linux system is interrupt 
+driven.  If the event itself can not raise an interrupt, the timer interrupt 
+is used to 'poll'.
+
+User land apps can of course 'poll' for events, using i.e. non blocking reads, 
+and thus causing 100% cpu use without accomplishing anything.
+
+Applications like gpsd have been so far abstracted away from real hardware, 
+that the question itself becomes meaningless. The os makes sure you can do 
+your work without 'busy waiting'. That is what it's there for.
+
+From a high level application point of view, you are both kind of right. On 
+the low level driver implementation it is of course interrupt driven.
+
+Russ, who is certainly one of the 'real men' knows that. I remember it too, 
+which just shows my age ;-)
+
+Cheers,
+Remco 
+
+-- 
+Remco Treffkorn (RT445)
+HAM DC2XT
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005654.html">[Gpsd-dev] gpsd Architecture
+</A></li>
+	<LI>Next message: <A HREF="005657.html">[Gpsd-dev] gpsd Architecture
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5655">[ date ]</a>
+              <a href="thread.html#5655">[ thread ]</a>
+              <a href="subject.html#5655">[ subject ]</a>
+              <a href="author.html#5655">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

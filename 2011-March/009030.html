@@ -1,0 +1,147 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20A%20lightweight%20synchronization%0A%20mechanism%20for%20shared%20memory&In-Reply-To=%3C4D8C58C0.6070507%40tmsw.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009029.html">
+   <LINK REL="Next"  HREF="009032.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory</H1>
+    <B>Terje Mathisen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20A%20lightweight%20synchronization%0A%20mechanism%20for%20shared%20memory&In-Reply-To=%3C4D8C58C0.6070507%40tmsw.no%3E"
+       TITLE="[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory">terje at tmsw.no
+       </A><BR>
+    <I>Fri Mar 25 09:56:32 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009029.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+        <LI>Next message: <A HREF="009032.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9030">[ date ]</a>
+              <a href="thread.html#9030">[ thread ]</a>
+              <a href="subject.html#9030">[ subject ]</a>
+              <a href="author.html#9030">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>H&#229;kan Johansson wrote:
+&gt;<i>
+</I>&gt;<i> On Fri, 25 Mar 2011, Terje Mathisen wrote:
+</I>&gt;&gt;<i> I've been reading the source code for this shm interface, and to me it
+</I>&gt;&gt;<i> seems almost like a no-brainer to go to a circular buffer of 2^N
+</I>&gt;&gt;<i> entries, along with a single (write-update only) counter at the front
+</I>&gt;&gt;<i> end which indicates where the latest valid entry is located.
+</I>&gt;<i>
+</I>&gt;<i> Going to a more-than-1 entry buffer does not immediately give any
+</I>&gt;<i> further guarantees, but it does open another loophole:
+</I>&gt;<i>
+</I>&gt;<i> If the writer crashes in a mid-update, say entry 3, then until the next
+</I>&gt;<i> alive writer has overwritten that entry, say when it just claims to be
+</I>&gt;<i> writing next entry 4, the reader may get the idea that the previous
+</I>&gt;<i> entry (number 3) is now good and usable.
+</I>
+I did state up front that my approach is specifically designed for a 
+single writer with one or more readers: If the writer crashes then you 
+obviously get no more valid updates! :-)
+
+&gt;<i> Perhaps fixable by part of the count (or another variable) holding also
+</I>&gt;<i> a bitmask of the valid entries, but such an approach requires the
+</I>&gt;<i> analysis of a lot more contrieved edge-cases to (if at all possible)
+</I>&gt;<i> make guarantees, as opposed to the 1-entry method. Where we know it
+</I>&gt;<i> cannot always allow a successful correct read within finite time, but we
+</I>&gt;<i> know how to make any claimed successful read also be that.
+</I>
+See above.
+&gt;<i>
+</I>&gt;&gt;<i> The readers (one or more) can then always read the last valid entry, it
+</I>&gt;&gt;<i> might be a re-read of what they read on the previous iteration, but that
+</I>&gt;&gt;<i> is something which it is easy for the reader to guard against:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> unsigned cnt = shm-&gt;count;
+</I>&gt;&gt;<i> if (cnt == prev_cnt) return;
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> When the counter is valid you mask it with the buffer count mask to
+</I>&gt;&gt;<i> bring it into range:
+</I>&gt;<i>
+</I>&gt;<i> If I'm only allowed to mask the counter when it is valid, the time
+</I>&gt;<i> during any writer update makes all entries unusable anyhow, so 2^N is no
+</I>&gt;<i> better than 1.
+</I>&gt;<i>
+</I>&gt;&gt;<i> prev_cnt = cnt;
+</I>&gt;&gt;<i> cnt &amp;= shm-&gt;count_mask; // Bring it into [0..7] range?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Copy the current entry into local vars:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> tvr.tv_sec=shm-&gt;[cnt].receiveTimeStampSec;
+</I>&gt;&gt;<i> tvr.tv_usec=shm-&gt;[cnt].receiveTimeStampUSec;
+</I>&gt;&gt;<i> tvt.tv_sec=shm-&gt;[cnt].clockTimeStampSec;
+</I>&gt;&gt;<i> tvt.tv_usec=shm-&gt;[cnt].clockTimeStampUSec;
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> This is of course still not absolutely bulletproof, in that a reader
+</I>&gt;&gt;<i> process which starts to read an entry, then gets put to sleep for N(=8?)
+</I>&gt;&gt;<i> seconds, can wake up again and read the last half of an updated record.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> This is easy to guard against by re-reading the shm-&gt;count value: Since
+</I>&gt;&gt;<i> this counter is explicitly allowed to wrap around at 2^32 or 2^64, you
+</I>&gt;&gt;<i> cannot sleep for that many seconds.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> a) You can always read the last valid entry.
+</I>&gt;&gt;<i> b) The only sync barrier needed is in the producer (gpsd) which should
+</I>&gt;&gt;<i> have a write barrier between the last write to the new record, and the
+</I>&gt;&gt;<i> increment of the shm-&gt;count variable.
+</I>&gt;<i>
+</I>&gt;<i> Read barriers too. Please see the linux kernel documentation:
+</I>&gt;<i>
+</I>&gt;<i> <A HREF="http://www.kernel.org/doc/Documentation/memory-barriers.txt">http://www.kernel.org/doc/Documentation/memory-barriers.txt</A>
+</I>&gt;<i>
+</I>&gt;<i> Also note how the word 'volatile' is absent.
+</I>
+I know, it doesn't really help.
+&gt;<i>
+</I>&gt;<i> Another point to note is that the way in which the memory copying is
+</I>&gt;<i> implemented - inlined, function call, for loop, even
+</I>&gt;<i> local-cpu-irq-disabled - does not help against the interplay of the
+</I>&gt;<i> memory subsystems of the two cpus involved, which - without
+</I>&gt;<i> write/read-barriers - may provide the read data as new and old intermixed.
+</I>
+Yes indeed.
+
+Terje
+-- 
+- &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Terje at tmsw.no</A>&gt;
+&quot;almost all programming can be viewed as an exercise in caching&quot;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009029.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+	<LI>Next message: <A HREF="009032.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9030">[ date ]</a>
+              <a href="thread.html#9030">[ thread ]</a>
+              <a href="subject.html#9030">[ subject ]</a>
+              <a href="author.html#9030">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

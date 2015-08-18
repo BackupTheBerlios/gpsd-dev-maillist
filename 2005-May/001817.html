@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] At gpsd 2.25, the to-do list is dwindling
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20At%20gpsd%202.25%2C%20the%20to-do%20list%20is%20dwindling&In-Reply-To=%3C25251.213.84.187.156.1116684414.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001816.html">
+   <LINK REL="Next"  HREF="001818.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] At gpsd 2.25, the to-do list is dwindling</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20At%20gpsd%202.25%2C%20the%20to-do%20list%20is%20dwindling&In-Reply-To=%3C25251.213.84.187.156.1116684414.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] At gpsd 2.25, the to-do list is dwindling">gpsd at xs4all.nl
+       </A><BR>
+    <I>Sat May 21 16:06:54 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001816.html">[Gpsd-dev] At gpsd 2.25, the to-do list is dwindling
+</A></li>
+        <LI>Next message: <A HREF="001818.html">[Gpsd-dev] At gpsd 2.25, the to-do list is dwindling
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1817">[ date ]</a>
+              <a href="thread.html#1817">[ thread ]</a>
+              <a href="subject.html#1817">[ subject ]</a>
+              <a href="author.html#1817">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;&gt;<i> I think a scan should be made along all the possible error fields and
+</I>&gt;&gt;<i> other uncertainty info and make sure that for each protocol the data
+</I>&gt;&gt;<i> ends
+</I>&gt;&gt;<i> up in the right place.  There are no fields for some of the dop values
+</I>&gt;&gt;<i> and
+</I>&gt;&gt;<i> they are just discarded.
+</I>&gt;<i>
+</I>&gt;<i> I'm sorry, I don't understand what you're getting at here.  What &quot;right
+</I>&gt;<i> place&quot;
+</I>&gt;<i> at what level, and which DOP fields are missing where?
+</I>
+We don't have fields for TDOP and GDOP.  The sirf code to store them is
+commented out, and the dop calculation in gpsutils.c simply omits them.
+
+We have several ep* variables for estimated errors as well.
+Some of this data is part of the fix, others are in gps_data.
+
+It needs to be analyzed to see what we need, and where we should put it.
+I think they are partly just different ways to express the same thing, but
+it may not be practical to convert between them so we should just store
+what the receiver provides.  But now, not everything is stored.
+
+&gt;&gt;<i> More of this data should be displayed in xgps (maybe after clicking some
+</I>&gt;&gt;<i> &quot;advanced...&quot; button).
+</I>&gt;<i>
+</I>&gt;<i> You mean uncertainty fields?  I agree.
+</I>
+Yes.
+
+
+&gt;&gt;<i>                        I also thought about a version of sirfmon that
+</I>&gt;&gt;<i> can attach to the daemon.  This could take the form of a &quot;really raw&quot;
+</I>&gt;&gt;<i> mode
+</I>&gt;&gt;<i> (R=2) that passes on everything received from the serial link,
+</I>&gt;&gt;<i> untranslated.
+</I>&gt;<i>
+</I>&gt;<i> I don't think we could do completely untranslated.  It would have to be
+</I>&gt;<i> hex-encoded, at least -- otherwise Bad Things would happen when data
+</I>&gt;<i> characters happened to include \n.
+</I>&gt;<i>
+</I>&gt;&gt;<i>         And also allows a &quot;raw command&quot; to be sent.  Then we would
+</I>&gt;&gt;<i> not need to stop the daemon to do closer study and control of the
+</I>&gt;&gt;<i> receiver.
+</I>&gt;<i>
+</I>&gt;<i> I've thought about this particular feature before, not in the context
+</I>&gt;<i> of a super-sirfmon but on its own.  It's not a good idea.  The security
+</I>&gt;<i> implications alone would be a showstopper.
+</I>
+Well, maybe it is not possible to provide it on the TCP interface
+(although I do not understand why a certain command, like R=2, could not
+switch the data received on the serial link directly to the connection... 
+maybe it breaks the basic rules of the protocol, and the way to end this
+mode would need to be a disconnect, but TCP is transparent).
+
+The idea is just to have some way to connect sirfmon to the receiver just
+as if we could open a serial port multiple times and read the same data in
+all processes.  This is normally not possible, and that is part of the
+reason for having gpsd.  However, gpsd provides other services as well and
+this makes the interface unsuitable for sirfmon, which needs raw data.  So
+gpsd should provide some other interface, maybe only available to root
+and/or to those local users that could open the COM port directly, to
+allow raw access to the serial data.  This could be via the control
+socket.
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001816.html">[Gpsd-dev] At gpsd 2.25, the to-do list is dwindling
+</A></li>
+	<LI>Next message: <A HREF="001818.html">[Gpsd-dev] At gpsd 2.25, the to-do list is dwindling
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1817">[ date ]</a>
+              <a href="thread.html#1817">[ thread ]</a>
+              <a href="subject.html#1817">[ subject ]</a>
+              <a href="author.html#1817">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] TCP/IP-TDM
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20TCP/IP-TDM&In-Reply-To=%3CAANLkTimiwQbEOm0hE4SrX%3Dfpz4Jdetrz1EySCwC8s_XO%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009203.html">
+   <LINK REL="Next"  HREF="009214.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] TCP/IP-TDM</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20TCP/IP-TDM&In-Reply-To=%3CAANLkTimiwQbEOm0hE4SrX%3Dfpz4Jdetrz1EySCwC8s_XO%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] TCP/IP-TDM">thomas at mich.com
+       </A><BR>
+    <I>Fri Apr  1 12:07:54 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009203.html">[Gpsd-dev] TCP/IP-TDM
+</A></li>
+        <LI>Next message: <A HREF="009214.html">[Gpsd-dev] TCP/IP-TDM
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9204">[ date ]</a>
+              <a href="thread.html#9204">[ thread ]</a>
+              <a href="subject.html#9204">[ subject ]</a>
+              <a href="author.html#9204">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>For such to be routeable it would still require the machines sharing
+the IP to be colocated and thus it would isolate the PCs from each
+other or throttle local copying.  You mention DNS but ARP also has to
+be taken into account.  Accuracy is fairly easy, the problem is jitter
+in the whole system (if a computer in new york wants to talk to one in
+LA, and there's variable latency, when can it transmit the packets,
+particularly i fthere is fragmentation - Light goes at around 200
+miles per microsecond in air, slightly slower in fiber).
+
+One of the variants of the new Venus chips is specifically for precise
+1PPS - The edge is only accurate to withing about 60ns (+/- 30)
+because the CPU clock is only 16Mhz but it emits a private NMEA
+sentence witha correction which brings it to +/- 10nS.  That about
+corresponds to the location uncertainty of 3 meters.
+
+
+On Thu, Mar 31, 2011 at 10:16 PM, Thomas Sprinkmeier
+&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas.sprinkmeier at gmail.com</A>&gt; wrote:
+&gt;<i> Hi Eric,
+</I>&gt;<i>
+</I>&gt;<i> I was wondering about getting this on the gpsd mailing list.
+</I>&gt;<i>
+</I>&gt;<i> It seems to be relevant as many end-user PCs will now need very
+</I>&gt;<i> accurate times to take advantage of -TDM.
+</I>&gt;<i>
+</I>&gt;<i> I wasn't sure what the policy on this kind of, uhm, announcement, was
+</I>&gt;<i> so I thought I'd better ask first.
+</I>&gt;<i>
+</I>&gt;<i> &quot;&quot;&quot;
+</I>&gt;<i> Remember those CSIRO boffins that saved the wireless Internet with their
+</I>&gt;<i> congestion algorithm? Well, they're about to save the whole Internet by
+</I>&gt;<i> solving the IPv4 address space exhaustion problem.
+</I>&gt;<i>
+</I>&gt;<i> Every computer on the Internet needs a unique identifier, called an IP
+</I>&gt;<i> address. These numbers are 32-bits long, giving a theoretical 4-billion
+</I>&gt;<i> unique addresses, but for technical reasons the number is much lower and
+</I>&gt;<i> with the number of computers (and smart-phones!) on the net, we're about
+</I>&gt;<i> to run out.
+</I>&gt;<i>
+</I>&gt;<i> The solution appears to be to add another dimension to the address;
+</I>&gt;<i> time.
+</I>&gt;<i>
+</I>&gt;<i> Computers can share IP addresses as long as they agree on when they'll
+</I>&gt;<i> use it. This already happens at a very coarse level; when your modem
+</I>&gt;<i> turns off, its IP address becomes available for someone else to use. By
+</I>&gt;<i> making this sharing much more fine-grained (in the order of
+</I>&gt;<i> milliseconds) you can effectively use the same address more than once
+</I>&gt;<i> _simultaneously_!
+</I>&gt;<i>
+</I>&gt;<i> So, a simple extension to the DNS entry for a server can add the
+</I>&gt;<i> necessary timeslice information required to contact it. By adjusting the
+</I>&gt;<i> length of the timeslice, performance can be tuned for low-latency (short
+</I>&gt;<i> timeslices, e.g. a game server) or high throughput (long slices, few
+</I>&gt;<i> switches, e.g. download mirrors).
+</I>&gt;<i>
+</I>&gt;<i> The break-through of this technique is that it requires no change in ISP
+</I>&gt;<i> infrastructure. The core routers need an upgraded routing table to
+</I>&gt;<i> implement the time-slice-based routing, but there aren't actually that
+</I>&gt;<i> many of these routers. End user's PCs will need a software upgrade to
+</I>&gt;<i> the networking stack, but that can be rolled out through the usual
+</I>&gt;<i> mechanisms (e.g. &quot;Windows Update&quot;). The expensive, distributed,
+</I>&gt;<i> difficult-to-update ISP routers can stay in place, blissfully unaware of
+</I>&gt;<i> the change.
+</I>&gt;<i> &quot;&quot;&quot;
+</I>&gt;<i>
+</I>&gt;<i> :-)
+</I>&gt;<i>
+</I>&gt;<i> Thomas
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009203.html">[Gpsd-dev] TCP/IP-TDM
+</A></li>
+	<LI>Next message: <A HREF="009214.html">[Gpsd-dev] TCP/IP-TDM
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9204">[ date ]</a>
+              <a href="thread.html#9204">[ thread ]</a>
+              <a href="subject.html#9204">[ subject ]</a>
+              <a href="author.html#9204">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

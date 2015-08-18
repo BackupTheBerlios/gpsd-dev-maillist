@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [ntp:hackers] ntpd shm changes
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20ntpd%20shm%20changes&In-Reply-To=%3CAANLkTikDMBjRQQhkhA4Z7H8AV6vwQrRQnwxw7MLQcnEP%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008905.html">
+   <LINK REL="Next"  HREF="008913.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [ntp:hackers] ntpd shm changes</H1>
+    <B>Dave Hart</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20ntpd%20shm%20changes&In-Reply-To=%3CAANLkTikDMBjRQQhkhA4Z7H8AV6vwQrRQnwxw7MLQcnEP%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [ntp:hackers] ntpd shm changes">davehart_gmail_exchange_tee at davehart.net
+       </A><BR>
+    <I>Sun Mar 20 21:03:44 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008905.html">[Gpsd-dev] [ntp:hackers] ntpd shm changes
+</A></li>
+        <LI>Next message: <A HREF="008913.html">[Gpsd-dev] [ntp:hackers] ntpd shm changes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8912">[ date ]</a>
+              <a href="thread.html#8912">[ thread ]</a>
+              <a href="subject.html#8912">[ subject ]</a>
+              <a href="author.html#8912">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sun, Mar 20, 2011 at 17:42 UTC, Jon Schlueter wrote:
+&gt;<i> On Sun, Mar 20, 2011 at 10:17 AM, tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt; wrote:
+</I>&gt;&gt;<i> On Sun, Mar 20, 2011 at 8:39 AM, Jon Schlueter &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jon.schlueter at gmail.com</A>&gt; wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> <A HREF="http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html">http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I don't think double-checking can give any advantage over single-checking.
+</I>&gt;&gt;<i> You either need a locking mechanism, a way to disable interrupts
+</I>&gt;&gt;<i> (across all cores!), or use some kind of queuing/serialization
+</I>&gt;&gt;<i> mechanism.
+</I>&gt;<i>
+</I>&gt;<i> I reference it since there has been a decent amount of information about what
+</I>&gt;<i> can go wrong if you don't use some sort of locking to share a resource
+</I>
+Thanks for the pointer.  You seem to have overlooked the one bright
+spot in that sea of &quot;not reliably&quot;, namely, the section mentioning one
+can portably implement Java lockless synchronization that is reliable
+using 32-bit loads and stores.  That reveals an assumption no longer,
+true, that Java is always itself a 32-bit platform, but I suspect it
+is safe to assume int-sized loads and stores are atomic in general,
+and on many but not all 32/64 biarch, 32-bit loads and stores are also
+atomic for 64-bit code.  I retain hope a strategy of storing valid &amp;
+count (or similar) in at least 64-bit storage, perhaps 128, and
+manipulating them using the native int size.  I believe count can be
+safely used similar to how it is now with a 32-bit producer and 64-bit
+consumer or vice-versa, because the low order bits will change and be
+visible to both, and the loss of a carryover into the upper 32 bits
+doesn't hurt this use.
+
+&gt;<i> <A HREF="http://www.aristeia.com/Papers/DDJ_Jul_Aug_2004_revised.pdf">http://www.aristeia.com/Papers/DDJ_Jul_Aug_2004_revised.pdf</A>
+</I>&gt;<i>
+</I>&gt;<i> The following are places shared access without the use of a
+</I>&gt;<i> synchronization mechanism will break
+</I>&gt;<i> &#160;* Instruction Ordering (compiler may do things with what you wrote to
+</I>&gt;<i> change the ordering)
+</I>&gt;<i> &#160; &#160;code generation/ compiler optimization/ hardware optimization
+</I>&gt;<i> &#160;* volatile keyword may/may not do what you want it to do... &#160;see
+</I>&gt;<i> section 5 of the above document
+</I>&gt;<i> &#160;* memory caches on with a multi core processor
+</I>&gt;<i>
+</I>&gt;<i> If you have not read this article or are familiar with this issue I
+</I>&gt;<i> recommend taking the time to read
+</I>&gt;<i> through Scott Meyers article before dismissing this as not being an
+</I>&gt;<i> issue for working with a
+</I>&gt;<i> shared memory segment between two apps wanting to exchange information.
+</I>
+Thanks again for the pointer, but the discussion of volatile there is
+not relevant to C.  There's lovely historic perspective on the
+introduction of volatile by Gordon Bell, and discussion of the C++
+semantics of volatile, but not C.  C _does_ prohibit reordering
+accesses between volatiles.  Along with careful use of atomic sizes, I
+believe on x86 that is all that is needed.  x86 multiproc/multicore
+systems have rational cache coherency for atomic reads and writes.
+I'm not as comfortable with other systems to comment, but I do note
+the existing lockless refclock_shm driver hasn't as far as I know
+hasn't been observed to have any partial update issues in the wild
+with the newer mode 1 (count and valid used).
+
+It may be best to use pthread_mutex_trylock() on the ntpd side to
+ensure nonblocking operation, and restrict the hypothetical
+refclock_shm.c new POSIX named shm mode with the new shm layout to
+systems building ntpd with pthreads.  With any luck that routine is
+itself implemented via atomic load/store and not a syscall.
+
+Thanks again to everyone, I hope we can get it right on the first try
+as a result.
+
+Cheers,
+Dave Hart
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008905.html">[Gpsd-dev] [ntp:hackers] ntpd shm changes
+</A></li>
+	<LI>Next message: <A HREF="008913.html">[Gpsd-dev] [ntp:hackers] ntpd shm changes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8912">[ date ]</a>
+              <a href="thread.html#8912">[ thread ]</a>
+              <a href="subject.html#8912">[ subject ]</a>
+              <a href="author.html#8912">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

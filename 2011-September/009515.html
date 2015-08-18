@@ -1,0 +1,96 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Installing to a prefix?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Installing%20to%20a%20prefix%3F&In-Reply-To=%3C4E6DD057.7010404%40bzed.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009512.html">
+   <LINK REL="Next"  HREF="009516.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Installing to a prefix?</H1>
+    <B>Bernd Zeimetz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Installing%20to%20a%20prefix%3F&In-Reply-To=%3C4E6DD057.7010404%40bzed.de%3E"
+       TITLE="[Gpsd-dev] Installing to a prefix?">bernd at bzed.de
+       </A><BR>
+    <I>Mon Sep 12 11:26:47 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009512.html">[Gpsd-dev] Installing to a prefix?
+</A></li>
+        <LI>Next message: <A HREF="009516.html">[Gpsd-dev] Installing to a prefix?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9515">[ date ]</a>
+              <a href="thread.html#9515">[ thread ]</a>
+              <a href="subject.html#9515">[ subject ]</a>
+              <a href="author.html#9515">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 09/10/2011 08:56 PM, Eric Raymond wrote:
+[...]
+&gt;<i> 
+</I>&gt;<i> I looked at the ld manpage and don't see any way to query the default list.
+</I>&gt;<i> 
+</I>&gt;<i> We certainly want to edit out the unsafe rpath pointing to the build directory.
+</I>&gt;<i> But does it do any actual harm if we don't edit out the default search paths?  
+</I>&gt;<i> That is, I'm trying to understand why it wold be a problem if the code just
+</I>&gt;<i> looked like this:
+</I>&gt;<i> 
+</I>&gt;<i> if have_chrpath:
+</I>&gt;<i>     libdir = env['prefix'] + env['libdir']
+</I>&gt;<i>     env.AddPostAction(binaryinstall, '$CHRPATH -r &quot;%s&quot; &quot;$TARGET&quot;' % libdir))
+</I>&gt;<i> 
+</I>&gt;<i> If doing it this way is a problem we'lll have to maintain distro-specfic 
+</I>&gt;<i> lists of default paths, which would a pain in the butt. 
+</I>
+That does the wrong thing.
+We always need to remove the rpath pointing to the build directory,
+eveything else is a bad security hole.
+We also should set the rpath to env['prefix'] + env['libdir'] if it is
+not in the search path of ld.
+The other option is to set it always to that directory, which should not
+do much harm and packagers could remove it in their packaging scripts.
+Or we only remove the rpath which points to the build directory and
+require people to set their own linking options if they need an rpath at
+all. I would prefer this way I think. So only delete the rpath pointing
+to the build directory (NOT all - so not using -d) and don't touch the
+others.
+
+
+-- 
+ Bernd Zeimetz                            Debian GNU/Linux Developer
+ <A HREF="http://bzed.de">http://bzed.de</A>                                <A HREF="http://www.debian.org">http://www.debian.org</A>
+ GPG Fingerprints: ECA1 E3F2 8E11 2432 D485 DD95 EB36 171A 6FF9 435F
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009512.html">[Gpsd-dev] Installing to a prefix?
+</A></li>
+	<LI>Next message: <A HREF="009516.html">[Gpsd-dev] Installing to a prefix?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9515">[ date ]</a>
+              <a href="thread.html#9515">[ thread ]</a>
+              <a href="subject.html#9515">[ subject ]</a>
+              <a href="author.html#9515">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

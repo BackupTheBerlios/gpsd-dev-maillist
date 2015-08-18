@@ -1,0 +1,97 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] make check failures
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20make%20check%20failures&In-Reply-To=%3C20091202215749.GA31908%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007188.html">
+   <LINK REL="Next"  HREF="007182.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] make check failures</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20make%20check%20failures&In-Reply-To=%3C20091202215749.GA31908%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] make check failures">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Dec  2 22:57:49 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007188.html">[Gpsd-dev] make check failures
+</A></li>
+        <LI>Next message: <A HREF="007182.html">[Gpsd-dev] make check failures
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7206">[ date ]</a>
+              <a href="thread.html#7206">[ thread ]</a>
+              <a href="subject.html#7206">[ subject ]</a>
+              <a href="author.html#7206">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;:
+&gt;<i> I just ran make check on both NetBSD 5.0ish i386 and reasonably modern
+</I>&gt;<i> Ubuntu i386, and got similar results on a quick read through.  So I
+</I>&gt;<i> don't believe that the regression tests pass for anyone, or if they do
+</I>&gt;<i> that's very interesting.
+</I>
+It's very interesting.  I have regression tests running clean and correct
+on a 64-bit Intel Core Duo 2 at rev 6683.  So we've got a port problem,
+almost certainly a 32-vs.-64-bit issue.  
+
+This isn't necessarily a release blocker. I might ship with a warning 
+that there are known problems on 32-bit machines, just to get the API 
+changes out to the app writers - but it would be real nice not to have
+to do that.
+
+&gt;<i> I've stripped the log slightly of boring stuff.  There are some bad
+</I>&gt;<i> altitudes, some obviously bad times, plus a missing 'epd' in one case.
+</I>
+Confirming, altitudes and times and epd seem to be the issue.  There's
+some kind of FP blowup in the earth_distance() function that mledford
+has been chasing; that seems to be at the root of missing epd. And
+there's other suspiciousness in time reports on the TSIP which I
+thought was a driver-level bug and handed off to ckuethe but which
+might be related to this.
+
+I think we're going to have to do what mledford has been doing - compare
+logs with debugging set to excriciatingly high levels, and probably
+some purpose-built instrumentation, to locate the problem.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 189 bytes
+Desc: Digital signature
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091202/d9247cfd/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091202/d9247cfd/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007188.html">[Gpsd-dev] make check failures
+</A></li>
+	<LI>Next message: <A HREF="007182.html">[Gpsd-dev] make check failures
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7206">[ date ]</a>
+              <a href="thread.html#7206">[ thread ]</a>
+              <a href="subject.html#7206">[ subject ]</a>
+              <a href="author.html#7206">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Bragging about Bit Banging
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Bragging%20about%20Bit%20Banging&In-Reply-To=%3C91981b3e0610231639s15455badjd8d71af491c6689c%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004594.html">
+   <LINK REL="Next"  HREF="004575.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Bragging about Bit Banging</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Bragging%20about%20Bit%20Banging&In-Reply-To=%3C91981b3e0610231639s15455badjd8d71af491c6689c%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Bragging about Bit Banging">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Tue Oct 24 01:39:37 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004594.html">[Gpsd-dev] Bragging about Bit Banging
+</A></li>
+        <LI>Next message: <A HREF="004575.html">[Gpsd-dev] moving the big huge structures out of rtcm.c
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4599">[ date ]</a>
+              <a href="thread.html#4599">[ thread ]</a>
+              <a href="subject.html#4599">[ subject ]</a>
+              <a href="author.html#4599">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 10/23/06, Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> Chris Kuethe &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">chris.kuethe at gmail.com</A>&gt;:
+</I>&gt;<i> &gt; On 10/23/06, Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+</I>&gt;<i> &gt; &gt;Well, when you get this working, nuke subframe.c with my blessing.
+</I>&gt;<i> &gt; Why?
+</I>&gt;<i> Um, because it's duplicative?
+</I>
+The almanac and ephemeris decoder are bigger than what is required for
+the fairly simple task of pulling one byte out a datastream, once per
+invokation. No sense in putting all of that into the main code path if
+it doesn't need to be there.
+
+&gt;<i> &gt;     Subframe.c has one job to do: find the leap second offset. That's
+</I>&gt;<i> &gt; a valuable number. We use it. Code that isn't used to do the main job
+</I>&gt;<i> &gt; of gpsd (or a substantial number of accompanying  utilities) doesn't
+</I>&gt;<i> &gt; need to be in libgps, but code that directly supports gpsd can stay.
+</I>
+&gt;<i> I will defer to your judgment in this.  You know more about ISGPS than
+</I>&gt;<i> I, and care about it a *lot* more.
+</I>
+Subframe.c works the way it is. I don't think it needs to be
+complicated any further. Possibly the only change I might need to make
+is to add an abstraction layer to handle iTalk and TSIP. I'll have to
+go back and re-read their specs, but if their binary fix messages give
+us UTC, then the SiRF driver is the only thing that needs to pull the
+UTC correction out.
+
+We have a parallel in gpsd_report. A client app can provide its own
+customized gpsd_report or it can use the basic one in libgps.
+
+In this case, gpsd can use the basic decoder that pulls out the UTC
+correction - that's the only thing gpsd might need out of the NAV
+message. Postprocessing clients can use the definately-more-complete,
+probably-bigger, possibly-slower decoder library that handles all
+kinds of funky subframes but isn't directly relevant to the core job
+of gpsd: making it easy to get correct data from your receiver.
+
+CK
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004594.html">[Gpsd-dev] Bragging about Bit Banging
+</A></li>
+	<LI>Next message: <A HREF="004575.html">[Gpsd-dev] moving the big huge structures out of rtcm.c
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4599">[ date ]</a>
+              <a href="thread.html#4599">[ thread ]</a>
+              <a href="subject.html#4599">[ subject ]</a>
+              <a href="author.html#4599">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

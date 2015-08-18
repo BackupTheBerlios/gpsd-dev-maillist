@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-commit-watch] r3289 - in trunk: . www
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r3289%20-%20in%20trunk%3A%20.%20www&In-Reply-To=%3CPine.LNX.4.64.0605171407320.32509%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003470.html">
+   <LINK REL="Next"  HREF="003483.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-commit-watch] r3289 - in trunk: . www</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r3289%20-%20in%20trunk%3A%20.%20www&In-Reply-To=%3CPine.LNX.4.64.0605171407320.32509%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-commit-watch] r3289 - in trunk: . www">gem at rellim.com
+       </A><BR>
+    <I>Wed May 17 23:13:48 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003470.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r3289 - in trunk: . www
+</A></li>
+        <LI>Next message: <A HREF="003483.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r3289 - in trunk: . www
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3471">[ date ]</a>
+              <a href="thread.html#3471">[ thread ]</a>
+              <a href="subject.html#3471">[ subject ]</a>
+              <a href="author.html#3471">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Chris!
+
+On Wed, 17 May 2006, Chris Kuethe wrote:
+
+&gt;<i> On 5/17/06, Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt; wrote:
+</I>&gt;<i> &gt; /dev/speaker?  That is not mentioned in the main kernel doc.  Look
+</I>&gt;<i> &gt; in /usr/src/linux/Documentation/devices.txt and it is not there.  I
+</I>&gt;<i> &gt; just installed the newest udevd and it is not one of their standard
+</I>&gt;<i> &gt; rules either.
+</I>&gt;<i>
+</I>&gt;<i> It's found on all the BSD boxen I have. If you know of any other
+</I>&gt;<i> simple tone generation devices, I'd like to hear about them.
+</I>
+Linux is sorta split, OSS and ALSA and neither has a good handle on the
+PC speaker.  I turn it off since I find the default volume is way too
+high and too hard to adjust.
+
+Most Linux have /dev/dsp, but usually only one process can open it at
+a time.
+
+
+Most common way is to bang an IOCTL like this:
+
+#include &lt;linux/kd.h&gt;
+
+static void pc_beep(int freq) {
+	int fd;
+
+	/* Try both std and devfs name */
+	fd = open(&quot;/dev/tty1&quot;, O_RDWR|O_NONBLOCK);
+	if (fd &lt; 0) {
+		fd = open(&quot;/dev/vc/1&quot;, O_RDWR|O_NONBLOCK);
+	}
+	if (fd &gt;= 0) {
+		ioctl(fd, KDMKTONE, ((75/*ms?*/ &lt;&lt; 16) | freq));
+	}
+}
+
+Not sure how this would work from a daemon started by init.
+
+How about plain old &quot;echo ^G&quot; :-)
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.2.1 (GNU/Linux)
+
+iD8DBQFEa5IP8KZibdeR3qURAmlAAKCWpGHOdaL3WhARek3wV/lzyeVbtQCeJ0p7
+HEpQy1phOr6oxheV9SoXxUw=
+=c9fB
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003470.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r3289 - in trunk: . www
+</A></li>
+	<LI>Next message: <A HREF="003483.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r3289 - in trunk: . www
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3471">[ date ]</a>
+              <a href="thread.html#3471">[ thread ]</a>
+              <a href="subject.html#3471">[ subject ]</a>
+              <a href="author.html#3471">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

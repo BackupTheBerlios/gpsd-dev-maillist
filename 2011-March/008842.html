@@ -1,0 +1,229 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] time presence and precision, tags, class member queries.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20time%20presence%20and%20precision%2C%20tags%2C%0A%20class%20member%20queries.&In-Reply-To=%3C20110316195507.GA20403%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008840.html">
+   <LINK REL="Next"  HREF="008843.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] time presence and precision, tags, class member queries.</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20time%20presence%20and%20precision%2C%20tags%2C%0A%20class%20member%20queries.&In-Reply-To=%3C20110316195507.GA20403%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] time presence and precision, tags, class member queries.">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Mar 16 20:55:07 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008840.html">[Gpsd-dev] time presence and precision, tags,	class member queries.
+</A></li>
+        <LI>Next message: <A HREF="008843.html">[Gpsd-dev] time presence and precision, tags,	class member queries.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8842">[ date ]</a>
+              <a href="thread.html#8842">[ thread ]</a>
+              <a href="subject.html#8842">[ subject ]</a>
+              <a href="author.html#8842">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+&gt;<i> For example:
+</I>&gt;<i> 
+</I>&gt;<i> &quot;The daemon occasionally ships a bare DEVICE object to the client
+</I>&gt;<i> (that is, one not inside a DEVICES wrapper). The data content of these
+</I>&gt;<i> objects will be described later in the section covering
+</I>&gt;<i> notifications.&quot;
+</I>&gt;<i> 
+</I>&gt;<i> There are bits and pieces in other sections, mostly not having
+</I>&gt;<i> anything to do with notification, but no &quot;Notifications&quot; section as
+</I>&gt;<i> such.
+</I>
+Looking....OK, that's a bad pointer, I've fixed it to reference the section
+describing the response to ?DEVICE;
+
+&gt;<i> One of the things I am trying to do is to figure out how to use
+</I>&gt;<i> xhttpdrequest to get something from gpsd-ng - use an existing json
+</I>&gt;<i> coder efficiently instead of writing up a new blob of json
+</I>&gt;<i> specifically for it.  Part of that path is getting my version to emit
+</I>&gt;<i> the same or very similar output and adjusting the javascript to it.
+</I>&gt;<i> 
+</I>&gt;<i> Here is where I find WATCH to have a problem.  You could simply dump
+</I>&gt;<i> everything and allow the client to pick out the bits (as they are
+</I>&gt;<i> clearly labeled and easily parsed).  But you do split at least raw,
+</I>&gt;<i> (pseudo)nmea, and json as individually controllable.
+</I>
+Right.  Has to be that way, as dumping raw all the time could cause severe 
+problems when binary-protocol devices are involved.  But I'm not understanding
+why WATCH is a problem for you.
+ 
+&gt;<i> &gt;From the client's point of view, I want lat/lon, and maybe altitude
+</I>&gt;<i> and heading if I'm doing google earth.  I also don't need every tiny
+</I>&gt;<i> update on my 10Hz stream.  I might also want the last stale reading
+</I>&gt;<i> (which WATCH won't return and I don't think POLL will even if we just
+</I>&gt;<i> entered a parking structure - we might need a &quot;keep on always&quot;, or
+</I>&gt;<i> &quot;poll every N minute&quot; option).
+</I>
+?POLL; will return whatever is cached from the last fix.  So yes, that
+can be a &quot;stale&quot; reading.
+
+&gt;<i> I can use something like POLL, but it would help if I can trim the
+</I>&gt;<i> data it returns to just what I need.  Even now what happens if you
+</I>&gt;<i> have more than one GPS device and the combined fix and sky data
+</I>&gt;<i> exceeds 1024 bytes (listed as a hard limit)?
+</I>
+The response will be truncated.  The current limit is actually 1536 (I've
+corrected the documentation) which is 19 consecutive full 80-character 
+lines of text. I'll document the truncation.
+
+Is there some reason you can't just scan for the first &quot;lat&quot;:NNN and
+&quot;lon&quot;:NNN in the POLL response buffer?  If you don't need a full parse,
+don't do one.
+
+&gt;<i> Worse (noting what 10Hz NMEA does to my jailbroken slow iPod touch),
+</I>&gt;<i> each of these events typically are acted upon, so the small amount of
+</I>&gt;<i> power gpsd might consume causes a cascade of reloading or scrolling a
+</I>&gt;<i> whole screen almost constantly to move it 2-3 pixels every fraction of
+</I>&gt;<i> a second.  From the other side, if I wanted to use geolocation, I
+</I>&gt;<i> would only want a notification every N seconds (even if redundant,
+</I>&gt;<i> sort of a keep-alive, or just a PING), or if the location changed more
+</I>&gt;<i> than a given amount.  If I 'm standing still, the map stays fixed and
+</I>&gt;<i> no activity.  If I move slowly, it reloads or shifts every minute or
+</I>&gt;<i> so to keep me on the map.  If I'm driving across the freeways out
+</I>&gt;<i> west, every few seconds or every second is not unwarranted.
+</I>
+Right, this does sound like a job for POLL.
+
+&gt;<i> Legacy GPSD was easy to pick out.  By having variable JSON it is only
+</I>&gt;<i> easier to pick out if you have a library that can parse it and do
+</I>&gt;<i> exceptions right if things are missing or coding around it.  And it is
+</I>&gt;<i> likely to be all done in doubles anyway negating having NOFLOAT for
+</I>&gt;<i> gpsd itself.
+</I>
+One of the things NOFLOAT is going to have to do is change JSON reporting
+so each object reports &quot;scaled&quot;:false and integer values where there are
+now floats.
+
+&gt;<i> &gt; Look in the attribute tables. There's a column to tell you whether or
+</I>&gt;<i> &gt; not an attribute is optional; that's your MUST. &#160;If you want or need
+</I>&gt;<i> &gt; more detailed specification than that, explain and I'll try to fill it
+</I>&gt;<i> &gt; in.
+</I>&gt;<i> 
+</I>&gt;<i> It just says always, and then typically for only the class and one
+</I>&gt;<i> other entry.  Some of the fields are only present if mode is 2, some
+</I>&gt;<i> if 3.  Will alt always be there if mode is 3?  Can it be there (maybe
+</I>&gt;<i> stale) if mode is 2?
+</I>
+Documenting this now.  As a general rule, TPV never reports stale data.
+
+&gt;<i> If there is supposed to be some system to this, it should be
+</I>&gt;<i> explained.  If it is all ad-hoc/willy-nilly, you should add regression
+</I>&gt;<i> tests to randomize which fields are there or not.  (It doesn't even
+</I>&gt;<i> say that you will get both lat and lon or neither).
+</I>
+It does now. :-)
+
+The &quot;system&quot; is that if the device reports it or we can compute it (as,
+for example, with climb if we have two successive fixes with altitude_
+it gets reported; otherwise, not.
+
+I'll work on documenting the existence conditions for each field.  You
+should keep prodding me about this.
+
+&gt;<i> It could have &quot;alt&quot;:null. 
+</I>
+Actually, no.  GPSD JSON never ships a null value.  It omits the field
+instead.  I will document this.
+
+The reason, BTW, is that JSON null is difficult to map into the type
+ontology of C and other fixed-extent languages.  Thus, excluding this
+value makes client-binding libraries simpler.
+
+&gt;<i>                       You are documenting what the current code
+</I>&gt;<i> actually does, not what a conforming implementation may/should/must
+</I>&gt;<i> do.  And you are explaining it here, not on the manpage.  All the
+</I>&gt;<i> manpage says for alt is Always:no.
+</I>
+All the explanation I'm giving you here is going into gpsd.xml as
+your questions elicit it.
+
+&gt;<i> The manpage should then explain the behavior of the code, not the
+</I>&gt;<i> other way around.
+</I>
+No need to get snotty. The man page *does* explain the behavior of the code, 
+in quite a bit more detail than is usual for service daemons.  It fails to
+do so perfectly only because I'm too close to the code and nobody has asked
+me the right questions before. You are asking them, and this is good, but
+addressing me as though I need to be taught basic good practice is
+unwarranted.
+ 
+&gt;<i> And what is required by libgpsd? - if it depends on undocumented or
+</I>&gt;<i> not fully documented gpsd behavior, then there are problems.
+</I>
+Undocumented behavior of what?  The gpsd dispatcher layer?  I'm highly
+doubtful that's a real problem - I was really careful about the
+layering there and have successfully written two other tools that use
+libgpsd, gpsmon and gpsctl.
+
+&gt;<i>                                                        For that
+</I>&gt;<i> matter, if I understand, you need to know the unix device name of the
+</I>&gt;<i> GPS even if there is only one in the system, or it moves (bluetooth on
+</I>&gt;<i> an new rfcommN), and as far as I can tell there isn't anything in
+</I>&gt;<i> libgpsd which can return a list of devices.
+</I>
+At the libgpsd level, you are presumed to have direct access to the
+array of session structures, which libgpsd maniplulates one at a time but 
+doesn't manaage.  You can walk through them yourself if you need to.
+
+&gt;<i> And you can pick the disabled GPS instead of the working one.
+</I>
+I don't understand why you're worried about this level.  You'll
+never see it, except via the gpsd dispatcher.
+
+&gt;<i> Even if I merge my implementation into gpsd-ng to make it NOFLOAT -
+</I>&gt;<i> which I really want to do - I'm in a position to ask the questions as
+</I>&gt;<i> if I was going to implement it ex nihilo.  Also I have all the data in
+</I>&gt;<i> mine that it should be simple just to follow the manpage as a recipe
+</I>&gt;<i> and just implement the formats and behaviors such that clients
+</I>&gt;<i> shouldn't care which one is running.  But it isn't that way, at least
+</I>&gt;<i> not yet.  That is why the questions on why &quot;tag&quot; exists - I don't have
+</I>&gt;<i> anything similar and it sounds like something implementation specific
+</I>&gt;<i> even if useful.  And that is why the other questions.  I know what
+</I>&gt;<i> gpsd-ng does because the code is easily readable, but there isn't a
+</I>&gt;<i> why it does what it does but not something else.
+</I>
+Keep asking questions, they're good for the quality of the documentation.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008840.html">[Gpsd-dev] time presence and precision, tags,	class member queries.
+</A></li>
+	<LI>Next message: <A HREF="008843.html">[Gpsd-dev] time presence and precision, tags,	class member queries.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8842">[ date ]</a>
+              <a href="thread.html#8842">[ thread ]</a>
+              <a href="subject.html#8842">[ subject ]</a>
+              <a href="author.html#8842">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

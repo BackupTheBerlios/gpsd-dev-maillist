@@ -1,0 +1,149 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Fwd: Bug#286906: gpsd: FTBFS (amd64/gcc-4.0): pointer targets in passing argument 1 of 'strlen' differ in signedness]
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BFwd%3A%20Bug%23286906%3A%20gpsd%3A%20FTBFS%20%28amd64/gcc-4.0%29%3A%20pointer%20targets%20in%0A%20passing%20argument%201%20of%20%27strlen%27%20differ%20in%20signedness%5D&In-Reply-To=%3C1103756177.10489.87.camel%40localhost.localdomain%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000363.html">
+   <LINK REL="Next"  HREF="000365.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Fwd: Bug#286906: gpsd: FTBFS (amd64/gcc-4.0): pointer targets in passing argument 1 of 'strlen' differ in signedness]</H1>
+    <B>Tilman Koschnick</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BFwd%3A%20Bug%23286906%3A%20gpsd%3A%20FTBFS%20%28amd64/gcc-4.0%29%3A%20pointer%20targets%20in%0A%20passing%20argument%201%20of%20%27strlen%27%20differ%20in%20signedness%5D&In-Reply-To=%3C1103756177.10489.87.camel%40localhost.localdomain%3E"
+       TITLE="[Gpsd-dev] [Fwd: Bug#286906: gpsd: FTBFS (amd64/gcc-4.0): pointer targets in passing argument 1 of 'strlen' differ in signedness]">til at subnetz.org
+       </A><BR>
+    <I>Wed Dec 22 23:56:17 CET 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000363.html">[Gpsd-dev] [PATCH] fix minor issues with gpsd source
+</A></li>
+        <LI>Next message: <A HREF="000365.html">[Gpsd-dev] [Fwd: Bug#286906: gpsd: FTBFS (amd64/gcc-4.0): pointer targets in passing argument 1 of 'strlen' differ in signedness]
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#364">[ date ]</a>
+              <a href="thread.html#364">[ thread ]</a>
+              <a href="subject.html#364">[ subject ]</a>
+              <a href="author.html#364">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+this bug report was filed in the debian bug tracking system, which
+relates to build problems with gcc-4.0 on amd64.
+
+Cheers, Til
+
+
+-------- Forwarded Message --------
+From: Andreas Jochens &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">aj at andaco.de</A>&gt;
+Reply-To: Andreas Jochens &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">aj at andaco.de</A>&gt;, <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">286906 at bugs.debian.org</A>
+To: Debian Bug Tracking System &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">submit at bugs.debian.org</A>&gt;
+Subject: Bug#286906: gpsd: FTBFS (amd64/gcc-4.0): pointer targets in
+passing argument 1 of 'strlen' differ in signedness
+Date: Wed, 22 Dec 2004 23:17:03 +0100
+Package: gpsd
+Severity: normal
+Tags: patch
+
+When building 'gpsd' on amd64 with gcc-4.0,
+I get the following error:
+
+ x86_64-linux-gcc -DHAVE_CONFIG_H -I. -I. -I. -Wall -g -O2 -Wall -Werror -MT drivers.lo -MD -MP -MF .deps/drivers.Tpo -c drivers.c  -fPIC -DPIC -o .libs/drivers.o
+cc1: warnings being treated as errors
+drivers.c: In function 'nmea_handle_input':
+drivers.c:52: warning: pointer targets in passing argument 1 of 'strlen' differ in signedness
+drivers.c:53: warning: pointer targets in passing argument 2 of 'gpsd_NMEA_handle_message' differ in signedness
+drivers.c:55: warning: pointer targets in passing argument 1 of 'strcat' differ in signedness
+drivers.c:57: warning: pointer targets in passing argument 1 of 'session-&gt;gNMEAdata.raw_hook' differ in signedness
+make[2]: *** [drivers.lo] Error 1
+make[2]: Leaving directory `/gpsd-2.4'
+
+With the attached patch 'gpsd' can be compiled
+on amd64 using gcc-4.0.
+
+Regards
+Andreas Jochens
+
+diff -urN ../tmp-orig/gpsd-2.4/drivers.c ./drivers.c
+--- ../tmp-orig/gpsd-2.4/drivers.c	2004-10-22 19:36:21.000000000 +0200
++++ ./drivers.c	2004-12-22 22:39:18.153546288 +0100
+@@ -40,7 +40,7 @@
+ 
+ static void nmea_handle_input(struct gps_session_t *session)
+ {
+-    static unsigned char buf[BUFSIZE];	/* that is more then a sentence */
++    static char buf[BUFSIZE];	/* that is more then a sentence */
+     static int offset = 0;
+ 
+     while (offset &lt; BUFSIZE) {
+diff -urN ../tmp-orig/gpsd-2.4/gpsd.c ./gpsd.c
+--- ../tmp-orig/gpsd-2.4/gpsd.c	2004-12-13 23:21:58.000000000 +0100
++++ ./gpsd.c	2004-12-22 22:45:15.580209176 +0100
+@@ -535,7 +535,7 @@
+ 
+ 	/* always be open to new connections */
+ 	if (FD_ISSET(msock, &amp;rfds)) {
+-	    int alen = sizeof(fsin);
++	    socklen_t alen = sizeof(fsin);
+ 	    int ssock = accept(msock, (struct sockaddr *) &amp;fsin, &amp;alen);
+ 
+ 	    if (ssock &lt; 0)
+diff -urN ../tmp-orig/gpsd-2.4/xgpsspeed.c ./xgpsspeed.c
+--- ../tmp-orig/gpsd-2.4/xgpsspeed.c	2004-12-09 18:36:22.000000000 +0100
++++ ./xgpsspeed.c	2004-12-22 22:44:52.873661096 +0100
+@@ -80,7 +80,7 @@
+    /**** Shell Widget ****/
+     XtSetArg(args[0], XtNiconPixmap,
+ 	     XCreateBitmapFromData(XtDisplay(toplevel),
+-				   XtScreen(toplevel)-&gt;root, xgps_bits,
++				   XtScreen(toplevel)-&gt;root, (char*)xgps_bits,
+ 				   xgps_width, xgps_height));
+     XtSetValues(toplevel, args, 1);
+     
+diff -urN ../tmp-orig/gpsd-2.4/zodiac.c ./zodiac.c
+--- ../tmp-orig/gpsd-2.4/zodiac.c	2004-10-23 16:22:27.000000000 +0200
++++ ./zodiac.c	2004-12-22 22:40:21.271950832 +0100
+@@ -306,7 +306,7 @@
+ static void analyze(struct gps_session_t *session, 
+ 		    struct header *h, unsigned short *p)
+ {
+-    unsigned char buf[BUFSIZE], *bufp, *bufp2;
++    char buf[BUFSIZE], *bufp, *bufp2;
+     int i = 0, j = 0, nmea = 0;
+ 
+     if (p[h-&gt;ndata] == zodiac_checksum(p, h-&gt;ndata)) {
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000363.html">[Gpsd-dev] [PATCH] fix minor issues with gpsd source
+</A></li>
+	<LI>Next message: <A HREF="000365.html">[Gpsd-dev] [Fwd: Bug#286906: gpsd: FTBFS (amd64/gcc-4.0): pointer targets in passing argument 1 of 'strlen' differ in signedness]
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#364">[ date ]</a>
+              <a href="thread.html#364">[ thread ]</a>
+              <a href="subject.html#364">[ subject ]</a>
+              <a href="author.html#364">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

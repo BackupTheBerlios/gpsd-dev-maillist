@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-users] Can't connect TNTC
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-users%5D%20Can%27t%20connect%20TNTC&In-Reply-To=%3C91981b3e0610242148p1fe928a0wcdc74445c6ccc98e%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004621.html">
+   <LINK REL="Next"  HREF="004557.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-users] Can't connect TNTC</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-users%5D%20Can%27t%20connect%20TNTC&In-Reply-To=%3C91981b3e0610242148p1fe928a0wcdc74445c6ccc98e%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [Gpsd-users] Can't connect TNTC">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Wed Oct 25 06:48:28 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004621.html">[Gpsd-dev] [Gpsd-users] Can't connect TNTC
+</A></li>
+        <LI>Next message: <A HREF="004557.html">[Gpsd-dev] [Gpsd-users] Can't connect TNTC
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4648">[ date ]</a>
+              <a href="thread.html#4648">[ thread ]</a>
+              <a href="subject.html#4648">[ subject ]</a>
+              <a href="author.html#4648">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 10/24/06, Massimo Burcheri &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">burcheri at fgan.de</A>&gt; wrote:
+&gt;<i> Now I understand. Also &quot;iavt&quot; returns &quot;knots&quot; while cgps displays
+</I>&gt;<i> &quot;meter&quot;. As for cgps I just use it to see which information I get.
+</I>&gt;<i> Finally I'm going to connect by libgpsmm.h and can do my own calculation
+</I>&gt;<i> on it.
+</I>
+cgps displays imperial units by default, unless you choose different
+units with either the command line flags or the GPSD_UNITS environment
+variable. (grep for getenv in libgps.c to see what variables are
+honoured and how they affect the library's operation).
+
+&gt;<i> So you mean, the value around tilt just have a wrong factor because the
+</I>&gt;<i> fields are designed to hold knots/meters or whatever? Ok.
+</I>
+Correct.
+
+&gt;<i> Too bad, that NMEA doesn't offer tilt fields. This morning I read here
+</I>&gt;<i> about NMEA fields of water temperature and so on.
+</I>
+NMEA may very well offer some message that does define tilt and roll,
+but as we're too cheap to pay for it, we can't say for sure. :P
+Thankfully the RTCM v2/v3 combo pack was only $100.
+
+&gt;<i> The raw tilt fields coming from RS232 are degree values. So my software
+</I>&gt;<i> will have to use a factor to get the values back to degree?
+</I>
+Yes, you will need to use a scaling factor. Just like how we apply
+different scaling factors to display position in metric, statute or
+nautical units.
+
+&gt;<i> For the raw sentence:
+</I>&gt;<i> gpsd: &lt;= GPS: $PTNTHTM,10.7,N,0.5,N,-2.7,N,56.8,4641*26
+</I>&gt;<i>
+</I>&gt;<i> my appropriate command would be:
+</I>&gt;<i> tuva
+</I>&gt;<i> GPSD,T=10.7000,U=0.500,V=-5.248,A=56.800
+</I>&gt;<i>
+</I>&gt;<i> returning track(-&gt;heading), climb(-&gt;pitch), speed(-&gt;roll),
+</I>&gt;<i> altitude(-&gt;dip)
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> gpsd            TNTC
+</I>&gt;<i> ----------------------------------
+</I>&gt;<i> [track]=degree  [heading]=degree
+</I>&gt;<i> [climb]=m/s     [pitch]=degree
+</I>&gt;<i> [speed]=knots   [roll]=degree
+</I>&gt;<i> [altitude]=meters [dip]=degree
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Just roll seems to be wrong. The correction in my software would be:
+</I>&gt;<i> 0.514481 * (-5.248) = -2.7
+</I>&gt;<i>
+</I>&gt;<i> Sorry for being a bit slow on the uptake, but is this the right way?
+</I>
+Yup. Now you've got it. The best way to learn an interface like this
+is to actually try use it for something. ;)
+
+CK
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004621.html">[Gpsd-dev] [Gpsd-users] Can't connect TNTC
+</A></li>
+	<LI>Next message: <A HREF="004557.html">[Gpsd-dev] [Gpsd-users] Can't connect TNTC
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4648">[ date ]</a>
+              <a href="thread.html#4648">[ thread ]</a>
+              <a href="subject.html#4648">[ subject ]</a>
+              <a href="author.html#4648">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

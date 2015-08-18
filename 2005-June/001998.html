@@ -1,0 +1,152 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Rob Janssen's upset screed
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Rob%20Janssen%27s%20upset%20screed&In-Reply-To=%3C200506041901.j54J1c2c010423%40golux.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001991.html">
+   <LINK REL="Next"  HREF="002002.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Rob Janssen's upset screed</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Rob%20Janssen%27s%20upset%20screed&In-Reply-To=%3C200506041901.j54J1c2c010423%40golux.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Rob Janssen's upset screed">esr at golux.thyrsus.com
+       </A><BR>
+    <I>Sat Jun  4 21:01:38 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001991.html">[Gpsd-dev] Coming to you from sunny Porto Alegre
+</A></li>
+        <LI>Next message: <A HREF="002002.html">[Gpsd-dev] Rob Janssen's upset screed
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1998">[ date ]</a>
+              <a href="thread.html#1998">[ thread ]</a>
+              <a href="subject.html#1998">[ subject ]</a>
+              <a href="author.html#1998">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I just read Rob Janssen's upset screed about my latest commit.  I then
+lost it due to a glitch related to my somewhat jerry-rigged
+arrangement for reading mail on the road.
+
+In one respect, Rob simply has his facts wrong.  That change to sirf.c
+is not a random twitch in an unexplored direction.  Allowing for the
+rename of the macros, it simply reverts them to an earlier state that
+is known good -- I used Andreas Brauchli's information that revision
+2560 is the last one without a speed bug.  Thus, this code has already
+been thoroughly &quot;investigated&quot; in Rob's sense.
+
+As for his more general objections to the way I am using splint, I
+think they are ill-founded.  To begin with, he discounts the benefits
+of the approach.  So far, I have identified four actual bugs of the 
+kind that unaided hand-checking would have been rather unlikely to find.
+
+Beyond this, I believe the quality of the code has improved significantly.  
+
+1. In one crucial place in the channel-allocation logic there was a
+piece of code that defeated splint's ability to do static checking on
+the status of allocated memory, but could be simplified to a version
+that did not have that property.  The resulting code is simpler and
+better.
+
+2. In several other places, I had written conditionals that relied on
+the exceptional value being zero.  splint caught these and embarrassed
+me into turning them into comparisons with a manifest constant.
+
+3. splint pointed out numerous other minor readability problems which
+I have fixed.  Each one is one less potential maintainance problem for
+a future maintainer.
+
+4. Even the minor brouhaha with the macro casts has had good
+consequences.  The driver code is now *far* more explicit about the
+word size and signedness assumptions it makes.
+
+Rob takes me to task for inserting a boatload of casts rather than
+thinking carefully about what the concrete types of arguments should
+be.  In this he is partly just mistaken -- one thing I have done is
+systematically introduced the bool type where it makes semantic sense.
+So in one major respect the type cleanup he advocates has already 
+taken place.
+
+What he also doesn't understand is that I consider zero splint
+warnings to be a transitional stage.  The reason to go for zero
+warnings is so that when anybody changes the code afterwards, running
+splint will provide clear feedback about the consequences of the
+change.
+
+In particular, once we *get* to zero warnings, it will be possible for
+me to go in and make serious changes to the type signatures of various
+structures and functions, then run splint and be *very sure* of what
+the consequences are.
+
+That is what I plan as the second stage of the splint cleanup.  So
+everything I understand Rob to be advocating will be done and is
+already part of my plans.
+
+Finally, I want to note -- and acknowledge -- that part of what we are
+having here is a clash of styles.  Rob is, by instinct, a more careful 
+programmer than I am.  His habit is to do things carefully and in
+small increments.  Mine is not.
+
+I am willing to make large changes and live with the possibility that
+something will break, provided that three conditions obtain.  One: the
+project must be under version control, so that if I end up screwing
+the pooch it is easy to revert to a good version.  Two: It must be
+possible to do mechanical regression tests over most of the code,
+something I arranged with gpsfake.  Three: there must be people like
+Rob Janssen around to spot my mistakes, something he does very well.
+
+My loose style of doing things, pursued alone and without a
+version-control system, would be disastrous.  But with the right
+collaborators and background conditions, it produces much faster
+development (and *without* sacrificing quality) than a more
+conservative approach ever will.
+
+Consider the very rapid rate at which gpsd has acquired new capabilities
+over the last six months as evidence of this.  Also, reflect that the 
+bugs we have experienced have been few and relatively minor --
+because, in truth, I am more careful than I sometimes appear.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+Hoplophobia (n.): The irrational fear of weapons, correctly described by 
+Freud as &quot;a sign of emotional and sexual immaturity&quot;.  Hoplophobia, like
+homophobia, is a displacement symptom; hoplophobes fear their own
+&quot;forbidden&quot; feelings and urges to commit violence.  This would be
+harmless, except that they project these feelings onto others.  The
+sequelae of this neurosis include irrational and dangerous behaviors
+such as passing &quot;gun-control&quot; laws and trashing the Constitution.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001991.html">[Gpsd-dev] Coming to you from sunny Porto Alegre
+</A></li>
+	<LI>Next message: <A HREF="002002.html">[Gpsd-dev] Rob Janssen's upset screed
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1998">[ date ]</a>
+              <a href="thread.html#1998">[ thread ]</a>
+              <a href="subject.html#1998">[ subject ]</a>
+              <a href="author.html#1998">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

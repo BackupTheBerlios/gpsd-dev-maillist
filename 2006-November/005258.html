@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Compile problem with SVN 3892
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Compile%20problem%20with%20SVN%203892&In-Reply-To=%3C200611151939.00530.mick.durkin%40saunalahti.fi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005257.html">
+   <LINK REL="Next"  HREF="005259.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Compile problem with SVN 3892</H1>
+    <B>Mick Durkin</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Compile%20problem%20with%20SVN%203892&In-Reply-To=%3C200611151939.00530.mick.durkin%40saunalahti.fi%3E"
+       TITLE="[Gpsd-dev] Compile problem with SVN 3892">mick.durkin at saunalahti.fi
+       </A><BR>
+    <I>Wed Nov 15 18:39:00 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005257.html">[Gpsd-dev] Restoring GPS settings on session end
+</A></li>
+        <LI>Next message: <A HREF="005259.html">[Gpsd-dev] revert call
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5258">[ date ]</a>
+              <a href="thread.html#5258">[ thread ]</a>
+              <a href="subject.html#5258">[ subject ]</a>
+              <a href="author.html#5258">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+I noticed a compile problem with SVN 3892. If I try to compile a fresh complete download, after running config with &quot;disable-sirf&quot; I get the following failure:-
+
+=============================================
+
+drivers.c: In function 'sirf_configurator':
+drivers.c:331: error: 'union &lt;anonymous&gt;' has no member named 'sirf'
+make[1]: *** [drivers.lo] Error 1
+make[1]: Leaving directory `/home/mick/Software/gpsd/trunk'
+make: *** [all] Error 2
+
+=============================================
+
+
+I can achieve a good compile with/without SIRF enabled if I apply the
+following patch. It may not be the correct solution, but it addresses
+the right area.
+
+
+=============================================
+
+--- drivers.c~	2006-11-14 21:19:42.000000000 +0200
++++ drivers.c	2006-11-15 19:35:45.000000000 +0200
+@@ -326,13 +326,13 @@
+ #ifdef ALLOW_RECONFIGURE
+ static void sirf_configurator(struct gps_device_t *session)
+ {
+-#if defined(BINARY_ENABLE)
++#if defined(BINARY_ENABLE) &amp;&amp; defined(SIRF_ENABLE)
+     sirf_mode(session, 1);	/* throw us to SiRF binary */
+     session-&gt;driver.sirf.back_to_nmea = true;
+ #else    
+     (void)nmea_send(session-&gt;gpsdata.gps_fd, &quot;$PSRF103,05,00,00,01&quot;); /* no VTG */
+     (void)nmea_send(session-&gt;gpsdata.gps_fd, &quot;$PSRF103,01,00,00,01&quot;); /* no GLL */
+-#endif /* BINARY_ENABLE */
++#endif /* defined(BINARY_ENABLE) &amp;&amp; defined(SIRF_ENABLE) */
+ }
+ #endif /* ALLOW_RECONFIGURE */
+ 
+=============================================
+
+
+BR
+
+Mick
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005257.html">[Gpsd-dev] Restoring GPS settings on session end
+</A></li>
+	<LI>Next message: <A HREF="005259.html">[Gpsd-dev] revert call
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5258">[ date ]</a>
+              <a href="thread.html#5258">[ thread ]</a>
+              <a href="subject.html#5258">[ subject ]</a>
+              <a href="author.html#5258">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

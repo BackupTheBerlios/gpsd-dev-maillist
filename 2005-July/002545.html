@@ -1,0 +1,318 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] RTCM status
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20RTCM%20status&In-Reply-To=%3C200507200228.j6K2Srkd009989%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002546.html">
+   <LINK REL="Next"  HREF="002548.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] RTCM status</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20RTCM%20status&In-Reply-To=%3C200507200228.j6K2Srkd009989%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] RTCM status">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Wed Jul 20 04:28:53 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002546.html">[Gpsd-dev] EverMore binary &amp; time
+</A></li>
+        <LI>Next message: <A HREF="002548.html">[Gpsd-dev] Re: RTCM status
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2545">[ date ]</a>
+              <a href="thread.html#2545">[ thread ]</a>
+              <a href="subject.html#2545">[ subject ]</a>
+              <a href="author.html#2545">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 17 July I sent the following to Wolgang Rupprecht.  I'm posting it
+here because:
+
+(a) Wolfgang generally replies to mail promptly but didn't to this
+one, making me suspect it got lost in the wires.
+
+(b) Other RTCM-aware developers like Chris may well be interested.
+
+Wolfgang S. Rupprecht &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">wolfgang at wsrcc.com</A>&gt;:
+&gt;<i> &gt; Sorry.  I'm pulling the RTCM decoder into the framework used by the
+</I>&gt;<i> &gt; other drivers.  That's necessary if RTCM sources are to become just
+</I>&gt;<i> &gt; another automatically recognized packet type, which is where I'm going
+</I>&gt;<i> &gt; with all this.
+</I>&gt;<i> 
+</I>&gt;<i> No problem.  (Especially if your going to do the legwork to put it
+</I>&gt;<i> into the other form.)
+</I>
+That I am.  In fact, it's about done.
+
+I'm sorely tempted to write re-packing code that will go from Sanger
+dump format to RTCM104, just so nobody will ever gave to deal with this 
+crap at bit-level again. 
+
+The version of my decoder in svn head now unpacks all known messages into
+an intermediate structure that looks like this:
+
+#define RTCM_WORDS_MAX	33
+#define MAXCORRECTIONS	15	/* max correction count in type 1 or 9 */
+#define MAXHEALTH	1	
+#define MAXSTATIONS	3	/* maximum stations in almanac, type 5 */
+
+	struct {
+	    /* header contents */
+	    unsigned type;	/* RTCM message type */
+	    unsigned length;	/* length (words) */
+	    double   zcount;	/* time within hour: GPS time, no leap secs */
+	    unsigned refstaid;	/* reference station ID */
+	    unsigned seqnum;	/* nessage sequence number (modulo 8) */
+	    unsigned stathlth;	/* station health */
+
+	    /* message data in decoded form */
+	    union {
+		struct {
+		    unsigned int nentries;
+		    struct {			/* data from messages 1 &amp; 9 */
+			unsigned ident;		/* satellite ID */
+			unsigned udre;		/* user diff. range error */
+			unsigned issuedata;	/* issue of data */
+			double rangerr;		/* range error */
+			double rangerate;	/* range error rate */
+		    } sat[MAXCORRECTIONS];
+		} ranges;
+		struct {		/* data for type 3 messages */
+		    bool valid;		/* is message well-formed? */
+		    double x, y, z;
+		} ecef;
+		struct {		/* data from type 4 messages */
+		    bool valid;		/* is message well-formed? */
+		    enum {gps, glonass, unknown} system;
+		    enum {local, global, invalid} sense;
+		    char datum[6];
+		    double dx, dy, dz;
+		} reference;
+		struct {		/* data from type 5 messages */
+		    unsigned int nentries;
+		    struct {
+			unsigned ident;		/* satellite ID */
+			bool iodl;		/* issue of data */
+			bool health;		/* is satellite healthy? */
+			unsigned int snr;	/* signal-to-noise ratio, dB */
+			bool health_en;		/* health enabled */
+			bool new_data;		/* new data? */
+			bool los_warning;	/* line-of-sight warning */
+			unsigned int tou;	/* time to unhealth, seconds */
+		    } sat[MAXHEALTH];
+		} conhealth;
+		struct {		/* data from type 7 messages */
+		    unsigned int nentries;
+		    struct {
+			double latitude, longitude;	/* location */
+			unsigned int range;		/* range in km */
+			double frequency;		/* broadcast freq */
+			unsigned int health;		/* station health */
+			unsigned int station_id;
+			unsigned int bitrate;
+		    } station[MAXSTATIONS];
+		} almanac;
+		/* data from type 16 messages */
+		char message[RTCM_WORDS_MAX * sizeof(u_int32_t)];
+	    };
+
+It then dumps the structure through a function that is all sprintf calls,
+no black magic.  
+
+It *almost* passes a regression test against the wsr dump of your
+20050715_120805. Here's the first few lines of the diff, which are
+completely representative
+
+--- msg-wsr.log	2005-07-16 17:39:46.000000000 -0400
++++ bigdump.rtcm.chk	2005-07-17 12:32:42.282726160 -0400
+@@ -1,9 +1,3 @@
+-M	preamble ok, parity fail (byte 87 offset -3)
+-M	preamble ok, parity fail (byte 90 offset 0)
+-M	preamble ok, parity fail (byte 100 offset -5)
+-M	preamble ok, parity fail (byte 111 offset -2)
+-M	preamble ok, parity fail (byte 122 offset -5)
+-M	preamble ok, parity ok -- locked (byte 122 offset -1)
+ H	9	211	485.4	3	5	3
+ S	1	0	140	485.4	4.880	0.002
+ S	25	0	203	485.4	3.700	0.000
+@@ -2105,10 +2099,10 @@
+ S	23	0	216	1035.6	-2.540	0.002
+ S	24	0	10	1035.6	-4.180	0.004
+ H	7	211	1036.8	0	12	0
+-A	38.8406	-121.3532	250	314.0	1	252	200
+-A	39.4229	-121.6059	402	318.0	1	366	100
+-A	37.1816	-122.3969	333	287.0	1	371	100
+-A	40.4364	-124.4020	333	292.0	1	373	100
++A	38.8406	-121.3532	250	314.0	0	764	200
++A	39.4229	-121.6059	402	318.0	0	878	100
++A	37.1816	-122.3969	333	287.0	0	883	100
++A	40.4364	-124.4020	333	292.0	0	885	100
+ H	9	211	1038.6	1	5	3
+ S	25	0	203	1038.6	4.120	-0.004
+ S	1	0	140	1038.6	5.980	0.002
+@@ -4378,10 +4372,10 @@
+ S	22	0	83	1632.6	-23.840	-0.038
+ S	24	0	35	1632.6	-1.620	0.008
+ H	7	211	1633.8	0	12	0
+-A	38.8406	-121.3532	250	314.0	1	252	200
+-A	39.4229	-121.6059	402	318.0	1	366	100
+-A	37.1816	-122.3969	333	287.0	1	371	100
+-A	40.4364	-124.4020	333	292.0	1	373	100
++A	38.8406	-121.3532	250	314.0	0	764	200
++A	39.4229	-121.6059	402	318.0	0	878	100
++A	37.1816	-122.3969	333	287.0	0	883	100
++A	40.4364	-124.4020	333	292.0	0	885	100
+ H	9	211	1636.2	1	5	4
+ S	25	0	203	1636.2	4.340	-0.002
+ S	1	0	140	1636.2	5.620	0.000
+
+As you can see, the one thing it seems to get wrong is the health
+field in the almanac record. 
+
+I don't understand how that's happening, because the extraction code
+in unpack() is a straight copy of a bitfield and it's just printed
+through %u; would you take a look at it?  I fear it might be related
+to that 9+3 vs. 10+2 ITU-vs.-RTCM difference you ran into.
+
+I can't emit M lines the way you do, in-line of the output, but I have
+equivalent debug messages.
+
+Your test load only includes A, H, M, N, and S messages; is there any way
+we can collect some data that includes others like R, C, and T?
+
+The process of refactoring and splint-cleaning this code has raised
+a number of questions:
+
+1. How many health records can be attached to a type 5 message?  Your
+type layout implies one only, but the documentation of Sanger's dump
+format implies one *or more*.  Is this really possible in RTCM104, or
+was he aggregating them from multiple messages?
+
+2. I note some bitfields declared signed int: 
+
+	pc1 in rtcm_msg1w3
+	lon_h and lat in rtcm_msg7w3
+	rangerate1 in rtcm_msg1w4
+	rangerate2 in rtcm_msg1w5
+	pc1 in rtcm_msg1w5
+	rangerate3 in rtcm_msg1w7
+
+Do the standards specify twos-complement notation for negative values?
+
+3. The Sanger documentation says all fields are tab-separated, but you use
+a dump format for C (message 5) that looks like this:
+
+   &quot;C\t%2u\t%1u  %1u\t%2u\t%1u  %1u  %1u\t%2u\n&quot;,
+
+It has embedded spaces.  What's the thinking behind that?
+
+4. The Sanger documentation says of the station health field &quot;6 means
+the transmission is unmonitored. 7 means the station is not working
+properly. Other values are defined by the beacon operator.&quot;  Does either
+standard you have access to have more to say about those values?
+
+5. Of the health field in the A message (type 7), the Sanger
+documentation says: &quot;has the same meaning as in the header, but it
+indicates the health of the station for which this is an almanac.&quot;
+But while the header field is 3 bits wide, the almanac field is
+only 2 bits wide.  I don't see how these can be the same.
+
+Looking at your comment about the 9+3 vs. 10.2, an unpleasant
+suspicion grows on me -- maybe that difference is not just a typo.  
+You've seen a 10+2 implementation; could Sanger have been looking
+at a 9+3 one?
+
+The values 6 and 7 won't fit in a 2-bit field....
+
+If the ITU and RTCM standards clash, we need to have detection logic to tell
+us which one we're looking at.  This can't be a compile-time option if there
+are both kinds of transmitters in the world.
+
+6. The code for handling unknown messages 
+
+/* msg unknown */
+
+struct rtcm_msgunk {
+    struct rtcm_msghw1   w1;
+    struct rtcm_msghw2   w2;
+
+    uint            w3;
+};
+
+    default:
+	{
+	    struct msgunk    *m = (struct msgunk *) msghdr;
+
+	    printf (&quot;U\t*** Unknown msg type! (len %d) ***\n&quot;, len);
+	    while (len &gt;= 1){
+		printf (&quot;U\t0x%08x\n&quot;, m-&gt;w3);
+		len--;
+		m = (struct msgunk *) (((RTCMWORD *) m) + 1);
+	    }
+	}
+	break;
+
+doesn't look quite right to me.  This looks like at each step m is
+going to point at an entire rtcm_msgunk.  Shouldn't it just be 
+pointing at an RTCMWORD?
+
+7.  What is an &quot;LF transmitter&quot;, and how does it differ from a 
+&quot;GPS reference receiver&quot;?  This is a term of art that our
+rtcm(5) page should explain.
+
+8.  How does one read the IOD field in satellite corrections?  Is it a just
+a sequence number?
+
+9. In the C message, what does the word &quot;soon&quot; associated with the new_data
+field mean?  Can we pin that down to a number of seconds?
+
+10. How much work would it take to implement the &quot;useful length&quot; report
+and Sanger's T suffix?  Is the decoder logic actually already collecting this
+information
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+  &quot;You have taught us much. Come with us and join the movement.&quot;
+  &quot;This movement of yours, does it have slogans?&quot; inquired the Chink.
+  &quot;Right on!&quot; they cried. And they quoted him some.
+  &quot;Your movement, does it have a flag?&quot; asked the Chink.
+  &quot;You bet!&quot; and they described their emblem.
+  &quot;And does your movement have leaders?&quot;
+  &quot;Great leaders.&quot;
+  &quot;Then shove it up your butts,&quot; said the Chink. &quot;I have taught you nothing.&quot;
+
+	-- Tom Robbins, &quot;Even Cowgirls Get The Blues&quot;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002546.html">[Gpsd-dev] EverMore binary &amp; time
+</A></li>
+	<LI>Next message: <A HREF="002548.html">[Gpsd-dev] Re: RTCM status
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2545">[ date ]</a>
+              <a href="thread.html#2545">[ thread ]</a>
+              <a href="subject.html#2545">[ subject ]</a>
+              <a href="author.html#2545">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

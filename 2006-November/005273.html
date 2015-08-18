@@ -1,0 +1,152 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] revert call
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20revert%20call&In-Reply-To=%3C069kkPJie7090S27.1163668144%40cmsweb27.cms.usa.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005272.html">
+   <LINK REL="Next"  HREF="005274.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] revert call</H1>
+    <B>Petr Slansky</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20revert%20call&In-Reply-To=%3C069kkPJie7090S27.1163668144%40cmsweb27.cms.usa.net%3E"
+       TITLE="[Gpsd-dev] revert call">slansky at usa.net
+       </A><BR>
+    <I>Thu Nov 16 10:09:04 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005272.html">[Gpsd-dev] revert call
+</A></li>
+        <LI>Next message: <A HREF="005274.html">[Gpsd-dev] Google advertisements on the product site
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5273">[ date ]</a>
+              <a href="thread.html#5273">[ thread ]</a>
+              <a href="subject.html#5273">[ subject ]</a>
+              <a href="author.html#5273">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>------ Original Message ------
+Received: Thu, 16 Nov 2006 09:57:05 AM CET
+From: &quot;Petr Slansky&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">slansky at usa.net</A>&gt;
+
+&gt;<i> ------ Original Message ------
+</I>&gt;<i> Received: Thu, 16 Nov 2006 09:15:41 AM CET
+</I>&gt;<i> From: &quot;Petr Slansky&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">slansky at usa.net</A>&gt;
+</I>&gt;<i> 
+</I>&gt;<i> I can see that it is still possible to send data to closed port. I started
+</I>&gt;<i> gpsd -N -D5 /dev/gps and started gpsctl.
+</I>&gt;<i> 
+</I>&gt;<i> Petr
+</I>&gt;<i> 
+</I>&gt;<i> gpsd: Selecting EverMore NMEA driver...
+</I>&gt;<i> gpsd: evermore_n_configure
+</I>&gt;<i> gpsd: =&gt; GPS: 1002128eff010100010501000000000000000096100300
+</I>&gt;<i> gpsd: unflagging descriptor 5
+</I>&gt;<i> gpsd: evermore_n_revert
+</I>&gt;<i> gpsd: =&gt; GPS: 1002128eff010100010101000000000000000092100300
+</I>&gt;<i> gpsd: closing GPS=/dev/gps (5)
+</I>&gt;<i> gpsd: client connect on 4
+</I>&gt;<i> gpsd: checking client(0)
+</I>&gt;<i> gpsd: &lt;= client(0): K
+</I>&gt;<i> gpsd: =&gt; client(0): GPSD,K=1 /dev/gps
+</I>&gt;<i> gpsd: checking client(0)
+</I>&gt;<i> gpsd: &lt;= client(0): OFIB
+</I>&gt;<i> gpsd: client(0): assigning channel...
+</I>&gt;<i> gpsd: User requires 2, channel type is 0
+</I>&gt;<i> gpsd: evermore_n_revert
+</I>&gt;<i> gpsd: =&gt; GPS: 1002128eff010100010101000000000000000092100300 FAILED
+</I>&gt;<i> gpsd: closing GPS=/dev/gps (-1)
+</I>&gt;<i> gpsd: opening GPS data source at '/dev/gps'
+</I>&gt;<i> gpsd: garmin_gps not active.
+</I>&gt;<i> gpsd: no probe matched...
+</I>&gt;<i> gpsd: speed 4800, 8N1
+</I>&gt;<i> gpsd: gpsd_activate: opened GPS (5)
+</I>&gt;<i> gpsd: flagging descriptor 5 in assign_channel
+</I>&gt;<i> 
+</I>&gt;<i> Or simple log:
+</I>&gt;<i> gpsd: checking client(0)
+</I>&gt;<i> gpsd: &lt;= client(0): K
+</I>&gt;<i> gpsd: =&gt; client(0): GPSD,K=1 /dev/gps
+</I>&gt;<i> gpsd: checking client(0)
+</I>&gt;<i> gpsd: &lt;= client(0): OFIB
+</I>&gt;<i> gpsd: client(0): assigning channel...
+</I>&gt;<i> gpsd: User requires 2, channel type is 0
+</I>&gt;<i> gpsd: closing GPS=/dev/gps (-1)
+</I>&gt;<i> gpsd: opening GPS data source at '/dev/gps'
+</I>&gt;<i> gpsd: garmin_gps not active.
+</I>&gt;<i> gpsd: no probe matched...
+</I>&gt;<i> gpsd: speed 4800, 8N1
+</I>&gt;<i>
+</I>
+It seems to me that gpsd sill have several bugs in driver calls. Other example
+is that EverMore doesn't report subtype in the case that GPS is in binary mode
+on gpsd start. Subtype is discoverd only when switch from NMEA to binary is
+done.
+
+One more example of sending data to closed port.
+Petr
+
+gpsd: EverMore packet type 0x02, length 28:
+027905c4fd4002c6a43c00069e0f0097414a00000000000000c01e02
+gpsd: NDO 0x02: version 5.42, mode=1, status=0, visible=12, used=0
+gpsd: &lt;= GPS:
+$GPRMC,090203,V,5002.8617,N,01426.4798,E,0.0000,0.000,161106,,*3F
+gpsd: unflagging descriptor 4
+gpsd: evermore_revert call
+gpsd: writing EverMore control type 0x84: 10020684010000851003
+gpsd: =&gt; GPS: 10020684010000851003
+gpsd: closing GPS=/dev/gps (4)
+gpsd: client connect on 4
+gpsd: checking client(0)
+gpsd: &lt;= client(0): i
+gpsd: client(0): assigning channel...
+gpsd: User requires 2, channel type is 4
+gpsd: evermore_revert call
+gpsd: writing EverMore control type 0x84: 10020684010000851003
+gpsd: =&gt; GPS: 10020684010000851003 FAILED
+gpsd: closing GPS=/dev/gps (-1)
+gpsd: opening GPS data source at '/dev/gps'
+gpsd: garmin_gps not active.
+gpsd: no probe matched...
+gpsd: speed 4800, 8N1
+gpsd: gpsd_activate: opened GPS (5)
+
+
+---------------------------------
+  Petr Slansky, <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">slansky at usa.net</A>
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005272.html">[Gpsd-dev] revert call
+</A></li>
+	<LI>Next message: <A HREF="005274.html">[Gpsd-dev] Google advertisements on the product site
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5273">[ date ]</a>
+              <a href="thread.html#5273">[ thread ]</a>
+              <a href="subject.html#5273">[ subject ]</a>
+              <a href="author.html#5273">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

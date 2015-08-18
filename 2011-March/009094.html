@@ -1,0 +1,178 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Single-writer/many-reader consistency
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3C4D8DFF26.5050003%40tmsw.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009090.html">
+   <LINK REL="Next"  HREF="009096.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Single-writer/many-reader consistency</H1>
+    <B>Terje Mathisen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3C4D8DFF26.5050003%40tmsw.no%3E"
+       TITLE="[Gpsd-dev] Single-writer/many-reader consistency">terje at tmsw.no
+       </A><BR>
+    <I>Sat Mar 26 15:58:46 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009090.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+        <LI>Next message: <A HREF="009096.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9094">[ date ]</a>
+              <a href="thread.html#9094">[ thread ]</a>
+              <a href="subject.html#9094">[ subject ]</a>
+              <a href="author.html#9094">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Eric Raymond wrote:
+&gt;<i> In previous mail Dave Hart wrote:
+</I>&gt;&gt;<i> 8.  Come to agreement on the consistency protocol for one writer,
+</I>&gt;&gt;<i> multiple readers, including use of memory barriers where available,
+</I>&gt;&gt;<i> but do not require memory barrier support from the compiler, as (IIUC)
+</I>&gt;&gt;<i> x86/x64 do not need them for volatile atomic accesses to be coherent
+</I>&gt;&gt;<i> across processors, and the ovewhelming majority of current
+</I>&gt;&gt;<i> refclock_shm users are on x86 or x64.
+</I>&gt;<i>
+</I>&gt;<i> I'm writing to point out that NTP and GPSD are facing near-identical
+</I>&gt;<i> problems here.  We too have a one-writer/many-readers shred-memory
+</I>&gt;<i> interface we're trying to design with good consistency guarantees.
+</I>&gt;<i>
+</I>&gt;<i> As noted in that other thread I started: If your premise is that you
+</I>&gt;<i> can't require on memory barriers, you may *have* to go with a
+</I>&gt;<i> semaphore, because in their absence instruction reordering and strange
+</I>&gt;<i> memory-controller strategies can cause serious problems for spinlocks.
+</I>
+I've done some research, it turns out that both gcc (from v4.something) 
+and MS Visual C (from before V2005) have builtin support for memory 
+barriers:
+
+<A HREF="http://en.wikipedia.org/wiki/Memory_barrier">http://en.wikipedia.org/wiki/Memory_barrier</A>
+<A HREF="http://en.wikipedia.org/wiki/Memory_ordering">http://en.wikipedia.org/wiki/Memory_ordering</A>
+
+In the latter there's a nice chart showing all the ways various 
+architectures relaxes the strict program order memory consistency.
+
+Quoting the second link above:
+GCC since version 4.1.0 and intel c++ compiler have special builtin for 
+calling full hardware memory barrier:
+
+__sync_synchronize().
+
+This means that we can simply #define a macro which in supported 
+gcc/Intel compiler versions will turn into that intrinsic.
+
+For the Windows port we have
+
+_ReadWriteBarrier()
+
+so the usual #ifdef WINNT stuff can easily select one or the other.
+
+&gt;<i>
+</I>&gt;<i> I myself am seriously considering abandoning the spinlock variation I
+</I>&gt;<i> invented in favor of a semaphore.  I invented my mechanism because I
+</I>&gt;<i> wanted to avoid contention on a semaphore, but in thinking about it
+</I>&gt;<i> further I think I may have been more worried about that than I should
+</I>&gt;<i> have been.
+</I>&gt;<i>
+</I>&gt;<i> Only one process (the single writer) would ever change the semaphore
+</I>&gt;<i> state; the readers would just block or spin until it goes to zero.  In
+</I>&gt;<i> GPSD writes are infrequent, now normally 1 per second and highly
+</I>&gt;<i> unlikely to exceed 100 per second even with survey-grade GPSes we
+</I>&gt;<i> don't support yet.  Writes are also small, less than 8K.
+</I>
+A shm segment has to be supported in hw by a separately mapped memory 
+page, right?
+
+This means that the smallest possible block is 4KB, while the current 
+gpsd-ntp interface uses just 88 bytes, including 40 bytes of padding.
+
+Each timestamp block will require 24 bytes in the new aligned/fixed-size 
+layout, so going to dual buffering (which means the clients will _never_ 
+have to wait before reading, just check afterwards that the count 
+variable is unchanged) will just reduce the padding to 16 bytes.
+
+I suggest we extend the buffer size to 4 entries, making the entire 
+block 120 bytes, since this will fit inside the same two 64-byte cache 
+lines as the current layout needs.
+
+The final 8 bytes (to make the total 128) is where I want to locate an 
+endian-detecting marker: &quot;GPSD-NTP&quot;:
+
+struct timeStamp {
+         int64_t clockTimeStampSec;
+         int64_t receiveTimeStampSec;
+         int32_t clockTimeStampUSec;
+         int32_t receiveTimeStampUSec;
+};
+
+#define TIMESTAMP_BUFFER_SIZE 4
+
+struct shmTime {
+	int64_t marker; /* 0x50544E2D44535047 == GPSD-NTP in LE */
+         int32_t mode;   /* 2 + TIMESTAMP_BUFFER_SIZE * 256 */
+         int32_t count;
+
+         int32_t leap;
+         int32_t precision;
+         int32_t nsamples;
+         int32_t valid;
+
+         timestamp ts[TIMESTAMP_BUFFER_SIZE];
+};
+
+&gt;<i> Given this timing pattern, I think readers blocking on the semaphore seem
+</I>&gt;<i> unlikely to take a performance hit that is much above the level of
+</I>&gt;<i> profiling noise, if that.
+</I>
+They don't need to do even this, four timestamp buffer slots will 
+effectively remove _all_ client-level contention.
+&gt;<i>
+</I>&gt;<i> If NTP thinks it's looking at a similar timing pattern, you might want
+</I>&gt;<i> to seriously look at using an explicit semaphore.
+</I>&gt;<i>
+</I>&gt;<i> (I'm having big fun with all this.  Eric gets to think like an OS implementor
+</I>&gt;<i> again, yay!  I've missed that, I have.)
+</I>
+&lt;BG&gt;
+
+Terje
+
+
+-- 
+- &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Terje at tmsw.no</A>&gt;
+&quot;almost all programming can be viewed as an exercise in caching&quot;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009090.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+	<LI>Next message: <A HREF="009096.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9094">[ date ]</a>
+              <a href="thread.html#9094">[ thread ]</a>
+              <a href="subject.html#9094">[ subject ]</a>
+              <a href="author.html#9094">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

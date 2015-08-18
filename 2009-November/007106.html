@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] recent PPS
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20recent%20PPS&In-Reply-To=%3C20091119131652.GA7305%40localhost%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007100.html">
+   <LINK REL="Next"  HREF="007109.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] recent PPS</H1>
+    <B>Miroslav Lichvar</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20recent%20PPS&In-Reply-To=%3C20091119131652.GA7305%40localhost%3E"
+       TITLE="[Gpsd-dev] recent PPS">mlichvar at redhat.com
+       </A><BR>
+    <I>Thu Nov 19 14:16:53 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007100.html">[Gpsd-dev] recent PPS
+</A></li>
+        <LI>Next message: <A HREF="007109.html">[Gpsd-dev] recent PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7106">[ date ]</a>
+              <a href="thread.html#7106">[ thread ]</a>
+              <a href="subject.html#7106">[ subject ]</a>
+              <a href="author.html#7106">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Wed, Nov 18, 2009 at 10:01:01AM -0800, Gary E. Miller wrote:
+&gt;<i> On Wed, 18 Nov 2009, Miroslav Lichvar wrote:
+</I>&gt;<i> 
+</I>&gt;<i> &gt; Intervals for pulse length checks are too narrow. Currently, they are
+</I>&gt;<i> &gt; about 0.1-0.2 percent which works fine with ntpd, but it's not enough
+</I>&gt;<i> &gt; for chrony which can slew up to 10 percent. I know you don't care much
+</I>&gt;<i> &gt; about chrony, but please reconsider.
+</I>&gt;<i> 
+</I>&gt;<i> I can buy that 0.2% is maybe too tight (many would disagree) but 10%
+</I>&gt;<i> seems pretty outrageous to me.  Maybe there is a compromise that about
+</I>&gt;<i> a wider window during a pull-in time, but for long term time keeping the
+</I>&gt;<i> tight checks have shown their value in filtering out noise.
+</I>
+In the current code half of the noise will pass through anyway as the
+cycle and duration are checked only from one side.
+
+Latest ntpd versions use the median filter even for SHM samples, it
+should be very effective in filtering out noise.
+
+&gt;<i> Can you provide some links for me to look at about chrony and this 10%?
+</I>
+Look for slew_delta_tick and max_tick_bias in
+<A HREF="http://git.tuxfamily.org/chrony/chrony.git/?p=gitroot/chrony/chrony.git;a=blob_plain;f=sys_linux.c;hb=HEAD">http://git.tuxfamily.org/chrony/chrony.git/?p=gitroot/chrony/chrony.git;a=blob_plain;f=sys_linux.c;hb=HEAD</A>
+
+&gt;<i> Hard for me to believe that anyone interested in good time keeping could
+</I>&gt;<i> abide by that.
+</I>
+Sometimes slewing (even that fast) is considered as a better alternative
+to stepping time.
+
+&gt;<i> Would you consider wider checks for the first hour gpsd runs, or some
+</I>&gt;<i> sort of adaptive window?
+</I>
+How about wrapping the constants in a macro which could be adjusted in
+configure?
+
+&gt;<i> &gt; Precision is calculated from offset. As H&#229;kan pointed out earlier,
+</I>&gt;<i> &gt; current offset (which is again based on local time) doesn't indicate
+</I>&gt;<i> &gt; how good is the PPS signal.
+</I>&gt;<i> 
+</I>&gt;<i> I can not agree with that, sure the number is a mish-mash, but it
+</I>&gt;<i> has real value as a 'goodness' indicator.
+</I>
+Jitter is a much better indicator, it's calculated in ntpd and visible
+in ntpq output if you want to do a quick check. Also, if there is a
+time1 specified in ntp.conf to compensate for an error, the offset
+visible in gpsd will be different from the offset ntpd is trying to
+correct.
+
+BTW, raw PPS signal I'm getting here from GPS 18x LVC has about 2us
+jitter.
+
+&gt;<i> &gt; Before the local clock is synchronized,
+</I>&gt;<i> &gt; the calculated precision exponent could be very high which could
+</I>&gt;<i> &gt; prevent ntpd from selecting the source.
+</I>&gt;<i> 
+</I>&gt;<i> I have been looking at the ntpd code and it does not appear to use
+</I>&gt;<i> the precision we provide for that purpose.  In fact it seems to
+</I>&gt;<i> pretty much ignore the provided precision.
+</I>
+Hm, I thought that it was included in peer dispersion, but it really
+looks like it's used only for reporting. Chrony ignores the precision
+too, so I guess anything will work fine.
+
+Thanks,
+
+-- 
+Miroslav Lichvar
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007100.html">[Gpsd-dev] recent PPS
+</A></li>
+	<LI>Next message: <A HREF="007109.html">[Gpsd-dev] recent PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7106">[ date ]</a>
+              <a href="thread.html#7106">[ thread ]</a>
+              <a href="subject.html#7106">[ subject ]</a>
+              <a href="author.html#7106">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

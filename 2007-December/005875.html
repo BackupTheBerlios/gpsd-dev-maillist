@@ -1,0 +1,117 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Red light: total breakage in Garmin USB,	partial	breakage in Garmin serial
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Red%20light%3A%20total%20breakage%20in%20Garmin%20USB%2C%0A%09partial%09breakage%20in%20Garmin%20serial&In-Reply-To=%3C20071218023850.GA21884%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005872.html">
+   <LINK REL="Next"  HREF="005876.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Red light: total breakage in Garmin USB,	partial	breakage in Garmin serial</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Red%20light%3A%20total%20breakage%20in%20Garmin%20USB%2C%0A%09partial%09breakage%20in%20Garmin%20serial&In-Reply-To=%3C20071218023850.GA21884%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Red light: total breakage in Garmin USB,	partial	breakage in Garmin serial">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Dec 18 03:38:50 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005872.html">[Gpsd-dev] Red light: total breakage in Garmin USB, partial breakage in Garmin serial
+</A></li>
+        <LI>Next message: <A HREF="005876.html">[Gpsd-dev] Red light: total breakage in Garmin USB,	partial breakage in Garmin serial
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5875">[ date ]</a>
+              <a href="thread.html#5875">[ thread ]</a>
+              <a href="subject.html#5875">[ subject ]</a>
+              <a href="author.html#5875">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+&gt;<i> Almost.    Now I sometimes get an n/a, but still see up to 450mph+ Speed
+</I>&gt;<i> errors on a stationary GPS.
+</I>
+The right thing to do, then, is instrument the hell out of this piece of code
+near libgpsd_core.c:585:
+
+	/*
+	 * If we have a current fix and an old fix, and the packet handler 
+	 * didn't set the speed error and climb error members itself, 
+	 * try to compute them now.
+	 */
+	if (isnan(fix-&gt;eps)!=0)
+	{
+	    if (oldfix-&gt;mode &gt; MODE_NO_FIX &amp;&amp; fix-&gt;mode &gt; MODE_NO_FIX
+			&amp;&amp; isnan(oldfix-&gt;eph)==0 &amp;&amp; isnan(oldfix-&gt;eph)==0 
+			&amp;&amp; isnan(oldfix-&gt;time)==0 &amp;&amp; isnan(oldfix-&gt;time)==0 
+			&amp;&amp; fix-&gt;time &gt; oldfix-&gt;time) {
+		double t = fix-&gt;time-oldfix-&gt;time;
+		double e = oldfix-&gt;eph + fix-&gt;eph;
+		fix-&gt;eps = e/t;
+	    } else
+		fix-&gt;eps = NAN;
+	}
+
+See if you can determine which of the numbers involved in computing fix-&gt;eps
+look wrong for a stationary fix.  From there we can track the problem backwards
+into either the driver or the data-reduction code.
+
+&gt;<i> &gt; &gt;               Also if I try to background gpsd by not using the
+</I>&gt;<i> &gt; &gt; - -N command line option the daemon crashes and needs a 'kill -9',
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; That sounds like a hang rather than a crash.  Which is it?  (Not
+</I>&gt;<i> &gt; reproducing here.)
+</I>&gt;<i> 
+</I>&gt;<i> OK, a hang and not a crash, since a 'kill -9' is required.
+</I>
+Try cranking the logging level way up; tat may tell you where it's hanging.
+This is likely to be a driver-level problem.
+
+&gt;<i> &gt; &gt; When I try the current SVN on the Garmin USB the process gets through the
+</I>&gt;<i> &gt; &gt; initialization process but never gets any fursther packets.  Probably
+</I>&gt;<i> &gt; &gt; a handshake issue.  The Garmin USB and Garmin Serial handshakes are not
+</I>&gt;<i> &gt; &gt; exactly the same.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Handshake at what level?  The packet getter?
+</I>&gt;<i> 
+</I>&gt;<i> Each packet needs an ACK or a NAK.  Until the driver gets one it
+</I>&gt;<i> holds up all further packets.  So dropping a single packet is fatal.
+</I>
+Hm.  That I can't help you with much.  You might try a bisection search -- 
+rebuild 2.34 or go back as fart as you need to not to get the hang, then
+repeatedly bisect the revision sequence until you figure out where the
+handshaking broke.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005872.html">[Gpsd-dev] Red light: total breakage in Garmin USB, partial breakage in Garmin serial
+</A></li>
+	<LI>Next message: <A HREF="005876.html">[Gpsd-dev] Red light: total breakage in Garmin USB,	partial breakage in Garmin serial
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5875">[ date ]</a>
+              <a href="thread.html#5875">[ thread ]</a>
+              <a href="subject.html#5875">[ subject ]</a>
+              <a href="author.html#5875">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] packet.c problems
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20packet.c%20problems&In-Reply-To=%3C91981b3e0609301829g68caa56fhd00a78462b58af08%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004484.html">
+   <LINK REL="Next"  HREF="004487.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] packet.c problems</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20packet.c%20problems&In-Reply-To=%3C91981b3e0609301829g68caa56fhd00a78462b58af08%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] packet.c problems">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Sun Oct  1 03:29:39 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004484.html">[Gpsd-dev] packet.c problems
+</A></li>
+        <LI>Next message: <A HREF="004487.html">[Gpsd-dev] packet.c problems
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4485">[ date ]</a>
+              <a href="thread.html#4485">[ thread ]</a>
+              <a href="subject.html#4485">[ subject ]</a>
+              <a href="author.html#4485">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&quot;The end of a packet is &lt;ETX&gt; preceeded by an odd number of &lt;DLE&gt; bytes.&quot;
+That's just so horrible. On the whole, searching for that pattern
+doesn't seem like such a bad idea. It'd be nice to know how it breaks
+in practice.
+
+Maybe its wishful thinking, but is there a fixed, known message you
+could detect?
+
+Apparently TSIP sends 0x46 and 0x4B together, every 5 seconds - look
+for that pattern?
+
+Maybe you want to live dangerously, risk the wrath of the embedded
+folks, and use regex? It wouldn't be that bad - just a couple, at
+protocol detection time.
+
+Are there default packets that garmin sends that TSIP doesn't, or vice versa?
+
+-------------------------------
+
+On a slightly related note, perhaps we should set up a library of gps
+data - 15 minutes of every message supported by that protocol. 15
+minutes should give you a full navigation message, and probably an
+almanac/ephemeris dump too. A static receiver is fine we're just
+interested in the raw packets so we can test various decoders and
+protocol sniffers. I happen to have such a recording from a
+SiRFstarIII, i'll have one from a Lassen iQ by the end of the month,
+and maybe an iTalk as well. Gary will likely be able to contribute one
+for Garmin. 15 minutes of compressed data from the very chatty
+SiRFstarIII is only 1.3MB.
+
+Recordings could be expressed it a format similar to &quot;tcpdump -ttx&quot;:
+timestamp to the microsecond, space, some arbitrary amount of
+description, space, hexdump of the payload. That makes it easy to
+construct a replay engine with your choice of C, perl, python or
+possibly even COBOL or FORTRAN.
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004484.html">[Gpsd-dev] packet.c problems
+</A></li>
+	<LI>Next message: <A HREF="004487.html">[Gpsd-dev] packet.c problems
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4485">[ date ]</a>
+              <a href="thread.html#4485">[ thread ]</a>
+              <a href="subject.html#4485">[ subject ]</a>
+              <a href="author.html#4485">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

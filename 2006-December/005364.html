@@ -1,0 +1,139 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Another Garmin &quot;patch&quot;
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Another%20Garmin%20%22patch%22&In-Reply-To=%3C1164997696.4357.14.camel%40haktar%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005355.html">
+   <LINK REL="Next"  HREF="005356.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Another Garmin &quot;patch&quot;</H1>
+    <B>Daniel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Another%20Garmin%20%22patch%22&In-Reply-To=%3C1164997696.4357.14.camel%40haktar%3E"
+       TITLE="[Gpsd-dev] Another Garmin &quot;patch&quot;">garkein at mailueberfall.de
+       </A><BR>
+    <I>Fri Dec  1 19:28:16 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005355.html">[Gpsd-dev] Another Garmin &quot;patch&quot;
+</A></li>
+        <LI>Next message: <A HREF="005356.html">[Gpsd-dev] B command broken on 2.34 only at gpsd.mainframe.cx
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5364">[ date ]</a>
+              <a href="thread.html#5364">[ thread ]</a>
+              <a href="subject.html#5364">[ subject ]</a>
+              <a href="author.html#5364">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Am Donnerstag, den 30.11.2006, 19:55 -0500 schrieb Eric S. Raymond:
+&gt;<i> Daniel Dorau &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">daniel.dorau at gmx.de</A>&gt;:
+</I>&gt;<i> &gt; Well, I don't know when that will be, but yes, sure. I have read that
+</I>&gt;<i> &gt; Garmin spec Gary used in the meantime and the bad thing is that they
+</I>&gt;<i> &gt; might have changed their protocol slightly as the above is correct
+</I>&gt;<i> &gt; according to their (product specific) spec but obviously gives false
+</I>&gt;<i> &gt; information on my unit. 
+</I>&gt;<i> 
+</I>&gt;<i> Then I shouldn't have tossed the old code so fast.  Instead, I should
+</I>&gt;<i> leave it in, conditioned out.  Done -- I've added a comment explaining
+</I>&gt;<i> that this is what the Garmin product spec says to do.
+</I>
+Eric, no, this was a misunderstanding.
+What I gave you as patch and what you already had checked in was ok in
+my eyes. I had found out how that SNR value range is used in the USB
+protocol and how to transform it to get values that correspond to those
+we get over serial-NMEA.
+This is _not_ documented in the spec Gary used, they only describe the
+_packet structure_ in there for SNR values.
+
+What I had left untouched but was referring to in my mail as unclear and
+what probably has undergone some change in meaning, was the way how they
+code the status bits which describe which satellites were active, which,
+btw. _is_ documented in that spec Gary used, but doesn't match the
+observations I made with my unit.
+
+&gt;<i> Which spec were you looking at, by the way? Is it the GPS-18 technical
+</I>&gt;<i> spec Gary mentioned in the header comment? I'm looking at the
+</I>&gt;<i> satellite-data packet description in the technical manual for the
+</I>&gt;<i> Garmin 16/17 and it says nothing about the units.
+</I>
+Yes, the GPS-18 Spec: 425_TechnicalSpecification.pdf
+
+&gt;<i> And what's the model and firmware rev. of your unit?  That should go
+</I>&gt;<i> next to your code.
+</I>
+gpsd: Garmin Product ID: 292, SoftVer: 3.00
+gpsd: Garmin Product Desc: GPSMap60CSX Software Version 3.00
+
+&gt;<i> 
+</I>&gt;<i> It may turn out we have to branch to either of these depending on the
+</I>&gt;<i> firmware version.
+</I>
+Maybe. The more general spec you can get at
+<A HREF="http://www.garmin.com/support/commProtocol.html">http://www.garmin.com/support/commProtocol.html</A> describes for some
+devices which changes were made to which packets, so if we would get a
+more complete spec from garmin than these both combined, we could do
+this in a sane way. But as I said, I doubt they will tell us...
+
+&gt;<i> &gt; Also that packet type which Gary extracted from the GPS-18 spec for
+</I>&gt;<i> &gt; satellite view is missing from the official and more general protocol
+</I>&gt;<i> &gt; spec of Garmin, so I'm currently clueless where to get my next educated
+</I>&gt;<i> &gt; guesses from, other than to redo my parallel setup and stare at the data
+</I>&gt;<i> &gt; a little longer until I get the next idea. (Or ask Garmin directly, but
+</I>&gt;<i> &gt; honestly, I doubt they will right out tell me)
+</I>&gt;<i> 
+</I>&gt;<i> Where *is* the &quot;official and more general spec&quot;?
+</I>
+see above URL.
+
+&gt;<i> &gt; Then we somehow need to find a way to find out how to enable DOP
+</I>&gt;<i> &gt; information in the USB protocol since without that we're not able to
+</I>&gt;<i> &gt; generate complete GPGSA sentences even if we figure out how that &quot;active
+</I>&gt;<i> &gt; satellites&quot; status bits are coded.
+</I>&gt;<i> &gt; (And they DO compute DOP values as they spit them out on the serial
+</I>&gt;<i> &gt; port, so I bet they also do over USB if you ask it for)
+</I>&gt;<i> 
+</I>&gt;<i> I'd settle for generating sentences with empty DOP fields.
+</I>&gt;<i> Better than nothing.
+</I>
+I also had that idea but have no idea whether this would be valid in
+NMEA or not. Also we would have to somehow &quot;lie&quot; to libgpsd_core.c to
+generate that sentence without DOP values because currently it wouldn't.
+
+Regards,
+Daniel
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005355.html">[Gpsd-dev] Another Garmin &quot;patch&quot;
+</A></li>
+	<LI>Next message: <A HREF="005356.html">[Gpsd-dev] B command broken on 2.34 only at gpsd.mainframe.cx
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5364">[ date ]</a>
+              <a href="thread.html#5364">[ thread ]</a>
+              <a href="subject.html#5364">[ subject ]</a>
+              <a href="author.html#5364">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

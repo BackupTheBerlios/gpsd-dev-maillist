@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Evermore binary detection failed
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Evermore%20binary%20detection%20failed&In-Reply-To=%3C20336.213.84.187.156.1121106860.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002431.html">
+   <LINK REL="Next"  HREF="002435.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Evermore binary detection failed</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Evermore%20binary%20detection%20failed&In-Reply-To=%3C20336.213.84.187.156.1121106860.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] Evermore binary detection failed">gpsd at xs4all.nl
+       </A><BR>
+    <I>Mon Jul 11 20:34:20 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002431.html">[Gpsd-dev] Evermore binary detection failed
+</A></li>
+        <LI>Next message: <A HREF="002435.html">[Gpsd-dev] Evermore binary detection failed
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2432">[ date ]</a>
+              <a href="thread.html#2432">[ thread ]</a>
+              <a href="subject.html#2432">[ subject ]</a>
+              <a href="author.html#2432">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+</I>&gt;&gt;<i> &gt; No.  The better change is to go to DLE_LEADER state on seeing DLE
+</I>&gt;&gt;<i> after
+</I>&gt;&gt;<i> &gt; end
+</I>&gt;&gt;<i> &gt; of packet.  That way Evermore and TSIP detection both get retried, but
+</I>&gt;&gt;<i> the
+</I>&gt;&gt;<i> &gt; others don't.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I think it will not be enough.
+</I>&gt;&gt;<i> The misdetected TSIP packet will call the TSIP initializer, which will
+</I>&gt;&gt;<i> set
+</I>&gt;&gt;<i> the serial port to ODD parity (required for TSIP) and later Evermore
+</I>&gt;&gt;<i> communication will check ODD parity as well.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Maybe the baudrate hunting code should try to receive a couple of
+</I>&gt;&gt;<i> packets
+</I>&gt;&gt;<i> before switching the type, to avoid spurious detection errors.
+</I>&gt;&gt;<i> (the first rceived packet is not handled correctly anyway, it is always
+</I>&gt;&gt;<i> garbage when looking in the device driver)
+</I>&gt;<i>
+</I>&gt;<i> That's an option, but it would introduce additional latency for all packet
+</I>&gt;<i> types; I'm therefore reluctant to do it unless and until we run out of
+</I>&gt;<i> other ways to throw out false positives.
+</I>
+I don't think that will matter.  Once the difficult phase of determining
+the correct baudrate and finding the start of a packet has been performed,
+the valid packets should stream in at a nice rate.
+
+&gt;<i> Do TSIP packets have other invariants we can check?  For example, can we
+</I>&gt;<i> say anything about the second byte more specific than that it has to be
+</I>&gt;<i> another 0x13?  What's the range of packet lengths?
+</I>
+No, the TSIP protocol is not very well thought out.  Even the simple check
+for packet types above 0x13 is not based on any factual standard, just on
+observation of the specific document I have.  Any new software version
+could introduce new packet types, I just expect them to have larger rather
+than smaller IDs.
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002431.html">[Gpsd-dev] Evermore binary detection failed
+</A></li>
+	<LI>Next message: <A HREF="002435.html">[Gpsd-dev] Evermore binary detection failed
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2432">[ date ]</a>
+              <a href="thread.html#2432">[ thread ]</a>
+              <a href="subject.html#2432">[ subject ]</a>
+              <a href="author.html#2432">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

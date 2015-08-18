@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: Severe floating-point lossage -- help?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20Severe%20floating-point%20lossage%20--%20help%3F&In-Reply-To=%3C87ack6pwd1.fsf%40bonnet.wsrcc.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002670.html">
+   <LINK REL="Next"  HREF="002657.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: Severe floating-point lossage -- help?</H1>
+    <B>Wolfgang S. Rupprecht</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20Severe%20floating-point%20lossage%20--%20help%3F&In-Reply-To=%3C87ack6pwd1.fsf%40bonnet.wsrcc.com%3E"
+       TITLE="[Gpsd-dev] Re: Severe floating-point lossage -- help?">wolfgang+gnus20050728 at dailyplanet.dontspam.wsrcc.com
+       </A><BR>
+    <I>Thu Jul 28 21:24:26 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002670.html">[Gpsd-dev] Re: Severe floating-point lossage -- help?
+</A></li>
+        <LI>Next message: <A HREF="002657.html">[Gpsd-dev] packet_names.h is missing in svn
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2669">[ date ]</a>
+              <a href="thread.html#2669">[ thread ]</a>
+              <a href="subject.html#2669">[ subject ]</a>
+              <a href="author.html#2669">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Try this.
+
+Index: rtcm.c
+===================================================================
+--- rtcm.c	(revision 3030)
++++ rtcm.c	(working copy)
+@@ -70,6 +70,9 @@
+ #define	RRSMALL		0.002	/* meters/sec */
+ #define	RRLARGE		0.032	/* meters/sec */
+ 
++#define MAXPCSMALL     (0x7FFF * PCSMALL)  /* 16-bits signed */
++#define MAXRRSMALL     (0x7F   * RRSMALL)  /*  8-bits signed */
++
+ #define XYZ_SCALE	0.01	/* meters */
+ #define DXYZ_SCALE	0.1	/* meters */
+ #define	LA_SCALE	(90.0/32767.0)	/* degrees */
+@@ -681,7 +684,10 @@
+ 		    m-&gt;w3.satident1 = ssp-&gt;ident;
+ 		    m-&gt;w3.udre1 = ssp-&gt;udre;
+ 		    m-&gt;w4.issuedata1 = ssp-&gt;issuedata;
+-		    m-&gt;w3.scale1 = (unsigned)(ssp-&gt;rangerr &gt; PCLARGE);
++		    m-&gt;w3.scale1 = (unsigned)((ssp-&gt;rangerr &gt; MAXPCSMALL) ||
++					      (ssp-&gt;rangerr &lt; (-MAXPCSMALL)) ||
++					      (ssp-&gt;rangerate &gt; MAXRRSMALL) ||
++					      (ssp-&gt;rangerate &lt; (-MAXRRSMALL)));
+ 		    m-&gt;w3.pc1 = (int)(ssp-&gt;rangerr / (m-&gt;w3.scale1 ? PCLARGE : PCSMALL));
+ 		    m-&gt;w4.rangerate1 = (int)(ssp-&gt;rangerate / (m-&gt;w3.scale1 ? RRLARGE : RRSMALL));
+ 		    n++;
+@@ -691,7 +697,10 @@
+ 		    m-&gt;w4.satident2 = ssp-&gt;ident;
+ 		    m-&gt;w4.udre2 = ssp-&gt;udre;
+ 		    m-&gt;w6.issuedata2 = ssp-&gt;issuedata;
+-		    m-&gt;w4.scale2 = (unsigned)(ssp-&gt;rangerr &gt; PCLARGE);
++		    m-&gt;w4.scale2 = (unsigned)((ssp-&gt;rangerr &gt; MAXPCSMALL) ||
++					      (ssp-&gt;rangerr &lt; (-MAXPCSMALL)) ||
++					      (ssp-&gt;rangerate &gt; MAXRRSMALL) ||
++					      (ssp-&gt;rangerate &lt; (-MAXRRSMALL)));
+ 		    m-&gt;w5.pc2 = (int)(ssp-&gt;rangerr / (m-&gt;w4.scale2 ? PCLARGE : PCSMALL));
+ 		    m-&gt;w5.rangerate2 = (int)(ssp-&gt;rangerate / (m-&gt;w4.scale2 ? RRLARGE : RRSMALL));
+ 		    n++;
+@@ -701,13 +710,18 @@
+ 		    m-&gt;w6.satident3 = ssp-&gt;ident;
+ 		    m-&gt;w6.udre3 = ssp-&gt;udre;
+ 		    m-&gt;w7.issuedata3 = ssp-&gt;issuedata;
+-		    m-&gt;w6.scale3 = (unsigned)(ssp-&gt;rangerr &gt; PCLARGE);
++		    m-&gt;w6.scale3 = (unsigned)((ssp-&gt;rangerr &gt; MAXPCSMALL) ||
++			(ssp-&gt;rangerr &lt; (-MAXPCSMALL)));
++		    m-&gt;w6.scale3 = (unsigned)((ssp-&gt;rangerr &gt; MAXPCSMALL) ||
++					      (ssp-&gt;rangerr &lt; (-MAXPCSMALL)) ||
++					      (ssp-&gt;rangerate &gt; MAXRRSMALL) ||
++					      (ssp-&gt;rangerate &lt; (-MAXRRSMALL)));
+ 		    sval = (int)(ssp-&gt;rangerr / (m-&gt;w6.scale3 ? PCLARGE : PCSMALL));
+ 		    /*@ -shiftimplementation @*/
+ 		    m-&gt;w6.pc3_h = sval &gt;&gt; 8;
+ 		    /*@ +shiftimplementation @*/
+ 		    m-&gt;w7.pc3_l = (unsigned)sval &amp; 0xff;
+-		    m-&gt;w7.rangerate3 = (int)(ssp-&gt;rangerate / (m-&gt;w6.scale3 ? RRLARGE : RRSMALL));
++		    m-&gt;w7.rangerate3 =  (int)(ssp-&gt;rangerate / (m-&gt;w6.scale3 ? RRLARGE : RRSMALL));
+ 		    n++;
+ 		}
+ 		len -= 5;
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002670.html">[Gpsd-dev] Re: Severe floating-point lossage -- help?
+</A></li>
+	<LI>Next message: <A HREF="002657.html">[Gpsd-dev] packet_names.h is missing in svn
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2669">[ date ]</a>
+              <a href="thread.html#2669">[ thread ]</a>
+              <a href="subject.html#2669">[ subject ]</a>
+              <a href="author.html#2669">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

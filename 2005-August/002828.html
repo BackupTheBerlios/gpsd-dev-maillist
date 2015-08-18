@@ -1,0 +1,204 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] PPS
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS&In-Reply-To=%3CPine.LNX.4.63.0508051445460.911%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002821.html">
+   <LINK REL="Next"  HREF="002838.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] PPS</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS&In-Reply-To=%3CPine.LNX.4.63.0508051445460.911%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] PPS">gem at rellim.com
+       </A><BR>
+    <I>Sat Aug  6 00:11:22 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002821.html">[Gpsd-dev] PPS
+</A></li>
+        <LI>Next message: <A HREF="002838.html">[Gpsd-dev] PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2828">[ date ]</a>
+              <a href="thread.html#2828">[ thread ]</a>
+              <a href="subject.html#2828">[ subject ]</a>
+              <a href="author.html#2828">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Rob!
+
+On Fri, 5 Aug 2005, Rob Janssen wrote:
+
+&gt;<i> &gt; Hey, it was broken, totally, in my case.  When I asked about a fix,
+</I>&gt;<i> &gt; no one had one.
+</I>&gt;<i>
+</I>&gt;<i> I must have missed that message.  I read this list but I might miss
+</I>&gt;<i> something especially when it is buried somewhere in a larger message.
+</I>
+Anything that gets caught in 24 hourse, much less before a release is
+prety good.  Given some of the previous gpsd releases this is great. :-)
+
+&gt;<i> &gt;&gt; Moving constants to timebase.h is a good idea, but it won't solve the
+</I>&gt;<i> &gt;&gt; problem in your case.  For that, the extra functionality of a table of
+</I>&gt;<i> &gt;&gt; receiver types and time offsets is required.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; I was under the impression that he only wanted comments in that file
+</I>&gt;<i> &gt; for now?  Got a better place to put a table of observations?
+</I>
+&gt;<i> Well that table certainly does not belong there.
+</I>
+OK, pick a place.  I really do not care where it is.  If it can be
+automatic then great, if it has to be manual, then that is OK.  You
+choose.
+
+&gt;<i> &gt; I doubt it is easier for the user to change the fudge in the code and
+</I>&gt;<i> &gt; recompile than to change the fudge in the ntp.conf and restart ntpd.
+</I>&gt;<i>
+</I>&gt;<i> I don't agree with that.   Large userbases of Linux systems download
+</I>&gt;<i> or purchase binary distributions and never compile from source.  They
+</I>&gt;<i> can edit a configuration file (maybe via some GUI), but they do not edit
+</I>&gt;<i> and compile source.
+</I>
+Huh?  We both said the same thing. -&gt;  Putting the constant in the code
+is the wrong thing. &lt;-  So where else will you accept putting it?
+
+&gt;<i> The fudge between a message time and reasonably correct real time can
+</I>&gt;<i> be handled this way, but not between message time and PPS time, because
+</I>&gt;<i> NTP does not see this information and we cannot readback the fudge values
+</I>&gt;<i> from NTP via the shm structure.
+</I>
+Who needs the fudge after the ntpd has the correct time?  Either the
+PPS lines up on the 'true' time unit, or it does not.
+
+&gt;<i> Looking at the system time instead of the message time is not a good idea
+</I>&gt;<i> as I have explained before.
+</I>
+Well, try it again, because I missed that part.  All the message time is
+for is to get us to the proper second.
+
+&gt;<i> &gt; Just trying to cover all the possible solutions.  Until we have a working
+</I>&gt;<i> &gt; solution we need to look at all the possibilities.  Nothing so far is
+</I>&gt;<i> &gt; even close to 500mS.
+</I>&gt;<i>
+</I>&gt;<i> This problem is specific to your use of NMEA.
+</I>&gt;<i> NMEA is not a suitable protocol for this purpose, imho.
+</I>
+Ah, wrong.  I'll bet $20 that when I get the garmin binary working that
+the offset is similar to the same garmin in NMEA mode.  Either way I
+need an offset different than yours.  Unless my garmin binary is 675mS
++/- 400mS the current code will fail.  That has zero to do with protocol.
+The issue is probably the CPU time in the GPS to calculate the position,
+not the time to output an NMEA sentence.  The NMEA and garmin binary
+contain approximatelyl the same data and are approximately the same
+length.  Jitter will be better because the binary is fixed length, but
+the PPS will fix that in either case.
+
+&gt;<i> &gt; Because of the ambiguity of which second, I do not see how the old
+</I>&gt;<i> &gt; solution
+</I>&gt;<i> &gt; would prevent locking on the wrong second.  By your own admission some
+</I>&gt;<i> &gt; GPS take 1.5 seconds to output the time.  Subtract your fudge of 0.675 and
+</I>&gt;<i> &gt; we end up within the old 400mS window.  Viola, the old code locks on to
+</I>&gt;<i> &gt; the wrong second.
+</I>&gt;<i>
+</I>&gt;<i> Before I implemented time support in gpsd, I wrote software to handle
+</I>&gt;<i> this standalone, and I studied the matter.  I decided that I needed to
+</I>&gt;<i> use binary protcol.  Even then, it usually wanders,
+</I>
+My wander is +/- 20mS.  More than adequate to locate the PPS on the proper
+second.  Then the PPS pulls it in to 1uS.  I love that.  Been working
+2 days solid.  All I had to do is change the fudge.
+
+&gt;<i> but remains within
+</I>      ^^^^^^^^^^^^^^
+&gt;<i> usable tolerances to use PPS to lock to the correct second.
+</I>  ^^^^^^^^^^^^^^^^^
+
+Agreed.  What else is there to say??
+
+&gt;<i> I have also seen others remark that they could not get really reliable
+</I>&gt;<i> results with NMEA, for example users of Jupiter receivers report that
+</I>&gt;<i> sometimes the delay jumps up or down by one second (suggesting the
+</I>&gt;<i> independent processes of fix and serial output have slipped enough to have
+</I>&gt;<i> one result more or less in the pipeline).
+</I>
+We may, or may not, be able to solve the Jupiter, but a simple way to
+change offset will solve my problem.
+
+&gt;<i> &gt; Well, in my case, when we settle this, I am going to try to get binary
+</I>&gt;<i> &gt; protocol on the serial garmin.  Wanna bet the fudge factor is within 10%
+</I>&gt;<i> &gt; of the NMEA one for the same device?  OTOH, I expect half the jitter.
+</I>&gt;<i>
+</I>&gt;<i> It depends on whether the Garmin binary protocol is any good.
+</I>
+I have been running the Garmin binary protocol over USB packets, instead
+of over serial streams.  Just that, w/o PPS, give me +/- 10mS.  That seems
+pretty good.
+
+&gt;<i> Check if they support some message that claims to report correct time,
+</I>&gt;<i> with  reference to PPS, instead of merely containing a timestamp of
+</I>&gt;<i> measurement.
+</I>
+Do not have that from sentence, but as long as I can get it within a second
+it does not matter at all.  If you do have it from a sentence, then you
+should use your dynamic value to over-ride a manual value for me.
+
+Let's stop arguing over whether this works or not.  My setup works great
+for me.  Yours works great for you.  The only difference between us is
+the value of the fudge.  One lousy code constant.
+
+All I need is an adjustable fudge, manual or automatic, then we are both
+happy.  Put it anywhere you want in the time path: ntpd; gpsd; config
+file; code, etc. and my $70 unit will give not only me, but everyone, a
+great time base.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.1 (GNU/Linux)
+
+iD8DBQFC8+QP8KZibdeR3qURAmhPAKCVYUHliBYXA+zLDWZ4tbm2HpvWpgCgqdQe
+0QpyAmrL+gXLsT4yjl+F6y0=
+=RMV9
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002821.html">[Gpsd-dev] PPS
+</A></li>
+	<LI>Next message: <A HREF="002838.html">[Gpsd-dev] PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2828">[ date ]</a>
+              <a href="thread.html#2828">[ thread ]</a>
+              <a href="subject.html#2828">[ subject ]</a>
+              <a href="author.html#2828">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

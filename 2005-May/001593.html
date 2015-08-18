@@ -1,0 +1,96 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Zodiac driver?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Zodiac%20driver%3F&In-Reply-To=%3C20050508042651.GA11960%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001592.html">
+   <LINK REL="Next"  HREF="001598.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Zodiac driver?</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Zodiac%20driver%3F&In-Reply-To=%3C20050508042651.GA11960%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Zodiac driver?">esr at thyrsus.com
+       </A><BR>
+    <I>Sun May  8 06:26:51 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001592.html">[Gpsd-dev] Zodiac driver?
+</A></li>
+        <LI>Next message: <A HREF="001598.html">[Gpsd-dev] Another whack at the crazy-speed bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1593">[ date ]</a>
+              <a href="thread.html#1593">[ thread ]</a>
+              <a href="subject.html#1593">[ subject ]</a>
+              <a href="author.html#1593">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+&gt;<i> Has the Zodiac driver been recently tested?
+</I>&gt;<i> I connected a Rockwell Jupiter receiver.  It works OK in NMEA mode.
+</I>&gt;<i> When switched to binary mode (Zodiac) it is not recognized anymore.
+</I>&gt;<i> 
+</I>&gt;<i> There seems to be a problem with the sniffer state machine.
+</I>&gt;<i> I patched it like this:
+</I>&gt;<i> 
+</I>&gt;<i> --- trunk/packet.c      2005-05-06 10:33:03.000000000 +0200
+</I>&gt;<i> +++ ./packet.c  2005-05-08 02:56:31.706270827 +0200
+</I>&gt;<i> @@ -141,6 +141,10 @@
+</I>&gt;<i>          else if (c == 'E')
+</I>&gt;<i>             session-&gt;packet_state = EARTHA_1;
+</I>&gt;<i>  #endif /* EARTHMATE_ENABLE */
+</I>&gt;<i> +#ifdef ZODIAC_ENABLE
+</I>&gt;<i> +       else if (c == 0xff)
+</I>&gt;<i> +           session-&gt;packet_state = ZODIAC_LEADER_1;
+</I>&gt;<i> +#endif /* ZODIAC_ENABLE */
+</I>&gt;<i>         break;
+</I>&gt;<i>      case NMEA_DOLLAR:
+</I>&gt;<i>         if (c == 'G')
+</I>&gt;<i> 
+</I>&gt;<i> (how else could it get in ZODIAC_EXPECTED state and pickup the 0xff byte?)
+</I>
+Answer: the Earthmate didn't need this code because it didn't start out
+in Zodiac mode.  Rather, it recognized a leader string EARTHA and was taken
+to Zodiac mode by an explicit driver switch.
+
+Your patch is correct and covers the case of a GPS that is in Rockwell binary 
+mode at startup.  That just happens to be a case that was never exercised 
+before -- which probably also explains the segfault in some indirect way.
+
+I don't expect this one to be difficult to fix.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001592.html">[Gpsd-dev] Zodiac driver?
+</A></li>
+	<LI>Next message: <A HREF="001598.html">[Gpsd-dev] Another whack at the crazy-speed bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1593">[ date ]</a>
+              <a href="thread.html#1593">[ thread ]</a>
+              <a href="subject.html#1593">[ subject ]</a>
+              <a href="author.html#1593">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

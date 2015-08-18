@@ -1,0 +1,114 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Moving raw_hook evaluation out of the drivers
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Moving%20raw_hook%20evaluation%20out%20of%20the%20drivers&In-Reply-To=%3C19478.213.84.187.156.1118563379.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002101.html">
+   <LINK REL="Next"  HREF="002105.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Moving raw_hook evaluation out of the drivers</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Moving%20raw_hook%20evaluation%20out%20of%20the%20drivers&In-Reply-To=%3C19478.213.84.187.156.1118563379.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] Moving raw_hook evaluation out of the drivers">gpsd at xs4all.nl
+       </A><BR>
+    <I>Sun Jun 12 10:02:59 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002101.html">[Gpsd-dev] Moving raw_hook evaluation out of the drivers
+</A></li>
+        <LI>Next message: <A HREF="002105.html">[Gpsd-dev] new TSIP patches
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2102">[ date ]</a>
+              <a href="thread.html#2102">[ thread ]</a>
+              <a href="subject.html#2102">[ subject ]</a>
+              <a href="author.html#2102">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> Rob Janssen was correct to point this out as a bug.  Thankfully, during my
+</I>&gt;<i> last re-factoring of the strategy-pattern architecture, I changed the
+</I>&gt;<i> driver packet handlers to return exactly the status bits needed to
+</I>&gt;<i> dispatch to appropriate raw-hook dump functions.
+</I>
+There are still issues with this.
+I have made a change that now makes it work for TSIP, and repaired the
+output for ZODIAC, but I think there is another problem with the
+architecture.
+
+This is kind of related to what I posted yesterday.
+The gpsd does not seem to have a knowledge about update cycles.  Each
+message is handled standalone, and the mask value sets only what that
+specific message updates.  The handle_packet routine smacks that in
+session-&gt;gpsdata.set and proceeds as if only those values are valid.
+
+However, the typical GPS receiver does not output all its information in a
+single message.  Information is sent in &quot;message cycles&quot; which consist of
+several different message types that convey different parts of the fix
+data.
+They often show signs of haphazard design, as you pointed out in a writeup
+on the website.
+However, they are a fact of life, and we need to handle this in gpsd.
+
+For example, in TSIP the position, velocity, time and DOP data are all
+sent in different messages in a cycle.  handle_packet (before my patch)
+assumes that DOP values are only sent in message that also contain LATLON,
+but this is simply not the case.
+
+As the O= output is sent for every message parsed (as I wrote yesterday),
+things are even worse: for every message parsed an O packet is assembled
+with different mask flags as a starting point, so O packets are sent with
+alternating valid and unknown data in the same position.
+
+I think what should happen is that the mask flags accumulate during a
+message cycle and are only reset between cycles.  And of course the O
+packet should be sent only after all data for that cycle has been
+collected.
+
+What this requires is some detection of the update cycle.  I understand
+that you want to keep the latency low (although I do not really see why
+this matters so much, given the characteristics of a typical receiver), so
+this may not be really simple.  The start of a cycle is probably easier to
+find than the end, but sending all data about the previous cycle at that
+moment will introduce a 1 second latency.
+However, I think something needs to be done, as what happens now is not
+very reasonable.
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: patch.gz
+Type: application/x-gzip
+Size: 1767 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20050612/8eb6ac18/attachment.bin">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20050612/8eb6ac18/attachment.bin</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002101.html">[Gpsd-dev] Moving raw_hook evaluation out of the drivers
+</A></li>
+	<LI>Next message: <A HREF="002105.html">[Gpsd-dev] new TSIP patches
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2102">[ date ]</a>
+              <a href="thread.html#2102">[ thread ]</a>
+              <a href="subject.html#2102">[ subject ]</a>
+              <a href="author.html#2102">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

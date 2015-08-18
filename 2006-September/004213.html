@@ -1,0 +1,432 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] cgpxlogger rewrite using libgps
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20cgpxlogger%20rewrite%20using%20libgps&In-Reply-To=%3C1157232470.7541.13.camel%40localhost.localdomain%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004212.html">
+   <LINK REL="Next"  HREF="004214.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] cgpxlogger rewrite using libgps</H1>
+    <B>Stelian Pop</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20cgpxlogger%20rewrite%20using%20libgps&In-Reply-To=%3C1157232470.7541.13.camel%40localhost.localdomain%3E"
+       TITLE="[Gpsd-dev] [PATCH] cgpxlogger rewrite using libgps">stelian at popies.net
+       </A><BR>
+    <I>Sat Sep  2 23:27:50 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004212.html">[Gpsd-dev] [PATCH] WIRED_POLICY/'J' command cleanups.
+</A></li>
+        <LI>Next message: <A HREF="004214.html">[Gpsd-dev] State of the J commmand patch.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4213">[ date ]</a>
+              <a href="thread.html#4213">[ thread ]</a>
+              <a href="subject.html#4213">[ subject ]</a>
+              <a href="author.html#4213">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+The patch below rewrites cgpxlogger based on libgps, making the code
+much simpler.
+
+It also adds a new command line argument (-j 0/1), used to drive the
+buffering policy.
+
+Stelian.
+
+Index: cgpxlogger.c
+===================================================================
+--- cgpxlogger.c	(r&#233;vision 3441)
++++ cgpxlogger.c	(copie de travail)
+@@ -17,12 +17,8 @@
+ #include &lt;sys/types.h&gt;
+ #include &lt;sys/cdefs.h&gt;
+ #include &lt;sys/ioctl.h&gt;
+-#include &lt;sys/socket.h&gt;
+ #include &lt;sys/time.h&gt;
+ 
+-#include &lt;netinet/in.h&gt;
+-#include &lt;arpa/inet.h&gt;
+-
+ #include &lt;ctype.h&gt;
+ #include &lt;err.h&gt;
+ #include &lt;errno.h&gt;
+@@ -34,23 +30,24 @@
+ #include &lt;string.h&gt;
+ #include &lt;unistd.h&gt;
+ 
++#include &quot;gps.h&quot;
++
+ #define BS 512
+ 
+ #define NUM 8
+ char *poll = &quot;SPAMDQTV\n&quot;;
+ char *host = &quot;127.0.0.1&quot;;
+-unsigned int want_exit = 0;
+-unsigned short port = 2947;
++char *port = &quot;2947&quot;;
+ unsigned int sl = 5;
+ 
++struct gps_data_t *gpsdata;
++
+ char *progname;
+ 
+-void process(char *);
++void process(struct gps_data_t *, char *, size_t, int);
+ void usage(void);
+-void dnserr(void);
+ void bye(int);
+-void process(char *);
+-void write_record(void);
++void write_record(struct gps_data_t *gpsdata);
+ void header(void);
+ void footer(void);
+ void track_start(void);
+@@ -73,16 +70,12 @@
+ 
+ int
+ main(int argc, char **argv){
+-	int ch, fd, l, rl;
+-	char *buf;
+-	struct in_addr addr;
+-	struct sockaddr_in sa;
+-	struct hostent *he;
+-	struct timeval tv;
++	int ch;
+ 	fd_set fds;
++	int casoc = 0;
+ 
+ 	progname = argv[0];
+-	while ((ch = getopt(argc, argv, &quot;hVi:s:p:&quot;)) != -1){
++	while ((ch = getopt(argc, argv, &quot;hVi:j:s:p:&quot;)) != -1){
+ 	switch (ch) {
+ 	case 'i':
+ 		sl = (unsigned int)atoi(optarg);
+@@ -91,11 +84,15 @@
+ 		if (sl &gt;= 3600)
+ 			fprintf(stderr, &quot;WARNING: polling interval is an hour or more!\n&quot;);
+ 		break;
++	case 'j':
++		casoc = (unsigned int)atoi(optarg);
++		casoc = casoc ? 1 : 0;
++		break;
+ 	case 's':
+ 		host = optarg;
+ 		break;
+ 	case 'p':
+-		port = (unsigned short)atoi(optarg);
++		port = optarg;
+ 		break;
+ 	case 'V':
+ 		(void)fprintf(stderr, &quot;SVN ID: $Id: cgpxlogger.c$ \n&quot;);
+@@ -106,197 +103,116 @@
+ 	}
+ 	}
+ 
+-	argc -= optind;
+-	argv += optind;
+-
+-	bzero((char *)&amp;sa, sizeof(sa));
+-	if( inet_aton(host, &amp;addr) ){
+-		bcopy(&amp;addr, (char *)&amp;sa.sin_addr, sizeof(addr));
+-	} else {
+-		he = gethostbyname(host);
+-		if (he != NULL){
+-			bcopy(he-&gt;h_addr_list[0], (char *)&amp;sa.sin_addr, he-&gt;h_length);
+-		} else {
+-			dnserr();
+-			/* NOTREACHED */
++	gpsdata = gps_open(host, port);
++	if (!gpsdata) {
++		char *err_str;
++		switch (errno) {
++		case NL_NOSERVICE:	err_str = &quot;can't get service entry&quot;; break;
++		case NL_NOHOST:		err_str = &quot;can't get host entry&quot;; break;
++		case NL_NOPROTO:	err_str = &quot;can't get protocol entry&quot;; break;
++		case NL_NOSOCK:		err_str = &quot;can't create socket&quot;; break;
++		case NL_NOSOCKOPT:	err_str = &quot;error SETSOCKOPT SO_REUSEADDR&quot;; break;
++		case NL_NOCONNECT:	err_str = &quot;can't connect to host&quot;; break;
++		default:		err_str = &quot;Unknown&quot;; break;
+ 		}
+-	}
+-
+-	if ((buf = malloc( BS )) == NULL){
+-		perror(NULL);
++		fprintf(stderr, &quot;cgpxlogger: no gpsd running or network error: %d, %s\n&quot;,
++			errno, err_str);
+ 		exit(1);
+ 	}
+ 
+-	sa.sin_port= htons(port);
+-	sa.sin_family = AF_INET;
+-
+-	if ((fd = socket(AF_INET,SOCK_STREAM,0)) == -1){
+-		perror(NULL);
+-		exit(1);
+-	}
+-
+-	if (connect(fd,(struct sockaddr *)&amp;sa,sizeof(sa)) == -1){
+-		perror(NULL);
+-		close(fd);
+-		exit(1);
+-	}
+-
+-	l = strlen(poll);
+-
+-	FD_ZERO(&amp;fds);
+-	FD_SET(fd, &amp;fds);
+-
+ 	signal(SIGINT, bye);
+ 	signal(SIGTERM, bye);
+ 	signal(SIGQUIT, bye);
+ 	signal(SIGHUP, bye);
+ 
+ 	header();
++
++	if (casoc)
++		gps_query(gpsdata, &quot;j1\n&quot;);
++
++	gps_set_raw_hook(gpsdata, process);
++
+ 	for(;;){
+-		if (want_exit){
+-			footer();
+-			fprintf(stderr, &quot;Exiting on signal %d!\n&quot;, want_exit);
+-			fflush(NULL);
+-			shutdown(fd, SHUT_RDWR);
+-			close(fd);
+-			exit(0);
+-		}
++		int data;
++		struct timeval tv;
+ 
+-		write(fd, poll, l);
++		FD_ZERO(&amp;fds);
++		FD_SET(gpsdata-&gt;gps_fd, &amp;fds);
+ 
++		gps_query(gpsdata, poll);
++
+ 		tv.tv_usec = 250000;
+ 		tv.tv_sec = 0;
+-		select(fd + 1, &amp;fds, NULL, NULL, &amp;tv);
++		data = select(gpsdata-&gt;gps_fd + 1, &amp;fds, NULL, NULL, &amp;tv);
+ 
+-		bzero(buf, BS);
+-		if ((rl = read(fd, buf, BS - 1)) != -1){
+-			process(buf);
+-		} else {
+-			if ((errno != EINTR) &amp;&amp; (errno != EAGAIN)){
+-				/* ignore EINTR and EAGAIN */
+-				want_exit = SIGPIPE;
+-				sl = 1;
+-				fprintf(stderr,&quot;%s\n&quot;, strerror(errno));
+-			}
++		if (data &lt; 0) {
++			fprintf(stderr,&quot;%s\n&quot;, strerror(errno));
++			exit(2);
+ 		}
++		else if (data)
++			gps_poll(gpsdata);
++
+ 		sleep(sl);
+ 	}
+ }
+ 
+ void usage(){
+-	fprintf(stderr, &quot;Usage: %s [-h] [-s server] [-p port] [-i interval]\n\t&quot;, progname);
+-	fprintf(stderr, &quot;\tdefaults to '%s -s 127.0.0.1 -p 2947 -i 5'\n&quot;, progname);
++	fprintf(stderr, &quot;Usage: %s [-h] [-s server] [-p port] [-i interval] [-j casoc]\n\t&quot;, progname);
++	fprintf(stderr, &quot;\tdefaults to '%s -s 127.0.0.1 -p 2947 -i 5 -j 0'\n&quot;, progname);
+ 	exit(1);
+ }
+ 
+-void dnserr(){
+-	herror(progname);
+-	exit(1);
++void bye(int signum){
++	footer();
++	fprintf(stderr, &quot;Exiting on signal %d!\n&quot;, signum);
++	gps_close(gpsdata);
++	exit(0);
+ }
+ 
+-void bye(int signum){ want_exit = signum; }
++void process(struct gps_data_t *gpsdata,
++	     char *buf, size_t len, int level){
+ 
+-void process(char *buf){
+-	char *answers[NUM + 2], **ap;
+-	int i, j;
+-	char c;
+-
+-	if (strncmp(&quot;GPSD,&quot;, buf, 5) != 0)
+-		return; /* lines should start with &quot;GPSD,&quot; */
+-
+-	/* nuke them pesky trailing CR &amp; LF */
+-	i = strlen(buf);
+-	if((buf[i - 1] == '\r') || (buf[i - 1] == '\n'))
+-		buf[i - 1] = '\0';
+-
+-	i = strlen(buf);
+-	if((buf[i - 1] == '\r') || (buf[i - 1] == '\n'))
+-		buf[i - 1] = '\0';
+-
+-	/* tokenize the string at the commas */
+- 	for (ap = answers; ap &lt; &amp;answers[NUM+1] &amp;&amp;
+- 		(*ap = strsep(&amp;buf, &quot;,&quot;)) != NULL;) {
+- 		if (**ap != '\0')
+- 			ap++;
+- 	}
+- 	*ap = NULL;
+-
+-	bzero( &amp;gps_ctx, sizeof(gps_ctx));
+-	/* do stuff with each of the strings */
+-	for(i = 0; i &lt; NUM+1 ; i++){
+-		j=-1;
+-		c = answers[i][0];
+-		switch(c){
+-		case 'S':
+-			sscanf(answers[i], &quot;S=%d&quot;, &amp;j);
+-			gps_ctx.status = j;
+-			break;
+-		case 'P':
+-			sscanf(answers[i], &quot;P=%lf %lf&quot;, &amp;gps_ctx.latitude, &amp;gps_ctx.longitude);
+-			break;
+-		case 'A':
+-			sscanf(answers[i], &quot;A=%f&quot;, &amp;gps_ctx.altitude);
+-			break;
+-		case 'M':
+-			sscanf(answers[i], &quot;M=%d&quot;, &amp;j);
+-			gps_ctx.mode = j;
+-			break;
+-		case 'Q':
+-			sscanf(answers[i], &quot;Q=%hd %*s %f&quot;, &amp;gps_ctx.svs, &amp;gps_ctx.hdop );
+-			break;
+-		case 'T':
+-			sscanf(answers[i], &quot;T=%f&quot;, &amp;gps_ctx.course);
+-			break;
+-		case 'V':
+-			sscanf(answers[i], &quot;V=%f&quot;, &amp;gps_ctx.speed);
+-			break;
+-		case 'D':
+-			sscanf(answers[i], &quot;D=%s&quot;, (char *)&amp;gps_ctx.time);
+-			break;
+-		default: /* no-op */ ;
+-		}
+-	}
+-	if ((gps_ctx.mode &gt; 1) &amp;&amp; (gps_ctx.status &gt; 0))
+-		write_record();
++	if ((gpsdata-&gt;fix.mode &gt; 1) &amp;&amp; (gpsdata-&gt;status &gt; 0))
++		write_record(gpsdata);
+ 	else
+ 		track_end();
+ }
+ 
+-void write_record(){
++void write_record(struct gps_data_t *gpsdata){
+ 	track_start();
+-	printf(&quot;      &lt;trkpt lat=\&quot;%.6f\&quot; &quot;, gps_ctx.latitude );
+-	printf(&quot;lon=\&quot;%.6f\&quot;&gt;\n&quot;, gps_ctx.longitude );
++	printf(&quot;      &lt;trkpt lat=\&quot;%.6f\&quot; &quot;, gpsdata-&gt;fix.latitude );
++	printf(&quot;lon=\&quot;%.6f\&quot;&gt;\n&quot;, gpsdata-&gt;fix.longitude );
+ 
+-	if ((gps_ctx.status &gt;= 2) &amp;&amp; (gps_ctx.mode &gt;= 3)){ /* dgps or pps */
+-		if (gps_ctx.mode == 4) { /* military pps */
++	if ((gpsdata-&gt;status &gt;= 2) &amp;&amp; (gpsdata-&gt;fix.mode &gt;= 3)){ /* dgps or pps */
++		if (gpsdata-&gt;fix.mode == 4) { /* military pps */
+ 			printf(&quot;        &lt;fix&gt;pps&lt;/fix&gt;\n&quot;);
+ 		} else { /* civilian dgps or sbas */
+ 			printf(&quot;        &lt;fix&gt;dgps&lt;/fix&gt;\n&quot;);
+ 		}
+ 	} else { /* no dgps or pps */
+-		if (gps_ctx.mode == 3) {
++		if (gpsdata-&gt;fix.mode == 3) {
+ 			printf(&quot;        &lt;fix&gt;3d&lt;/fix&gt;\n&quot;);
+-		} else if (gps_ctx.mode == 2) {
++		} else if (gpsdata-&gt;fix.mode == 2) {
+ 			printf(&quot;        &lt;fix&gt;2d&lt;/fix&gt;\n&quot;);
+-		} else if (gps_ctx.mode == 1) {
++		} else if (gpsdata-&gt;fix.mode == 1) {
+ 			printf(&quot;        &lt;fix&gt;none&lt;/fix&gt;\n&quot;);
+ 		} /* don't print anything if no fix indicator */
+ 	}
+ 
+ 	/* print altitude if we have a fix and it's 3d of some sort */
+-	if ((gps_ctx.mode &gt;= 3) &amp;&amp; (gps_ctx.status &gt;= 1))
+-		printf(&quot;        &lt;ele&gt;%.2f&lt;/ele&gt;\n&quot;, gps_ctx.altitude);
++	if ((gpsdata-&gt;fix.mode &gt;= 3) &amp;&amp; (gpsdata-&gt;status &gt;= 1))
++		printf(&quot;        &lt;ele&gt;%.2f&lt;/ele&gt;\n&quot;, gpsdata-&gt;fix.altitude);
+ 
+-	/* SiRF reports HDOP in 0.2 steps and the lowest I've seen is 0.6 */
+-	if (gps_ctx.svs &gt;= 0.2)
+-		printf(&quot;        &lt;hdop&gt;%.1f&lt;/hdop&gt;\n&quot;, gps_ctx.hdop);
+-
+ 	/* print # satellites used in fix, if reasonable to do so */
+-	if ((gps_ctx.svs &gt; 0) &amp;&amp; (gps_ctx.mode &gt;= 2))
+-		printf(&quot;        &lt;sat&gt;%d&lt;/sat&gt;\n&quot;, gps_ctx.svs);
++	if (gps_ctx.mode &gt;= 2) {
++		printf(&quot;        &lt;hdop&gt;%.1f&lt;/hdop&gt;\n&quot;, gpsdata-&gt;hdop);
++		printf(&quot;        &lt;sat&gt;%d&lt;/sat&gt;\n&quot;, gpsdata-&gt;satellites_used);
++	}
+ 
+-	if (strlen(gps_ctx.time)) /* plausible timestamp */
+-		printf(&quot;        &lt;time&gt;%s&lt;/time&gt;\n&quot;, gps_ctx.time);
++	if (gpsdata-&gt;satellites_used) { /* plausible timestamp */
++		char scr[128];
++		printf(&quot;        &lt;time&gt;%s&lt;/time&gt;\n&quot;, unix_to_iso8601(gpsdata-&gt;fix.time, scr, sizeof(scr)));
++	}
+ 	printf(&quot;      &lt;/trkpt&gt;\n&quot;);
+ 	fflush(stdout);
+ }
+Index: Makefile.am
+===================================================================
+--- Makefile.am	(r&#233;vision 3441)
++++ Makefile.am	(copie de travail)
+@@ -57,7 +57,7 @@
+ # Build cgpxlogger
+ #
+ cgpxlogger_SOURCES = cgpxlogger.c
+-cgpxlogger_LDADD = $(LIBC) $(LIBNSL) $(LIBSOCKET)
++cgpxlogger_LDADD = $(LIBC) $(LIBNSL) $(LIBSOCKET) libgps.la -lm $(LIBPTHREAD)
+ 
+ #
+ # Build gpsd
+
+-- 
+Stelian Pop &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">stelian at popies.net</A>&gt;
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004212.html">[Gpsd-dev] [PATCH] WIRED_POLICY/'J' command cleanups.
+</A></li>
+	<LI>Next message: <A HREF="004214.html">[Gpsd-dev] State of the J commmand patch.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4213">[ date ]</a>
+              <a href="thread.html#4213">[ thread ]</a>
+              <a href="subject.html#4213">[ subject ]</a>
+              <a href="author.html#4213">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

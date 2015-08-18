@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] xgps time
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20xgps%20time&In-Reply-To=%3C20050401002558.GA3817%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001176.html">
+   <LINK REL="Next"  HREF="001178.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] xgps time</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20xgps%20time&In-Reply-To=%3C20050401002558.GA3817%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] xgps time">esr at thyrsus.com
+       </A><BR>
+    <I>Fri Apr  1 02:25:58 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001176.html">[Gpsd-dev] xgps time
+</A></li>
+        <LI>Next message: <A HREF="001178.html">[Gpsd-dev] xgps time
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1177">[ date ]</a>
+              <a href="thread.html#1177">[ thread ]</a>
+              <a href="subject.html#1177">[ subject ]</a>
+              <a href="author.html#1177">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+&gt;<i> I see the code problem.  The gpsd sends alternating Y= and O= sentences.
+</I>&gt;<i> 
+</I>&gt;<i> The O= set the gpsdata-&gt;valid |= TIME_SET
+</I>&gt;<i> 
+</I>&gt;<i> The Y= clears it. gpsdata-&gt;valid is set to zero at the top of every
+</I>&gt;<i> received message in libgps loop in gps_unpack().
+</I>&gt;<i> 
+</I>&gt;<i> Depending on the xgps screen update you see the &quot;Time:&quot; as either a
+</I>&gt;<i> valid time or as &quot;n/a&quot;.
+</I>
+New FAQ entry:
+
+&lt;h1 id='date_flicker'&gt;The date in &lt;code&gt;xgps&lt;/code&gt; flickers to &quot;n/a&quot; part of the time&lt;/h1&gt;
+
+&lt;p&gt;The sentence or packet your GPS uses to report satellite
+bearing/elevation has no timestamp. The &lt;code&gt;xgps&lt;/code&gt;
+date display flickers to &quot;n/a&quot; when it has just seen this report.&lt;/p&gt;
+
+&lt;p&gt;This is a known problem.  It's not a bug &mdash; or, at least, not
+a bug in the GPSD code.  Blame the idiot protocol designers who
+saw fit not to timestamp their satellite-data packet.  (NMEA and Garmin 
+GPSes don't.  SiRF GPSes do.  Score one for SiRF.)&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;gpsd&lt;/code&gt; is faithfully reporting the information it is
+getting from the GPS, including the fact that the Y sentence contains
+no date, That's its job.  The libgps library is doing its bit by
+passing everything from &lt;code&gt;gpsd&lt;/code&gt; on to the client application
+as it arrives, including the lack of date.&lt;/p&gt;
+
+&lt;p&gt;It's the &lt;em&gt;client's&lt;/em&gt; job to interpret/interpolate/fill in
+gaps, to do policy.  What you're seeing as a bug only looks like one
+because &lt;code&gt;xgps&lt;/code&gt;, as is proper for a test client, has as
+little policy as possible.&lt;/p&gt;
+
+&gt;<i> Seems to me that gpsdata-&gt;valid should only be set to zero initially
+</I>&gt;<i> and after some sort of timeout(s).  I would remove this line from the
+</I>&gt;<i> top of gps_unpack():
+</I>&gt;<i> 	 gpsdata-&gt;valid = 0;
+</I>&gt;<i> 
+</I>&gt;<i> Then I would set a timer for each of the _SET bits when they are set.
+</I>&gt;<i> After a timeout the bits could then be cleared.
+</I>&gt;<i> 
+</I>&gt;<i> You emight cheat a bit and only clear the bits when some mode changes
+</I>&gt;<i> or every minute?
+</I>&gt;<i> 
+</I>&gt;<i> Your comments?
+</I>
+Erm.  How many times do I have to repeat: &quot;mechanism, not policy&quot;.
+ 
+&gt;<i> &gt; &gt; Should not ship this.  I can't look at the code till tonight.
+</I>&gt;<i> 
+</I>&gt;<i> Given that it is not obvious when using X locally and has been there a
+</I>&gt;<i> while I guess it is not a show stopper.
+</I>
+I don't think so either.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001176.html">[Gpsd-dev] xgps time
+</A></li>
+	<LI>Next message: <A HREF="001178.html">[Gpsd-dev] xgps time
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1177">[ date ]</a>
+              <a href="thread.html#1177">[ thread ]</a>
+              <a href="subject.html#1177">[ subject ]</a>
+              <a href="author.html#1177">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

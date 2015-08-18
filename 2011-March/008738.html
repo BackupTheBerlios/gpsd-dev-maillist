@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Stripping down gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Stripping%20down%20gpsd&In-Reply-To=%3CAANLkTin9aEWKWAyhc1RR3tW-f_0NH_j_WsTMH95Gc0Nx%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008740.html">
+   <LINK REL="Next"  HREF="008741.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Stripping down gpsd</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Stripping%20down%20gpsd&In-Reply-To=%3CAANLkTin9aEWKWAyhc1RR3tW-f_0NH_j_WsTMH95Gc0Nx%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Stripping down gpsd">thomas at mich.com
+       </A><BR>
+    <I>Thu Mar 10 18:54:30 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008740.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+        <LI>Next message: <A HREF="008741.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8738">[ date ]</a>
+              <a href="thread.html#8738">[ thread ]</a>
+              <a href="subject.html#8738">[ subject ]</a>
+              <a href="author.html#8738">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Thu, Mar 10, 2011 at 12:18 PM, Bernd Zeimetz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">bernd at bzed.de</A>&gt; wrote:
+&gt;<i> On 03/10/2011 03:33 PM, tz wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Assuming anyone really understands the hairy bits of the existing system.
+</I>&gt;&gt;<i> It sounds like adding a --minimalist and/or --nolib option and not
+</I>&gt;&gt;<i> requiring libtool is a lot of work.
+</I>&gt;<i>
+</I>&gt;<i> Not requiring libtool is ugly, but it might be possible.
+</I>
+If I'm not building the library, I don't think I would need libtool.
+
+&gt;<i> A --minimalist option doesn't make sense in my opinion as everybody
+</I>&gt;<i> needs support for different chipsets and/or additional functions like
+</I>&gt;<i> bluetooth. Just add enough --disable options until you're happy.
+</I>
+Maybe I should have added NMEA.  I don't know the statistics,  but
+&quot;everybody&quot; is probably under 2% for those who don't have something
+that can produce NMEA.  Add one or two others and you probably get to
+.01%.  Other than the regression testbench, how many would actually
+use more than 2 or 3 drivers?  I'm all for a gpsd-ng-full version, but
+also for a narrower standard version and a lightweight version.
+
+That is one of the reasons I asked about plugins.  Things with drivers
+bloat if they don't use this kind of architecture - no one would think
+that the linux USB subsystem or Xorg should have one monolithic
+&quot;everything&quot; module.  Since were aren't going to do plugins, it makes
+sense to have in addition to the ala-carte settings, a set of build
+options for light, normal, everything.
+
+&gt;<i> The last time I tried it it worked well on a sun sparc box runnign
+</I>&gt;<i> solaris and the sun compiler suite.
+</I>
+The current or the ancient version?
+
+&gt;<i> Ubuntu still builds on arm? I don't think so, I think they dropped the
+</I>&gt;<i> architecture. We (Debian) are building everything on real (and fast!)
+</I>&gt;<i> arm hardware, same for mips(el).
+</I>
+My point exactly - one of the reasons for autotools is/was --build
+--host and --target.  You are building everything on a fast arm, but I
+don't have a fast arm.  I do have a multicore x86_64 which is fast,
+but can I build debian arm on that?  Not using something like
+scratchbox with QEMU.
+
+&gt;&gt;<i> Has anyone actually tried moving the toolchain or libraries into
+</I>&gt;&gt;<i> something like /opt and see if autogen.sh still works? &#160;Using cc or
+</I>&gt;&gt;<i> another toolchain instead of gcc? &#160;Is any of this part of your
+</I>&gt;&gt;<i> regression test?
+</I>&gt;<i>
+</I>&gt;<i> I give clang a try regulary. Works just fine.
+</I>&gt;<i> Would be nice if we could use dietlibc instead of libc, though.
+</I>
+I asked about the regression test.  If the build breaks on X, it
+prevents the release.  Not if it happens to work on what it is tried
+on ad-hoc.  I've already pointed out that there are places it would be
+difficult or impossible for me to build on because autotools isn't
+setup to support them.  If gpsd was specifically targeted at such big
+systems and had something which required all this as a dependency,
+like, say, GTK+, I wouldn't complain, but this is supposed to be a
+daemon running in the background and for all the churn and tests it
+seems only to depend on some version of posix libc and common
+includes.
+
+Perhaps the library should be moved to its own directory and built
+optionally but use its own autogen and such if it requires all that.
+That part probably has all the build complexity like GTK+.  But gpsd
+itself shouldn't be burdened by every requirement the library has.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008740.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+	<LI>Next message: <A HREF="008741.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8738">[ date ]</a>
+              <a href="thread.html#8738">[ thread ]</a>
+              <a href="subject.html#8738">[ subject ]</a>
+              <a href="author.html#8738">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

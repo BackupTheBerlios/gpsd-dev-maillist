@@ -1,0 +1,157 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-commit-watch] r3548 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20r3548%20-%20trunk&In-Reply-To=%3C91981b3e0609291248q211d1b6h91f28f55468253b5%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004462.html">
+   <LINK REL="Next"  HREF="004467.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-commit-watch] r3548 - trunk</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20r3548%20-%20trunk&In-Reply-To=%3C91981b3e0609291248q211d1b6h91f28f55468253b5%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [Gpsd-commit-watch] r3548 - trunk">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Fri Sep 29 21:48:13 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004462.html">[Gpsd-dev] [Gpsd-commit-watch] r3548 - trunk
+</A></li>
+        <LI>Next message: <A HREF="004467.html">[Gpsd-dev] [Gpsd-commit-watch] r3548 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4466">[ date ]</a>
+              <a href="thread.html#4466">[ thread ]</a>
+              <a href="subject.html#4466">[ subject ]</a>
+              <a href="author.html#4466">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 9/29/06, Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> Chris Kuethe &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">chris.kuethe at gmail.com</A>&gt;:
+</I>&gt;<i> &gt; Can I have a flag to inhibit reconfiguration?
+</I>&gt;<i> You mean a configure option?  Yes, sure, I don't see any problem there.
+</I>&gt;<i> It's runtime options I want to avoid, specifically because they break
+</I>&gt;<i> zero administration.
+</I>
+I'd like to see that be a runtime option. It doesn't break zero
+adminstration because it defaults to the current behaviour, but it's
+still packager friendly. Having to compile a special don't-reconfigure
+version means I can't just add a prebuilt package, .rpm or .deb and
+tell gpsd to not be clever and just pass me whatever the gps said.
+
+Administration is when you have to keep going back to a program and
+fiddling settings. One RTFM to figure out how to invoke it to meet
+your needs is plenty acceptable.
+
+I don't object to recompiles for my specialized embedded cases, but it
+seems that two common use cases which should be supported in the
+default build are &quot;i just wanna know where/when I am&quot; and &quot;tell me
+exactly what the gps told you, and no funny stuff.&quot;
+
+&gt;<i> I think this needs to be command-enabled.  Some of our embedded users
+</I>&gt;<i> are actually going to care about the extra cycles processing the
+</I>&gt;<i> tracker data eats.  And I think I remember that I disabled after
+</I>&gt;<i> leap-second acquisition because it led rto trouble at low baud rates.
+</I>
+Ya figure? Look at byte 5 of the sirf message, if it's not a position
+or time report, just skip it. No parsing required beyond that which
+we'd have to do anyway. Embedded users: you can chime in any time
+now...
+
+Leap second acquisition would be troublesome at low baud rates, which
+is why the manuals tend to indicate the use of 57600 for working with
+the tracker data.
+
+Also, gpsd sometime breaks when it en-/dis-ables the subframe data. My
+receiver doesn't always reboot quickly enough, so gpsd thinks it has
+lost connection to the device.
+
+&gt;<i> &gt; Maybe a protocol command to toggle the gps between maximum chattiness
+</I>&gt;<i> &gt; and typical use? That'd require a lot more knowlege about all the NMEA
+</I>&gt;<i> &gt; variants though, and enabling the right magic. Much as I like
+</I>&gt;<i> &gt; plaintext protocols like NMEA, I do kinda like the packed binary
+</I>&gt;<i> &gt; messages for efficiency.
+</I>&gt;<i>
+</I>&gt;<i> Let's use this as a good reason to think about the cleanest way to extend
+</I>&gt;<i> the command set.  There are two issues:  what should the syntax of
+</I>&gt;<i> extended commands be, and what levels of chattiness do we want?
+</I>
+Prior discussion on extending the command set.
+<A HREF="http://marc.theaimsgroup.com/?t=115940558500017&amp;r=1&amp;w=2">http://marc.theaimsgroup.com/?t=115940558500017&amp;r=1&amp;w=2</A>
+
+We're pretty much out of letters. I'm not sure we want to use numbers
+as commands. That leaves a short list of symbols that would be
+appropriate: @|%^+-/
+'/' might not be bad - people are used to /command in instant
+messaging programs.
+'^' might work - the caret sort of suggests escalating or raising
+'@' might work because one thinks of chat, and email and longer messages
+'+' and '-' have been used as command line flag indicators as ages
+'%' i'm neutral on that, except that it's used as a shell prompt character
+
+'|' should be reserved for passthrough mode... pipe. it just feels right.
+
+'$' is bad, because NMEA uses it for a sentence starter
+'*' is bad because NMEA uses it to delimit the checksum
+'=' is bad because we use that as an assignment operator
+'#' is bad because we unix-heads think of it as a comment character
+
+There's not much that protocol 3 doesn't give us for standard PVT
+reports. Thus, I'm in favor of using an escape character like @ or ^
+to signal that the following characters need to be fed to the extended
+parser. Then we can have long command names and other goodness...
+
+Turn on sirf message 7 unconditionally. Software solvers need it, and
+for regular display, we get the week display wrong - toggles between
+truncated and extended week number. Software version is small - but
+it's nice, and not really needed for anything other than sirfmon.
+Almanac and ephemeris are really only needed for those playing with
+software solvers.
+
+12/15 of my various version of SiRF manuals indicate that SiRFdemo
+cranks the speed up to 57600 when raw tracker data is on. Some say
+&quot;rate is set to 57600 automatically&quot; suggesting that this is something
+the firmware rather than SiRFdemo does. That sounds like a strong
+recommendation that we do the same. The uBlox variant says the rate is
+cranked up to 38400.
+
+If we have a &quot;toggle chattiness&quot; command, I'd vote for all-or-nothing.
+If the usual PVT data isn't good enough for you, we won't presume to
+know what you're doing, we'll just do our best to get everything the
+gps can produce and pass it along, and hope you can process it all.
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004462.html">[Gpsd-dev] [Gpsd-commit-watch] r3548 - trunk
+</A></li>
+	<LI>Next message: <A HREF="004467.html">[Gpsd-dev] [Gpsd-commit-watch] r3548 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4466">[ date ]</a>
+              <a href="thread.html#4466">[ thread ]</a>
+              <a href="subject.html#4466">[ subject ]</a>
+              <a href="author.html#4466">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

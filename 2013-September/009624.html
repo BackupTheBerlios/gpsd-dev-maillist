@@ -1,0 +1,248 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] libgpsd.so build dependency issue (libgps.a vs libgps.so	)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2013-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20libgpsd.so%20build%20dependency%20issue%20%28libgps.a%20vs%20libgps.so%0A%09%29&In-Reply-To=%3C523574B7.1030901%40gna.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009626.html">
+   <LINK REL="Next"  HREF="009627.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] libgpsd.so build dependency issue (libgps.a vs libgps.so	)</H1>
+    <B>Christian Gagneraud</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20libgpsd.so%20build%20dependency%20issue%20%28libgps.a%20vs%20libgps.so%0A%09%29&In-Reply-To=%3C523574B7.1030901%40gna.org%3E"
+       TITLE="[Gpsd-dev] libgpsd.so build dependency issue (libgps.a vs libgps.so	)">chgans at gna.org
+       </A><BR>
+    <I>Sun Sep 15 10:49:59 CEST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009626.html">[Gpsd-dev] [AIS] msg 21 regression?
+</A></li>
+        <LI>Next message: <A HREF="009627.html">[Gpsd-dev] libgpsd.so build dependency issue (libgps.a vs libgps.so )
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9624">[ date ]</a>
+              <a href="thread.html#9624">[ thread ]</a>
+              <a href="subject.html#9624">[ subject ]</a>
+              <a href="author.html#9624">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi all,
+
+I've just discovered an interesting problem in the dependencies of 
+libgpsd.so.
+
+Basically, if libgps.so is built before libgps.a, then libgpsd.so will 
+use libgps.so, if not then libgps.a.
+libgpsd.so depends on libgps.a (scons view), but gcc picks up libgps.so 
+over libgps.a if present because the LDFLAGS doesn't enfore static linking.
+
+To force static linking against libgps.a, we would need:
+&quot;gcc -o libgpsd.so.22.0.0 -shared ... -Wl,-Bstatic -lgps -Wl,-Bdynamic 
+-lother -lstuff&quot;
+
+BTW, this could mean inconsistent results when using parallel builds ...
+
+Could anyone explain why we need 2 versions of libgps? I saw the 
+teststream comment in SConstruct, but I don't get the idea behind that.
+
+Not so lengthy details on how I found that:
+
+$ scons -c
+[...]
+$ scons aivdm-regress
+[...]
+ar rc libgps.a ais_json.o bits.o daemon.o gpsutils.o gpsdclient.o 
+gps_maskdump.o hex.o json.o libgps_core.o libgps_dbus.o libgps_json.o 
+libgps_shm.o libgps_sock.o netlib.o rtcm2_json.o rtcm3_json.o 
+shared_json.o strl.o
+ranlib libgps.a
+gcc -o libgpsd.so.22.0.0 -shared -Wl,-Bsymbolic 
+-Wl,-soname=libgpsd.so.22 -Wl,-rpath=/home/krys/projects/gpsd.old 
+-Wl,-rpath=//usr/local/lib bsd_base64.os crc24q.os gpsd_json.os geoid.os 
+isgps.os libgpsd_core.os net_dgpsip.os net_gnss_dispatch.os net_ntrip.os 
+packet.os pseudonmea.os pseudoais.os serial.os subframe.os timebase.os 
+drivers.os driver_ais.os driver_evermore.os driver_garmin.os 
+driver_garmin_txt.os driver_geostar.os driver_italk.os driver_navcom.os 
+driver_nmea0183.os driver_nmea2000.os driver_oncore.os driver_rtcm2.os 
+driver_rtcm3.os driver_sirf.os driver_superstar2.os driver_tsip.os 
+driver_ubx.os driver_zodiac.os -L. -L/usr/local/lib -lm -lgps -lusb-1.0
+/usr/lib64/gcc/x86_64-suse-linux/4.8/../../../../x86_64-suse-linux/bin/ld: 
+./libgps.a(bits.o): relocation R_X86_64_32 against `.rodata' can not be 
+used when making a shared object; recompile with -fPIC
+./libgps.a: could not read symbols: Bad value
+collect2: error: ld returned 1 exit status
+scons: *** [libgpsd.so.22.0.0] Error 1
+scons: building terminated because of errors.
+$ scons -c
+[...]
+$ scons libgps.a
+[...]
+$ scons aivdm-regress
+[...]
+gcc -o libgpsd.so.22.0.0 -shared -Wl,-Bsymbolic 
+-Wl,-soname=libgpsd.so.22 -Wl,-rpath=/home/krys/projects/gpsd.old 
+-Wl,-rpath=//usr/local/lib bsd_base64.os crc24q.os gpsd_json.os geoid.os 
+isgps.os libgpsd_core.os net_dgpsip.os net_gnss_dispatch.os net_ntrip.os 
+packet.os pseudonmea.os pseudoais.os serial.os subframe.os timebase.os 
+drivers.os driver_ais.os driver_evermore.os driver_garmin.os 
+driver_garmin_txt.os driver_geostar.os driver_italk.os driver_navcom.os 
+driver_nmea0183.os driver_nmea2000.os driver_oncore.os driver_rtcm2.os 
+driver_rtcm3.os driver_sirf.os driver_superstar2.os driver_tsip.os 
+driver_ubx.os driver_zodiac.os -L. -L/usr/local/lib -lm -lgps -lusb-1.0
+/usr/lib64/gcc/x86_64-suse-linux/4.8/../../../../x86_64-suse-linux/bin/ld: 
+./libgps.a(bits.o): relocation R_X86_64_32 against `.rodata' can not be 
+used when making a shared object; recompile with -fPIC
+./libgps.a: could not read symbols: Bad value
+collect2: error: ld returned 1 exit status
+scons: *** [libgpsd.so.22.0.0] Error 1
+scons: building terminated because of errors.
+$ scons -c
+[...]
+$ scons libgpsd.so.22.0.0
+[...]
+ar rc libgps.a ais_json.o bits.o daemon.o gpsutils.o gpsdclient.o 
+gps_maskdump.o hex.o json.o libgps_core.o libgps_dbus.o libgps_json.o 
+libgps_shm.o libgps_sock.o netlib.o rtcm2_json.o rtcm3_json.o 
+shared_json.o strl.o
+ranlib libgps.a
+gcc -o libgpsd.so.22.0.0 -shared -Wl,-Bsymbolic 
+-Wl,-soname=libgpsd.so.22 -Wl,-rpath=/home/krys/projects/gpsd.old 
+-Wl,-rpath=//usr/local/lib bsd_base64.os crc24q.os gpsd_json.os geoid.os 
+isgps.os libgpsd_core.os net_dgpsip.os net_gnss_dispatch.os net_ntrip.os 
+packet.os pseudonmea.os pseudoais.os serial.os subframe.os timebase.os 
+drivers.os driver_ais.os driver_evermore.os driver_garmin.os 
+driver_garmin_txt.os driver_geostar.os driver_italk.os driver_navcom.os 
+driver_nmea0183.os driver_nmea2000.os driver_oncore.os driver_rtcm2.os 
+driver_rtcm3.os driver_sirf.os driver_superstar2.os driver_tsip.os 
+driver_ubx.os driver_zodiac.os -L. -L/usr/local/lib -lm -lgps -lusb-1.0
+/usr/lib64/gcc/x86_64-suse-linux/4.8/../../../../x86_64-suse-linux/bin/ld: 
+./libgps.a(bits.o): relocation R_X86_64_32 against `.rodata' can not be 
+used when making a shared object; recompile with -fPIC
+./libgps.a: could not read symbols: Bad value
+collect2: error: ld returned 1 exit status
+scons: *** [libgpsd.so.22.0.0] Error 1
+scons: building terminated because of errors.
+$ scons -c
+[...]
+$ scons libgps.a
+[...]
+ar rc libgps.a ais_json.o bits.o daemon.o gpsutils.o gpsdclient.o 
+gps_maskdump.o hex.o json.o libgps_core.o libgps_dbus.o libgps_json.o 
+libgps_shm.o libgps_sock.o netlib.o rtcm2_json.o rtcm3_json.o 
+shared_json.o strl.o
+ranlib libgps.a
+scons: done building targets.
+$ scons libgpsd.so.22.0.0
+[...]
+gcc -o libgpsd.so.22.0.0 -shared -Wl,-Bsymbolic 
+-Wl,-soname=libgpsd.so.22 -Wl,-rpath=/home/krys/projects/gpsd.old 
+-Wl,-rpath=//usr/local/lib bsd_base64.os crc24q.os gpsd_json.os geoid.os 
+isgps.os libgpsd_core.os net_dgpsip.os net_gnss_dispatch.os net_ntrip.os 
+packet.os pseudonmea.os pseudoais.os serial.os subframe.os timebase.os 
+drivers.os driver_ais.os driver_evermore.os driver_garmin.os 
+driver_garmin_txt.os driver_geostar.os driver_italk.os driver_navcom.os 
+driver_nmea0183.os driver_nmea2000.os driver_oncore.os driver_rtcm2.os 
+driver_rtcm3.os driver_sirf.os driver_superstar2.os driver_tsip.os 
+driver_ubx.os driver_zodiac.os -L. -L/usr/local/lib -lm -lgps -lusb-1.0
+/usr/lib64/gcc/x86_64-suse-linux/4.8/../../../../x86_64-suse-linux/bin/ld: 
+./libgps.a(bits.o): relocation R_X86_64_32 against `.rodata' can not be 
+used when making a shared object; recompile with -fPIC
+./libgps.a: could not read symbols: Bad value
+collect2: error: ld returned 1 exit status
+scons: *** [libgpsd.so.22.0.0] Error 1
+scons: building terminated because of errors.
+$ scons -c
+[...]
+$ scons libgps.so.21.0.0
+[...]
+gcc -o libgps.so.21.0.0 -shared -Wl,-Bsymbolic -Wl,-soname=libgps.so.21 
+-Wl,-rpath=/home/krys/projects/gpsd.old -Wl,-rpath=//usr/local/lib 
+ais_json.os bits.os daemon.os gpsutils.os gpsdclient.os gps_maskdump.os 
+hex.os json.os libgps_core.os libgps_dbus.os libgps_json.os 
+libgps_shm.os libgps_sock.os netlib.os rtcm2_json.os rtcm3_json.os 
+shared_json.os strl.os -L. -L/usr/local/lib
+rm -f libgps.so; ln -s libgps.so.21.0.0 libgps.so
+rm -f libgps.so.21; ln -s libgps.so.21.0.0 libgps.so.21
+rm -f libgps.so.21.0; ln -s libgps.so.21.0.0 libgps.so.21.0
+scons: done building targets.
+$ scons libgpsd.so.22.0.0
+[...]
+ar rc libgps.a ais_json.o bits.o daemon.o gpsutils.o gpsdclient.o 
+gps_maskdump.o hex.o json.o libgps_core.o libgps_dbus.o libgps_json.o 
+libgps_shm.o libgps_sock.o netlib.o rtcm2_json.o rtcm3_json.o 
+shared_json.o strl.o
+ranlib libgps.a
+gcc -o libgpsd.so.22.0.0 -shared -Wl,-Bsymbolic 
+-Wl,-soname=libgpsd.so.22 -Wl,-rpath=/home/krys/projects/gpsd.old 
+-Wl,-rpath=//usr/local/lib bsd_base64.os crc24q.os gpsd_json.os geoid.os 
+isgps.os libgpsd_core.os net_dgpsip.os net_gnss_dispatch.os net_ntrip.os 
+packet.os pseudonmea.os pseudoais.os serial.os subframe.os timebase.os 
+drivers.os driver_ais.os driver_evermore.os driver_garmin.os 
+driver_garmin_txt.os driver_geostar.os driver_italk.os driver_navcom.os 
+driver_nmea0183.os driver_nmea2000.os driver_oncore.os driver_rtcm2.os 
+driver_rtcm3.os driver_sirf.os driver_superstar2.os driver_tsip.os 
+driver_ubx.os driver_zodiac.os -L. -L/usr/local/lib -lm -lgps -lusb-1.0
+rm -f libgpsd.so; ln -s libgpsd.so.22.0.0 libgpsd.so
+rm -f libgpsd.so.22; ln -s libgpsd.so.22.0.0 libgpsd.so.22
+rm -f libgpsd.so.22.0; ln -s libgpsd.so.22.0.0 libgpsd.so.22.0
+scons: done building targets.
+
+Here we go! The only way for me to have libgpsd built is to make sure 
+libgps.so is build before libgpsd.so.
+And now, I can run aivdm-regress!
+
+[before the commit that gives me Message 21 failure]
+$ scons aivdm-regress
+[...]
+Testing AIVDM decoding w/ CSV format...
+Testing ./test/sample.aivdm...
+Testing AIVDM decoding w/ JSON unscaled format...
+  Testing ./test/sample.aivdm...
+Testing AIVDM decoding w/ JSON scaled format...
+  Testing ./test/sample.aivdm...
+Testing idempotency of unscaled JSON dump/decode for AIS
+Testing idempotency of scaled JSON dump/decode for AIS
+scons: done building targets.
+
+It doesn't fix my coverage stuff nor my R_X86_64_32 thingy, but at least 
+now I know why I need a two steps build! \o/
+
+Any thoughts?
+
+Chris
+
+</PRE>
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009626.html">[Gpsd-dev] [AIS] msg 21 regression?
+</A></li>
+	<LI>Next message: <A HREF="009627.html">[Gpsd-dev] libgpsd.so build dependency issue (libgps.a vs libgps.so )
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9624">[ date ]</a>
+              <a href="thread.html#9624">[ thread ]</a>
+              <a href="subject.html#9624">[ subject ]</a>
+              <a href="author.html#9624">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

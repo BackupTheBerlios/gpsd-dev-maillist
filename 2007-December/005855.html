@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Strange error estimates in marginal signal conditions
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Strange%20error%20estimates%20in%20marginal%20signal%20conditions&In-Reply-To=%3C91981b3e0712142210j63f05d96w5f7e3f3e9c90730d%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005854.html">
+   <LINK REL="Next"  HREF="005856.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Strange error estimates in marginal signal conditions</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Strange%20error%20estimates%20in%20marginal%20signal%20conditions&In-Reply-To=%3C91981b3e0712142210j63f05d96w5f7e3f3e9c90730d%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Strange error estimates in marginal signal conditions">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Sat Dec 15 07:10:33 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005854.html">[Gpsd-dev] Strange error estimates in marginal signal conditions
+</A></li>
+        <LI>Next message: <A HREF="005856.html">[Gpsd-dev] Strange error estimates in marginal signal	conditions
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5855">[ date ]</a>
+              <a href="thread.html#5855">[ thread ]</a>
+              <a href="subject.html#5855">[ subject ]</a>
+              <a href="author.html#5855">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Dec 14, 2007 10:13 PM, Mick Durkin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mick.durkin at saunalahti.fi</A>&gt; wrote:
+&gt;<i> That is the way I was thinking. I did a simple mod to the matrix code so that
+</I>&gt;<i> when the determinant was less then some value it is set to zero.
+</I>&gt;<i>
+</I>&gt;<i> I changed the code from :
+</I>&gt;<i>
+</I>&gt;<i>   if (fabs(det) == 0.0)
+</I>&gt;<i>
+</I>&gt;<i> to :
+</I>&gt;<i>
+</I>&gt;<i>   if (fabs(det) &lt; 0.0001)
+</I>&gt;<i>
+</I>&gt;<i> This cleared up the &quot;noise&quot; nicely; question is what epsilon should we set? I
+</I>&gt;<i> could experiment, but if anyone could give a reasonable way to figure it
+</I>&gt;<i> out...
+</I>
+fabs() is double precision: approximate range +/- 10^-323 ..
++/-10^308. you probably don't want to try all of that.
+
+i'm going to guess that anything &gt;= 1.0 is too big. based on your
+earlier email 1e-18 seems to be tiny enough so as to approximate 0.
+you've got some decent results with 1e-4, but maybe you want to cut
+that down to 1e-9.
+
+try the regression tests. Why not start by capturing a few minutes of
+data under poor reception conditions (maybe get a few different sorts
+of &quot;bad weather&quot;) and experiment. See if you can find a clamping value
+that plays nice with the regression tests and your particular skyview.
+
+Interested parties may wish to browse at:
+<A HREF="http://en.wikipedia.org/wiki/IEEE_754">http://en.wikipedia.org/wiki/IEEE_754</A>
+<A HREF="http://www.cygnus-software.com/papers/comparingfloats/comparingfloats.htm">http://www.cygnus-software.com/papers/comparingfloats/comparingfloats.htm</A>
+<A HREF="http://hal.archives-ouvertes.fr/hal-00128124">http://hal.archives-ouvertes.fr/hal-00128124</A>
+
+CK
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005854.html">[Gpsd-dev] Strange error estimates in marginal signal conditions
+</A></li>
+	<LI>Next message: <A HREF="005856.html">[Gpsd-dev] Strange error estimates in marginal signal	conditions
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5855">[ date ]</a>
+              <a href="thread.html#5855">[ thread ]</a>
+              <a href="subject.html#5855">[ subject ]</a>
+              <a href="author.html#5855">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,96 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Failure after upgrade
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Failure%20after%20upgrade&In-Reply-To=%3C4C28A75A.9020307%40bzed.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007924.html">
+   <LINK REL="Next"  HREF="007927.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Failure after upgrade</H1>
+    <B>Bernd Zeimetz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Failure%20after%20upgrade&In-Reply-To=%3C4C28A75A.9020307%40bzed.de%3E"
+       TITLE="[Gpsd-dev] Failure after upgrade">bernd at bzed.de
+       </A><BR>
+    <I>Mon Jun 28 15:44:58 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007924.html">[Gpsd-dev] Failure after upgrade
+</A></li>
+        <LI>Next message: <A HREF="007927.html">[Gpsd-dev] Failure after upgrade
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7925">[ date ]</a>
+              <a href="thread.html#7925">[ thread ]</a>
+              <a href="subject.html#7925">[ subject ]</a>
+              <a href="author.html#7925">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hey Nic,
+
+&gt;<i> I committed a fix to Gosmore svn.
+</I>
++  if (gpsData) {
++    gps_set_raw_hook (gpsData, GpsMove);
++    gps_query (gpsData, &quot;w+x\n&quot;);
+
+sorry, but that implements the old protocol and won't work with any recent gpsd.
+See <A HREF="http://gpsd.berlios.de/protocol-transition.html">http://gpsd.berlios.de/protocol-transition.html</A> for details.
+The untested patch below should fix it
+
+
+Cheers,
+
+Bernd
+
+-- 
+ Bernd Zeimetz                            Debian GNU/Linux Developer
+ <A HREF="http://bzed.de">http://bzed.de</A>                                <A HREF="http://www.debian.org">http://www.debian.org</A>
+ GPG Fingerprints: 06C8 C9A2 EAAD E37E 5B2C BE93 067A AD04 C93B FF79
+                   ECA1 E3F2 8E11 2432 D485 DD95 EB36 171A 6FF9 435F
+
+Index: gosmore.cpp
+===================================================================
+--- gosmore.cpp	(revision 22060)
++++ gosmore.cpp	(working copy)
+@@ -3101,7 +3101,7 @@
+   gps_data_t *gpsData = gps_open (&quot;127.0.0.1&quot;, &quot;2947&quot;);
+   if (gpsData) {
+     gps_set_raw_hook (gpsData, GpsMove);
+-    gps_query (gpsData, &quot;w+x\n&quot;);
++    gps_stream(gpsdata, WATCH_ENABLE, NULL)
+     gpsSockTag = gdk_input_add (gpsData-&gt;gps_fd, GDK_INPUT_READ,
+       (GdkInputFunction) gps_poll, gpsData);
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007924.html">[Gpsd-dev] Failure after upgrade
+</A></li>
+	<LI>Next message: <A HREF="007927.html">[Gpsd-dev] Failure after upgrade
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7925">[ date ]</a>
+              <a href="thread.html#7925">[ thread ]</a>
+              <a href="subject.html#7925">[ subject ]</a>
+              <a href="author.html#7925">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] SVN 3885 will not compile with --disable-reconfigure
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20SVN%203885%20will%20not%20compile%20with%20--disable-reconfigure&In-Reply-To=%3C91981b3e0611140814w5d5d24a9m5b57602520c4b83f%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005241.html">
+   <LINK REL="Next"  HREF="005243.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] SVN 3885 will not compile with --disable-reconfigure</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20SVN%203885%20will%20not%20compile%20with%20--disable-reconfigure&In-Reply-To=%3C91981b3e0611140814w5d5d24a9m5b57602520c4b83f%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] SVN 3885 will not compile with --disable-reconfigure">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Tue Nov 14 17:14:03 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005241.html">[Gpsd-dev] SVN 3885 will not compile with --disable-reconfigure
+</A></li>
+        <LI>Next message: <A HREF="005243.html">[Gpsd-dev] Compile failure in SVN 3889
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5242">[ date ]</a>
+              <a href="thread.html#5242">[ thread ]</a>
+              <a href="subject.html#5242">[ subject ]</a>
+              <a href="author.html#5242">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>got it. thanks.
+
+On 11/14/06, Mick Durkin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mick.durkin at saunalahti.fi</A>&gt; wrote:
+&gt;<i> Hi,
+</I>&gt;<i>
+</I>&gt;<i> I downloaded a fresh copy of SVN 3885 and found that when I try to compile
+</I>&gt;<i> with the --disable-reconfigure option, I get an error in &quot;drivers.c&quot; as
+</I>&gt;<i> below.
+</I>&gt;<i>
+</I>&gt;<i> =============================
+</I>&gt;<i>
+</I>&gt;<i> gcc -DHAVE_CONFIG_H -I. -I. -I. -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -MT
+</I>&gt;<i> drivers.lo -MD -MP -MF .deps/drivers.Tpo -c
+</I>&gt;<i> drivers.c  -fPIC -DPIC -o .libs/drivers.o
+</I>&gt;<i> drivers.c:337: error: expected identifier or '(' before '}' token
+</I>&gt;<i> make[1]: *** [drivers.lo] Error 1
+</I>&gt;<i> make[1]: Leaving directory `/home/mick/Software/gpsd/trunk'
+</I>&gt;<i> make: *** [all] Error 2
+</I>&gt;<i>
+</I>&gt;<i> ===========================
+</I>&gt;<i>
+</I>&gt;<i> Looks like the #endif is in the wrong place (before the closing &quot;}&quot; ). This
+</I>&gt;<i> diff allows compilation to proceed.
+</I>&gt;<i>
+</I>&gt;<i> ========================
+</I>&gt;<i>
+</I>&gt;<i> --- drivers.c~  2006-11-14 17:57:05.000000000 +0200
+</I>&gt;<i> +++ drivers.c   2006-11-14 18:01:18.000000000 +0200
+</I>&gt;<i> @@ -333,8 +333,8 @@
+</I>&gt;<i>      (void)nmea_send(session-&gt;gpsdata.gps_fd, &quot;$PSRF103,05,00,00,01&quot;); /* no
+</I>&gt;<i> VTG */
+</I>&gt;<i>      (void)nmea_send(session-&gt;gpsdata.gps_fd, &quot;$PSRF103,01,00,00,01&quot;); /* no
+</I>&gt;<i> GLL */
+</I>&gt;<i>  #endif /* BINARY_ENABLE */
+</I>&gt;<i> -#endif /* ALLOW_RECONFIGURE */
+</I>&gt;<i>  }
+</I>&gt;<i> +#endif /* ALLOW_RECONFIGURE */
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>  static struct gps_type_t sirf_nmea = {
+</I>&gt;<i>
+</I>&gt;<i> ===========================================
+</I>&gt;<i>
+</I>&gt;<i> Regards
+</I>&gt;<i>
+</I>&gt;<i> Mick
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005241.html">[Gpsd-dev] SVN 3885 will not compile with --disable-reconfigure
+</A></li>
+	<LI>Next message: <A HREF="005243.html">[Gpsd-dev] Compile failure in SVN 3889
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5242">[ date ]</a>
+              <a href="thread.html#5242">[ thread ]</a>
+              <a href="subject.html#5242">[ subject ]</a>
+              <a href="author.html#5242">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

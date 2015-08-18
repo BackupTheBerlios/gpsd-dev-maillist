@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] oncore / jupiter_t binary driver
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20oncore%20/%20jupiter_t%20binary%20driver&In-Reply-To=%3C91981b3e0907161040j2159b973j1a805c18c2cf21e1%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006778.html">
+   <LINK REL="Next"  HREF="006782.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] oncore / jupiter_t binary driver</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20oncore%20/%20jupiter_t%20binary%20driver&In-Reply-To=%3C91981b3e0907161040j2159b973j1a805c18c2cf21e1%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] oncore / jupiter_t binary driver">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Thu Jul 16 19:40:18 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006778.html">[Gpsd-dev] oncore / jupiter_t binary driver
+</A></li>
+        <LI>Next message: <A HREF="006782.html">[Gpsd-dev] oncore / jupiter_t binary driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6779">[ date ]</a>
+              <a href="thread.html#6779">[ thread ]</a>
+              <a href="subject.html#6779">[ subject ]</a>
+              <a href="author.html#6779">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>2009/7/16 H&#229;kan Johansson &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">f96hajo at chalmers.se</A>&gt;:
+&gt;<i> Great! &#160;With the module enabled, it eats data. &#160;Sometimes the packet sniffer
+</I>&gt;<i> terminates early by finding a trailer within the payload. &#160;I've attached a
+</I>&gt;<i> patch to always take the message sizes as given in the manual. I have tested
+</I>&gt;<i> the commands giving different response IDs, except Cc and Ck (GT version
+</I>&gt;<i> only).
+</I>
+I'm sure it does eat data. I don't have my UT+ or GT+ handy - just
+some packet logs - so I couldn't test on live data. Checking packets
+against documented length seems reasonable.
+
+&gt;<i> Is it ok with a switch-statement in oncore_payload_length, or should it be
+</I>&gt;<i> an array?
+</I>
+A switch is fine, it's compact, readable... I don't like the &quot;-6&quot; in
+there everywhere. Perhaps set a return value variable, and subtract 6
+at the end: &quot;return (msgsize - 6);&quot;. Also you might want to make the
+return type ssize_t, so we can return -1 in case of unknown message
+size.
+
+&gt;<i> Question for further decoding of satellite data (az, el and ss not in the
+</I>&gt;<i> same message):
+</I>&gt;<i>
+</I>&gt;<i> The Bb message, which at most is output whenever the data changes, i.e. not
+</I>&gt;<i> every second, but usually around every 4th, gives the azimuth and elevation
+</I>&gt;<i> for 12 satellites. &#160;There are always 12 items, some may be unused (PRN = 0).
+</I>
+4-6 meaningful bytes for 12 PRNs is nothing - we can totally parse
+that every 4-10sec and stash it into the driver private storage.
+
+&gt;<i> The Ea message gives the signal strength, and also tell which satellites are
+</I>&gt;<i> used. &#160;This is given for 8 satellites. &#160;This is (can be) given each second.
+</I>&gt;<i> &#160;I have not checked, but suspect that whatever satellites are in the Ea
+</I>&gt;<i> message is a subset of those a preceeding Bb message. &#160;The order is
+</I>&gt;<i> different though. &#160;Bb is sorted, Ea looks random.
+</I>
+We should probably find someone who can test with a 6-channel receiver
+too. I'm not hugely worried about doing up to 8 linear searches across
+a 12-element array when parsing an @@Ea.
+
+CK
+
+&gt;<i> The Oncore devices generate whatever messages once per second. &#160;When
+</I>&gt;<i> enabled, the Ea message comes before the Bb message. &#160;At start-up, usually
+</I>&gt;<i> 5-10 minutes before acquiring an almanac, Bb messages are not delivered at
+</I>&gt;<i> all, but Ea messages come.
+</I>&gt;<i>
+</I>&gt;<i> The problem then is if one clears the satellite data with
+</I>&gt;<i> gpsd_zero_satellites on either Ea or Bb, the other information will be lost.
+</I>&gt;<i> &#160;Would it be an acceptable solution to do the clear on the Bb message, but
+</I>&gt;<i> retain the information from any Ea to fill that out again. On Ea, the new Ea
+</I>&gt;<i> message is just filled in.
+</I>&gt;<i>
+</I>&gt;<i> Are there any other drivers which face similar problems with split satellite
+</I>&gt;<i> data which may serve as example?
+</I>
+
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006778.html">[Gpsd-dev] oncore / jupiter_t binary driver
+</A></li>
+	<LI>Next message: <A HREF="006782.html">[Gpsd-dev] oncore / jupiter_t binary driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6779">[ date ]</a>
+              <a href="thread.html#6779">[ thread ]</a>
+              <a href="subject.html#6779">[ subject ]</a>
+              <a href="author.html#6779">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

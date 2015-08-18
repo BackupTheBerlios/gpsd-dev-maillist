@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Possible solution to the Superstar problem
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Possible%20solution%20to%20the%20Superstar%20problem&In-Reply-To=%3C20100329195043.AC5FA20CBA3%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007492.html">
+   <LINK REL="Next"  HREF="007504.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Possible solution to the Superstar problem</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Possible%20solution%20to%20the%20Superstar%20problem&In-Reply-To=%3C20100329195043.AC5FA20CBA3%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Possible solution to the Superstar problem">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Mar 29 21:50:43 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007492.html">[Gpsd-dev] [PATCH 3/3] Fix building with --disable-clientdebug
+</A></li>
+        <LI>Next message: <A HREF="007504.html">[Gpsd-dev] [PATCH] Qt equivalent of libgpsmm and libgps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7501">[ date ]</a>
+              <a href="thread.html#7501">[ thread ]</a>
+              <a href="subject.html#7501">[ subject ]</a>
+              <a href="author.html#7501">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>So, I'm looking at this hunk of code in packet.c...
+
+#ifdef SUPERSTAR2_ENABLE
+	else if (lexer-&gt;state == SUPERSTAR2_RECOGNIZED) {
+	    uint16_t a = 0, b, n;
+	    lexer-&gt;length = 4 + (size_t) lexer-&gt;inbuffer[3] + 2;
+	    for(n = 0; n &lt; lexer-&gt;length - 2; n++)
+		a += (uint16_t)lexer-&gt;inbuffer[n];
+	    a = htons(a);
+	    b = (uint16_t)getbeuw(lexer-&gt;inbuffer, lexer-&gt;length - 2);
+	    gpsd_report(LOG_IO, &quot;SuperStarII pkt dump: type %u len %u: %s\n&quot;,
+			lexer-&gt;inbuffer[1], (unsigned int)lexer-&gt;length,
+			gpsd_hexdump_wrapper(lexer-&gt;inbuffer, lexer-&gt;length, LOG_RAW));
+	    if (a != b) {
+		gpsd_report(LOG_IO, &quot;REJECT SuperStarII packet type 0x%02x&quot;
+			    &quot;%zd bad checksum 0x%04x, expecting 0x%04x\n&quot;,
+			    lexer-&gt;inbuffer[1], lexer-&gt;length, a, b);
+		lexer-&gt;state = GROUND_STATE;
+	    } else {
+		packet_accept(lexer, SUPERSTAR2_PACKET);
+	    }
+	    packet_discard(lexer);
+	    break;
+	}
+#endif /* SUPERSTAR2_ENABLE */
+
+...and I'm asking myself &quot;Does that a = htons(a); make any sense at all?&quot;
+
+I'm thinking &quot;not&quot;.  So I applied this change.
+
+diff --git a/packet.c b/packet.c
+index 986181a..c783bbe 100644
+--- a/packet.c
++++ b/packet.c
+@@ -1106,8 +1106,7 @@ void packet_parse(struct gps_packet_t *lexer)
+ 	    lexer-&gt;length = 4 + (size_t) lexer-&gt;inbuffer[3] + 2;
+ 	    for(n = 0; n &lt; lexer-&gt;length - 2; n++)
+ 		a += (uint16_t)lexer-&gt;inbuffer[n];
+-	    a = htons(a);
+-	    b = (uint16_t)getbeuw(lexer-&gt;inbuffer, lexer-&gt;length - 2);
++	    b = (uint16_t)getleuw(lexer-&gt;inbuffer, lexer-&gt;length - 2);
+ 	    gpsd_report(LOG_IO, &quot;SuperStarII pkt dump: type %u len %u: %s\n&quot;,
+ 			lexer-&gt;inbuffer[1], (unsigned int)lexer-&gt;length,
+ 			gpsd_hexdump_wrapper(lexer-&gt;inbuffer, lexer-&gt;length, LOG_RAW));
+
+My regression tests pass. Does this do anything for your failure to
+achieve lock on a big-endian machine?  Formally this should have been
+a simplification that does nothing, but I wonder.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+Faith may be defined briefly as an illogical belief in the occurrence
+of the improbable...A man full of faith is simply one who has lost (or
+never had) the capacity for clear and realistic thought. He is not a
+mere ass: he is actually ill.	-- H. L. Mencken 
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007492.html">[Gpsd-dev] [PATCH 3/3] Fix building with --disable-clientdebug
+</A></li>
+	<LI>Next message: <A HREF="007504.html">[Gpsd-dev] [PATCH] Qt equivalent of libgpsmm and libgps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7501">[ date ]</a>
+              <a href="thread.html#7501">[ thread ]</a>
+              <a href="subject.html#7501">[ subject ]</a>
+              <a href="author.html#7501">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

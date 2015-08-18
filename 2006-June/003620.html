@@ -1,0 +1,145 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Re%3A%20accuracy%20in%20conversion%20from%0A%20meters/sec%20to%20knots&In-Reply-To=%3Cp06230910c0ad440fccd5%40%5B192.168.1.6%5D%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003605.html">
+   <LINK REL="Next"  HREF="003621.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots</H1>
+    <B>Robin L Darroch</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Re%3A%20accuracy%20in%20conversion%20from%0A%20meters/sec%20to%20knots&In-Reply-To=%3Cp06230910c0ad440fccd5%40%5B192.168.1.6%5D%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots">robin at spade-men.com
+       </A><BR>
+    <I>Thu Jun  8 05:22:53 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003605.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+        <LI>Next message: <A HREF="003621.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3620">[ date ]</a>
+              <a href="thread.html#3620">[ thread ]</a>
+              <a href="subject.html#3620">[ subject ]</a>
+              <a href="author.html#3620">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i>I was preparing a whole long response to Robin's post on this topic, but
+</I>&gt;<i>Gary has put the central objection in a nutshell here.  If we held data
+</I>&gt;<i>from a previous cycle, we would be pretending that the daemon knows
+</I>&gt;<i>something it doesn't.  We would, in fact, be lying to the client.
+</I>
+As I say - we have a choice between two lies: the nature of the 
+protocol makes it impossible for us to avoid a lie.
+
+&gt;<i>Yes, GPSes sometimes lie this way when they perform dead-reckoning or
+</I>&gt;<i>interpolation in the absence of a good fix.  That is not a warrant
+</I>&gt;<i>for gpsd to add another layer of guesswork and prevarication on top
+</I>&gt;<i>of what the GPS tells it.
+</I>
+And I wouldn't suggest for a moment that we add such a layer.
+
+&gt;<i>  &gt;                                                    What is a client
+</I>&gt;&gt;<i>  to do when the REAL altitude shows up on the current timestamp and it
+</I>&gt;&gt;<i>  is different than the LAST altitude reported in the current timestamp.
+</I>&gt;&gt;<i>  This will really confuse data logging programs or any program doing its
+</I>&gt;&gt;<i>  own calculation on the data.
+</I>&gt;<i>
+</I>&gt;<i>I hadn't thought of this possibility.  It's a powerful argument for Gary's
+</I>&gt;<i>position, but not the conclusive one; see below.
+</I>
+I still think it's unfair to put that kind of client - which would 
+almost certainly be better off using R mode - ahead of EVERY other 
+possible kind of client.
+
+&gt;<i>Here's the showstopper, the conclusive argument.  Data delivered according
+</I>&gt;<i>to policy (1) can be interpreted to simulate policy (2), *but the reverse
+</I>&gt;<i>is not true*.  That is, under policy (2) we could not distinguish in the
+</I>&gt;<i>output of gpsd between data reported and data held.  But under policy(1)
+</I>&gt;<i>the client is free to perform whatever data smoothing it likes.
+</I>&gt;<i>
+</I>&gt;<i>Case closed: gpsd will continue to clear data at start of cycle.
+</I>
+I hate to reopen the case, but there has to be an appeal process: and 
+here's why.  GPSd supports more than just the W command.  If it 
+supported nothing but Watcher mode clients, I'd accept your argument. 
+However, one of the best things about GPSd is it allows clients to 
+ASK for data.  By keeping &quot;clear at start of cycle&quot; logic, we kill 
+all such attempts to use query-based clients, because they can never 
+know whether they'll be unlucky enough to query just after the start 
+of the cycle or not.  Only PUSHED data delivered under policy 1 can 
+be used to simulate PUSHED data delivered under policy 2 (although it 
+can be a right pain to do so) - but PULLED data delivered under 
+policy 1 is useless.
+
+Now, if GPSd is going to leave all query-mode clients out to rot, 
+then that's a pretty major decision to make, and should be made 
+explicitly - making that decision as the unspoken consequences of 
+looking at only one case is not appropriate.
+
+I would say that the argument, in fact, runs the other way: clients 
+that want server-pushed data with explicit timestamp-to-data matching 
+have a method of doing so even if we run with policy (2): use R mode. 
+So something that wants policy (1) can still have it.  We could even 
+extend libgps to handle R mode data for that kind of application. 
+But query-based clients will have NO way of getting reliably valid 
+responses if we run with clear-at-start-of-cycle logic: they will 
+continue to see apparently random jitter between valid and invalid 
+data, based on pure chance of timing.
+
+We already know that the random jitter introduced by the existing 
+attempt at CASOS logic is a problem for more people than just me, 
+based on a number of posts already seen on the users mailing list. 
+On the other hand, not one single complaint has yet been received 
+about the fact that CASOS isn't currently working, despite the fact 
+that it isn't.
+
+Now THAT seems like a better conclusive argument.
+
+Case closed: gpsd will no longer clear data at the start of cycle. :)
+
+Alternatively, I look forward to further discussion...
+
+Cheers,
+Robin
+-- 
+
+-------------------------------------------------------------------------
+  Robin L. Darroch - PO Box 2715, South Hedland WA 6722 - +61 421 503 966
+       <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at darroch.id.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at nyca.org.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003605.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+	<LI>Next message: <A HREF="003621.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3620">[ date ]</a>
+              <a href="thread.html#3620">[ thread ]</a>
+              <a href="subject.html#3620">[ subject ]</a>
+              <a href="author.html#3620">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

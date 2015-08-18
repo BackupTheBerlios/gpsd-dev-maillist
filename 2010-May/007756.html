@@ -1,0 +1,94 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] AIVDM channels, memory init, segfault, report
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20AIVDM%20channels%2C%20memory%20init%2C%20segfault%2C%20report&In-Reply-To=%3C20100521120229.GA16996%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007749.html">
+   <LINK REL="Next"  HREF="007750.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] AIVDM channels, memory init, segfault, report</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20AIVDM%20channels%2C%20memory%20init%2C%20segfault%2C%20report&In-Reply-To=%3C20100521120229.GA16996%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] AIVDM channels, memory init, segfault, report">esr at thyrsus.com
+       </A><BR>
+    <I>Fri May 21 14:02:29 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007749.html">[Gpsd-dev] AIVDM channels, memory init, segfault, report
+</A></li>
+        <LI>Next message: <A HREF="007750.html">[Gpsd-dev] [PATCH] aivdm again
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7756">[ date ]</a>
+              <a href="thread.html#7756">[ thread ]</a>
+              <a href="subject.html#7756">[ subject ]</a>
+              <a href="author.html#7756">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Nirgal &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">contact_gpsd at nirgal.com</A>&gt;:
+&gt;<i> &gt; &gt; * after receiving packet 2 of 2, don't try to decode if there wasn't a packet 1 of 2 first: await and part moved from context to local vars, new var in context to track former chunks of the the sentence.
+</I>&gt;<i> &gt; Haven't done this one yet.
+</I>&gt;<i> 
+</I>&gt;<i> Please do.
+</I>&gt;<i> This is especially a problem when gpsd starts and the first packet it receives is the second one. It will then return incorrect garbaged information.
+</I>&gt;<i> 
+</I>&gt;<i> &gt; &gt; * ais_t structure filled with 0 so that partial decoding always return the same value, not depending of previous paket.
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; If this is just the gpsdecode change, it's done.  If there's some change
+</I>&gt;<i> &gt; you did in the driver itself, it's not done yet.
+</I>&gt;<i> 
+</I>&gt;<i> No, I was talking about the CLEAR macro.
+</I>&gt;<i> 
+</I>&gt;<i> ais_t is still NOT cleared for broken packets of type 21 to 26. :(
+</I>&gt;<i> 
+</I>&gt;<i> My patch removed the CLEAR macro and did a full clear all the time. I though it would be easier for code maintenance. If you don't like it, you should fix the type 21 to 26 clearing, including subcases of type 24, and so on... We might want to clear the packet for &quot;default&quot; too.
+</I>&gt;<i> 
+</I>&gt;<i> &gt; &gt; * decoding of truncated packets returns false, so they are discarded.
+</I>&gt;<i> &gt; Done.
+</I>&gt;<i> 
+</I>&gt;<i> You missed some places my patch was doing that: packets types 21, 22, 24B and 25A.
+</I>&gt;<i> 
+</I>&gt;<i> We need that in &quot;default&quot; too.
+</I>
+&gt;<i> Amongst the features you discarded was the channel selection: If the repported channel was '2' or 'B' I selected channel B. I selected channel A in all other cases.
+</I>&gt;<i> I think we should be permissive about the channels. You are right, it should be either A or B. But it's bad to discard packets that are almost right. Don't you think an error message would be enough?
+</I>
+I'll take a patch against HEAD.  I wanted to merge these features last time 
+around, but I didn't understand your patch - I think there may have been 
+some whitespace problem that made it excessively bulky.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007749.html">[Gpsd-dev] AIVDM channels, memory init, segfault, report
+</A></li>
+	<LI>Next message: <A HREF="007750.html">[Gpsd-dev] [PATCH] aivdm again
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7756">[ date ]</a>
+              <a href="thread.html#7756">[ thread ]</a>
+              <a href="subject.html#7756">[ subject ]</a>
+              <a href="author.html#7756">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

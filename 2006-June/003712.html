@@ -1,0 +1,171 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] connection problems with Garmin eTrex
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20connection%20problems%20with%20Garmin%20eTrex&In-Reply-To=%3C20060609230438.42578.qmail%40web32507.mail.mud.yahoo.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003778.html">
+   <LINK REL="Next"  HREF="003726.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] connection problems with Garmin eTrex</H1>
+    <B>Michael R. Davis</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20connection%20problems%20with%20Garmin%20eTrex&In-Reply-To=%3C20060609230438.42578.qmail%40web32507.mail.mud.yahoo.com%3E"
+       TITLE="[Gpsd-dev] connection problems with Garmin eTrex">mrdvt92 at yahoo.com
+       </A><BR>
+    <I>Sat Jun 10 01:04:38 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003778.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+        <LI>Next message: <A HREF="003726.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3712">[ date ]</a>
+              <a href="thread.html#3712">[ thread ]</a>
+              <a href="subject.html#3712">[ subject ]</a>
+              <a href="author.html#3712">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Til,
+I had a similar experience on MIP arch with the pl2303 driver.  I think
+there must be some bug in pl2303 module.  If you read from the device
+at the wrong rate (e.g. cat /dev/xxx) it will lock up.  On openwrt it
+required a hard reboot.  I have since put stty /dev/xxx 4800 in my init
+before any reading.  Haven't check it since a recent upgrade.
+Mike
+
+--- Tilman Koschnick &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">til at subnetz.org</A>&gt; wrote:
+
+&gt;<i> Hi,
+</I>&gt;<i> 
+</I>&gt;<i> I have some connection problems with my Garmin eTrex (NMEA, serial
+</I>&gt;<i> interface, attached to a PL2303 serial to USB converter).
+</I>&gt;<i> 
+</I>&gt;<i> The problems seems to be with the packet sniffer when hunting for the
+</I>&gt;<i> right port settings. Correct settings are speed 4800, 8N1. Most of
+</I>&gt;<i> the
+</I>&gt;<i> time, gpsd latches on to that and everything is fine.
+</I>&gt;<i> 
+</I>&gt;<i> Sometimes, it goes past it and ends up with 4800, 7N2. After
+</I>&gt;<i> receiving
+</I>&gt;<i> some sentences, gpsd hangs (the last two lines only appear after I
+</I>&gt;<i> press
+</I>&gt;<i> Ctrl-C):
+</I>&gt;<i> 
+</I>&gt;<i>
+</I>--------------------------------------8&lt;--------------------------------------
+&gt;<i> gpsd: launching (Version 2.33)
+</I>&gt;<i> gpsd: listening on port gpsd
+</I>&gt;<i> gpsd: running with effective group ID 1000
+</I>&gt;<i> gpsd: running with effective user ID 1000
+</I>&gt;<i> gpsd: opening GPS data source at '/dev/ttyUSB0'
+</I>&gt;<i> gpsd: speed 9600, 8N1
+</I>&gt;<i> gpsd: gpsd_activate: opened GPS (4)
+</I>&gt;<i> gpsd: speed 4800, 8N1
+</I>&gt;<i> gpsd: speed 9600, 8N1
+</I>&gt;<i> gpsd: speed 19200, 8N1
+</I>&gt;<i> gpsd: speed 38400, 8N1
+</I>&gt;<i> gpsd: speed 57600, 8N1
+</I>&gt;<i> gpsd: speed 0, 8N1
+</I>&gt;<i> gpsd: speed 0, 7N2
+</I>&gt;<i> gpsd: speed 4800, 7N2
+</I>&gt;<i> gpsd: =&gt; GPS:
+</I>&gt;<i> $PFEC,GPint,GSA01,DTM00,ZDA01,RMC01,GLL00,VTG00,GSV05*3B
+</I>&gt;<i> \x0d
+</I>&gt;<i> 
+</I>&gt;<i> gpsd: =&gt; GPS: @NC10151010\x0d
+</I>&gt;<i> 
+</I>&gt;<i> gpsd: =&gt; GPS: $PMOTG,ZDA,1*2F\x0d
+</I>&gt;<i> 
+</I>&gt;<i> gpsd: =&gt; GPS: $PGRMCE*0E\x0d
+</I>&gt;<i> 
+</I>&gt;<i> gpsd: =&gt; GPS: $PSRF105,1*3E\x0d
+</I>&gt;<i> 
+</I>&gt;<i> gpsd: =&gt; GPS: $PFST*11\x0d
+</I>&gt;<i> 
+</I>&gt;<i> gpsd: &lt;= GPS: $GPRMB,V,,,,,,,,,,,,A,N*13
+</I>&gt;<i> gpsd: unknown sentence: &quot;$GPRMB,V,,,,,,,,,,,,A,N*13\x0d\x0a&quot;
+</I>&gt;<i> gpsd: &lt;= GPS: $GPRMC,,V,,,,,,,090606,0.5,E,N*34
+</I>&gt;<i> gpsd: closing GPS=/dev/ttyUSB0 (4)
+</I>&gt;<i> gpsd: closing GPS=/dev/ttyUSB0 (-1)
+</I>&gt;<i> gpsd: Received terminating signal 2. Exiting...
+</I>&gt;<i>
+</I>--------------------------------------8&lt;--------------------------------------
+&gt;<i> 
+</I>&gt;<i> Sometimes, gpsd goes right past that and ends up sefaulting:
+</I>&gt;<i> 
+</I>&gt;<i>
+</I>--------------------------------------8&lt;--------------------------------------
+&gt;<i> gpsd: launching (Version 2.33)
+</I>&gt;<i> gpsd: listening on port gpsd
+</I>&gt;<i> gpsd: running with effective group ID 1000
+</I>&gt;<i> gpsd: running with effective user ID 1000
+</I>&gt;<i> gpsd: opening GPS data source at '/dev/ttyUSB0'
+</I>&gt;<i> gpsd: speed 9600, 8N1
+</I>&gt;<i> gpsd: gpsd_activate: opened GPS (4)
+</I>&gt;<i> gpsd: speed 4800, 8N1
+</I>&gt;<i> gpsd: speed 9600, 8N1
+</I>&gt;<i> gpsd: speed 19200, 8N1
+</I>&gt;<i> gpsd: speed 38400, 8N1
+</I>&gt;<i> gpsd: speed 57600, 8N1
+</I>&gt;<i> gpsd: speed 0, 8N1
+</I>&gt;<i> gpsd: speed 0, 7N2
+</I>&gt;<i> gpsd: speed 4800, 7N2
+</I>&gt;<i> gpsd: speed 9600, 7N2
+</I>&gt;<i> gpsd: speed 19200, 7N2
+</I>&gt;<i> gpsd: speed 38400, 7N2
+</I>&gt;<i> gpsd: speed 57600, 7N2
+</I>&gt;<i> gpsd: speed 0, 7N2
+</I>&gt;<i> gpsd: closing GPS=/dev/ttyUSB0 (4)
+</I>&gt;<i> Segmentation fault
+</I>&gt;<i>
+</I>--------------------------------------8&lt;--------------------------------------
+&gt;<i> 
+</I>&gt;<i> There are similar bug reports in the Debian BTS:
+</I>&gt;<i> 
+</I>&gt;<i> &lt;<A HREF="http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=321423">http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=321423</A>&gt;
+</I>&gt;<i> &lt;<A HREF="http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=303548">http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=303548</A>&gt;
+</I>&gt;<i> 
+</I>&gt;<i> Any hints how I could help tracking that down?
+</I>&gt;<i> 
+</I>&gt;<i> Cheers, Til
+</I>&gt;<i> 
+</I>
+
+__________________________________________________
+Do You Yahoo!?
+Tired of spam?  Yahoo! Mail has the best spam protection around 
+<A HREF="http://mail.yahoo.com">http://mail.yahoo.com</A> 
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003778.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+	<LI>Next message: <A HREF="003726.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3712">[ date ]</a>
+              <a href="thread.html#3712">[ thread ]</a>
+              <a href="subject.html#3712">[ subject ]</a>
+              <a href="author.html#3712">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

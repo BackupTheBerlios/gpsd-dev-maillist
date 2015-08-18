@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] _NOT_VALID values that are in fact valid.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20_NOT_VALID%20values%20that%20are%20in%20fact%20valid.&In-Reply-To=%3C5787.213.84.187.156.1118826525.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002138.html">
+   <LINK REL="Next"  HREF="002146.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] _NOT_VALID values that are in fact valid.</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20_NOT_VALID%20values%20that%20are%20in%20fact%20valid.&In-Reply-To=%3C5787.213.84.187.156.1118826525.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] _NOT_VALID values that are in fact valid.">gpsd at xs4all.nl
+       </A><BR>
+    <I>Wed Jun 15 11:08:45 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002138.html">[Gpsd-dev] Rob's second architecture bug
+</A></li>
+        <LI>Next message: <A HREF="002146.html">[Gpsd-dev] _NOT_VALID values that are in fact valid.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2145">[ date ]</a>
+              <a href="thread.html#2145">[ thread ]</a>
+              <a href="subject.html#2145">[ subject ]</a>
+              <a href="author.html#2145">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+&gt;<i>     if ((session-&gt;gpsdata.set &amp; CLIMB_SET)==0)
+</I>&gt;<i>         session-&gt;gpsdata.fix.climb = SPEED_NOT_VALID;
+</I>
+There is an additional problem with this: SPEED_NOT_VALID is defined to be
+-1.0, but of course -1.0 is within the valid range for climb.
+
+We have discussed the use of NAN before.  It seems to be the best way to
+end issues like this.
+I have included a patch that uses NAN instead of all those magic constants.
+Maybe we can test this in the different compilation environments.
+
+While making this patch I found that __USE_xxx defines were scattered all
+over the place.  Initially I could not get NAN to work and I found that
+you are not supposed to set __USE_xxx directly.  The includefile
+&lt;features.h&gt;, which is included from some standard includes, is
+setting/unsetting those defines based on a _xxx_SOURCE define that you
+make from the commandline.
+As there were several conflicting _USE_xxx settings, I included a
+_GNU_SOURCE define.  The more limited _ISOC99_SOURCE causes some
+compilation problems.
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: patch.gz
+Type: application/x-gzip
+Size: 1522 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20050615/291e9571/attachment.bin">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20050615/291e9571/attachment.bin</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002138.html">[Gpsd-dev] Rob's second architecture bug
+</A></li>
+	<LI>Next message: <A HREF="002146.html">[Gpsd-dev] _NOT_VALID values that are in fact valid.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2145">[ date ]</a>
+              <a href="thread.html#2145">[ thread ]</a>
+              <a href="subject.html#2145">[ subject ]</a>
+              <a href="author.html#2145">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

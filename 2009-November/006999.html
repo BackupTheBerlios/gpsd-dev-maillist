@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] ntpshm as non-root
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntpshm%20as%20non-root&In-Reply-To=%3Calpine.DEB.1.10.0911050728240.13682%40org-pc51.fy.chalmers.se%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006998.html">
+   <LINK REL="Next"  HREF="006993.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] ntpshm as non-root</H1>
+    <B>H&#229;kan Johansson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntpshm%20as%20non-root&In-Reply-To=%3Calpine.DEB.1.10.0911050728240.13682%40org-pc51.fy.chalmers.se%3E"
+       TITLE="[Gpsd-dev] ntpshm as non-root">f96hajo at chalmers.se
+       </A><BR>
+    <I>Thu Nov  5 07:46:25 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006998.html">[Gpsd-dev] ntpshm as non-root
+</A></li>
+        <LI>Next message: <A HREF="006993.html">[Gpsd-dev] Globalsat ND100 support?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6999">[ date ]</a>
+              <a href="thread.html#6999">[ thread ]</a>
+              <a href="subject.html#6999">[ subject ]</a>
+              <a href="author.html#6999">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Hi Gary,
+
+the problem is gpcd.c, line 1910, which prevents it from even trying as 
+non-root:
+
+#ifdef NTPSHM_ENABLE
+     if (getuid() == 0) {
+         errno = 0;
+         if (nice(NICEVAL) != -1 || errno == 0)
+             gpsd_report (2, &quot;Priority setting failed.\n&quot;);
+         (void)ntpshm_init(&amp;context, nowait);
+     } else {
+         gpsd_report (LOG_INF, &quot;Unable to start ntpshm.  gpsd must run as root.\n&quot;);
+     }
+#endif /* NTPSHM_ENABLE */
+
+The only reason for patching in ntpshm.c was to avoid the spurios error 
+messages when gpsd cannot (and should not) create segments 0 and 1 as 
+non-root.  Their creation would be wrong in case gpsd happen to be started 
+before ntpd.  Is that the not needed part?
+
+Regards,
+H&#229;kan
+
+
+On Thu, 5 Nov 2009, Gary E. Miller wrote:
+
+&gt;<i> -----BEGIN PGP SIGNED MESSAGE-----
+</I>&gt;<i> Hash: SHA1
+</I>&gt;<i>
+</I>&gt;<i> Yo H&#229;kan
+</I>&gt;<i>
+</I>&gt;<i> If you start ntpd first then it will setup the required segments. gpsd
+</I>&gt;<i> can make them just as a backup, but in the real world that is rarely
+</I>&gt;<i> used.  So no need for most of your patch.
+</I>&gt;<i>
+</I>&gt;<i> Check out the gpsd-dev archives for more discussion.
+</I>&gt;<i>
+</I>&gt;<i> RGDS
+</I>&gt;<i> GARY
+</I>&gt;<i> - ---------------------------------------------------------------------------
+</I>&gt;<i> Gary E. Miller Rellim 109 NW Wilmington Ave., Suite E, Bend, OR 97701
+</I>&gt;<i> 	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+</I>&gt;<i>
+</I>&gt;<i> On Wed, 4 Nov 2009, H&#229;kan Johansson wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> I'd like to run gpsd under a non-root user and use the ntpshm interface to set
+</I>&gt;&gt;<i> the system clock.  For that, I'd use ntpshm segments 2 and 3 which are opened
+</I>&gt;&gt;<i> for everyone by ntpd.  However, gpsd.c tests for getuid() == 0, and will not
+</I>&gt;&gt;<i> even try to setup with segments 2 and 3 for non-root users.  The attached
+</I>&gt;&gt;<i> patch changes that, such that only segments 0 and 1 are avoided for non-root
+</I>&gt;&gt;<i> users.  It also corrects the error handling for the nice(NICEVAL) call.
+</I>&gt;<i> -----BEGIN PGP SIGNATURE-----
+</I>&gt;<i> Version: GnuPG v1.4.3 (GNU/Linux)
+</I>&gt;<i>
+</I>&gt;<i> iD8DBQFK8i2dBmnRqz71OvMRAsPbAJ9xeHfEf4/6kvKD4WmjwhzjQzeQWgCeNQBQ
+</I>&gt;<i> gjrEjtABVexNpwsd3Bet5Bs=
+</I>&gt;<i> =pS8u
+</I>&gt;<i> -----END PGP SIGNATURE-----
+</I>&gt;<i>
+</I></PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006998.html">[Gpsd-dev] ntpshm as non-root
+</A></li>
+	<LI>Next message: <A HREF="006993.html">[Gpsd-dev] Globalsat ND100 support?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6999">[ date ]</a>
+              <a href="thread.html#6999">[ thread ]</a>
+              <a href="subject.html#6999">[ subject ]</a>
+              <a href="author.html#6999">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

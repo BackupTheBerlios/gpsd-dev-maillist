@@ -1,0 +1,160 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Changing the signal handler in gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Changing%20the%20signal%20handler%20in%20gpsd&In-Reply-To=%3C200706271540.11655.remco%40rvt.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005743.html">
+   <LINK REL="Next"  HREF="005745.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Changing the signal handler in gpsd</H1>
+    <B>Remco Treffkorn</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Changing%20the%20signal%20handler%20in%20gpsd&In-Reply-To=%3C200706271540.11655.remco%40rvt.com%3E"
+       TITLE="[Gpsd-dev] Changing the signal handler in gpsd">remco at rvt.com
+       </A><BR>
+    <I>Thu Jun 28 00:40:11 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005743.html">[Gpsd-dev] Changing the signal handler in gpsd
+</A></li>
+        <LI>Next message: <A HREF="005745.html">[Gpsd-dev] Confirmation about the behaviour of gpsd_poll routine in	libgpsd_core
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5744">[ date ]</a>
+              <a href="thread.html#5744">[ thread ]</a>
+              <a href="subject.html#5744">[ subject ]</a>
+              <a href="author.html#5744">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Wednesday 27 June 2007, Chris Kuethe wrote:
+&gt;<i> I've been threatening/muttering about this for some time now, so
+</I>&gt;<i> here's a diff to simplify/correct the signal handling. It's not that
+</I>&gt;<i> complicated, and it works for me(tm). Comments and feedback are
+</I>&gt;<i> greatly appreciated.
+</I>&gt;<i>
+</I>&gt;<i> Everyone who's been having problems with gpsd not exiting, please test
+</I>&gt;<i> this. Everyone who's got a working gpsd, please test this.
+</I>&gt;<i>
+</I>&gt;<i> Index: gpsd.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- gpsd.c	(revision 4388)
+</I>&gt;<i> +++ gpsd.c	(working copy)
+</I>&gt;<i> @@ -114,11 +114,11 @@
+</I>&gt;<i>  };
+</I>&gt;<i>  /*@ +initallelements +nullassign +nullderef @*/
+</I>&gt;<i>
+</I>&gt;<i> +volatile sig_atomic_t signalled;
+</I>&gt;<i>  static void onsig(int sig)
+</I>&gt;<i>  {
+</I>&gt;<i> -    /* go back to the default signal action until we can reset properly */
+</I>&gt;<i> -    (void)signal(sig, SIG_DFL);
+</I>&gt;<i> -    longjmp(restartbuf, sig+1);
+</I>&gt;<i> +    /* just set a variable, and deal with it in the main loop */
+</I>&gt;<i> +    signalled = sig;
+</I>&gt;<i>  }
+</I>&gt;<i>
+</I>&gt;<i>  static int daemonize(void)
+</I>&gt;<i> @@ -1431,19 +1431,11 @@
+</I>&gt;<i>  	    if (allocated_channel(&amp;channels[dfd]))
+</I>&gt;<i>  		(void)gpsd_wrap(&amp;channels[dfd]);
+</I>&gt;<i>  	}
+</I>&gt;<i> -	if (st == SIGHUP+1)
+</I>&gt;<i> -	    gpsd_report(LOG_WARN, &quot;gpsd restarted by SIGHUP\n&quot;);
+</I>&gt;<i> -	else if (st &gt; 0) {
+</I>&gt;<i> -	    gpsd_report(LOG_WARN, &quot;Received terminating signal %d.
+</I>&gt;<i> Exiting...\n&quot;,st-1);
+</I>&gt;<i> -	    if (control_socket)
+</I>&gt;<i> -		(void)unlink(control_socket);
+</I>&gt;<i> -	    if (pid_file)
+</I>&gt;<i> -		(void)unlink(pid_file);
+</I>&gt;<i> -	    exit(10 + st);
+</I>&gt;<i> -	}
+</I>&gt;<i> +	gpsd_report(LOG_WARN, &quot;gpsd restarted by SIGHUP\n&quot;);
+</I>&gt;<i>      }
+</I>&gt;<i>
+</I>&gt;<i>      /* Handle some signals */
+</I>&gt;<i> +    signalled = 0;
+</I>&gt;<i>      (void)signal(SIGHUP, onsig);
+</I>&gt;<i>      (void)signal(SIGINT, onsig);
+</I>&gt;<i>      (void)signal(SIGTERM, onsig);
+</I>&gt;<i> @@ -1469,7 +1461,7 @@
+</I>&gt;<i>  	}
+</I>&gt;<i>      }
+</I>&gt;<i>
+</I>&gt;<i> -    for (;;) {
+</I>&gt;<i> +    while (0 == signalled) {
+</I>&gt;<i>          (void)memcpy((char *)&amp;rfds, (char *)&amp;all_fds, sizeof(rfds));
+</I>&gt;<i>
+</I>&gt;<i>  	gpsd_report(LOG_RAW+2, &quot;select waits\n&quot;);
+</I>&gt;<i> @@ -1804,7 +1796,18 @@
+</I>&gt;<i>  		}
+</I>&gt;<i>  	    }
+</I>&gt;<i>      }
+</I>&gt;<i> +    /* if we make it here, we got a signal... deal with it */
+</I>&gt;<i> +    /* restart on SIGHUP, clean up and exit otherwise */
+</I>&gt;<i> +    if (SIGHUP == signalled)
+</I>&gt;<i> +	longjmp(restartbuf, 1);
+</I>&gt;<i>
+</I>&gt;<i> +    gpsd_report(LOG_WARN, &quot;Received terminating signal %d.
+</I>&gt;<i> Exiting...\n&quot;,signalled);
+</I>&gt;<i> +    /* try to undo all device configurations */
+</I>&gt;<i> +    for (dfd = 0; dfd &lt; MAXDEVICES; dfd++) {
+</I>&gt;<i> +	if (allocated_channel(&amp;channels[dfd]))
+</I>&gt;<i> +	    (void)gpsd_wrap(&amp;channels[dfd]);
+</I>&gt;<i> +    }
+</I>&gt;<i> +
+</I>&gt;<i>      if (control_socket)
+</I>&gt;<i>  	(void)unlink(control_socket);
+</I>&gt;<i>      if (pid_file)
+</I>
+If I read this correctly, setjmp/longjmp are not needed any more since they 
+occur in the same function. So a non-local goto is not required.
+Simply put the de-init code at the end, before you 'goto' the top.
+
+Indentation seems to suggest that the source and the target of the 'goto' are 
+on the same level/in the same block, so a more elegant while(1) could be 
+used.
+
+But then again, I might be full of it. Long functions get me confused easily.
+
+Cheers,
+Remco 
+
+-- 
+Remco Treffkorn (RT445)
+HAM DC2XT
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005743.html">[Gpsd-dev] Changing the signal handler in gpsd
+</A></li>
+	<LI>Next message: <A HREF="005745.html">[Gpsd-dev] Confirmation about the behaviour of gpsd_poll routine in	libgpsd_core
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5744">[ date ]</a>
+              <a href="thread.html#5744">[ thread ]</a>
+              <a href="subject.html#5744">[ subject ]</a>
+              <a href="author.html#5744">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

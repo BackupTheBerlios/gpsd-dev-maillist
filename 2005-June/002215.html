@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Sockets...why does it always have to be sockets?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Sockets...why%20does%20it%20always%20have%20to%20be%20sockets%3F&In-Reply-To=%3C200506222219.j5MMJNgn020943%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002201.html">
+   <LINK REL="Next"  HREF="002216.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Sockets...why does it always have to be sockets?</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Sockets...why%20does%20it%20always%20have%20to%20be%20sockets%3F&In-Reply-To=%3C200506222219.j5MMJNgn020943%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Sockets...why does it always have to be sockets?">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Thu Jun 23 00:19:23 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002201.html">[Gpsd-dev] Announcing release 2.26 of gpsd
+</A></li>
+        <LI>Next message: <A HREF="002216.html">[Gpsd-dev] Sockets...why does it always have to be sockets? -- part deux
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2215">[ date ]</a>
+              <a href="thread.html#2215">[ thread ]</a>
+              <a href="subject.html#2215">[ subject ]</a>
+              <a href="author.html#2215">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I've been attempting to upgrade gpsfake to handle multiple sessions so I
+can try to reproduce Wojciech Kazubski's apparent resource-exhaustion bug
+in a controlled environment. While doing this, I have wandered into a swamp.
+
+It appears that the hotplug scripts don't work, because something is
+broken in the daemon code that handles control-socket commands.  The
+symptom is that when an add-device command is sent down the control
+socked, gpsd notes that a control-socked connection has been
+established, but then the actual socket read fails.
+
+Here's the weird part.  I *saw this work* at rev level 2638, after
+fixing a different bug.  But reverting to that rev level, it doesn't
+work now.  The test:  Start
+
+    gpsd -D 4 -N -F /var/run/gpsd.sock
+
+then do &quot;gpsd.hotplug add /dev/ttyUSB0&quot; on another terminal.  You 
+will see a message something like this:
+
+    gpsd: control socket connect on 5
+
+that indicates gpsd has accepted the control-socket connection. If it
+works, you should see another few messages -- the whole something like this:
+
+    gpsd: control socket connect on 5
+    gpsd: &lt;= control(5): +/dev/ttyUSB0
+    gpsd: &lt;= control(5): adding /dev/ttyUSB0
+    gpsd: opening GPS data source at '/dev/ttyUSB0'
+
+Apparently something in the way the control-socket code is implemented
+has a phase-of-the-moon dependency.  It's nothing obvious; the code
+for reading from control sockets, almost exactly identical, works fine.
+
+Can *anybody* get this test to work?
+
+Would somebody who isn't me and knows the sockets API better than I
+do please take a hard look at gpsd.c:1144-1173 and tell me what, if
+anything, I'm screwing up?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+The same applies for other kinds of long-lasting low-level pain. [...]
+The body's response to being jabbed, pierced, and cut is to produce
+endorphins. [...]  So here's my programme for breaking that cycle of
+dependency on Windows: get left arm tattooed with dragon motif, buy a
+crate of Jamaican Hot! Pepper Sauce, get nipples pierced.  With any
+luck that will produce enough endorphins to make Windows completely
+redundant, and I can then upgrade to Linux and get on with things.
+	-- Pieter Hintjens
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002201.html">[Gpsd-dev] Announcing release 2.26 of gpsd
+</A></li>
+	<LI>Next message: <A HREF="002216.html">[Gpsd-dev] Sockets...why does it always have to be sockets? -- part deux
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2215">[ date ]</a>
+              <a href="thread.html#2215">[ thread ]</a>
+              <a href="subject.html#2215">[ subject ]</a>
+              <a href="author.html#2215">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

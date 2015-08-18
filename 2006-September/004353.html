@@ -1,0 +1,89 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] Fix 'J' command with multiple gpsd clients
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Fix%20%27J%27%20command%20with%20multiple%20gpsd%20clients&In-Reply-To=%3C1158438643.10283.8.camel%40localhost.localdomain%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004352.html">
+   <LINK REL="Next"  HREF="004356.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] Fix 'J' command with multiple gpsd clients</H1>
+    <B>Stelian Pop</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Fix%20%27J%27%20command%20with%20multiple%20gpsd%20clients&In-Reply-To=%3C1158438643.10283.8.camel%40localhost.localdomain%3E"
+       TITLE="[Gpsd-dev] [PATCH] Fix 'J' command with multiple gpsd clients">stelian at popies.net
+       </A><BR>
+    <I>Sat Sep 16 22:30:43 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004352.html">[Gpsd-dev] 3D is not stable
+</A></li>
+        <LI>Next message: <A HREF="004356.html">[Gpsd-dev] [PATCH] Fix 'J' command with multiple gpsd clients
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4353">[ date ]</a>
+              <a href="thread.html#4353">[ thread ]</a>
+              <a href="subject.html#4353">[ subject ]</a>
+              <a href="author.html#4353">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+The code is gpsd assumes the 'J' command modifies a global gpsd setting,
+and thus is allowed only to privileged clients (meaning the first client
+to connect).
+
+The casoc setting has changed now to a per client setting, so each
+client should be able to set its own buffering mode.
+
+Stelian.
+
+Index: gpsd.c
+===================================================================
+--- gpsd.c	(r&#233;vision 3476)
++++ gpsd.c	(copie de travail)
+@@ -746,7 +746,7 @@
+ 	case 'J':
+ 	    if (!assign_channel(whoami) || whoami-&gt;device-&gt;device_type == NULL)
+ 		(void)strlcpy(phrase, &quot;,J=?&quot;, BUFSIZ);
+-	    else if (privileged_user(whoami)) {
++	    else {
+ 		if (*p == '=') ++p;
+ 		if (*p == '1' || *p == '+') {
+ 		    whoami-&gt;buffer_policy = nocasoc;
+
+-- 
+Stelian Pop &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">stelian at popies.net</A>&gt;
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004352.html">[Gpsd-dev] 3D is not stable
+</A></li>
+	<LI>Next message: <A HREF="004356.html">[Gpsd-dev] [PATCH] Fix 'J' command with multiple gpsd clients
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4353">[ date ]</a>
+              <a href="thread.html#4353">[ thread ]</a>
+              <a href="subject.html#4353">[ subject ]</a>
+              <a href="author.html#4353">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

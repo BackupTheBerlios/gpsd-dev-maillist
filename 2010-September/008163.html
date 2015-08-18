@@ -1,0 +1,91 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Input packets buffering bug(s)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3C20100915154222.GB26436%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008184.html">
+   <LINK REL="Next"  HREF="008164.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Input packets buffering bug(s)</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3C20100915154222.GB26436%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Input packets buffering bug(s)">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Sep 15 17:42:22 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008184.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+        <LI>Next message: <A HREF="008164.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8163">[ date ]</a>
+              <a href="thread.html#8163">[ thread ]</a>
+              <a href="subject.html#8163">[ subject ]</a>
+              <a href="author.html#8163">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Olivier Cornu &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">o.cornu at gmail.com</A>&gt;:
+&gt;<i> It's also true for the multi-packet bug: the reason it has been there
+</I>&gt;<i> so long hiding is because it escaped, and still escapes for that
+</I>&gt;<i> matter, the regression framework. Timestamp checking would have caught
+</I>&gt;<i> it in no time.
+</I>&gt;<i> I think these two bugs are a good opportunity to upgrade the
+</I>&gt;<i> regression framework. It would be in line with the quality standards
+</I>&gt;<i> gpsd is aiming at.
+</I>
+You're right.  But even designing the upgrade we want is hard; I've
+been thinking about the problem.  Here are representative obstacles:
+
+1. How do we embed timestamp information in test loads?
+
+It's easy to image a solution for pure NMEA devices - we could just add a 
+leading timestamp to each line and have gpsfake strip it off before shipping
+the line to the slave daemon.  But what about devices emitting binary, and
+mixed cases like the Thales chips that have bimnary blobs in the middle 
+of what is nominally NMEA?
+
+2. How do we deal with the fact that the test framework will feed packets at
+a different speed than they arrived?
+
+...and *don't* tell me to insert delays in gpsfake to try to mimic the send 
+interval, that would make a regression test far too long a process to do as
+often as we should.
+
+Trust me, these are only the beginning of the problem.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008184.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+	<LI>Next message: <A HREF="008164.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8163">[ date ]</a>
+              <a href="thread.html#8163">[ thread ]</a>
+              <a href="subject.html#8163">[ subject ]</a>
+              <a href="author.html#8163">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,198 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] The multipacket bug
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20The%20multipacket%20bug&In-Reply-To=%3C20100524222915.3858F20C1EF%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007835.html">
+   <LINK REL="Next"  HREF="007778.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] The multipacket bug</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20The%20multipacket%20bug&In-Reply-To=%3C20100524222915.3858F20C1EF%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] The multipacket bug">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Tue May 25 00:29:15 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007835.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+        <LI>Next message: <A HREF="007778.html">[Gpsd-dev] The multipacket bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7776">[ date ]</a>
+              <a href="thread.html#7776">[ thread ]</a>
+              <a href="subject.html#7776">[ subject ]</a>
+              <a href="author.html#7776">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>This note collects my thoughts on what I'll officially dub &quot;the
+multipacket bug&quot;, recently analyzed in some detail by Olivier Cornu
+after having been partially characterized by sanooj some weeks ago.
+
+I've beem keeping quiet in the discussion because I think it's a goood
+thing that other people on the list are doing analysis this deep into
+the main dispatcher code.  One of my concerns about the GPSD project is
+that we don't have enough people who grok the whole architecture, so
+I wasn't to encourage others to get up to speed.  If someone *other than
+me* could solve this, it would be a good indicator for the health of
+the project.
+
+Olivier Cornu writes in &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">AANLkTimzxYmdU2UXgV231VgkHRboPwSs8ZuYgQG3mqh3 at mail.gmail.com</A>&gt; (lightly edited):
+&gt;<i>The design wrongly assumes packets will be received
+</I>&gt;<i>one-at-a-time.
+</I>&gt;<i>
+</I>&gt;<i>GPS device may actually send them one-at-a-time, yet there is no
+</I>&gt;<i>guarantee that's how they'll be received by gpsd.
+</I>&gt;<i>This is how it currently works:
+</I>&gt;<i>  1. wait until new tty input is available  [gpsd.c:1639]
+</I>&gt;<i>  2. append it into inbuffer                [packet.c:1646]
+</I>&gt;<i>  3. parse first inbuffer packet            [packet.c:1684]
+</I>&gt;<i>  4. broadcast it to clients                [gpsd.c:1709]
+</I>&gt;<i>  5. back to 1.
+</I>&gt;<i>
+</I>&gt;<i>What if 2 packets arrive at time t? First one will be parsed and
+</I>&gt;<i>broadcast at time t, then main loop() will wait until t+1 packets
+</I>&gt;<i>arrive to parse the 2d packet.
+</I>&gt;<i>First bug:  clients receive packets with a lag.
+</I>&gt;<i>Second bug: this lag can only get bigger (if multiple packets are
+</I>&gt;<i>again received).
+</I>&gt;<i>Perhaps more once buffers get full.
+</I>
+Olivier is right. The code copes gracefully with the case where a read
+finishes a packet and has some characters of a new packet come in
+after; what it doesn't handle is the case where a read pulls in an
+entire two or more packets.
+
+Olivier's language confused Remco Teffcorn a bit.  Remco didn't
+initially get that &quot;At the same time&quot; meant &quot;in the same physical
+write&quot;.
+
+It's rather unlikely for this to happen on a real serial devices, as
+those tend to get data through the UART in small (often
+single-character) chunks that are much smaller than a packet size,
+and there are typically delays on the order of a hundred milliseconds
+between packets.  
+
+If this did happen, it would be noticeable as an increasing lag in
+reported time (packets getting reported with increasing lag).  But
+even this is not an infallible sign, as very similar &quot;stairstep lag&quot;
+symptoms can be produced on a low-baudrate connection if the GPS gets
+configured to try to send more data than will feed in one cycle.
+(Yes, we've observed this in SiRF chips.)
+
+The most common case where it *does* happen observably is in the regression
+tests.  Depending on the timing, the pty layer may aggregate two
+adjacent packet writes to a master device into one physical write from
+the slave.  The result is the sporadic random regression failures we
+get where it looks like the last couple of packets are never emitted.
+
+One could readily imagine this happening if packets are being read from
+a <A HREF="tcp://">tcp://</A> source.  Again, the socket laher might aggregate writes in
+a timing-dependent way; TCP/IP makes no guarantees.
+
+We don't have to imagine Olivier's use case.  As he says:
+
+&gt;<i>I'm working on an app (gps2nmea) where location info is updated every
+</I>&gt;<i>~5s. From this info, corresponding NMEA packets are crafted and sent
+</I>&gt;<i>on a tty. Excellent conditions to showcase this bug.
+</I>&gt;<i>When there's a valid fix and good satellites data, 6 or 7 packets can
+</I>&gt;<i>be sent at once. In other words, every 5s the lag is growing by 30s!
+</I>
+In &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">AANLkTimTQKWnWWBNRFzC9pfpQI7dN355pxkJN-thpWuN at mail.gmail.com</A>&gt;, Jon
+Schlueter writes:
+
+&gt;<i>I thought I remember hearing a bug that might fit this description a
+</I>&gt;<i>while ago.  A certain gps would get behind X seconds and would never
+</I>&gt;<i>catch up.  If they restarted GPSD it would show the current position
+</I>&gt;<i>and be ok for a while.
+</I>
+Jon is right.  It was a SiRF, and we tracked this down to the baud 
+rate being too low.  This produced a FAQ entry; read the last 
+paragraph of &lt;<A HREF="http://gpsd.berlios.de/faq.html#timelag">http://gpsd.berlios.de/faq.html#timelag</A>&gt;.
+
+He asks:
+
+&gt;<i>Olivier, did you dig through processing code and confirm that when
+</I>&gt;<i>multiple NEMA sentences (&quot;Packets&quot;) come in during one read that only
+</I>&gt;<i>the first one gets parsed?  If so then maybe we need to capture or
+</I>&gt;<i>generate a regression log to confirm this issue.
+</I>
+Yes, we do need a regression test for this issue. I don't know how to etite
+one, because all the ways I know to trigger it are randomly dependent on
+race conditions in various bit transports (ptys, in particular).  However,
+it sounds like Olivier might have a reproducible test.
+
+Jon continues: 
+
+&gt;<i>Another alternative method for modifying the loop is to check if we
+</I>&gt;<i>have not processes or looked at all data in the buffer, spin again and
+</I>&gt;<i>process the buffer till we have.  But you use the larger outside loop
+</I>&gt;<i>for processing the backlog of data in the incoming buffer.
+</I>
+Jon is quite right.  This requires a change in the core dispatcher logic.
+
+In &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">AANLkTinS9sQdeVxuSQrPu8DNIQpUhlfZPbmk1FizeevG at mail.gmail.com</A>&gt;,
+Olivire writes:
+
+&gt;<i>Of course, confirmations from tiers would be more than welcome.
+</I>
+Consider it confirmed.
+
+Greg Troxel points out that while plain serial devices are unlikely
+to trigger this problem, USB devices are a different story.  In
+&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">rmibpc5fppy.fsf at fnord.ir.bbn.com</A>&gt; he writes:
+
+&gt;<i>With USB devices, USB packets (not what gpsd calls packets) arrive,
+</I>&gt;<i>containing some number of bytes.  These are added to the usb tty input
+</I>&gt;<i>queue all at once.
+</I>
+He finishes:
+
+&gt;<i>So, it seems pretty clear that gpsd should, after getting a packet from
+</I>&gt;<i>the buffer, redo the check on the buffer to make sure there is not
+</I>&gt;<i>another full packet.  It's not obvious how to change this in the code
+</I>&gt;<i>with the least amount of trouble.
+</I>
+And that is indeed the issue.  I'm not sure how to do it either.  I'm going to
+look at Jon Schlueter's patch next.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+He who joyfully marches to music in rank and file has already earned my
+contempt.  He has been given a large brain by mistake, since for him the
+spinal cord would fully suffice.
+	-- Albert Einstein
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007835.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+	<LI>Next message: <A HREF="007778.html">[Gpsd-dev] The multipacket bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7776">[ date ]</a>
+              <a href="thread.html#7776">[ thread ]</a>
+              <a href="subject.html#7776">[ subject ]</a>
+              <a href="author.html#7776">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

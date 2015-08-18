@@ -1,0 +1,187 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPSD Protocol Inconsistencies
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3C20110317191955.GB21530%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008872.html">
+   <LINK REL="Next"  HREF="008867.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPSD Protocol Inconsistencies</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3C20110317191955.GB21530%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] GPSD Protocol Inconsistencies">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Mar 17 20:19:55 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008872.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+        <LI>Next message: <A HREF="008867.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8863">[ date ]</a>
+              <a href="thread.html#8863">[ thread ]</a>
+              <a href="subject.html#8863">[ subject ]</a>
+              <a href="author.html#8863">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Architecture/design discussion!  Yeah!
+
+tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+&gt;<i> First, yes, clean up the protocol, but look at it from what a client
+</I>&gt;<i> might want - ala carte v.s.s combo meal, more structured rules, maybe
+</I>&gt;<i> remove &quot;tag&quot; or replace it with something more specifically targeted
+</I>&gt;<i> to a purpose.
+</I>
+&quot;A la carte&quot; scares me.  I fear ending up in a million petty fights
+over what has to go in the supposedly minimalist responses. and
+bloating the reporting code.  You won't get this without hard numbers
+showing that &quot;combo meal&quot; is chewing up enough bandwidth or compute
+time to be a performance problem.  Speculation that it *might* be an
+issue will not persuade me.
+
+&gt;<i>                       Add a debug or log or something to the watch if RAW
+</I>&gt;<i> doesn't suffice.
+</I>
+Implementation already queued for after 2.96; the class is LOGMESSAGE. 
+I borrowed Guido's time machine. :-)
+
+&gt;<i> Maybe have a combined TPV/SKY such that TPV might include SKY if it
+</I>&gt;<i> was updated.
+</I>
+No.  Orthogonality violation; also, TPV and SKY are typically emitted at 
+different intervals. The POLL response gets away with this only because its
+semantics are &quot;show me what you have&quot;.
+
+&gt;<i> Add a simple json watch response for stuff like browsers or such with
+</I>&gt;<i> just time/lat/lon/(alt)/speed/track - maybe this can be TPV.  This
+</I>&gt;<i> should also be something returnable by xhttpdrequest and easily
+</I>&gt;<i> processed by browser javascript.
+</I>
+See above on a la carte.  If you want this, prove that it's necessary.
+My standard for proof will be strict.
+
+&gt;<i> I can't comment on the other WATCH responses, at least not yet, but
+</I>&gt;<i> those should also be cleaned up as necessary.  There should be one
+</I>&gt;<i> JSON message format for each kind of data.  If something is
+</I>&gt;<i> duplicated, we should split or combine the messages.
+</I>
+It's already designed this way.  If you think you've identified 
+non-orthogonality or duplication, report it as a bug.
+ 
+&gt;<i> For multiple devices, allow/select a &quot;best&quot; device based on fix (3d
+</I>&gt;<i> over 2d), and DOP.  I have some code in mine for this which I can
+</I>&gt;<i> adapt.  Currently gpsd allows for redundancy but clients would then
+</I>&gt;<i> have to figure out which one is degraded or not tracking.
+</I>&gt;<i> 
+</I>&gt;<i> For whether something should be inside or outside, one consideration
+</I>&gt;<i> is if multiple clients would end up doing the same calculation most of
+</I>&gt;<i> the time.  Do I really want firefox to have to pick out which GPS were
+</I>&gt;<i> even valid or best?
+</I>
+OK, this is worth discussing.  Is there any reason we shouldn't handle
+this by adding a rank attribute composed from mode and DOP?  Then an
+application that just wants &quot;best&quot; could just pick the fix with rank 1.
+
+&gt;<i> If we are going to include DoP calculations, XYZ might be good, but
+</I>&gt;<i> elliptical axes might be better.  My apartment faces SE so I usually
+</I>&gt;<i> get an arc in that direction.  X and Y are likely to be about equal,
+</I>&gt;<i> but SW-NE and SE-NW are likely to be very different.
+</I>
+Maybe, but I don't know how to get elliptical axes from the skyview
+covariance matrix.  You'd have to show me the math before I'd consider
+this one seriously.
+ 
+&gt;<i> We can leave the decimal points in for NOFLOAT - All I'm doing is
+</I>&gt;<i> %d.%06d for output which is still probably much faster than %f.  (I do
+</I>&gt;<i> similar for speed, track, pdop, but in milli-units).
+</I>&gt;<i> 
+</I>&gt;<i> If we do &quot;NOFLOAT&quot; this way - is there a reason to keep FLOAT around
+</I>&gt;<i> after it is complete?  It should be transparent except for the far
+</I>&gt;<i> fewer CPU cycles.
+</I>
+I was assuming FLOAT would go away eventually.  You've already won this
+one, provided you follow through with code.
+
+&gt;<i> POLL should return the same thing WATCH does, maybe with one more
+</I>&gt;<i> layer of class encapsulation.
+</I>
+This didn't make any sense.  WATCH just sets reporting policy; POLL
+returns fix data.  I can't imagine how confusing the two could be 
+useful.
+
+&gt;<i> The return size for poll will need to be much larger.  TPV + SKY for
+</I>&gt;<i> ONE GPS is over 900 characters.  I think even the existing format
+</I>&gt;<i> which only has a few less characters and
+</I>&gt;<i> 
+</I>&gt;<i>  &quot;{&quot;PRN&quot;:19,&quot;el&quot;:39,&quot;az&quot;:163,&quot;ss&quot;:37,&quot;used&quot;:true},&quot;
+</I>&gt;<i> 
+</I>&gt;<i>  is 49 characters, so can be around 700 per GPS (12 in view plus two
+</I>&gt;<i> WAAS).  Three or more will overflow the 1536 limit. unless we do
+</I>&gt;<i> something like BEGIN / DEVICE 1 WATCH JSON / DEVICE 2 WATCH JSON... /
+</I>&gt;<i> END. with a guarantee that even if WATCH is active or DEVICE changes
+</I>&gt;<i> that it won't interrupt.
+</I>
+You're probably right.  The only reason the max response size is so small
+is that I didn't want to impose huge buffers on embedded deployments.
+You are an embedded deployment; what size do you think would be reasonable.
+
+&gt;<i> I think all the pieces are there, but they could be arranged more
+</I>&gt;<i> conveniently for a client.
+</I>
+Sorry, pieces of what?
+
+&gt;<i> Suggestion, and I don't know if this is practical or useful in your
+</I>&gt;<i> context but it is in mine - add an optional millisecond &quot;systime&quot; -
+</I>&gt;<i> the time field is what comes from the messages, but systime would
+</I>&gt;<i> track the arrival time of the raw messages.  Maybe raw only, but you
+</I>&gt;<i> might get some measure of latency and if there are multiple interfaces
+</I>&gt;<i> or sensors it would give a finer and consistent resolution than the
+</I>&gt;<i> GPS timestamp.  I would expect it to be offset, but would help measure
+</I>&gt;<i> the latency, e.g. 43050 - $GPRMC ...43.000....  So you could more
+</I>&gt;<i> easily match actual position at higher rates with different sources.
+</I>
+I don't understand your use case.  How would this help you, exactly?
+
+&gt;<i> Note that higher baud rates would help to reduce latency.
+</I>
+Not by as much as you think.  I profiled this; it turns out that for 
+a typical NMEA device, 4800bs is a bit too slow, 9600 suffices, and
+more than that is overkill.  White paper, with numbers and profile graphs, 
+is on the website.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008872.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+	<LI>Next message: <A HREF="008867.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8863">[ date ]</a>
+              <a href="thread.html#8863">[ thread ]</a>
+              <a href="subject.html#8863">[ subject ]</a>
+              <a href="author.html#8863">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

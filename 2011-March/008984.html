@@ -1,0 +1,161 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Shared-memory interface.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Shared-memory%20interface.&In-Reply-To=%3CAANLkTik%3Dztwe-bp1-Yn-EqFws7WOrCZ3MVo64V1Y%2BGye%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008983.html">
+   <LINK REL="Next"  HREF="008993.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Shared-memory interface.</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Shared-memory%20interface.&In-Reply-To=%3CAANLkTik%3Dztwe-bp1-Yn-EqFws7WOrCZ3MVo64V1Y%2BGye%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Shared-memory interface.">thomas at mich.com
+       </A><BR>
+    <I>Wed Mar 23 04:20:13 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008983.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+        <LI>Next message: <A HREF="008993.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8984">[ date ]</a>
+              <a href="thread.html#8984">[ thread ]</a>
+              <a href="subject.html#8984">[ subject ]</a>
+              <a href="author.html#8984">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Tue, Mar 22, 2011 at 9:16 PM, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+</I>&gt;&gt;<i> The other half is not exposing things to userland that shouldn't be
+</I>&gt;&gt;<i> played with - that is one of the things which bothers me about using
+</I>&gt;&gt;<i> device filesystem path strings ask index keys.
+</I>&gt;<i>
+</I>&gt;<i> I'm not seeing a problem here. &#160;The user can't modify or delete those files,
+</I>&gt;<i> so where's the security/assurance threat?
+</I>
+I think you can delete &quot;those files&quot;, depending on where they are or
+how secure they are since they are just a filesystem node and you are
+only doing an exclusive flag with an ioctl after the open, not locking
+the inode.
+
+Also don't assume they are in /dev or otherwise owned by root.  I
+might also be able to grab the datastream from a pty with just a cat
+command since you don't open those exclusively (the EXCL isn't set,
+but it might be, just the &quot;is opened elsewhere already&quot; could be
+dropped for a pty).
+
+&gt;<i> Note that if you were actually to come up with a sneak path I would
+</I>&gt;<i> become much less hostile to channel numbers, since that vulnerability
+</I>&gt;<i> would create a *requirement* for a layer of indirection to mask the
+</I>&gt;<i> filenames.
+</I>
+A bit contrived, but off the top of my head, assume you have an
+otherwise secure system behind an ethernet switch but I'm somewhere on
+the net where I can access the gpsd port and I do an ordinary WATCH or
+POLL.  I see the udp or tcp URI, say the actual GPS source is an
+embedded device on the roof or outside with a wifi or ethernet
+connection.  UDP is now simple as I can probably inject packets and
+even take over the stream.  TCP is a bit more subtle, but I now also
+know another address which is active, so can play games with ARP, even
+if switches or something like WPK2 was active.
+
+It would also let me tell if I was chrooted - I should see the device
+node gpsd is connected with in my tree if I'm not.
+
+Another things is the device name buffer is 64 bytes.  I don't think
+the strlcpy is pre-checked by strlen when you do:
+
+   if (device != NULL)
+        (void)strlcpy(session-&gt;gpsdata.dev.path, device,
+                      sizeof(session-&gt;gpsdata.dev.path));
+
+The problem is if the desired node is beyond 63 bytes, and the 63 byte
+path is valid, it will attempt to open whatever the path does point to
+- a directory most likely but it might do something unexpected.  You
+could use the return from strlcpy:
+
+if( strlen(device) != strlcpy... )
+  error_handle();
+
+Oh, while hunting around...
+
+sys/un.h:
+/* Structure describing the address of an AF_LOCAL (aka AF_UNIX) socket.  */
+struct sockaddr_un
+  {
+    __SOCKADDR_COMMON (sun_);
+    char sun_path[108];         /* Path name.  */
+  };
+gpsd.c:
+    (void)strlcpy(addr.sun_path, filename, 104);        /* from sys/un.h */
+
+It happens to be greater by 4, but wouldn't sizeof(addr.sun_path) be
+better?  Especially if any system had less than 104 bytes to the
+buffer?
+
+I could keep looking and will think about the &quot;on the same system&quot; and
+&quot;what can I glean from gpsd on a remote system&quot; some more.  I'll look
+more at the code too...
+
+&gt;&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; SKY sometimes having a
+</I>&gt;&gt;<i> timestamp, sometimes not - the mapping between NMEA and JSON are still
+</I>&gt;&gt;<i> a bit disjoint, and the other drivers aren't likely to be much better.
+</I>&gt;<i>
+</I>&gt;<i> There is some per-device variation, true. &#160;Not much we can do about
+</I>&gt;<i> that; we're limited to reporting or computing from what the device
+</I>&gt;<i> actually gives us. &#160;The variation in whether or not SKY gets a
+</I>&gt;<i> timestamp is indeed one of the more annoying symptoms of this problem.
+</I>&gt;<i>
+</I>&gt;&gt;<i> The whole mapping between the GPS datastream and the JSON output
+</I>&gt;&gt;<i> should be consistent.
+</I>&gt;<i>
+</I>&gt;<i> What's your metric of &quot;consistency'? &#160;If you come up with a convincing
+</I>&gt;<i> one we can try to maximize it.
+</I>
+I will have to think about that - I have to anyway for NMEA and the
+GP/GL/GNxxx stuff which will be seriously painful to map right now.
+I'll see if I can come up with a good mapping, then I may need to
+investigate the other device drivers.
+
+And speaking of 50Mhz Sparc, it turns out that the Venus 628 (and
+others of that family) use the sparc core and run at 50Mhz and there
+is a devkit.
+
+<A HREF="http://www.dl9sec.de/venus6/venus6.htm">http://www.dl9sec.de/venus6/venus6.htm</A>
+
+I'm going to add it to the eval board order if it isn't prohibitively expensive.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008983.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+	<LI>Next message: <A HREF="008993.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8984">[ date ]</a>
+              <a href="thread.html#8984">[ thread ]</a>
+              <a href="subject.html#8984">[ subject ]</a>
+              <a href="author.html#8984">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,131 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Loss of precision in SOCK samples
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Loss%20of%20precision%20in%20SOCK%20samples&In-Reply-To=%3Calpine.LNX.1.00.1101271727240.23789%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008538.html">
+   <LINK REL="Next"  HREF="008540.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Loss of precision in SOCK samples</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Loss%20of%20precision%20in%20SOCK%20samples&In-Reply-To=%3Calpine.LNX.1.00.1101271727240.23789%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] Loss of precision in SOCK samples">gem at rellim.com
+       </A><BR>
+    <I>Fri Jan 28 02:36:48 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008538.html">[Gpsd-dev] Loss of precision in SOCK samples
+</A></li>
+        <LI>Next message: <A HREF="008540.html">[Gpsd-dev] Compatibility warning for GPSD client projects
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8539">[ date ]</a>
+              <a href="thread.html#8539">[ thread ]</a>
+              <a href="subject.html#8539">[ subject ]</a>
+              <a href="author.html#8539">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Miroslav!
+
+Damn, time_t is 32 bits, and nSec in a sec is 30 bits.  A double is
+only 52 bits of precision.  Fixed in git head.
+
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 109 NW Wilmington Ave., Suite E, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+
+On Thu, 27 Jan 2011, Miroslav Lichvar wrote:
+
+&gt;<i> Date: Thu, 27 Jan 2011 21:14:29 +0100
+</I>&gt;<i> From: Miroslav Lichvar &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mlichvar at redhat.com</A>&gt;
+</I>&gt;<i> Reply-To: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> To: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> Subject: [Gpsd-dev] Loss of precision in SOCK samples
+</I>&gt;<i>
+</I>&gt;<i> Hi,
+</I>&gt;<i>
+</I>&gt;<i> while testing the chrony SOCK support I've noticed that the samples
+</I>&gt;<i> passed to chrony don't match exactly values from
+</I>&gt;<i> /sys/devices/virtual/pps/pps0/assert, and that they are rounded to
+</I>&gt;<i> about 238 nanoseconds.
+</I>&gt;<i>
+</I>&gt;<i> It seems the problem is that the PPS timespec is converted to double
+</I>&gt;<i> format which is not precise enough to hold number of seconds since
+</I>&gt;<i> 1970 in nanosecond resolution. Double has 53-bit fraction, but current
+</I>&gt;<i> time needs 31 bits for seconds and another 30 bits for nanoseconds,
+</I>&gt;<i> which makes the ~8 bit loss.
+</I>&gt;<i>
+</I>&gt;<i> This patch fixes the problem for me.
+</I>&gt;<i>
+</I>&gt;<i> --- a/libgpsd_core.c
+</I>&gt;<i> +++ b/libgpsd_core.c
+</I>&gt;<i> @@ -636,7 +636,8 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
+</I>&gt;<i>             {
+</I>&gt;<i>                 sample.tv = tv;         /* structure copy */
+</I>&gt;<i>             }
+</I>&gt;<i> -           sample.offset -= TSTOD( &amp;ts );
+</I>&gt;<i> +           sample.offset -= ts.tv_sec;
+</I>&gt;<i> +           sample.offset -= ts.tv_nsec / 1e9;
+</I>&gt;<i>  #if defined(ONCORE_ENABLE) &amp;&amp; defined(BINARY_ENABLE)
+</I>&gt;<i>             /*@-noeffect@*/
+</I>&gt;<i>             if (session-&gt;device_type == &amp;oncore_binary) {
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Thanks,
+</I>&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i> Miroslav Lichvar
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFNQh21BmnRqz71OvMRAqiFAKCA5SXXV0qCVbEuiqueEstLAv0cRACeKBdQ
+LXqh07sBW0rojaZJOwAWK5Q=
+=xi1s
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008538.html">[Gpsd-dev] Loss of precision in SOCK samples
+</A></li>
+	<LI>Next message: <A HREF="008540.html">[Gpsd-dev] Compatibility warning for GPSD client projects
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8539">[ date ]</a>
+              <a href="thread.html#8539">[ thread ]</a>
+              <a href="subject.html#8539">[ subject ]</a>
+              <a href="author.html#8539">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] pthreads
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2008-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20pthreads&In-Reply-To=%3Calpine.LNX.1.00.0801241318280.25348%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005977.html">
+   <LINK REL="Next"  HREF="005974.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] pthreads</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20pthreads&In-Reply-To=%3Calpine.LNX.1.00.0801241318280.25348%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] pthreads">gem at rellim.com
+       </A><BR>
+    <I>Thu Jan 24 22:27:32 CET 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005977.html">[Gpsd-dev] GPSD
+</A></li>
+        <LI>Next message: <A HREF="005974.html">[Gpsd-dev] pthreads
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5972">[ date ]</a>
+              <a href="thread.html#5972">[ thread ]</a>
+              <a href="subject.html#5972">[ subject ]</a>
+              <a href="author.html#5972">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo All!
+
+This is driving me crazy.  SVN 4475 works for me, and SVN 4476 hangs
+in the pthread_create().  I have replicated the two cases several
+times and done so from an empty trunk/ directory.  This with gcc 4.2.1
+and gcc 4.2.2.  Using glibc 2.3.1.
+
+Here is what SVN says is the difference between those two versions:
+
+# svn diff -r 4475:4476
+Index: Makefile.am
+===================================================================
+- --- Makefile.am (revision 4475)
++++ Makefile.am (revision 4476)
+@@ -162,7 +162,7 @@
+        cat gpsd.h-tail &gt;&gt;gpsd.h
+
+ libgps_la_SOURCES = $(libgpsd_c_sources) $(libgpsd_h_sources) \
+- -                               rtcm.h libgpsmm.cpp packet_states.h
++                               rtcm.h packet_states.h
+ nodist_libgps_la_SOURCES = packet_names.h
+ libgps_la_LIBADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) $(LIBPTHREAD)
+
+
+Not sure why removeing libgpsmm.cpp affects anything.  Still, if I copy
+the Makefile.am from 4475 to 4476 and reconfig/recompile I get a
+working pthreads.  When I revert Makefile.am it breaks again.
+
+Does this make sense to anyone?
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 109 NW Wilmington Ave., Suite E, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFHmQLJ8KZibdeR3qURAn28AJ9gjQfj5+a45ytRE5HN3Bc3Y1JxUgCdGttf
+aqsrE3QAG8spTY6hPro9w18=
+=Em8M
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005977.html">[Gpsd-dev] GPSD
+</A></li>
+	<LI>Next message: <A HREF="005974.html">[Gpsd-dev] pthreads
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5972">[ date ]</a>
+              <a href="thread.html#5972">[ thread ]</a>
+              <a href="subject.html#5972">[ subject ]</a>
+              <a href="author.html#5972">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

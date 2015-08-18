@@ -1,0 +1,168 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] regression test report - recent code
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20regression%20test%20report%20-%20recent%20code&In-Reply-To=%3Crmir5b0x7g2.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008564.html">
+   <LINK REL="Next"  HREF="008579.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] regression test report - recent code</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20regression%20test%20report%20-%20recent%20code&In-Reply-To=%3Crmir5b0x7g2.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] regression test report - recent code">gdt at ir.bbn.com
+       </A><BR>
+    <I>Tue Feb 22 19:14:37 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008564.html">[Gpsd-dev] regression test report - recent code
+</A></li>
+        <LI>Next message: <A HREF="008579.html">[Gpsd-dev] regression test report - recent code
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8570">[ date ]</a>
+              <a href="thread.html#8570">[ thread ]</a>
+              <a href="subject.html#8570">[ subject ]</a>
+              <a href="author.html#8570">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; writes:
+
+&gt;<i> Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;:
+</I>&gt;&gt;<i> Regression testing showed a significant number of issues.  The SHA1 from
+</I>&gt;&gt;<i> git describe is of a revision formed from the above plus one local
+</I>&gt;&gt;<i> rebased commit to add the (nonportable) --text to diff, and to add an
+</I>&gt;&gt;<i> abort() where the parser throws out data because it has too much.  Aside
+</I>&gt;&gt;<i> From ac12_binary, which has never worked, the new issues look mostly
+</I>&gt;&gt;<i> like a test timing problem.
+</I>&gt;<i>
+</I>&gt;<i> Try bumping up the WRITE_PAD and CLOSE_DELAY constants in gps/fake.py.
+</I>&gt;<i> That might solve the timing problem.
+</I>
+I see you committed setting CLOSE_DELAY to 0.2s.  Now only ac12_binary
+fails (it has never passed).
+
+However, this is beyond the usual voodoo, because I don't see gpsfake
+actually waiting.  Here's a ktrace -i / kdump -T output from using
+bu303-moving.  Note that the kernel schedules gpsd as soon as the write
+to the pipe finishes, and gpsd has sent both NMEA and JSON within a
+microsecond.  I think python is getting a SIGINT somehow, but I don't
+know how, and then not waiting.
+
+ 12610      1 python2.6 1298397913.572713340 CALL  write(7,0xbb4548f4,0x31)
+ 12610      1 python2.6 1298397913.572747142 GIO   fd 7 wrote 49 bytes
+       &quot;\240\M-&quot;\0)\^B\0B\M^J\M-v\0\b\M-W\^V\0FB\M^R\M^?\M^?\0\0\0\0\^D\^P\^B\
+	\^A.\^B_x8\^D\b\^D\^B\^[\0\0\0\0\0\0\0\0\aT\M-0\M-3&quot;
+ 12610      1 python2.6 1298397913.572748819 RET   write 49/0x31
+ 24367      1 gpsd     1298397913.572766139 RET   select 1
+ 24367      1 gpsd     1298397913.572784856 CALL  read(8,0x805968c,0x409)
+ 24367      1 gpsd     1298397913.572794913 GIO   fd 8 read 49 bytes
+       &quot;\240\M-&quot;\0)\^B\0B\M^J\M-v\0\b\M-W\^V\0FB\M^R\M^?\M^?\0\0\0\0\^D\^P\^B\
+	\^A.\^B_x8\^D\b\^D\^B\^[\0\0\0\0\0\0\0\0\aT\M-0\M-3&quot;
+ 24367      1 gpsd     1298397913.572796869 RET   read 49/0x31
+ 24367      1 gpsd     1298397913.572815586 CALL  gettimeofday(0xbfbfab2c,0)
+ 24367      1 gpsd     1298397913.572819497 RET   gettimeofday 0
+ 24367      1 gpsd     1298397913.572821732 CALL  gettimeofday(0xbfbfab1c,0)
+ 24367      1 gpsd     1298397913.572823967 RET   gettimeofday 0
+ 24367      1 gpsd     1298397913.572859167 CALL  gettimeofday(0xbfbfab08,0)
+ 24367      1 gpsd     1298397913.572861402 RET   gettimeofday 0
+ 24367      1 gpsd     1298397913.572872297 CALL  gettimeofday(0xbfbfab2c,0)
+ 24367      1 gpsd     1298397913.572874532 RET   gettimeofday 0
+ 24367      1 gpsd     1298397913.572876208 CALL  gettimeofday(0xbfbfab18,0)
+ 24367      1 gpsd     1298397913.572878442 RET   gettimeofday 0
+ 24367      1 gpsd     1298397913.572963089 CALL  sendto(7,0xbfbfca89,0xe3,0,0,0)
+ 24367      1 gpsd     1298397913.572965883 MISC  msghdr: 28, 0000000000000000e49c27cf01000000000000000600000000000000
+ 24367      1 gpsd     1298397913.572992981 GIO   fd 7 wrote 227 bytes
+       &quot;$GPZDA,143456.28,09,06,2005,00,00*65\r\n$GPGGA,143456,4629.8999,N,0073\
+	4.0442,E,1,04,3.20,1343.17,M,48.183,M,,*79\r\n$GPRMC,143456,A,4629.899\
+	9,N,00734.0442,E,0.1776,10.379,090605,,*17\r\n$GPGSA,A,3,08,04,02,27,,\
+	,,,,,,,1.9,3.2,1.4*35\r\n&quot;
+ 24367      1 gpsd     1298397913.572995495 RET   sendto 227/0xe3
+ 24367      1 gpsd     1298397913.573044384 CALL  sendto(7,0xbfbfb289,0xf2,0,0,0)
+ 24367      1 gpsd     1298397913.573046619 MISC  msghdr: 28, 0000000000000000e49c27cf01000000000000000600000000000000
+ 24367      1 gpsd     1298397913.573053603 GIO   fd 7 wrote 242 bytes
+       &quot;{\&quot;class\&quot;:\&quot;TPV\&quot;,\&quot;tag\&quot;:\&quot;MID2\&quot;,\&quot;device\&quot;:\&quot;/dev/ttyp7\&quot;,\&quot;time\&quot;\
+	:\&quot;2005-06-09T14:34:56.28Z\&quot;,\&quot;ept\&quot;:0.005,\&quot;lat\&quot;:46.498332203,\&quot;lon\
+	\&quot;:7.567403907,\&quot;alt\&quot;:1343.165,\&quot;epx\&quot;:10.972,\&quot;epy\&quot;:15.581,\&quot;epv\&quot;:\
+	32.321,\&quot;track\&quot;:10.3788,\&quot;speed\&quot;:0.091,\&quot;climb\&quot;:-0.085,\&quot;mode\&quot;:3}\
+	\r\n&quot;
+ 24367      1 gpsd     1298397913.573056117 RET   sendto 242/0xf2
+ 24367      1 gpsd     1298397913.573073158 CALL  read(8,0x805968c,0x409)
+ 24367      1 gpsd     1298397913.573077069 RET   read -1 errno 35 Resource temporarily unavailable
+ 24367      1 gpsd     1298397913.573079863 CALL  gettimeofday(0xbfbfab2c,0)
+ 24367      1 gpsd     1298397913.573082098 RET   gettimeofday 0
+ 24367      1 gpsd     1298397913.573088802 CALL  select(9,0xbfbfe274,0,0,0xbfbfe2cc)
+ 29020      1 sh       1298397913.573233791 RET   wait4 -1 errno 4 Interrupted system call
+ 29020      1 sh       1298397913.573238540 PSIG  SIGINT caught handler=0x8059a84 mask=(): code=SI_NOINFO
+ 29020      1 sh       1298397913.573252508 CALL  __sigaction_sigtramp(SIGINT,0xbfbfdc50,0xbfbfdc38,0xbbb4a940,2)
+ 29020      1 sh       1298397913.573255302 RET   __sigaction_sigtramp 0
+ 29020      1 sh       1298397913.573277092 CALL  setcontext(0xbfbfdd24)
+ 29020      1 sh       1298397913.573280445 RET   write JUSTRETURN
+ 29020      1 sh       1298397913.573285752 CALL  wait4(0xffffffff,0xbfbfe088,0,0)
+   451      1 sed      1298397913.573294692 RET   read RESTART
+   451      1 sed      1298397913.573297765 PSIG  SIGINT SIG_DFL: code=SI_NOINFO
+ 24367      1 gpsd     1298397913.573538016 RET   select -1 errno 4 Interrupted system call
+ 24367      1 gpsd     1298397913.573540531 PSIG  SIGINT caught handler=0x8049e8c mask=(): code=SI_NOINFO
+ 24367      1 gpsd     1298397913.573548911 CALL  setcontext(0xbfbfae64)
+ 24367      1 gpsd     1298397913.573551426 RET   write JUSTRETURN
+ 24367      1 gpsd     1298397913.573568746 CALL  ioctl(8,TIOCDRAIN,0)
+ 24367      1 gpsd     1298397913.573577406 RET   ioctl 0
+ 24367      1 gpsd     1298397913.573579641 CALL  ioctl(8,TIOCGETA,0xbfbfb100)
+ 24367      1 gpsd     1298397913.573585508 GIO   fd 8 read 44 bytes
+       &quot;\0\0\0\0\0\0\0\0\0\M-K\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\^A\
+	\0\0\0\0\M^V\0\0\0\M^V\0\0&quot;
+ 24367      1 gpsd     1298397913.573587184 RET   ioctl 0
+ 29020      1 sh       1298397913.573737760 RET   wait4 451/0x1c3
+ 29020      1 sh       1298397913.573742789 CALL  wait4(0xffffffff,0xbfbfe088,0,0)
+ 12610      1 python2.6 1298397913.575051320 PSIG  SIGINT caught handler=0xbbb83aac mask=(): code=SI_NOINFO
+ 12610      1 python2.6 1298397913.575065847 CALL  getpid
+ 12610      1 python2.6 1298397913.575068362 RET   getpid 12610/0x3142, 29020/0x715c
+ 12610      1 python2.6 1298397913.575078419 CALL  setcontext(0xbfbfd5e4)
+ 12610      1 python2.6 1298397913.575082609 RET   __getlogin JUSTRETURN
+ 12610      1 python2.6 1298397913.575206646 CALL  kill(0x5f2f, SIGTERM)
+ 12610      1 python2.6 1298397913.575220055 RET   kill 0
+ 12610      1 python2.6 1298397913.575225363 CALL  kill(0x5f2f, SIGTERM)
+ 12610      1 python2.6 1298397913.575227877 RET   kill 0
+ 12610      1 python2.6 1298397913.575245756 CALL  select(0,0,0,0,0xbfbfd288)
+ 24367      1 gpsd     1298397913.575589092 PSIG  SIGTERM caught handler=0x8049e8c mask=(): code=SI_USER sent by pid=12610, uid=10853)
+ 24367      1 gpsd     1298397913.575597753 CALL  setcontext(0xbfbfadc4)
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110222/66ddd02b/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110222/66ddd02b/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008564.html">[Gpsd-dev] regression test report - recent code
+</A></li>
+	<LI>Next message: <A HREF="008579.html">[Gpsd-dev] regression test report - recent code
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8570">[ date ]</a>
+              <a href="thread.html#8570">[ thread ]</a>
+              <a href="subject.html#8570">[ subject ]</a>
+              <a href="author.html#8570">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

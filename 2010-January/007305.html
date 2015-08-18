@@ -1,0 +1,98 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] MinGW/Win32 port housekeeping patch
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20MinGW/Win32%20port%20housekeeping%20patch&In-Reply-To=%3C4B3FE1EF.5060102%40adsllc.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007303.html">
+   <LINK REL="Next"  HREF="007306.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] MinGW/Win32 port housekeeping patch</H1>
+    <B>David Ludlow</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20MinGW/Win32%20port%20housekeeping%20patch&In-Reply-To=%3C4B3FE1EF.5060102%40adsllc.com%3E"
+       TITLE="[Gpsd-dev] MinGW/Win32 port housekeeping patch">davel at adsllc.com
+       </A><BR>
+    <I>Sun Jan  3 01:16:47 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007303.html">[Gpsd-dev] MinGW/Win32 port housekeeping patch
+</A></li>
+        <LI>Next message: <A HREF="007306.html">[Gpsd-dev] MinGW/Win32 port housekeeping patch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7305">[ date ]</a>
+              <a href="thread.html#7305">[ thread ]</a>
+              <a href="subject.html#7305">[ subject ]</a>
+              <a href="author.html#7305">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 01/02/2010 05:39 PM, Eric Raymond wrote:
+&gt;<i> Most of these applied cleanly.  I got some rejects I was able to
+</I>&gt;<i> hand-fix in gpxlogger.c, and you appear to have re-applied a patch
+</I>&gt;<i> already in place in libgps_core.c.  The gpsd.c patch failed, and I'd
+</I>&gt;<i> like to see some discussion of the change from write/read to send/recv.
+</I>&gt;<i> Are we sure these will behave the same way in edge cases? If so, why change?
+</I>
+Edge cases shouldn't exist since we use 0 for the flags argument:
+
+<A HREF="http://www.opengroup.org/onlinepubs/009695399/functions/recv.html">http://www.opengroup.org/onlinepubs/009695399/functions/recv.html</A>
+The recv() function is equivalent to recvfrom() with a zero address_len
+argument, and to read() if no flags are used.
+
+<A HREF="http://www.opengroup.org/onlinepubs/009695399/functions/send.html">http://www.opengroup.org/onlinepubs/009695399/functions/send.html</A>
+The send() function is equivalent to sendto() with a null pointer
+dest_len argument, and to write() if no flags are used.
+
+write/read vs send/recv is a semantic improvement that just happens to
+be necessary for Win32.  It's basically the same as int vs socket_t is.
+ It's prettier now and avoids an #ifdef when/if Win32 support is added.
+
+I've split this into housekeeping-2.patch if you'd like to include it.
+
+&gt;<i> Please pull SVN head and have a try at finishing off the housekeeping stuff
+</I>&gt;<i> in another patch.  Then we can discuss the changes for Windows.
+</I>
+See housekeeping-1.patch
+
+The comments I've received so far have shown that you guys are really
+taking time to &quot;do it right&quot; while accommodating me - thanks on both counts.
+-------------- next part --------------
+An embedded and charset-unspecified text was scrubbed...
+Name: housekeeping-1.patch
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100102/b317fda3/attachment.ksh">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100102/b317fda3/attachment.ksh</A>&gt;
+-------------- next part --------------
+An embedded and charset-unspecified text was scrubbed...
+Name: housekeeping-2.patch
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100102/b317fda3/attachment-0001.ksh">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100102/b317fda3/attachment-0001.ksh</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007303.html">[Gpsd-dev] MinGW/Win32 port housekeeping patch
+</A></li>
+	<LI>Next message: <A HREF="007306.html">[Gpsd-dev] MinGW/Win32 port housekeeping patch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7305">[ date ]</a>
+              <a href="thread.html#7305">[ thread ]</a>
+              <a href="subject.html#7305">[ subject ]</a>
+              <a href="author.html#7305">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

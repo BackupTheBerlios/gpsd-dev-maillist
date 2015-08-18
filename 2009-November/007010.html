@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] PPS timing investigation
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS%20timing%20investigation&In-Reply-To=%3Calpine.DEB.1.10.0911080040060.12798%40org-pc51.fy.chalmers.se%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007008.html">
+   <LINK REL="Next"  HREF="007016.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] PPS timing investigation</H1>
+    <B>H&#229;kan Johansson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS%20timing%20investigation&In-Reply-To=%3Calpine.DEB.1.10.0911080040060.12798%40org-pc51.fy.chalmers.se%3E"
+       TITLE="[Gpsd-dev] PPS timing investigation">f96hajo at chalmers.se
+       </A><BR>
+    <I>Sun Nov  8 01:28:33 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007008.html">[Gpsd-dev] man pages
+</A></li>
+        <LI>Next message: <A HREF="007016.html">[Gpsd-dev] PPS timing investigation
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7010">[ date ]</a>
+              <a href="thread.html#7010">[ thread ]</a>
+              <a href="subject.html#7010">[ subject ]</a>
+              <a href="author.html#7010">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Hi,
+
+In order to figure out how the ntpshm.c PPS and serial handling can be 
+improved, data on the behaviour of various module models is needed.  By 
+slight extension of the existing log messages (attachment 
+gpsd_pps_timing_log.diff), the necessary data can be collected.
+
+The following almost does the trick:
+
+gpsd -n -N /dev/ttyXXX -D6 2&gt;&amp;1 | \
+   egrep &quot;pps-detect|ntpshm_put|driver|speed&quot; | \
+   head -n 100 &gt; ~/pps_log_YYY.txt
+
+(except that head does not stop the execution when done, so a Ctrl-C is 
+needed, other variations may be needed...)
+
+I've tried it on the two types I have at hand, with the following results 
+(see attached files):
+
+motorola oncore UT+ with the oncore binary format (@ 9600 bps):
+PPS pulse is 200 ms long
+ntpshm_put gets called @~180 ms after the second, with the time of the 
+preceding pulse (first edge).  Note that 160 ms of the time stamp are due 
+to the magic shift in the ntpshm_put call)  (the remaining sub-second 
+information seems to be wrong)
+(the initial missing ntpshm_put calls and the bad pulses are due to a hard 
+reset at program startup to position hold mode - it takes some time before 
+it finds a satellite again)
+
+garmin 18 lvc with nmea output format (@ 4800 bps) (1 pps):
+PPS pulse is 40 ms long
+ntpshm_put gets called @~175 ms after the second, with time of preceding 
+pulse.  no ntpshm_put magic
+(the offset in the times is due to the machine's ntpd tracking a network 
+reference - I'm not in charge of that ntpd.conf...)
+
+Further notes:
+
+The effect of running gpsd at -D6 is with a 1.6 GHz machine approximately 
+a delay of 1 ms in the @ timing of the ntpshm_put information due to 
+previous log message production.  The PPS pulse @ timing has no such 
+effects.
+
+It would be nice if other developers/users also could provide similar 
+data, so we can get to the bottom of this issue.  I'm not aware of this 
+information already existing.  I'm sure someone will correct me...
+
+Cheers, and thanks in advance
+H&#229;kan
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: gpsd_pps_timing_log.diff
+Type: text/x-diff
+Size: 1242 bytes
+Desc: 
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091108/c17e3312/attachment.diff">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091108/c17e3312/attachment.diff</A>&gt;
+-------------- next part --------------
+An embedded and charset-unspecified text was scrubbed...
+Name: pps_log_garmin_18lvc_nmea.txt
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091108/c17e3312/attachment.txt">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091108/c17e3312/attachment.txt</A>&gt;
+-------------- next part --------------
+An embedded and charset-unspecified text was scrubbed...
+Name: pps_log_oncore_ut+_oncore.txt
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091108/c17e3312/attachment-0001.txt">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091108/c17e3312/attachment-0001.txt</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007008.html">[Gpsd-dev] man pages
+</A></li>
+	<LI>Next message: <A HREF="007016.html">[Gpsd-dev] PPS timing investigation
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7010">[ date ]</a>
+              <a href="thread.html#7010">[ thread ]</a>
+              <a href="subject.html#7010">[ subject ]</a>
+              <a href="author.html#7010">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

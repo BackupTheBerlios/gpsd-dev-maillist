@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Gpsd wrongly discards GSV sentences with empty SNR field
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Gpsd%20wrongly%20discards%20GSV%20sentences%20with%20empty%20SNR%0A%20field&In-Reply-To=%3C20100915111914.GA10905%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008153.html">
+   <LINK REL="Next"  HREF="008156.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Gpsd wrongly discards GSV sentences with empty SNR field</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Gpsd%20wrongly%20discards%20GSV%20sentences%20with%20empty%20SNR%0A%20field&In-Reply-To=%3C20100915111914.GA10905%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Gpsd wrongly discards GSV sentences with empty SNR field">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Sep 15 13:19:14 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008153.html">[Gpsd-dev] [PATCH 2/2] Update gpscat usage text.
+</A></li>
+        <LI>Next message: <A HREF="008156.html">[Gpsd-dev] new gps report
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8154">[ date ]</a>
+              <a href="thread.html#8154">[ thread ]</a>
+              <a href="subject.html#8154">[ subject ]</a>
+              <a href="author.html#8154">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Olivier Cornu &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">o.cornu at gmail.com</A>&gt;:
+&gt;<i> $ ./gpsd -nN -D2 /dev/rfcomm0
+</I>&gt;<i> gpsd: launching (Version 2.96~dev)
+</I>&gt;<i> gpsd: listening on port gpsd
+</I>&gt;<i> gpsd: running with effective group ID 1000
+</I>&gt;<i> gpsd: running with effective user ID 1000
+</I>&gt;<i> gpsd: opening GPS data source type 4 at '/dev/rfcomm0'
+</I>&gt;<i> gpsd: speed 57600, 8N1
+</I>&gt;<i> gpsd: speed 9600, 8O1
+</I>&gt;<i> gpsd: speed 57600, 8N1
+</I>&gt;<i> gpsd: gpsd_activate(): opened GPS (fd 5)
+</I>&gt;<i> gpsd: NTPD ntpd_link_activate: 1
+</I>&gt;<i> gpsd: /dev/rfcomm0 identified as type Generic NMEA (2.669800 sec @ 57600bps)
+</I>&gt;<i> gpsd: =&gt; Probing device subtype 0
+</I>&gt;<i> gpsd: GPS on /dev/rfcomm0 is offline (0.000683 sec since data)
+</I>&gt;<i> gpsd: =&gt; Probing device subtype 1
+</I>&gt;<i> gpsd: =&gt; Probing device subtype 2
+</I>&gt;<i> gpsd: unknown sentence:
+</I>&gt;<i> &quot;$GPGSV,2,1,08,12,76,358,,09,51,120,,30,50,274,,27,42,122,*75\x0d\x0a&quot;
+</I>&gt;<i> gpsd: =&gt; Probing device subtype 3
+</I>&gt;<i> gpsd: GPS on /dev/rfcomm0 is offline (0.000315 sec since data)
+</I>&gt;<i> gpsd: =&gt; Probing device subtype 4
+</I>&gt;<i> gpsd: =&gt; Probing device subtype 5
+</I>&gt;<i> gpsd: unknown sentence:
+</I>&gt;<i> &quot;$GPGSV,2,1,08,12,76,358,,09,51,120,,30,50,274,,27,42,122,*75\x0d\x0a&quot;
+</I>&gt;<i> gpsd: =&gt; Probing device subtype 6
+</I>&gt;<i> gpsd: GPS on /dev/rfcomm0 is offline (0.000301 sec since data)
+</I>&gt;<i> gpsd: =&gt; Probing device subtype 7
+</I>&gt;<i> gpsd: =&gt; Probing device subtype 8
+</I>&gt;<i> gpsd: unknown sentence:
+</I>&gt;<i> &quot;$GPGSV,2,1,08,12,76,358,,09,51,120,,30,50,274,,27,42,122,*75\x0d\x0a&quot;
+</I>&gt;<i> gpsd: GPS on /dev/rfcomm0 is offline (0.000276 sec since data)
+</I>&gt;<i> gpsd: unknown sentence:
+</I>&gt;<i> &quot;$GPGSV,2,1,08,12,76,358,,09,51,120,,30,50,274,,27,42,122,*75\x0d\x0a&quot;
+</I>&gt;<i> gpsd: GPS on /dev/rfcomm0 is offline (0.000094 sec since data)
+</I>&gt;<i> ^Cgpsd: received terminating signal 2.
+</I>&gt;<i> gpsd: closing GPS=/dev/rfcomm0 (5)
+</I>&gt;<i> gpsd: exiting.
+</I>&gt;<i> 
+</I>&gt;<i> In a GSV sentence, an empty SNR field should be interpreted as zero.
+</I>
+There's no test for empty SNR in the code.  I don't know why these sentences
+are rejected, but there''s something else going on.  Can you ship me
+a whole log that reproduces the problem?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008153.html">[Gpsd-dev] [PATCH 2/2] Update gpscat usage text.
+</A></li>
+	<LI>Next message: <A HREF="008156.html">[Gpsd-dev] new gps report
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8154">[ date ]</a>
+              <a href="thread.html#8154">[ thread ]</a>
+              <a href="subject.html#8154">[ subject ]</a>
+              <a href="author.html#8154">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

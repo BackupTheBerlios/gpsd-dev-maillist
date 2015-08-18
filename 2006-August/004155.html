@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Clearing fix?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Clearing%20fix%3F&In-Reply-To=%3C20060818215005.GF3965%40www.gritch.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004154.html">
+   <LINK REL="Next"  HREF="004201.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Clearing fix?</H1>
+    <B>Jeff Francis</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Clearing%20fix%3F&In-Reply-To=%3C20060818215005.GF3965%40www.gritch.org%3E"
+       TITLE="[Gpsd-dev] Clearing fix?">jeff at gritch.org
+       </A><BR>
+    <I>Fri Aug 18 23:50:05 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004154.html">[Gpsd-dev] Clearing fix?
+</A></li>
+        <LI>Next message: <A HREF="004201.html">[Gpsd-dev] Clearing fix?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4155">[ date ]</a>
+              <a href="thread.html#4155">[ thread ]</a>
+              <a href="subject.html#4155">[ subject ]</a>
+              <a href="author.html#4155">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>  Ah, what the heck, seems trivial enough.  Patch attached.  Note that
+I have no way to test it right this minute (I'm indoors and only have
+a SirfII receiver with me, anyway) and I haven't been paying 100%
+attention to the list, somebody please make sure that &quot;j0&quot; and &quot;j1&quot;
+are the right commands to send.  It compiles fine. ;^)
+
+
+
+On Fri, Aug 18, 2006 at 02:39:30PM -0700, Jeff Francis wrote:
+&gt;<i> On Fri, Aug 18, 2006 at 01:40:28PM -0700, Gary E. Miller wrote:
+</I>&gt;<i> 
+</I>&gt;<i> &gt; Is there a way to toggle the j flag now from cgps?  That would be a
+</I>&gt;<i> &gt; nice demo of the new feature.
+</I>&gt;<i> 
+</I>&gt;<i>   I'm going to AK for a week, leaving tomorrow morning.  I'll put it
+</I>&gt;<i> in there while I'm gone.  If nobody beats me to it by the time I'm
+</I>&gt;<i> back, I'll submit the patch when I return (likely no Internet access
+</I>&gt;<i> on this trip).
+</I>&gt;<i> 
+</I>&gt;<i> -- 
+</I>&gt;<i> +--------------------------+------------------------------------------+
+</I>&gt;<i> |   Jeff Francis - N0GQ    | Calvin:  How come you know so much?      |
+</I>&gt;<i> | Snohomish, WA USA, Earth |                                          |
+</I>&gt;<i> |     <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>      | Calvin's Dad:  It's all in the book you  |
+</I>&gt;<i> |  <A HREF="http://blog.gritch.org">http://blog.gritch.org</A>  | get when you become a father.            |
+</I>&gt;<i> +--------------------------+------------------------------------------+
+</I>
+-- 
++--------------------------+------------------------------------------+
+|<i>   Jeff Francis - N0GQ    | Calvin:  How come you know so much?      |
+</I>|<i> Snohomish, WA USA, Earth |                                          |
+</I>|<i>     <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>      | Calvin's Dad:  It's all in the book you  |
+</I>|<i>  <A HREF="http://blog.gritch.org">http://blog.gritch.org</A>  | get when you become a father.            |
+</I>+--------------------------+------------------------------------------+
+-------------- next part --------------
+Index: cgps.c
+===================================================================
+--- cgps.c	(revision 3398)
++++ cgps.c	(working copy)
+@@ -55,6 +55,7 @@
+ static WINDOW *datawin, *satellites, *messages, *command, *status;
+ 
+ int silent_flag=0;
++int fixclear_flag=0;
+ int ops_flag=0;
+ 
+ /* Function to call when we're all done.  Does a bit of clean-up. */
+@@ -481,6 +482,17 @@
+ 	  }
+ 	  break;
+ 
++	  /* Toggle fix clear. */
++	case 'j':
++	  if(fixclear_flag==0) {
++	    fixclear_flag=1;
++	    (void)gps_query(gpsdata, &quot;j1\n&quot;);
++	  } else {
++	    fixclear_flag=0;
++	    (void)gps_query(gpsdata, &quot;j0\n&quot;);
++	  }
++	  break;
++
+ 	  /* Clear the spewage area. */
+ 	case 'c':
+ 	    (void)werase(messages);
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004154.html">[Gpsd-dev] Clearing fix?
+</A></li>
+	<LI>Next message: <A HREF="004201.html">[Gpsd-dev] Clearing fix?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4155">[ date ]</a>
+              <a href="thread.html#4155">[ thread ]</a>
+              <a href="subject.html#4155">[ subject ]</a>
+              <a href="author.html#4155">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

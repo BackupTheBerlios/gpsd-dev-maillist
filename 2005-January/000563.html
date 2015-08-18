@@ -1,0 +1,463 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] segfault in nmea_parse.c ($GPGSV,3,3,09,24,10,137,00*42)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20segfault%20in%20nmea_parse.c%20%28%24GPGSV%2C3%2C3%2C09%2C24%2C10%2C137%2C00%2A42%29&In-Reply-To=%3C41F51004.5080007%40backtick.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000562.html">
+   <LINK REL="Next"  HREF="000565.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] segfault in nmea_parse.c ($GPGSV,3,3,09,24,10,137,00*42)</H1>
+    <B>Jason W</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20segfault%20in%20nmea_parse.c%20%28%24GPGSV%2C3%2C3%2C09%2C24%2C10%2C137%2C00%2A42%29&In-Reply-To=%3C41F51004.5080007%40backtick.org%3E"
+       TITLE="[Gpsd-dev] segfault in nmea_parse.c ($GPGSV,3,3,09,24,10,137,00*42)">jason at backtick.org
+       </A><BR>
+    <I>Mon Jan 24 16:11:00 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000562.html">[Gpsd-dev] xgps.c bugfix
+</A></li>
+        <LI>Next message: <A HREF="000565.html">[Gpsd-dev] segfault in nmea_parse.c ($GPGSV,3,3,09,24,10,137,00*42)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#563">[ date ]</a>
+              <a href="thread.html#563">[ thread ]</a>
+              <a href="subject.html#563">[ subject ]</a>
+              <a href="author.html#563">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi all,
+
+Just received my GPS unit today (BU-303) and started playing with gpsd. 
+I am currently using both xgps and KisMAC as clients to gpsd. Version 
+1.10 seems to work fine but with 2.7, KisMAC seems to cause gpsd to 
+segfault. It has not crashed when using xgps. The full log at debug 
+level 4 and a backtrace from the fault is below. At first guess I can 
+only presume that gpsd is receiving something it doesn't know how to 
+parse from my GPS. Any thoughts on what I should do here?
+
+Additionally, I checked out gpsd from SVN and I am unable to compile it 
+on OS X 10.3.7. It seems I have to generate the configure script but 
+autoconf 2.57 is failing:
+
+jasonpowerbook:~/svn/gpsd/trunk jason$ autoconf
+configure.ac:2: error: possibly undefined macro: AM_INIT_AUTOMAKE
+       If this token and others are legitimate, please use m4_pattern_allow.
+       See the Autoconf documentation.
+configure.ac:4: error: possibly undefined macro: AM_CONFIG_HEADER
+configure.ac:10: error: possibly undefined macro: AC_PROG_LIBTOOL
+configure.ac:81: error: possibly undefined macro: AM_CONDITIONAL
+
+Do I need a different version of autoconf? If relevant I have automake 1.6.3
+
+Thanks for any tips,
+
+Jason W
+
+
+
+(gdb) run -p /dev/tty.usbserial0 -s 4800 -D 4
+Starting program: /usr/sbin/gpsd -p /dev/tty.usbserial0 -s 4800 -D 4
+gpsd: launching (Version 2.7)
+gpsd: listening on port gpsd
+gpsd: Selecting Generic NMEA driver...
+gpsd: client connect on 11
+gpsd: closed GPS
+gpsd: opening GPS data source at /dev/tty.usbserial0
+gpsd: setting speed 4800, 8 bits, no parity
+gpsd: gpsd_activate: opened GPS (12)
+gpsd: &lt;= client: PAM
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: =&gt; client(11): GPSD,P=?,A=?,M=1
+gpsd: &lt;= GPS: 50.0,50.0*05
+gpsd: unknown exception: &quot;50.0,50.0*05&quot;
+gpsd: &lt;= GPS: 
+$GPGSV,3,1,09,17,81,211,30,05,77,239,32,02,56,152,25,10,46,047,00*70
+gpsd: Partial satellite data (1 of 3).
+gpsd: &lt;= GPS: 
+$GPGSV,3,2,09,30,43,222,42,09,25,326,00,04,20,137,34,06,17,245,37*7B
+gpsd: Partial satellite data (2 of 3).
+gpsd: &lt;= GPS: $GPGSV,3,3,09,24,08,136,33*4A
+gpsd: Satellite data OK.
+gpsd: &lt;= GPS: $GPRMC,145357.992,V,2738.7115,S,15250.8213,E,,,240105,,*0F
+gpsd: &lt;= GPS: $GPVTG,,T,,M,,N,,K*4E
+gpsd: &lt;= GPS: 
+$GPGGA,145358.992,2738.7115,S,15250.8213,E,0,00,50.0,93.4,M,36.6,M,0.0,0000*6D
+gpsd: GPGGA sets status 0
+gpsd: &lt;= GPS: $GPGLL,2738.7115,S,15250.8213,E,145358.992,V*35
+gpsd: &lt;= GPS: $GPGSA,A,1,,,,,,,,,,,,,50.0,50.0,50.0*05
+gpsd: GPGSA sets mode 1
+gpsd: &lt;= GPS: 
+$GPGSV,3,1,09,17,81,211,31,05,77,239,32,02,56,152,25,10,46,047,00*71
+gpsd: Partial satellite data (1 of 3).
+gpsd: &lt;= GPS: 
+$GPGSV,3,2,09,30,43,222,42,09,25,326,00,04,20,137,34,06,17,245,37*7B
+gpsd: Partial satellite data (2 of 3).
+gpsd: &lt;= GPS: $GPGSV,3,3,09,24,08,136,33*4A
+gpsd: Satellite data OK.
+gpsd: &lt;= GPS: $GPRMC,145358.992,V,2738.7115,S,15250.8213,E,,,240105,,*00
+gpsd: &lt;= GPS: $GPVTG,,T,,M,,N,,K*4E
+gpsd: &lt;= GPS: 
+$GPGGA,145359.992,2738.7115,S,15250.8213,E,0,00,50.0,93.4,M,36.6,M,0.0,0000*6C
+gpsd: GPGGA sets status 0
+gpsd: &lt;= GPS: $GPGLL,2738.7115,S,15250.8213,E,145359.992,V*34
+gpsd: &lt;= GPS: $GPGSA,A,1,,,,,,,,,,,,,50.0,50.0,50.0*05
+gpsd: GPGSA sets mode 1
+gpsd: &lt;= GPS: 
+$GPGSV,3,1,09,17,81,211,32,05,77,239,32,02,56,152,25,10,46,047,00*72
+gpsd: Partial satellite data (1 of 3).
+gpsd: &lt;= GPS: 
+$GPGSV,3,2,09,30,43,222,41,09,25,326,00,04,20,137,34,06,17,245,38*77
+gpsd: Partial satellite data (2 of 3).
+gpsd: &lt;= GPS: $GPGSV,3,3,09,24,08,136,33*4A
+gpsd: Satellite data OK.
+gpsd: &lt;= GPS: $GPRMC,145359.992,V,2738.7115,S,15250.8213,E,,,240105,,*01
+gpsd: &lt;= GPS: $GPVTG,,T,,M,,N,,K*4E
+gpsd: &lt;= GPS: 
+$GPGGA,145400.992,2738.7115,S,15250.8213,E,0,00,50.0,93.4,M,36.6,M,0.0,0000*67
+gpsd: GPGGA sets status 0
+gpsd: &lt;= GPS: $GPGLL,2738.7115,S,15250.8213,E,145400.992,V*3F
+gpsd: &lt;= GPS: $GPGSA,A,1,,,,,,,,,,,,,50.0,50.0,50.0*05
+gpsd: GPGSA sets mode 1
+gpsd: &lt;= GPS: 
+$GPGSV,3,1,09,17,81,211,33,05,77,239,32,02,56,152,25,10,46,047,00*73
+gpsd: Partial satellite data (1 of 3).
+gpsd: &lt;= GPS: 
+$GPGSV,3,2,09,30,43,222,41,09,25,326,00,04,20,137,34,06,17,245,38*77
+gpsd: Partial satellite data (2 of 3).
+gpsd: &lt;= GPS: $GPGSV,3,3,09,24,08,136,33*4A
+gpsd: Satellite data OK.
+gpsd: &lt;= GPS: $GPRMC,145400.992,V,2738.7115,S,15250.8213,E,,,240105,,*0A
+gpsd: &lt;= GPS: $GPVTG,,T,,M,,N,,K*4E
+gpsd: &lt;= GPS: 
+$GPGGA,145401.992,2738.7115,S,15250.8213,E,0,00,50.0,93.4,M,36.6,M,0.0,0000*66
+gpsd: GPGGA sets status 0
+gpsd: &lt;= GPS: $GPGLL,2738.7115,S,15250.8213,E,145401.992,V*3E
+gpsd: &lt;= GPS: $GPGSA,A,1,,,,,,,,,,,,,50.0,50.0,50.0*05
+gpsd: GPGSA sets mode 1
+gpsd: &lt;= GPS: 
+$GPGSV,3,1,09,17,81,211,33,05,77,239,31,02,56,152,00,10,46,047,00*77
+gpsd: Partial satellite data (1 of 3).
+gpsd: &lt;= GPS: 
+$GPGSV,3,2,09,30,43,222,41,09,25,326,00,04,20,137,35,06,17,245,38*76
+gpsd: Partial satellite data (2 of 3).
+gpsd: &lt;= GPS: $GPGSV,3,3,09,24,08,136,32*4B
+gpsd: Satellite data OK.
+gpsd: &lt;= GPS: $GPRMC,145401.992,V,2738.7115,S,15250.8213,E,,,240105,,*0B
+gpsd: &lt;= GPS: $GPVTG,,T,,M,,N,,K*4E
+gpsd: &lt;= GPS: 
+$GPGGA,145402.992,2738.7115,S,15250.8213,E,0,00,50.0,93.4,M,36.6,M,0.0,0000*65
+gpsd: GPGGA sets status 0
+gpsd: &lt;= GPS: $GPGLL,2738.7115,S,15250.8213,E,145402.992,V*3D
+gpsd: &lt;= GPS: $GPGSA,A,1,,,,,,,,,,,,,50.0,50.0,50.0*05
+gpsd: GPGSA sets mode 1
+gpsd: &lt;= GPS: 
+$GPGSV,3,1,09,17,81,211,33,05,77,239,30,02,56,152,29,10,46,047,00*7D
+gpsd: Partial satellite data (1 of 3).
+gpsd: &lt;= GPS: 
+$GPGSV,3,2,09,30,43,222,41,09,25,326,00,04,20,137,34,06,17,245,38*77
+gpsd: Partial satellite data (2 of 3).
+gpsd: &lt;= GPS: $GPGSV,3,3,09,24,08,136,32*4B
+gpsd: Satellite data OK.
+gpsd: &lt;= GPS: $GPRMC,145402.992,V,2738.7115,S,15250.8213,E,,,240105,,*08
+gpsd: &lt;= GPS: $GPVTG,,T,,M,,N,,K*4E
+gpsd: &lt;= GPS: 
+$GPGGA,145403.992,2738.7115,S,15250.8213,E,0,00,50.0,93.4,M,36.6,M,0.0,0000*64
+gpsd: GPGGA sets status 0
+gpsd: &lt;= GPS: $GPGLL,2738.7115,S,15250.8213,E,145403.992,V*3C
+gpsd: &lt;= GPS: $GPGSA,A,1,,,,,,,,,,,,,50.0,50.0,50.0*05
+gpsd: GPGSA sets mode 1
+gpsd: &lt;= GPS: 
+$GPGSV,3,1,09,17,81,211,34,05,77,239,30,02,56,152,29,10,46,047,00*7A
+gpsd: Partial satellite data (1 of 3).
+gpsd: &lt;= GPS: 
+$GPGSV,3,2,09,30,43,222,40,09,25,326,00,04,20,137,35,06,17,245,39*76
+gpsd: Partial satellite data (2 of 3).
+gpsd: &lt;= GPS: $GPGSV,3,3,09,24,08,136,31*48
+gpsd: Satellite data OK.
+gpsd: &lt;= GPS: $GPRMC,145403.992,V,2738.7115,S,15250.8213,E,,,240105,,*09
+gpsd: &lt;= GPS: $GPVTG,,T,,M,,N,,K*4E
+gpsd: &lt;= GPS: 
+$GPGGA,145404.992,2738.7115,S,15250.8213,E,0,00,50.0,93.4,M,36.6,M,0.0,0000*63
+gpsd: GPGGA sets status 0
+gpsd: &lt;= GPS: $GPGLL,2738.7115,S,15250.8213,E,145404.992,V*3B
+gpsd: &lt;= GPS: $GPGSA,A,1,,,,,,,,,,,,,50.0,50.0,50.0*05
+gpsd: GPGSA sets mode 1
+gpsd: &lt;= GPS: 
+$GPGSV,3,1,09,17,81,211,34,05,77,239,28,02,56,152,30,10,46,047,00*7B
+gpsd: Partial satellite data (1 of 3).
+gpsd: &lt;= GPS: 
+$GPGSV,3,2,09,30,43,222,40,09,25,326,00,04,20,137,34,06,17,245,39*77
+gpsd: Partial satellite data (2 of 3).
+gpsd: &lt;= GPS: $GPGSV,3,3,09,24,08,136,32*4B
+gpsd: Satellite data OK.
+gpsd: &lt;= GPS: $GPRMC,145404.992,V,2738.7115,S,15250.8213,E,,,240105,,*0E
+gpsd: &lt;= GPS: $GPVTG,,T,,M,,N,,K*4E
+gpsd: &lt;= GPS: 
+$GPGGA,145405.992,2738.7115,S,15250.8213,E,0,00,50.0,93.4,M,36.6,M,0.0,0000*62
+gpsd: GPGGA sets status 0
+gpsd: &lt;= GPS: $GPGLL,2738.7115,S,15250.8213,E,145405.992,V*3A
+gpsd: &lt;= GPS: $GPGSA,A,1,,,,,,,,,,,,,50.0,50.0,50.0*05
+gpsd: GPGSA sets mode 1
+gpsd: &lt;= GPS: 
+$GPGSV,3,1,09,17,81,211,34,05,77,239,28,02,56,152,31,10,46,047,00*7A
+gpsd: Partial satellite data (1 of 3).
+gpsd: &lt;= GPS: 
+$GPGSV,3,2,09,30,43,222,40,09,25,326,00,04,20,137,35,06,17,245,39*76
+gpsd: Partial satellite data (2 of 3).
+gpsd: &lt;= GPS: $GPGSV,3,3,09,24,08,136,32*4B
+gpsd: Satellite data OK.
+gpsd: &lt;= GPS: $GPRMC,145405.992,V,2738.7115,S,15250.8213,E,,,240105,,*0F
+gpsd: &lt;= GPS: $GPVTG,,T,,M,,N,,K*4E
+gpsd: &lt;= GPS: 
+$GPGGA,145406.991,2738.7115,S,15250.8213,E,0,00,50.0,93.4,M,36.6,M,0.0,0000*62
+gpsd: GPGGA sets status 0
+gpsd: &lt;= GPS: $GPGLL,2738.7115,S,15250.8213,E,145406.991,V*3A
+gpsd: &lt;= GPS: $GPGSA,A,1,,,,,,,,,,,,,50.0,50.0,50.0*05
+gpsd: GPGSA sets mode 1
+gpsd: &lt;= GPS: 
+$GPGSV,3,1,09,17,81,211,35,05,77,239,27,02,56,152,31,10,46,047,00*74
+gpsd: Partial satellite data (1 of 3).
+gpsd: &lt;= GPS: 
+$GPGSV,3,2,09,30,43,222,40,09,25,326,00,04,20,137,35,06,17,245,39*76
+gpsd: Partial satellite data (2 of 3).
+gpsd: &lt;= GPS: $GPGSV,3,3,09,24,08,136,31*48
+gpsd: Satellite data OK.
+gpsd: &lt;= GPS: $GPRMC,145406.991,V,2738.7115,S,15250.8213,E,,,240105,,*0F
+gpsd: &lt;= GPS: $GPVTG,,T,,M,,N,,K*4E
+gpsd: &lt;= GPS: 
+$GPGGA,145407.991,2738.7115,S,15250.8213,E,0,00,50.0,93.4,M,36.6,M,0.0,0000*63
+gpsd: GPGGA sets status 0
+gpsd: &lt;= GPS: $GPGLL,2738.7115,S,15250.8213,E,145407.991,V*3B
+gpsd: &lt;= GPS: $GPGSA,A,1,,,,,,,,,,,,,50.0,50.0,50.0*05
+gpsd: GPGSA sets mode 1
+gpsd: &lt;= client: PAM
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: =&gt; client(11): GPSD,P=?,A=?,M=1
+gpsd: &lt;= GPS: 
+$GPGSV,3,1,09,17,81,211,35,05,77,239,27,02,56,152,30,10,46,047,00*75
+gpsd: Partial satellite data (1 of 3).
+gpsd: &lt;= GPS: 
+$GPGSV,3,2,09,30,43,222,40,09,25,326,00,04,20,137,35,06,17,245,39*76
+gpsd: Partial satellite data (2 of 3).
+gpsd: &lt;= GPS: $GPGSV,3,3,09,24,08,136,31*48
+gpsd: Satellite data OK.
+gpsd: &lt;= GPS: $GPRMC,145407.991,V,2738.7115,S,15250.8213,E,,,240105,,*0E
+gpsd: &lt;= GPS: $GPVTG,,T,,M,,N,,K*4E
+gpsd: &lt;= client: PAM
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: =&gt; client(11): GPSD,P=?,A=?,M=1
+gpsd: &lt;= GPS: 
+$GPGGA,145408.991,2738.7115,S,15250.8213,E,0,00,50.0,93.4,M,36.6,M,0.0,0000*6C
+gpsd: GPGGA sets status 0
+gpsd: &lt;= GPS: $GPGLL,2738.7115,S,15250.8213,E,145408.991,V*34
+gpsd: &lt;= GPS: $GPGSA,A,1,,,,,,,,,,,,,50.0,50.0,50.0*05
+gpsd: GPGSA sets mode 1
+gpsd: &lt;= client: PAM
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: =&gt; client(11): GPSD,P=?,A=?,M=1
+gpsd: &lt;= GPS: 
+$GPGSV,3,1,09,17,81,211,36,05,77,239,27,02,56,152,31,10,46,047,00*77
+gpsd: Partial satellite data (1 of 3).
+gpsd: &lt;= GPS: 
+$GPGSV,3,2,09,30,43,222,40,09,25,326,00,04,20,137,35,06,17,245,39*76
+gpsd: Partial satellite data (2 of 3).
+gpsd: &lt;= GPS: $GPGSV,3,3,09,24,08,136,31*48
+gpsd: Satellite data OK.
+gpsd: &lt;= GPS: $GPRMC,145408.991,V,2738.7115,S,15250.8213,E,,,240105,,*01
+gpsd: &lt;= GPS: $GPVTG,,T,,M,,N,,K*4E
+gpsd: &lt;= client: PAM
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: =&gt; client(11): GPSD,P=?,A=?,M=1
+gpsd: &lt;= GPS: 
+$GPGGA,145409.991,2738.7115,S,15250.8213,E,0,00,50.0,93.4,M,36.6,M,0.0,0000*6D
+gpsd: GPGGA sets status 0
+gpsd: &lt;= GPS: $GPGLL,2738.7115,S,15250.8213,E,145409.991,V*35
+gpsd: &lt;= GPS: $GPGSA,A,1,,,,,,,,,,,,,50.0,50.0,50.0*05
+gpsd: GPGSA sets mode 1
+gpsd: &lt;= GPS: 
+$GPGSV,3,1,09,17,81,211,36,05,77,239,28,02,56,152,31,10,46,047,00*78
+gpsd: Partial satellite data (1 of 3).
+gpsd: &lt;= client: PAM
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: =&gt; client(11): GPSD,P=?,A=?,M=1
+gpsd: &lt;= GPS: 
+$GPGSV,3,2,09,30,43,222,40,09,25,326,00,04,20,137,35,06,17,245,39*76
+gpsd: Partial satellite data (2 of 3).
+gpsd: &lt;= GPS: $GPGSV,3,3,09,24,08,136,31*48
+gpsd: Satellite data OK.
+gpsd: &lt;= GPS: $GPRMC,145409.991,V,2738.7115,S,15250.8213,E,,,240105,,*00
+gpsd: &lt;= GPS: $GPVTG,,T,,M,,N,,K*4E
+gpsd: &lt;= client: PAM
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: =&gt; client(11): GPSD,P=?,A=?,M=1
+gpsd: &lt;= GPS: 
+$GPGGA,145410.991,2738.7115,S,15250.8213,E,0,00,50.0,93.4,M,36.6,M,0.0,0000*65
+gpsd: GPGGA sets status 0
+gpsd: &lt;= GPS: $GPGLL,2738.7115,S,15250.8213,E,145410.991,V*3D
+gpsd: &lt;= GPS: $GPGSA,A,1,,,,,,,,,,,,,50.0,50.0,50.0*05
+gpsd: GPGSA sets mode 1
+gpsd: &lt;= GPS: 
+$GPGSV,3,1,09,17,81,211,36,05,77,239,28,02,56,152,31,10,46,047,00*78
+gpsd: Partial satellite data (1 of 3).
+gpsd: &lt;= client: PAM
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: =&gt; client(11): GPSD,P=?,A=?,M=1
+gpsd: &lt;= GPS: 
+$GPGSV,3,2,09,30,43,222,40,09,25,326,00,04,20,137,34,06,17,245,38*76
+gpsd: Partial satellite data (2 of 3).
+gpsd: &lt;= GPS: $GPGSV,3,3,09,24,08,136,30*49
+gpsd: Satellite data OK.
+gpsd: &lt;= GPS: $GPRMC,145410.991,V,2738.7115,S,15250.8213,E,,,240105,,*08
+gpsd: &lt;= GPS: $GPVTG,,T,,M,,N,,K*4E
+gpsd: &lt;= client: PAM
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: =&gt; client(11): GPSD,P=?,A=?,M=1
+gpsd: &lt;= GPS: 
+$GPGGA,145411.991,2738.7115,S,15250.8213,E,0,00,50.0,93.4,M,36.6,M,0.0,0000*64
+gpsd: GPGGA sets status 0
+gpsd: &lt;= GPS: $GPGLL,2738.7115,S,15250.8213,E,145411.991,V*3C
+gpsd: &lt;= GPS: $GPGSA,A,1,,,,,,,,,,,,,50.0,50.0,50.0*05
+gpsd: GPGSA sets mode 1
+gpsd: &lt;= GPS: 
+$GPGSV,3,1,09,17,81,211,35,05,77,239,28,02,56,152,32,10,46,047,00*78
+gpsd: Partial satellite data (1 of 3).
+gpsd: &lt;= client: PAM
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: =&gt; client(11): GPSD,P=?,A=?,M=1
+gpsd: &lt;= GPS: 
+$GPGSV,3,2,09,30,43,222,41,09,25,326,00,04,20,137,34,06,17,245,39*76
+gpsd: Partial satellite data (2 of 3).
+gpsd: &lt;= GPS: $GPGSV,3,3,09,24,08,136,31*48
+gpsd: Satellite data OK.
+gpsd: &lt;= GPS: $GPRMC,145411.991,V,2738.7115,S,15250.8213,E,,,240105,,*09
+gpsd: &lt;= GPS: $GPVTG,,T,,M,,N,,K*4E
+gpsd: &lt;= client: PAM
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: =&gt; client(11): GPSD,P=?,A=?,M=1
+gpsd: &lt;= GPS: 
+$GPGGA,145412.991,2738.7115,S,15250.8213,E,0,00,50.0,93.4,M,36.6,M,0.0,0000*67
+gpsd: GPGGA sets status 0
+gpsd: &lt;= GPS: $GPGLL,2738.7115,S,15250.8213,E,145412.991,V*3F
+gpsd: &lt;= GPS: $GPGSA,A,1,,,,,,,,,,,,,50.0,50.0,50.0*05
+gpsd: GPGSA sets mode 1
+gpsd: &lt;= GPS: 
+$GPGSV,3,1,09,17,81,211,36,05,77,239,29,02,56,152,32,10,46,047,00*7A
+gpsd: Partial satellite data (1 of 3).
+gpsd: &lt;= client: PAM
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: =&gt; client(11): GPSD,P=?,A=?,M=1
+gpsd: &lt;= GPS: 
+$GPGSV,3,2,09,30,43,222,41,09,25,326,00,04,20,137,34,06,17,245,39*76
+gpsd: Partial satellite data (2 of 3).
+gpsd: &lt;= GPS: $GPGSV,3,3,09,24,08,136,31*48
+gpsd: Satellite data OK.
+gpsd: &lt;= GPS: $GPRMC,145412.991,V,2738.7115,S,15250.8213,E,,,240105,,*0A
+gpsd: &lt;= GPS: $GPVTG,,T,,M,,N,,K*4E
+gpsd: &lt;= GPS: 
+$GPGGA,145413.991,2738.7115,S,15250.8213,E,0,00,50.0,93.4,M,36.6,M,0.0,0000*66
+gpsd: GPGGA sets status 0
+gpsd: &lt;= client: PAM
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: =&gt; client(11): GPSD,P=?,A=?,M=1
+gpsd: &lt;= GPS: $GPGLL,2738.7115,S,15250.8213,E,145413.991,V*3E
+gpsd: &lt;= GPS: $GPGSA,A,1,,,,,,,,,,,,,50.0,50.0,50.0*05
+gpsd: GPGSA sets mode 1
+gpsd: &lt;= GPS: 
+$GPGSV,3,1,09,17,81,211,35,05,77,239,29,02,56,152,32,10,46,047,00*79
+gpsd: Partial satellite data (1 of 3).
+gpsd: &lt;= client: PAM
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: =&gt; client(11): GPSD,P=?,A=?,M=1
+gpsd: &lt;= GPS: 
+$GPGSV,3,2,09,30,43,222,40,09,25,326,00,04,20,137,34,06,17,245,39*77
+gpsd: Partial satellite data (2 of 3).
+gpsd: &lt;= GPS: $GPGSV,3,3,09,24,08,136,31*48
+gpsd: Satellite data OK.
+gpsd: &lt;= GPS: $GPRMC,145413.991,V,2738.7115,S,15250.8213,E,,,240105,,*0B
+gpsd: &lt;= GPS: $GPVTG,,T,,M,,N,,K*4E
+gpsd: &lt;= GPS: 
+$GPGGA,145414.991,2738.7115,S,15250.8213,E,0,00,50.0,93.4,M,36.6,M,0.0,0000*61
+gpsd: GPGGA sets status 0
+gpsd: &lt;= client: PAM
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: =&gt; client(11): GPSD,P=?,A=?,M=1
+gpsd: &lt;= GPS: $GPGLL,2738.7115,S,15250.8213,E,145414.991,V*39
+gpsd: &lt;= GPS: $GPGSA,A,1,,,,,,,,,,,,,50.0,50.0,50.0*05
+gpsd: GPGSA sets mode 1
+gpsd: &lt;= GPS: 
+$GPGSV,3,1,09,17,81,211,35,05,77,239,30,02,56,152,32,10,46,047,00*71
+gpsd: Partial satellite data (1 of 3).
+gpsd: &lt;= GPS: 
+$GPGSV,3,2,09,30,43,222,40,09,25,326,00,04,20,137,34,06,17,245,39*77
+gpsd: Partial satellite data (2 of 3).
+gpsd: &lt;= client: PAM
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: GPS has no fix (status=0, mode=1).
+gpsd: =&gt; client(11): GPSD,P=?,A=?,M=1
+gpsd: &lt;= GPS: $GPGSV,3,3,09,24,08,136,31*48
+
+Program received signal EXC_BAD_ACCESS, Could not access memory.
+0x9000c148 in strtol ()
+(gdb) bt
+#0  0x9000c148 in strtol ()
+#1  0x0001dca0 in update_field_i (field=0x4 &lt;Address 0x4 out of bounds&gt;, 
+dest=0x1800334) at nmea_parse.c:73
+#2  0x0001e480 in processGPGSV (count=4, field=0xbfffc674, 
+out=0x1800200) at nmea_parse.c:399
+#3  0x0001e7c0 in nmea_parse (sentence=0x22030 &quot;&quot;, outdata=0x1800200) at 
+nmea_parse.c:500
+#4  0x0001eb24 in gpsd_NMEA_handle_message (session=0x1800200, 
+sentence=0x22244 &quot;$GPGSV,3,3,09,24,08,136,31*48&quot;) at drivers.c:18
+#5  0x0001ecbc in nmea_handle_input (session=0x22244) at drivers.c:52
+#6  0x000206f0 in gpsd_poll (session=0x22244) at libgpsd_core.c:155
+#7  0x00003c5c in main (argc=25166336, argv=0x1ec24) at gpsd.c:584
+(gdb)
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000562.html">[Gpsd-dev] xgps.c bugfix
+</A></li>
+	<LI>Next message: <A HREF="000565.html">[Gpsd-dev] segfault in nmea_parse.c ($GPGSV,3,3,09,24,10,137,00*42)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#563">[ date ]</a>
+              <a href="thread.html#563">[ thread ]</a>
+              <a href="subject.html#563">[ subject ]</a>
+              <a href="author.html#563">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

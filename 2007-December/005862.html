@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] New release procedure
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20New%20release%20procedure&In-Reply-To=%3C20071217155211.157FB8306A0%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005861.html">
+   <LINK REL="Next"  HREF="005863.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] New release procedure</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20New%20release%20procedure&In-Reply-To=%3C20071217155211.157FB8306A0%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] New release procedure">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Mon Dec 17 16:52:11 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005861.html">[Gpsd-dev] Testing to see if my list access works again
+</A></li>
+        <LI>Next message: <A HREF="005863.html">[Gpsd-dev] Red light: total breakage in Garmin USB,	partial breakage in Garmin serial
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5862">[ date ]</a>
+              <a href="thread.html#5862">[ thread ]</a>
+              <a href="subject.html#5862">[ subject ]</a>
+              <a href="author.html#5862">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gary Miller has pointed out that the loose release procedures we've been
+using create a high risk of shipping broken support for the problem
+children, e.g. devices like the Garmins and (still-broken) TnT that cannot 
+be verified using a regression-test load.   He has also recommended a
+minimum 7-day freeze period between release announcement and release 
+so we'll have the time necessary to do the live test on these devices.
+
+He's got a point.  To address it, I've designed a more structured
+release procedure which both Chris and Gary have approved.
+
+First, defining some terms.  There are three tiers of code in our tarballs.
+Each has a different risk profile.
+
+1) Exterior code
+
+Test clients and test tools: xgps, cgps, gpsfake, gpsprof, sirfmon, etc.
+These are at low risk of breakage and are easy to eyeball-check for
+correctness -- when they go wrong they tend to do so in obvious ways.
+Point errors in a tool don't compromise the other tools or the daemon.
+
+2) Device drivers
+
+Drivers for the individual GPS device types.  Errors in a driver can
+be subtle and hard to detect, but they generally break support for one
+class of device without affecting others.  Driver maintainers can test
+their drivers with high confidence.
+
+3) Core code
+
+Core code is shared among all device types; most notably, it includes
+the packet-getter state machine, the channel-management logic, and
+the error-modeling code.  Historically these are the three most 
+bug-prone areas in gpsd.
+
+We also need to notice that there are two different kinds of devices
+with very different risk profiles:
+
+A) Static-testable: These are devices like NMEA and SiRF chipsets that
+can be effectively simulated with a test-load file using gpsfake.  We
+can verify these with high confidence using a mechanical regression test.
+
+B) The problem children: Garmins and other devices that aren't
+static-testable.  Also, in general, the PPS code.  When the
+correctness of drivers and core code in handling any of these is
+suspect, they have to be live-tested by someone with acess to the
+actual device.
+
+The goal of our release procedure is simple: prevent functional regressions.
+No device that worked in release N should break in release N+1.  Of course
+we also want to prevent shipping broken core code.
+
+For static-testable devices this is fairly easy to ensure.  Now that
+we've fixed the problems with ill-conditioned floating-point, the
+regression-test suite does a pretty good job of exercising those
+drivers and the related core code and producing repeatable results.
+Accordingly, I'm fairly sure we will never again ship a release with
+serious breakage on NMEA or SiRF devices.
+
+The problem children are another matter.  Right now our big exposure
+here is Garmins, but we need to have good procedure in case we get
+our TnT support unbroken and for other ill-behaved devices we might
+encounter in the future.
+
+Here are the new release-readiness states:
+
+State 0 (red): There are known blocker bugs,  Blocker bugs include functional
+regressions in core or driver code.  
+
+State 1 (blue): There are no known blocker bugs.  'make testregress' passes, but
+problem-children have not been live-tested. 
+
+State 2 (yellow): There are no known blocker bugs.  'make testregress'
+passes.  Problem children have been live-tested.  From this state, we
+drop back to state 1 if anyone commits a logic change to core code or
+the driver for a problem child.  In state 2, devs with release
+authority (presently myself, Chris, and Gary) may ship a release
+candidate at any time.
+
+State 3 (green): We've been in state 2 for 7 days.  In state 3, a dev 
+with release authority can call a freeze for release.
+
+State 4: (freeze): No new features that could destabilize existing code.  
+Release drops us to state 3.
+
+When you do something that changes our release state -- in particular,
+when you commit a patch that touches core or a problem-child driver
+at state 2 -- you must notify the dev list.
+
+Anyone notifying the list of a blocker bug drops us back to state 0.
+
+When you announce a state change on the dev list, do it like this:
+
+     Red light: total breakage in Garmin USB, partial breakage in Garmin serial
+     Blue light: no known blockers, cosmetic problems in xgps
+     Yellow light: Garmins tested successfully 20 Dec 2007
+     Green light: I'm expecting to call freeze in about 10 days
+     Freeze: Scheduled release date 1 Feb 2008
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+Love your country, but never trust its government.
+	-- Robert A. Heinlein.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005861.html">[Gpsd-dev] Testing to see if my list access works again
+</A></li>
+	<LI>Next message: <A HREF="005863.html">[Gpsd-dev] Red light: total breakage in Garmin USB,	partial breakage in Garmin serial
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5862">[ date ]</a>
+              <a href="thread.html#5862">[ thread ]</a>
+              <a href="subject.html#5862">[ subject ]</a>
+              <a href="author.html#5862">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

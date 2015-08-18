@@ -1,0 +1,114 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] Qt equivalent of libgpsmm and libgps
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Qt%20equivalent%20of%20libgpsmm%20and%20libgps&In-Reply-To=%3C7ec79eed1003291702r48bf0668u1651c575b519a91e%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007506.html">
+   <LINK REL="Next"  HREF="007508.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] Qt equivalent of libgpsmm and libgps</H1>
+    <B>Chris Browet</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Qt%20equivalent%20of%20libgpsmm%20and%20libgps&In-Reply-To=%3C7ec79eed1003291702r48bf0668u1651c575b519a91e%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [PATCH] Qt equivalent of libgpsmm and libgps">cbro at semperpax.com
+       </A><BR>
+    <I>Tue Mar 30 02:02:44 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007506.html">[Gpsd-dev] [PATCH] Qt equivalent of libgpsmm and libgps
+</A></li>
+        <LI>Next message: <A HREF="007508.html">[Gpsd-dev] [PATCH] Qt equivalent of libgpsmm and libgps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7507">[ date ]</a>
+              <a href="thread.html#7507">[ thread ]</a>
+              <a href="subject.html#7507">[ subject ]</a>
+              <a href="author.html#7507">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Qt is C++ only. As such some C syntax do not compile in C++ (at least in
+mingw, but I guess it would be the same with g++)
+
+For instance, declaring a named struct inside another one (as in the RTCM2
+case) do not work in C++ (it fails when you try to reuse the inside struct
+in a declaration).
+Same with the JSON initialisation tables.'.dflt.check = &quot;DEVICE&quot;' is C
+specific and do not compile under C++.
+
+Best would be to compile only the necessary .c in C++ (namely libgps_core.c)
+but I don't how how to do that with a plain .pro. (not if it is actually
+feasible to mix C and C++ in this case), so I did it the dumb,
+one-size-fits-all way.
+
+Re json_device_dump, don't forget that this patch if for creating a client
+library, not the full gpsd. I assumed that json_device_dump is a server
+feature, not needed in the client side. Isn't it the case?
+
+Problem is that there is no isolation between the client and server sources,
+so I have to patch server side sources because some of their functions are
+used on the client side, but not all.
+
+Regards
+- Chris -
+
+P.S. I forgot to mention in the initial post that the patch is vs. 2.92
+
+On Tue, Mar 30, 2010 at 01:28, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+
+&gt;<i> Chris Browet &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">cbro at semperpax.com</A>&gt;:
+</I>&gt;<i> &gt; Not being accustomed to gpsd code, it would be great if someone
+</I>&gt;<i> &gt; knowledgeable could review and comment on the patch.
+</I>&gt;<i>
+</I>&gt;<i> There are nmany things about this patch I don't undersrand.
+</I>&gt;<i>
+</I>&gt;<i> First, in gps.h, why all the changes to the RTCM2 structures?
+</I>&gt;<i>
+</I>&gt;<i> In gpsd_json.c, why is the body of json_device_dump() conditioned
+</I>&gt;<i> out?  By doing this, you have effectively disabled one of the core
+</I>&gt;<i> protcol responses.
+</I>&gt;<i>
+</I>&gt;<i> In json_device_read() and other JSON parse functions, you changed the
+</I>&gt;<i> way the attributes table is initialized.  Why?
+</I>&gt;<i> --
+</I>&gt;<i>                &lt;a href=&quot;<A HREF="http://www.catb.org/~esr/&lt;http://www.catb.org/%7Eesr/">http://www.catb.org/~esr/&lt;http://www.catb.org/%7Eesr/</A>&gt;&quot;&gt;Eric
+</I>&gt;<i> S. Raymond&lt;/a&gt;
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100330/6cf06a54/attachment.html">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100330/6cf06a54/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007506.html">[Gpsd-dev] [PATCH] Qt equivalent of libgpsmm and libgps
+</A></li>
+	<LI>Next message: <A HREF="007508.html">[Gpsd-dev] [PATCH] Qt equivalent of libgpsmm and libgps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7507">[ date ]</a>
+              <a href="thread.html#7507">[ thread ]</a>
+              <a href="subject.html#7507">[ subject ]</a>
+              <a href="author.html#7507">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

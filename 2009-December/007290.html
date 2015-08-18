@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] IPv6 Support patch
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20IPv6%20Support%20patch&In-Reply-To=%3C20091218203916.GA21017%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007289.html">
+   <LINK REL="Next"  HREF="007292.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] IPv6 Support patch</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20IPv6%20Support%20patch&In-Reply-To=%3C20091218203916.GA21017%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] IPv6 Support patch">esr at thyrsus.com
+       </A><BR>
+    <I>Fri Dec 18 21:39:16 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007289.html">[Gpsd-dev] IPv6 Support patch
+</A></li>
+        <LI>Next message: <A HREF="007292.html">[Gpsd-dev] BU-303 switch to Trimble TSIP
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7290">[ date ]</a>
+              <a href="thread.html#7290">[ thread ]</a>
+              <a href="subject.html#7290">[ subject ]</a>
+              <a href="author.html#7290">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Olivier Mehani &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">olivier.mehani at inria.fr</A>&gt;:
+&gt;<i> I attach a Quilt patchset with several patches addressing Greg's
+</I>&gt;<i> points.
+</I>
+I have just spent about 30 minutes trying to apply these to gpsd trunk.
+I'm sorry, but there has been too much change since 2.39 for these to 
+apply anything even close to cleanly.  I would try to reconcile by hand,
+but I don't understand the IPv6 API well enough to be sure I wouldn't
+miss something subtle but critical.
+
+I will be happy to merge in IPv6 support, but you will need to generate
+a patch set against SVN trunk or (at leastt) our more recent 2.40 release.
+
+A few comments:
+ 
+&gt;<i> On Fri, 20 Feb 2009 08:11:10 +0100, Mathieu Peresse wrote:
+</I>&gt;<i> &gt; On Fri, Feb 20, 2009 at 1:04 AM, Greg Troxel &lt;gdt at ir.bbn.com&gt;
+</I>&gt;<i> &gt; wrote:
+</I>&gt;<i> &gt; &gt; It allows the gpsd daemon to listen on a v6 socket, when started
+</I>&gt;<i> &gt; &gt; with the &quot;-6&quot; option.  It also updates netlib.c, libgps.c,
+</I>&gt;<i> &gt; &gt; gpspipe.c, gpsctl.c to allow gpspipe and gpsctl to connect to the
+</I>&gt;<i> &gt; &gt; gpsd daemon with IPv6.
+</I>&gt;<i> &gt; &gt; First, I think we need to talk about what the desired behavior is.
+</I>&gt;<i> &gt; &gt; I am used to the KAME/BSD approach to v6, which is that programs
+</I>&gt;<i> &gt; &gt; that used to listen on a v4 socket should instead listen on both v6
+</I>&gt;<i> &gt; &gt; and v4 and be able to cope with incoming connections on either.  For
+</I>&gt;<i> &gt; &gt; example, one of my machines runs DNS, and fstat shows:
+</I>
+Greg's objection is correct.  We don't like configuration options
+here; our programs should look around in their environment and figure
+out what to do without being told.
+ 
+&gt;<i> Patch gpsd-2.39_ipv6_bsd-like_behavior.patch implements this feature for
+</I>&gt;<i> gpsd only (not the utilities). Sock2id has been updated as well to be
+</I>&gt;<i> able to use sockaddr_in6 if needed.
+</I>
+A high-quality patchset should implement KAME/BSD-like autoconfiguring behavior
+for all the network-aware tools
+
+&gt;<i> I tried to go through the verification process as explained in [0], but
+</I>&gt;<i> all test exited with errors, even on an unpatched tree, despite the
+</I>&gt;<i> relevant tools being installed.
+</I>&gt;<i> 
+</I>&gt;<i> However, I don't believe these patches introduce any regression with
+</I>&gt;<i> respect to the GPS device handling, as the changes are only on the
+</I>&gt;<i> network side.
+</I>&gt;<i> 
+</I>&gt;<i> Splint yields a lot of warnings suggesting to add +posix, both for the
+</I>&gt;<i> patched and unpatched version. The patched version has two new warnings
+</I>&gt;<i> (for libgps.c and gpsmon.c) about &lt;sys/socket.h&gt;. I'm not exactly sure
+</I>&gt;<i> what this means, but the warning is similar to those from the vanilla
+</I>&gt;<i> version, so my understanding is that they are considered harmless.
+</I>&gt;<i> 
+</I>&gt;<i> The Valgrind audit complains about a missing killall() attribute for the
+</I>&gt;<i> test session in both case. I didn't investigate further, but no memory
+</I>&gt;<i> allocation has been changed, so it should be safe.
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> I manually (i.e. not exhaustively) tested the patched version with
+</I>&gt;<i> respect to behaving as before, using IPv6 by default and gracefully
+</I>&gt;<i> falling back to IPv4. The configure script has only been tested on a
+</I>&gt;<i> recent Unix with IPv6 support, but build tests were run with IPv6
+</I>&gt;<i> enabled, disabled or autodetected. All tests worked as expected.
+</I>
+Good job of testing.  I wish all our contributors were so conscientious.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 189 bytes
+Desc: Digital signature
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091218/e94a7cc3/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091218/e94a7cc3/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007289.html">[Gpsd-dev] IPv6 Support patch
+</A></li>
+	<LI>Next message: <A HREF="007292.html">[Gpsd-dev] BU-303 switch to Trimble TSIP
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7290">[ date ]</a>
+              <a href="thread.html#7290">[ thread ]</a>
+              <a href="subject.html#7290">[ subject ]</a>
+              <a href="author.html#7290">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

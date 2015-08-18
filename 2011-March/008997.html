@@ -1,0 +1,244 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Shared-memory interface.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Shared-memory%20interface.&In-Reply-To=%3CAANLkTimcNr4fvzELwJb08Ck4b1OwhWvzqbQrryzkODQK%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008996.html">
+   <LINK REL="Next"  HREF="008998.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Shared-memory interface.</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Shared-memory%20interface.&In-Reply-To=%3CAANLkTimcNr4fvzELwJb08Ck4b1OwhWvzqbQrryzkODQK%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Shared-memory interface.">thomas at mich.com
+       </A><BR>
+    <I>Thu Mar 24 15:24:21 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008996.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+        <LI>Next message: <A HREF="008998.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8997">[ date ]</a>
+              <a href="thread.html#8997">[ thread ]</a>
+              <a href="subject.html#8997">[ subject ]</a>
+              <a href="author.html#8997">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Thu, Mar 24, 2011 at 8:27 AM, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+</I>&gt;&gt;<i> &gt; I'm not seeing a problem here. &#160;The user can't modify or delete those files,
+</I>&gt;&gt;<i> &gt; so where's the security/assurance threat?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I think you can delete &quot;those files&quot;, depending on where they are or
+</I>&gt;&gt;<i> how secure they are since they are just a filesystem node and you are
+</I>&gt;&gt;<i> only doing an exclusive flag with an ioctl after the open, not locking
+</I>&gt;&gt;<i> the inode.
+</I>&gt;<i>
+</I>&gt;<i> You are in a general way right. &#160;But if my opponent has root server
+</I>&gt;<i> access so I can't trust filesystem security, I'll have much larger
+</I>&gt;<i> problems than this including some vulnerabilities I can't block even
+</I>&gt;<i> in principle. &#160;It's not a good use of effort to install a slightly
+</I>&gt;<i> better lock on your door when the walls around it have crumbled.
+</I>&gt;<i>
+</I>&gt;&gt;<i> Also don't assume they are in /dev or otherwise owned by root. &#160;I
+</I>&gt;&gt;<i> might also be able to grab the datastream from a pty with just a cat
+</I>&gt;&gt;<i> command since you don't open those exclusively (the EXCL isn't set,
+</I>&gt;&gt;<i> but it might be, just the &quot;is opened elsewhere already&quot; could be
+</I>&gt;&gt;<i> dropped for a pty).
+</I>&gt;<i>
+</I>&gt;<i> Opening devices not owned by root is another one of those &quot;if you're
+</I>&gt;<i> smart enough to to get yourself into this kind of trouble, you better
+</I>&gt;<i> be smart enough to deal with the consequences&quot; cases. &#160;It's just not
+</I>&gt;<i> worth complicating the code for these. &#160;When you try, the increment
+</I>&gt;<i> of complexity does things to your defect rate that are worse than
+</I>&gt;<i> ignoring the supposed problem.
+</I>&gt;<i>
+</I>&gt;<i> EXCL only works on a create. &#160;It would be handy if it were otherwise,
+</I>&gt;<i> but alas no.
+</I>&gt;<i>
+</I>&gt;&gt;<i> &gt; Note that if you were actually to come up with a sneak path I would
+</I>&gt;&gt;<i> &gt; become much less hostile to channel numbers, since that vulnerability
+</I>&gt;&gt;<i> &gt; would create a *requirement* for a layer of indirection to mask the
+</I>&gt;&gt;<i> &gt; filenames.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> A bit contrived, but off the top of my head, assume you have an
+</I>&gt;&gt;<i> otherwise secure system behind an ethernet switch but I'm somewhere on
+</I>&gt;&gt;<i> the net where I can access the gpsd port and I do an ordinary WATCH or
+</I>&gt;&gt;<i> POLL. &#160;I see the udp or tcp URI, say the actual GPS source is an
+</I>&gt;&gt;<i> embedded device on the roof or outside with a wifi or ethernet
+</I>&gt;&gt;<i> connection. &#160;UDP is now simple as I can probably inject packets and
+</I>&gt;&gt;<i> even take over the stream. &#160;TCP is a bit more subtle, but I now also
+</I>&gt;&gt;<i> know another address which is active, so can play games with ARP, even
+</I>&gt;&gt;<i> if switches or something like WPK2 was active.
+</I>&gt;<i>
+</I>&gt;<i> Contrived indeed, but the best argument you've made yet because it
+</I>&gt;<i> doesn't involve the victim doing something actively perverse or
+</I>&gt;<i> bonehead-stupid. :-)
+</I>&gt;<i>
+</I>&gt;<i> This really falls under &quot;don't use unsecured wireless for anything
+</I>&gt;<i> life-critical&quot;. Duh... &#160;If you care about security that much, why
+</I>&gt;<i> don't you have proper end-to-end encryption on your network?
+</I>
+No, both sources could be on the public internet.  One of gpsd's
+function is to publish information.
+
+You aren't building TLS as an option (The AUTHENTICATION is more
+important than the encryption - I can't require valid certs for
+sources, nor validate I'm talking to the real gpsd at the remote end).
+
+So I'm a hacker trying to penetrate your system and you have gpsd
+installed, and are using it to publish position information for data
+gathering.  I now know what kind of system since the device paths are
+a signature of the OS type (see below), I also know what kind of
+device, and if you are using the GPS over a network, I know something
+about that too, maybe including a source port you will let through
+your firewall.
+
+I'll merge intwo points from the discussion here from the inconsistency thread:
+
+(device names, briefly here)
+
+&gt;<i> True enough.  But one of the advantages of referring to device filenames
+</I>&gt;<i> is that you have all the resolution rules of filenames, and the ability to do
+</I>&gt;<i> things like stty and stat to get more information about them.
+</I>
+If I'm on a local Linux system, I can find out the device name in
+/proc for linux or with lsof or something else but I already have to
+be there.  You expose this information whether or not the port is
+local or remote and without any authentication.
+
+And if your &quot;open exclusive&quot; code is working, stty won't, at least not
+while gpsd is connected and if you aren't root.
+
+&gt;&gt;<i> (asking if the strings are supposed to be meaningful or not)
+</I>
+&gt;<i> No, all we really rely on is that they're distinct from each other.
+</I>
+Actually you aren't.  You aren't checking for a pathname that starts
+from the root, so I can produce a collision.  I also didn't see (but
+may have missed) code that would  prevent opening two identical <A HREF="tcp://">tcp://</A>
+or <A HREF="udp://">udp://</A> URIs. - which you should do in any case (since the source
+port would be distinct, two identical <A HREF="tcp://">tcp://</A> URLS might be to two
+entries in a pool, or simply be to the same remote device)..
+
+The OS isn't enforcing this, and you aren't checking for this, and for
+network URLs you don't have enough in the string to enforce
+uniqueness.
+
+&quot;gpsd -D9 -N <A HREF="tcp://localhost:8888">tcp://localhost:8888</A> <A HREF="tcp://localhost:8888">tcp://localhost:8888</A>&quot;
+
+shows that it is &quot;stashing&quot; both identical device names into slots 0 and 1.
+
+This is actually a valid use case - I can connect N gps physical
+devices to a remote system, and just like I can connect to a web
+server multiple times, I can connect and serve gps devices from a
+pool.
+
+But the names aren't unique.  I haven't set it up far enough to
+actually get DEVICE json sentences back, but if it worked they would
+be identical.
+
+&gt;&gt;<i> It would also let me tell if I was chrooted - I should see the device
+</I>&gt;&gt;<i> node gpsd is connected with in my tree if I'm not.
+</I>&gt;<i>
+</I>&gt;<i> Point. &#160;Minor one, but a point. &#160;If I get a bug report that says &quot;gpsd
+</I>&gt;<i> is leaking info about my chroot structure and this is a practical
+</I>&gt;<i> problem because...&quot; I'll take it seriously.
+</I>
+&gt;&gt;<i> Another things is the device name buffer is 64 bytes. &#160;I don't think
+</I>&gt;&gt;<i> the strlcpy is pre-checked by strlen when you do:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> &#160; &#160;if (device != NULL)
+</I>&gt;&gt;<i> &#160; &#160; &#160; &#160; (void)strlcpy(session-&gt;gpsdata.dev.path, device,
+</I>&gt;&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; sizeof(session-&gt;gpsdata.dev.path));
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> The problem is if the desired node is beyond 63 bytes, and the 63 byte
+</I>&gt;&gt;<i> path is valid, it will attempt to open whatever the path does point to
+</I>&gt;&gt;<i> - a directory most likely but it might do something unexpected. &#160;You
+</I>&gt;&gt;<i> could use the return from strlcpy:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> if( strlen(device) != strlcpy... )
+</I>&gt;&gt;<i> &#160; error_handle();
+</I>&gt;<i>
+</I>&gt;<i> Have you ever in your entire life seen a serial device name that was
+</I>&gt;<i> 63 chars long? &#160;No, better: have you ever even seen one that was *16*
+</I>&gt;<i> chars long?
+</I>
+Daily.  Right now.  On my Mac OSX.  For any bluetooth device, it
+creates /dev/tty.(bluetooth-friendly-name)-SPP  (or -Modem... SPPslave
+etc.), and the friendly name of one of my devices is 20 characters
+long by itself.  None of this is contrived.
+
+Also, it isn't limited to serial devices.  The URIs for <A HREF="tcp://">tcp://</A> and
+<A HREF="udp://">udp://</A> with ports have to fit, and if they are using DNS there is no
+such restriction.
+
+/dev/./././. - ./ttyUSB11 can be truncated to ttyUSB1 and the open
+will SUCCEED on the truncated name.
+
+You said the code had to be as safe as possible or practical, yet
+there are a lot of unchecked and unprotected things throughout.  And
+I've already noted that it is ok to fail, as long as the failure is
+conspicuous, i.e. opening ttyUSB11 should either open ttyUSB11 or
+fail, not successfully open ttyUSB1 instead, lock, stty it, and start
+probing.
+
+So which is it, if the user is stupid or doesn't use enough external
+security, well gpsd wasn't designed to be safe, or gpsd is supposed to
+be designed to be as safe as possible from both stupidity and malice?
+
+If someone malicious tries hard and does break gpsd's assumptions,
+they might be able to do more harm than you can expect.  I've found a
+few things in just a cursory glance of the code and I'm not looking
+for problems and won't try fuzzing (I think gpsctl is run as root, so
+if it isn't unidirectional and I can buffer-overflow, root!  - I just
+have to kill gpsd and set up a malicous version).  That is why I don't
+like loose ends like these.  It isn't only friendly, noob, or strange
+case users that you have to worry about.
+
+I'm rooting for gpsd to be more secure :).
+
+&gt;<i> I haven't, not even once in the 31 years I've been a Unix guy. &#160;There
+</I>&gt;<i> are potential buffer-overrun problems worth worrying about. This is
+</I>&gt;<i> not one of them.
+</I>&gt;<i>
+</I>&gt;<i> I grant you there are rare cases like Ntrip URLs that can get longer
+</I>&gt;<i> than that. &#160;But they won't have valid prefixes.
+</I>&gt;<i> --
+</I>&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+</I>&gt;<i>
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008996.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+	<LI>Next message: <A HREF="008998.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8997">[ date ]</a>
+              <a href="thread.html#8997">[ thread ]</a>
+              <a href="subject.html#8997">[ subject ]</a>
+              <a href="author.html#8997">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Running with more than one GPS receiver on DBUS
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Running%20with%20more%20than%20one%20GPS%20receiver%20on%20DBUS&In-Reply-To=%3C20090106190524.GR11087%40lug-owl.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006226.html">
+   <LINK REL="Next"  HREF="006264.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Running with more than one GPS receiver on DBUS</H1>
+    <B>Jan-Benedict Glaw</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Running%20with%20more%20than%20one%20GPS%20receiver%20on%20DBUS&In-Reply-To=%3C20090106190524.GR11087%40lug-owl.de%3E"
+       TITLE="[Gpsd-dev] Running with more than one GPS receiver on DBUS">jbglaw at lug-owl.de
+       </A><BR>
+    <I>Tue Jan  6 20:05:24 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006226.html">[Gpsd-dev] Running with more than one GPS receiver on DBUS
+</A></li>
+        <LI>Next message: <A HREF="006264.html">[Gpsd-dev] Running with more than one GPS receiver on DBUS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6237">[ date ]</a>
+              <a href="thread.html#6237">[ thread ]</a>
+              <a href="subject.html#6237">[ subject ]</a>
+              <a href="author.html#6237">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Mon, 2009-01-05 12:19:17 -0500, Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> Jan-Benedict Glaw &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jbglaw at lug-owl.de</A>&gt;:
+</I>&gt;<i> &gt; On Wed, 2008-10-08 18:25:00 +0200, Jan-Benedict Glaw &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jbglaw at lug-owl.de</A>&gt; wrote:
+</I>&gt;<i> &gt; &gt; 
+</I>&gt;<i> &gt; &gt; Or maybe just stay with sending the serial device names... They're
+</I>&gt;<i> &gt; &gt; already there, they're unique (as long as tupled with the hostname).
+</I>&gt;<i> &gt; &gt; They, though, are not a meaningful name, possibly reflecting the GPS
+</I>&gt;<i> &gt; &gt; brand or stuff like that.
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; For a start, here's another draft patch I'd like to get comments on,
+</I>&gt;<i> &gt; or to at least get into discussion.
+</I>&gt;<i> 
+</I>&gt;<i> I'm not really qualified to evaluate this patch, I'm afraid -- not
+</I>&gt;<i> enough knoewledge of DBUS.  What are you tring to do with it, exactly?
+</I>
+Quite simple. The old code sends one signal, &quot;fix&quot;, to DBUS. After
+applying the patch, two signals are send. The old signal (to not break
+existing applikations) as well as a new signal named &quot;namedfix&quot;. (A
+DBUS &quot;signal&quot; is kind of a broadcast message containing additional
+data, in our case the GPS lon/lat infos, plus some other stuff.) This
+&quot;namedfix&quot; contains everything the former &quot;fix&quot; message contained,
+plus the GPS device name from where this information originates from.
+
+The problem it fixes is that a DBUS client has no chance to correlate
+the data it receives to the installed GPS receivers IFF there is more
+than one receiver. They /will/ send different fixes, eg. if they're
+several meters apart from each other.
+
+So right now, if you have two GPS receivers with some 10m distance in
+between, a DBUS receiver will just see that &quot;one&quot; receiver jumps
+between the two positions. With the patch applied, a DBUS client can
+distinguish the two (or more) receivers and will be able to correctly
+identify the two /different/ locations they are at.
+
+MfG, JBG
+
+-- 
+      Jan-Benedict Glaw      <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jbglaw at lug-owl.de</A>              +49-172-7608481
+Signature of:              Fortschritt bedeutet, einen Schritt so zu machen,
+the second  :                   da&#223; man den n&#228;chsten auch noch machen kann.
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 189 bytes
+Desc: Digital signature
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090106/5f734b34/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090106/5f734b34/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006226.html">[Gpsd-dev] Running with more than one GPS receiver on DBUS
+</A></li>
+	<LI>Next message: <A HREF="006264.html">[Gpsd-dev] Running with more than one GPS receiver on DBUS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6237">[ date ]</a>
+              <a href="thread.html#6237">[ thread ]</a>
+              <a href="subject.html#6237">[ subject ]</a>
+              <a href="author.html#6237">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

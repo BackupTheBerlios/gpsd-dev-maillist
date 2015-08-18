@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPSD Protocol Inconsistencies
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3CAANLkTikrzmsqjjPx%2BSW9Yo2%2BOkNcLNxuaAqVGEwzXN3-%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008909.html">
+   <LINK REL="Next"  HREF="008911.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPSD Protocol Inconsistencies</H1>
+    <B>Jon Schlueter</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3CAANLkTikrzmsqjjPx%2BSW9Yo2%2BOkNcLNxuaAqVGEwzXN3-%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] GPSD Protocol Inconsistencies">jon.schlueter at gmail.com
+       </A><BR>
+    <I>Sun Mar 20 20:36:17 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008909.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+        <LI>Next message: <A HREF="008911.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8910">[ date ]</a>
+              <a href="thread.html#8910">[ thread ]</a>
+              <a href="subject.html#8910">[ subject ]</a>
+              <a href="author.html#8910">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;&gt;<i> Do we have a log from your unit in the regression tests yet?
+</I>&gt;&gt;<i> it would be interesting to be able to look at the behavior as well as test
+</I>&gt;&gt;<i> any changes/proposed changes against a decent set of Data and edge cases
+</I>&gt;<i>
+</I>&gt;<i> What is the best way. &#160;I can do a cat /dev/ttyUSB0 &gt;venus.log or I can
+</I>&gt;<i> use some mode of gpsd.
+</I>
+<A HREF="http://gpsd.berlios.de/faq.html">http://gpsd.berlios.de/faq.html</A>
+
+gpscat or cat will work to capture data from your gps.
+
+We have a test/regression framework that allows us to verify what gpsd
+parses/emits is stable and doesn't change
+Those files can be analyzed to make sure the correct behavior of the output.
+
+Samples useful for regression testing include No Fix, transition to
+having fix/signal, good signal, and any edge cases that exhibit bad
+behavior
+
+&gt;<i> I will shortly have three new SkyTraq eval modules and can add those.
+</I>&gt;<i> One is GPS/GLONASS, one is the 20Hz, one is for RTK.
+</I>
+It would be nice to make sure we can detect them and that the output
+from them can be checked for correct output.
+
+&gt;<i> I also have hours of logs (including most of two michigan to
+</I>&gt;<i> california trips, and various others).
+</I>
+These if they have or cause unusual behavior from GPSD read the FAQ
+for trimming logs down to where the problem can be reproduced.
+
+&gt;&gt;&gt;<i> 4. upon receiving the last sentence in the set, evaluate all the data
+</I>&gt;&gt;&gt;<i> (including the validity of altitude) and emit the report.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> NMEA Strings that are parsed for Time
+</I>&gt;&gt;<i> &#160;* processGPRMC (merge_hhmmss, merge_ddmmyy, register_fractional_time )
+</I>&gt;&gt;<i> &#160;* processGPGLL (merge_hhmmss, register_fractional_time)
+</I>&gt;&gt;<i> &#160;* processGPGGA (merge_hhmmss, register_fractional_time)
+</I>&gt;&gt;<i> &#160;* processGPGST (register_fractional_time)
+</I>&gt;&gt;<i> &#160;* processGPGBS (register_fractional_time,
+</I>&gt;&gt;<i> &#160;* processGPZDA (merge_hhmmss, set year/month/day in session)
+</I>&gt;&gt;<i> &#160;* processPASHR (merge_hhmmss, register_fractional_time)
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> end-of-cycle detector is found and documented here
+</I>&gt;&gt;<i> driver_nmea.c:1139
+</I>&gt;<i>
+</I>&gt;<i> I already looked through it. &#160;The documentation doesn't have a list of
+</I>&gt;<i> states and transition criteria so it is hard to figure out. &#160;And
+</I>&gt;<i> looking at the diagnostic output, I understand it less because it
+</I>&gt;<i> shouldn't be doing what it actually is.
+</I>&gt;<i>
+</I>&gt;&gt;<i> It uses a loose set of logic to gate emitting date when it is bad and emit
+</I>&gt;&gt;<i> it when the date/time is valid.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> are there holes/issues you see with current implementation and time?
+</I>&gt;<i>
+</I>&gt;<i> I've detailed in in successor messages.
+</I>&gt;<i>
+</I>&gt;<i> It jumps around as to what it thinks is the ender, ignores/accepts
+</I>&gt;<i> GPGGA based on the stale GPGGA data, Says GPRMC starts and ends, then
+</I>&gt;<i> says GPGGA starts and ends as the log showed, and it might be causing
+</I>&gt;<i> the high latency in the whitepaper.
+</I>&gt;<i>
+</I>
+Then we need to get a capture of this into the regression suite and
+figure out a way
+to straighten up/verify correct behavior from what you are describing.
+ The regression
+suite allows others to see the same bad behavior you are seeing and
+contribute to
+finding a solution that makes the cycle detection clean and the time
+not jump around...
+
+Jon
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008909.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+	<LI>Next message: <A HREF="008911.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8910">[ date ]</a>
+              <a href="thread.html#8910">[ thread ]</a>
+              <a href="subject.html#8910">[ subject ]</a>
+              <a href="author.html#8910">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

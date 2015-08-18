@@ -1,0 +1,176 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] r4705: Regression: USB GPS receiver no longer detected
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2008-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20r4705%3A%20Regression%3A%20USB%20GPS%20receiver%20no%20longer%20detected&In-Reply-To=%3C20081007214421.GD6898%40lug-owl.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006171.html">
+   <LINK REL="Next"  HREF="006165.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] r4705: Regression: USB GPS receiver no longer detected</H1>
+    <B>Jan-Benedict Glaw</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20r4705%3A%20Regression%3A%20USB%20GPS%20receiver%20no%20longer%20detected&In-Reply-To=%3C20081007214421.GD6898%40lug-owl.de%3E"
+       TITLE="[Gpsd-dev] r4705: Regression: USB GPS receiver no longer detected">jbglaw at lug-owl.de
+       </A><BR>
+    <I>Tue Oct  7 23:44:22 CEST 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006171.html">[Gpsd-dev] Bug in gpsd
+</A></li>
+        <LI>Next message: <A HREF="006165.html">[Gpsd-dev] Solved: r4705: Regression: USB GPS receiver no longer	detected
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6153">[ date ]</a>
+              <a href="thread.html#6153">[ thread ]</a>
+              <a href="subject.html#6153">[ subject ]</a>
+              <a href="author.html#6153">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi!
+
+I tried to run current trunc the other night and found (relative to
+released v2.37) a regression with one of my USB receivers. This is
+current Debian sid, pl2303. It's a cheap, consumer-grade GPS receiver,
+I don't know the chipset. With the released version, it was detected
+as a NMEA GPS with 4800Bd. (Probably Skytraq Venus 6 / GM 65.)
+
+r4705 (looks similar with current trunk):
+=======================================================================
+./.libs/gpsd -D255 -N /dev/ttyUSB0 2&gt;&amp;1
+gpsd: launching (Version 2.38dev)
+gpsd: listening on port gpsd
+gpsd: shmat(0,0,0) succeeded
+gpsd: shmat(0,0,0) succeeded
+gpsd: shmat(0,0,0) succeeded
+gpsd: shmat(0,0,0) succeeded
+gpsd: successfully connected to the DBUS system bus
+gpsd: running with effective group ID 0
+gpsd: running with effective user ID 0
+gpsd: opening GPS data source at '/dev/ttyUSB0'
+gpsd: speed 9600, 8N1
+gpsd: =&gt; GPS: $PASHQ,RID*28\x0d
+
+gpsd: Navcom: command dump: 0299661c0800040200001203
+gpsd: =&gt; GPS: 0299661c0800040200001203
+gpsd: Navcom: sent command 0x1c (Test Support Block)
+gpsd: Navcom: command 0x1c mode = 02, length = 0
+gpsd: Navcom: command dump: 029966200e000001ae02000071000000f203
+gpsd: =&gt; GPS: 029966200e000001ae02000071000000f203
+gpsd: Navcom: sent command 0x20 (Data Request) - data block id = ae at rate 00
+gpsd: Navcom: command dump: 029966200e00000186020a0071000000d003
+gpsd: =&gt; GPS: 029966200e00000186020a0071000000d003
+gpsd: Navcom: sent command 0x20 (Data Request) - data block id = 86 at rate 0a
+gpsd: garmin_gps not active.
+gpsd: no probe matched...
+gpsd: gpsd_activate(0): opened GPS (5)
+gpsd: select waits
+gpsd: unflagging descriptor 0
+gpsd: closing GPS=/dev/ttyUSB0 (5)
+gpsd: select waits
+gpsd: unflagging descriptor 0
+gpsd: closing GPS=/dev/ttyUSB0 (-1)
+gpsd: select waits
+gpsd: unflagging descriptor 0
+gpsd: closing GPS=/dev/ttyUSB0 (-1)
+gpsd: select waits
+gpsd: unflagging descriptor 0
+gpsd: closing GPS=/dev/ttyUSB0 (-1)
+gpsd: select waits
+gpsd: unflagging descriptor 0
+[...last 3 lines will repeat...]
+=======================================================================
+
+
+r4704:
+=======================================================================
+gpsd: launching (Version 2.38dev)
+gpsd: listening on port gpsd
+gpsd: shmat(0,0,0) succeeded
+gpsd: shmat(0,0,0) succeeded
+gpsd: shmat(0,0,0) succeeded
+gpsd: shmat(0,0,0) succeeded
+gpsd: successfully connected to the DBUS system bus
+gpsd: running with effective group ID 0
+gpsd: running with effective user ID 0
+gpsd: opening GPS data source at '/dev/ttyUSB0'
+gpsd: speed 9600, 8N1
+gpsd: =&gt; GPS: $PASHQ,RID*28\x0d
+
+gpsd: Navcom: command dump: 0299661c0800040200001203
+gpsd: =&gt; GPS: 0299661c0800040200001203
+gpsd: Navcom: sent command 0x1c (Test Support Block)
+gpsd: Navcom: command 0x1c mode = 02, length = 0
+gpsd: Navcom: command dump: 029966200e000001ae02000071000000f203
+gpsd: =&gt; GPS: 029966200e000001ae02000071000000f203
+gpsd: Navcom: sent command 0x20 (Data Request) - data block id = ae at rate 00
+gpsd: Navcom: command dump: 029966200e00000186020a0071000000d003
+gpsd: =&gt; GPS: 029966200e00000186020a0071000000d003
+gpsd: Navcom: sent command 0x20 (Data Request) - data block id = 86 at rate 0a
+gpsd: garmin_gps not active.
+gpsd: no probe matched...
+gpsd: gpsd_activate(0): opened GPS (5)
+gpsd: select waits
+gpsd: polling 5
+gpsd: Read 3 chars to buffer offset 0 (total 3): 00f866
+gpsd: ISGPS word tag not correct, skipping
+gpsd: 00000000: character '.' [00], new state: GROUND_STATE
+gpsd: Character discarded, buffer 2 chars = f866
+gpsd: ISGPS word tag not correct, skipping
+gpsd: 00000001: character '.' [f8], new state: GROUND_STATE
+gpsd: Character discarded, buffer 1 chars = 66
+gpsd: ISGPS syncing at byte 2: 0b7f74188
+gpsd: ISGPS syncing at byte 2: 1b7f74188
+gpsd: ISGPS syncing at byte 2: 3b7f74188
+gpsd: ISGPS syncing at byte 2: 6b7f74188
+gpsd: ISGPS syncing at byte 2: cb7f74188
+gpsd: ISGPS syncing at byte 2: 19b7f74188
+[...]
+=======================================================================
+
+(The full startup of r4704 is at <A HREF="http://lug-owl.de/~jbglaw/gpsd-r4704-startup.txt">http://lug-owl.de/~jbglaw/gpsd-r4704-startup.txt</A>)
+
+MfG, JBG
+
+-- 
+      Jan-Benedict Glaw      <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jbglaw at lug-owl.de</A>              +49-172-7608481
+Signature of:               <A HREF="http://www.eyrie.org/~eagle/faqs/questions.html">http://www.eyrie.org/~eagle/faqs/questions.html</A>
+the second  :
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 189 bytes
+Desc: Digital signature
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20081007/dbeec9c7/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20081007/dbeec9c7/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006171.html">[Gpsd-dev] Bug in gpsd
+</A></li>
+	<LI>Next message: <A HREF="006165.html">[Gpsd-dev] Solved: r4705: Regression: USB GPS receiver no longer	detected
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6153">[ date ]</a>
+              <a href="thread.html#6153">[ thread ]</a>
+              <a href="subject.html#6153">[ subject ]</a>
+              <a href="author.html#6153">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,146 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Project gpsd at BerliOS branch, master, updated. release-2.96-6-g96ad585
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Project%20gpsd%20at%20BerliOS%20branch%2C%20master%2C%0A%20updated.%20release-2.96-6-g96ad585&In-Reply-To=%3C4D88E3FC.4050105%40bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008962.html">
+   <LINK REL="Next"  HREF="008985.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Project gpsd at BerliOS branch, master, updated. release-2.96-6-g96ad585</H1>
+    <B>Michael Cook</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Project%20gpsd%20at%20BerliOS%20branch%2C%20master%2C%0A%20updated.%20release-2.96-6-g96ad585&In-Reply-To=%3C4D88E3FC.4050105%40bbn.com%3E"
+       TITLE="[Gpsd-dev] Project gpsd at BerliOS branch, master, updated. release-2.96-6-g96ad585">mcook at bbn.com
+       </A><BR>
+    <I>Tue Mar 22 19:01:32 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008962.html">[Gpsd-dev] Fw: make dist-rpm testing
+</A></li>
+        <LI>Next message: <A HREF="008985.html">[Gpsd-dev] Unacceptable intrusivemess by the OnCore driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8967">[ date ]</a>
+              <a href="thread.html#8967">[ thread ]</a>
+              <a href="subject.html#8967">[ subject ]</a>
+              <a href="author.html#8967">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Oops, this discussion should probably be on gpsd-dev@, not 
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-commit-watch at .</A>
+
+-------- Original Message --------
+Subject: 	Re: [Gpsd-commit-watch] [Gpsd-dev] Project gpsd at BerliOS 
+branch, master, updated. release-2.96-6-g96ad585
+Date: 	Tue, 22 Mar 2011 13:59:31 -0400
+From: 	Michael Cook &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mcook at bbn.com</A>&gt;
+To: 	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-commit-watch at lists.berlios.de</A>
+
+
+
+On 3/22/2011 8:26 AM, Greg Troxel wrote:
+&gt;<i>  You should instead fix the doc build.  The problem is not that distcheck
+</I>&gt;<i>  is broken, but that building with an object directory that isn't the
+</I>&gt;<i>  source directory is broken, because the python build stuff doesn't cope.
+</I>
+I've been looking at this, and I have fixes for a couple of the problems:
+
+index bbb24d4..1443d7b 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -596,6 +596,7 @@ EXTRA_DIST = \
+      $(PYTHONMODULES_DIST) \
+      $(QTLIB_DIST) \
+      $(QTLIB_DIST_MINGW) \
++    doc \
+      test
+
+
+@@ -825,7 +826,9 @@ bits-regress: test_bits
+
+  python-indentation-regress:
+      set -e; for pyfile in $(PYTHONSCRIPTS_DIST) $(PYTHONMODULES_DIST);
+do \
+-        $(PYTHON) -tt -m py_compile $$pyfile ;\
++        cp $(srcdir)/$$pyfile tmp.py ;\
++        $(PYTHON) -tt -m py_compile tmp.py ;\
++        rm -f tmp.py tmp.pyc ;\
+      done
+
+  # Do all normal regression tests.
+
+
+But 'make distcheck' still fails in the stamp-python rule:
+
+stamp-python: gpspacket.c gpsclient.c libgps.la setup.py
+$(PYTHONMODULES_DIST) $(PYTHONSCRIPTS_DIST) $(BUILT_SOURCES)
+# Build Python modules and scripts using distutils via setup.py.
+# We define build-lib and build-scripts as distutils might have been
+# configured to use different directories, but we want to use the
+# produced files within the regress-driver script - therefore we
+# need to build them in directories we know about.
+# See configure.ac for the definition of PYTHON_DISTUTILS_LIBDIR
+# and PYTHON_DISTUTILS_SCRIPTDIR.
+     @rm -f '$@' '$@.tmp'
+     @echo 'timestamp for $@'&gt;  '$@.tmp'
+     (cd '$(srcdir)'&amp;&amp;  \
+     env version='$(PACKAGE_VERSION)' abs_builddir='$(abs_builddir)' \
+         MAKE='$(MAKE)' \
+         $(PYTHON) setup.py build \
+             --build-lib '$(srcdir)/$(PYTHON_DISTUTILS_LIBDIR)' \
+             --build-scripts '$(srcdir)/$(PYTHON_DISTUTILS_SCRIPTDIR)' \
+             --mangenerator '$(XMLPROC)')&amp;&amp;  \
+     (cd '$(srcdir)/gps'&amp;&amp;  \
+         rm -f *.so&amp;&amp;  \
+         ln -s ../$(PYTHON_DISTUTILS_LIBDIR)/gps/*.so . )&amp;&amp;  \
+     mv -f '$@.tmp' '$@'
+CLEANFILES += stamp-python stamp-python.tmp
+
+It wants to create ../build/ and to write into ../gps/ neither of which
+it can do because the directories are read-only.
+
+Any ideas on how we should fix this?
+
+The only idea that comes to mind is to copy the necessary source files
+from $(srcdir) into a temporary directory, but that seems kind of ugly.
+
+(It's not entirely clear to me what this stamp-python rule is trying to
+do, despite the unusually long comment...)
+
+Michael
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110322/2f0eed0a/attachment.html">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110322/2f0eed0a/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008962.html">[Gpsd-dev] Fw: make dist-rpm testing
+</A></li>
+	<LI>Next message: <A HREF="008985.html">[Gpsd-dev] Unacceptable intrusivemess by the OnCore driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8967">[ date ]</a>
+              <a href="thread.html#8967">[ thread ]</a>
+              <a href="subject.html#8967">[ subject ]</a>
+              <a href="author.html#8967">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

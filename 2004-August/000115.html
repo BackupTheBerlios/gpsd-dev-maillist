@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Remaining gpsd issues
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Remaining%20gpsd%20issues&In-Reply-To=%3C20040831100935.3f1aed62%40didge.troja.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000114.html">
+   <LINK REL="Next"  HREF="000116.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Remaining gpsd issues</H1>
+    <B>Jens Oberender</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Remaining%20gpsd%20issues&In-Reply-To=%3C20040831100935.3f1aed62%40didge.troja.net%3E"
+       TITLE="[Gpsd-dev] Remaining gpsd issues">grass at troja.net
+       </A><BR>
+    <I>Tue Aug 31 10:09:35 CEST 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000114.html">[Gpsd-dev] Remaining gpsd issues
+</A></li>
+        <LI>Next message: <A HREF="000116.html">[Gpsd-dev] Remaining gpsd issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#115">[ date ]</a>
+              <a href="thread.html#115">[ thread ]</a>
+              <a href="subject.html#115">[ subject ]</a>
+              <a href="author.html#115">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Eric
+
+&gt;<i> 1. The shared-library mess
+</I>&gt;<i> 
+</I>&gt;<i> Ugh.  libtool makes me want to puke, but I am being forced to the
+</I>&gt;<i> conclusion that we may have to use it.  Can I get a patch from somebody
+</I>&gt;<i> that understands this crap that will 
+</I>&gt;<i> 
+</I>&gt;<i> (a) Arrange for both libgps.a and libgpsd.a to be installed as shared
+</I>&gt;<i> libraries
+</I>
+Done
+ 
+&gt;<i> (b) Do the right things to gpsd.spec.in so RPM will know about them.
+</I>
+Done
+
+&gt;<i> (c) And, ideally, beat libtool senseless until it puts the libraries in
+</I>&gt;<i> the *current* directory, where they're visible, instead of hiding them 
+</I>&gt;<i> in that evil .libs thing...
+</I>
+Impossible (found in some doc about libtool):
+Note how libtool creates extra files in the .libs' subdirectory, rather
+than
+the current directory. This feature is to make it easier to clean up the
+build directory, and to help ensure that other programs fail horribly if
+you
+accidentally forget to use libtool when you should.
+
+That's just cosmetics, just remember you have to look in .libs for the
+build libraries.
+Is that a tragedy?
+
+Some changes to svn:
+rm acconfig.h 
+chmod 755 autogen.sh 
+
+In the configure.in, I don't know what the following macros are good for:
+ICE_FIND_MOTIF, ICE_FIND_ATHENA, ICE_FIND_XPM
+I works without them on my SUSE 9.1 system, here.
+
+Specfile:
+%post -n gpsd
+/sbin/chkconfig --add gpsd
+/sbin/chkconfig gpsd on
+/sbin/ldconfig
+
+%preun -n gpsd
+/sbin/chkconfig --del gpsd
+
+%postun -n gpsd
+/sbin/ldconfig
+
+The devel package doesn't need ldconfig, as the dynamic libs are in the
+normal package.
+
+gpsd is installed in /usr/sbin as it is a daemon, only used as root.
+gps and xgpsspeed in /usr/bin as they are normal user programs.
+
+You can build rpms now with:
+rpmbuild -ta gpsd-1.96.tar.gz
+or
+rpmbuild -ta gpsd-1.96.tar.bz2
+
+It would be nice if you could provide the bz2 file with the next release
+too.
+That is much smaller, so less to download.
+
+That's it.
+
+Any questions?
+
+Ciao,
+	Jens
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: jens.diff
+Type: application/octet-stream
+Size: 4970 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20040831/69554d48/attachment.obj">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20040831/69554d48/attachment.obj</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000114.html">[Gpsd-dev] Remaining gpsd issues
+</A></li>
+	<LI>Next message: <A HREF="000116.html">[Gpsd-dev] Remaining gpsd issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#115">[ date ]</a>
+              <a href="thread.html#115">[ thread ]</a>
+              <a href="subject.html#115">[ subject ]</a>
+              <a href="author.html#115">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

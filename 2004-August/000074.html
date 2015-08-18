@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] blocked client eventually stalls gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20blocked%20client%20eventually%20stalls%20gpsd&In-Reply-To=%3CPine.LNX.4.58.0408270058290.32562%40testingrange.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000073.html">
+   <LINK REL="Next"  HREF="000076.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] blocked client eventually stalls gpsd</H1>
+    <B>Rich Gibson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20blocked%20client%20eventually%20stalls%20gpsd&In-Reply-To=%3CPine.LNX.4.58.0408270058290.32562%40testingrange.com%3E"
+       TITLE="[Gpsd-dev] blocked client eventually stalls gpsd">rich at testingrange.com
+       </A><BR>
+    <I>Fri Aug 27 10:52:03 CEST 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000073.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+        <LI>Next message: <A HREF="000076.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#74">[ date ]</a>
+              <a href="thread.html#74">[ thread ]</a>
+              <a href="subject.html#74">[ subject ]</a>
+              <a href="author.html#74">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Attention conservation summary: 
+
+GPS to host links should not be considered effectively lossless.  Eric 
+agrees that the goal of the online flag is to hide information about the 
+GPS's send-cycle interval (he says 'buffer' which means 'hide' to me).  
+I think that is a bad idea.
+
+
+&gt;<i> So Kismet, or gpsdrive, or any one of several other applications I can
+</I>&gt;<i> think of that are used in the normal case of an effectively lossless 
+</I>&gt;<i> GPS-to-host link, can easily have an idiot light labeled &quot;GPS not plugged in.&quot;
+</I>
+Bluetooth GPS's are not 'effectively lossless,' and are exactly the sort 
+of bleeding edge tech that people using in-car wardriving and monitoring 
+tools are likely to use.
+
+These are also _exactly_ the class of applications that should not have 
+spurious error messages.  At all.  A driver should generally not be given 
+non-actionable information, and certainly not non-actionable late or wrong 
+information.  A binary flag encourages the programmer to rely on that information 
+as being meaningful.
+
+Forcing the programmer to look at a timestamp and make his own inference 
+about what that messy information means encourages a more nuanced use 
+and presentation of connectivity status to the end user.
+
+&gt;<i> This would be quite a bit more difficult without the flag, as the clients
+</I>&gt;<i> aren't aware of the GPS's send-cycle interval.  Nor should they be; buffering
+</I>&gt;<i> against that cycle is the daemon's job.
+</I>
+You just made my case.  Earlier you wanted to solve the problem of bad use 
+of the online flag by more documentation of the assumptions that 
+underly that flag.  But here you specifically assert that 'buffering' (ie. 
+hiding) that information is the point of the flag.
+
+A programmer attempting to determine if the GPS is offline absolutely must 
+be aware of the GPS's send cycle interval.  The API must not hide that 
+information.  Having the flag, even with documentation, effectively hides 
+that information.
+
+Earlier you wrote:
+
+&gt;<i>The better way is to hand the application a bundle consisting of the
+</I>&gt;<i>fix, the time of fix, and the current online/offline status, and let
+</I>&gt;<i>the *application* decide what those bits mean.
+</I>
+How does not including the online/offline status make it quite a bit more 
+difficult to determine online/offline status?  Why can't we just do what 
+you wrote here and, minus the online status, let the applciation decide?
+
+This was from another message of yours.  I think it perfectly describes 
+the case:
+
+&gt;<i>&quot;hmmm, gpsd has been up for 3 seconds                  
+</I>&gt;<i>and has yet to see any data from the GPS, I should raise an alert to                  
+</I>&gt;<i>the user.'                     
+</I>
+Compare that with what the thinking process that will occur with the flag:
+'gpsd set the online flag so I can count on the data.'
+
+An online flag is simply a statement of your assumptions about the 
+meaning of the data coming (or not) from the GPS.  And then basically (see 
+above) you want to hide the GPS send-cycle interval from the application 
+so that by default it will rely on your assumptions about online status.
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000073.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+	<LI>Next message: <A HREF="000076.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#74">[ date ]</a>
+              <a href="thread.html#74">[ thread ]</a>
+              <a href="subject.html#74">[ subject ]</a>
+              <a href="author.html#74">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] Report correct checksum when the checksum is wrong (Was: Are the &quot;used&quot; flags updated correctly?)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Report%20correct%20checksum%20when%20the%20checksum%20is%20wrong%20%28Was%3A%20Are%20the%20%22used%22%20flags%20updated%20correctly%3F%29&In-Reply-To=%3C20050110222513.GA643%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000494.html">
+   <LINK REL="Next"  HREF="000519.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] Report correct checksum when the checksum is wrong (Was: Are the &quot;used&quot; flags updated correctly?)</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Report%20correct%20checksum%20when%20the%20checksum%20is%20wrong%20%28Was%3A%20Are%20the%20%22used%22%20flags%20updated%20correctly%3F%29&In-Reply-To=%3C20050110222513.GA643%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] [PATCH] Report correct checksum when the checksum is wrong (Was: Are the &quot;used&quot; flags updated correctly?)">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Jan 10 23:25:13 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000494.html">[Gpsd-dev] [PATCH] Report correct checksum when the checksum is wrong (Was: Are the &quot;used&quot; flags updated correctly?)
+</A></li>
+        <LI>Next message: <A HREF="000519.html">[Gpsd-dev] [PATCH] Report correct checksum when the checksum is wrong
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#515">[ date ]</a>
+              <a href="thread.html#515">[ thread ]</a>
+              <a href="subject.html#515">[ subject ]</a>
+              <a href="author.html#515">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Petter Reinholdtsen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">pere at hungry.com</A>&gt;:
+&gt;<i> [Eric S. Raymond]
+</I>&gt;<i> &gt; Maybe.  I'll look at a patch.
+</I>&gt;<i> 
+</I>&gt;<i> Something like this will do it, by moving the error reporting into the
+</I>&gt;<i> nmea_checksum() function.
+</I>&gt;<i> 
+</I>&gt;<i> Index: nmea_parse.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- nmea_parse.c        (revision 1305)
+</I>&gt;<i> +++ nmea_parse.c        (working copy)
+</I>&gt;<i> @@ -420,11 +420,16 @@
+</I>&gt;<i>  {
+</I>&gt;<i>      unsigned char sum = '\0';
+</I>&gt;<i>      char c, *p = sentence, csum[3];
+</I>&gt;<i> +    int correct;
+</I>&gt;<i> 
+</I>&gt;<i>      while ((c = *p++) != '*' &amp;&amp; c != '\0')
+</I>&gt;<i>         sum ^= c;
+</I>&gt;<i>      sprintf(csum, &quot;%02X&quot;, sum);
+</I>&gt;<i> -    return (strncmp(csum, p, 2) == 0);
+</I>&gt;<i> +    correct = (strncmp(csum, p, 2) == 0);
+</I>&gt;<i> +    if (!correct)
+</I>&gt;<i> +        gpsd_report(1, &quot;Bad NMEA checksum: '%s' should be %s\n&quot;,
+</I>&gt;<i> +                   sentence, csum);
+</I>&gt;<i> +    return correct;
+</I>&gt;<i>  }
+</I>&gt;<i> 
+</I>&gt;<i>  /**************************************************************************
+</I>&gt;<i> @@ -467,10 +472,8 @@
+</I>&gt;<i>      char *p, *s;
+</I>&gt;<i>      char *field[80];
+</I>&gt;<i> 
+</I>&gt;<i> -    if ( ! nmea_checksum(sentence+1)) {
+</I>&gt;<i> -      gpsd_report(1, &quot;Bad NMEA checksum: '%s'\n&quot;, sentence);
+</I>&gt;<i> -      return 0;
+</I>&gt;<i> -    }
+</I>&gt;<i> +    if ( ! nmea_checksum(sentence+1))
+</I>&gt;<i> +        return 0;
+</I>&gt;<i> 
+</I>&gt;<i>      /* make an editable copy of the sentence */
+</I>&gt;<i>  #ifdef AC_FUNC_ALLOCA
+</I>
+Yuck.  This kind of messes up the code layering.  I'll look at it and
+see if I can figure out a better way. 
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000494.html">[Gpsd-dev] [PATCH] Report correct checksum when the checksum is wrong (Was: Are the &quot;used&quot; flags updated correctly?)
+</A></li>
+	<LI>Next message: <A HREF="000519.html">[Gpsd-dev] [PATCH] Report correct checksum when the checksum is wrong
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#515">[ date ]</a>
+              <a href="thread.html#515">[ thread ]</a>
+              <a href="subject.html#515">[ subject ]</a>
+              <a href="author.html#515">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

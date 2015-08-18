@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Reversing myself on non-autoconfigurable GPS devices
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Reversing%20myself%20on%20non-autoconfigurable%20GPS%20devices&In-Reply-To=%3C200607261857.k6QIvWHi031304%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004019.html">
+   <LINK REL="Next"  HREF="004018.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Reversing myself on non-autoconfigurable GPS devices</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Reversing%20myself%20on%20non-autoconfigurable%20GPS%20devices&In-Reply-To=%3C200607261857.k6QIvWHi031304%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Reversing myself on non-autoconfigurable GPS devices">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Jul 26 20:57:32 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004019.html">[Gpsd-dev] [Gpsd-users] Have we cut processor utilization	any?
+</A></li>
+        <LI>Next message: <A HREF="004018.html">[Gpsd-dev] [Gpsd-users] Have we cut processor	utilization	any?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4015">[ date ]</a>
+              <a href="thread.html#4015">[ thread ]</a>
+              <a href="subject.html#4015">[ subject ]</a>
+              <a href="author.html#4015">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I've had a lot of time to focus on gpsd recently, because the
+consulting gig that ate most of my life for the last seven months has
+hit a slack period.
+
+I've been using this time to digest the implications of some features
+contributed by people working with single-board computers who have
+serious concerns about gpsd's processor and memory utilization.  All
+the zero-configuration stuff I coded in is great for the PC
+environment, but it comes at a resource cost that may not be
+acceptable for very small and low-power SBC systems.
+
+Thus, I've been encouraging the SBC crowd to hack gpsd so that 
+expensive behavior can be configured out at compile time.  My vision
+is that the default build remains all-singing, all-dancing, all 
+self-configuring -- but for those willing to build from source, it's
+possible to strip out functionality not needed in an SBC environment,
+
+We have three capabilities to do this now:
+
+1. It's possible to wire down gpsd's serial-port baud rate so it
+doesn't have to hunt for one.
+
+2. It's possible to limit the maximum number of concurrent sessions
+(what's actually done is a bit trickier than this, but it's the
+effect).  This can drastically cut gpsd's core footprint.
+
+3. It's possible to limit the number of device channels supported.
+This, too, can drastically cut gpsd's core footprint.
+
+Stepping back and looking at where this is going, I've decided to
+partly reverse a policy decision I made at the time I was originally
+writing the GPS-type-recognition support.  In HACKING, it says:
+
+    Here is a concrete example of how this principle applies.  At least
+    one very low-end GPS chipset does not deliver correct checksums on the
+    packets it ships to a host unless it has a fix.  Typically, GPSes do
+    not have a fix when they are plugged in, at the time gpsd must
+    recognize and autoconfigure the device.  Thus, supporting this chipset
+    would require that we either (a) disable packet integrity checking in
+    the autoconfiguration code, making detection of other more
+    well-behaved devices unreliable, or (b) add an invocation switch to
+    disable packet integrity checking for that chipset alone.  We refuse
+    to do either, and do not support this chipset.
+
+I'm still adamant that zero configuration is a more important feature
+of the default build than support for every single broken device out
+there.  There will be no, repeat *no*, GPS-type options for gpsd
+at runtime.
+
+However, I'm now willing to accept a patch that would disable
+GPS-type autoconfiguration entirely at compile time, wiring the build
+to recognize exclusively a single GPS type.  It seems to me this is
+the only missing capability people doing SBC deployments need. 
+
+A gpsd built that way could sync up with devices that emit too few
+unique cues to be distinguished by the packet state machine in the
+default build, or with devices like that crappy chipset that botches
+checksums.
+
+I'd actually write this patch myself, but I suspect it will come
+faster and better from someone who actually needs it.  Consider this
+an invitation...
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+The day will come when the mystical generation of Jesus by the Supreme
+Being as his father, in the womb of a virgin, will be classed with the
+fable of the generation of Minerva in the brain of Jupiter.
+	-- Thomas Jefferson, 1823
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004019.html">[Gpsd-dev] [Gpsd-users] Have we cut processor utilization	any?
+</A></li>
+	<LI>Next message: <A HREF="004018.html">[Gpsd-dev] [Gpsd-users] Have we cut processor	utilization	any?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4015">[ date ]</a>
+              <a href="thread.html#4015">[ thread ]</a>
+              <a href="subject.html#4015">[ subject ]</a>
+              <a href="author.html#4015">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

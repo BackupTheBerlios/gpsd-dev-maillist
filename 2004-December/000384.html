@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [PATCH] Avoid duplicate PI definition
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BPATCH%5D%20Avoid%20duplicate%20PI%20definition&In-Reply-To=%3C2flmzw2mhmv.fsf%40saruman.uio.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000378.html">
+   <LINK REL="Next"  HREF="000385.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [PATCH] Avoid duplicate PI definition</H1>
+    <B>Petter Reinholdtsen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BPATCH%5D%20Avoid%20duplicate%20PI%20definition&In-Reply-To=%3C2flmzw2mhmv.fsf%40saruman.uio.no%3E"
+       TITLE="[Gpsd-dev] Re: [PATCH] Avoid duplicate PI definition">pere at hungry.com
+       </A><BR>
+    <I>Sat Dec 25 18:07:04 CET 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000378.html">[Gpsd-dev] [PATCH] Avoid duplicate PI definition
+</A></li>
+        <LI>Next message: <A HREF="000385.html">[Gpsd-dev] Re: [PATCH] Avoid duplicate PI definition
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#384">[ date ]</a>
+              <a href="thread.html#384">[ thread ]</a>
+              <a href="subject.html#384">[ subject ]</a>
+              <a href="author.html#384">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>[Petter Reinholdtsen]
+&gt;<i> While looking at the code, I came across a duplicate definition of PI.
+</I>&gt;<i> This patch get rid of it.
+</I>
+Besides, why not use the M_PI definition from &lt;math.h&gt; if it is
+available?  Here is a patch doing both.
+
+Index: gps.h
+===================================================================
+--- gps.h       (revision 1162)
++++ gps.h       (working copy)
+@@ -9,6 +9,7 @@
+
+ #include &lt;sys/types.h&gt;
+ #include &lt;time.h&gt;
++#include &lt;math.h&gt; /* for M_PI define */
+
+ #define MAXCHANNELS    12      /* maximum GPS channels (*not* satellites!) */
+
+@@ -108,7 +109,11 @@
+ #define METERS_TO_FEET 3.2808399
+ #define METERS_TO_MILES        0.00062137119
+ #define KNOTS_TO_MPH   1.1507794
+-#define PI 3.14159265358979323846
++#if defined(M_PI)
++#  define PI M_PI
++#else /* not M_PI */
++#  define PI 3.14159265358979323846
++#endif /* not M_PI */
+
+ /* gps_open() error return values */
+ #define NL_NOSERVICE   -1      /* can't get service entry */
+Index: Tachometer.c
+===================================================================
+--- Tachometer.c        (revision 1162)
++++ Tachometer.c        (working copy)
+@@ -18,6 +18,7 @@
+ #include &lt;TachometerP.h&gt;
+ #include &lt;math.h&gt;
+ #include &quot;display.h&quot;
++#include &quot;gps.h&quot; /* for PI define */
+
+ /****************************************************************
+  *
+@@ -25,10 +26,6 @@
+  *
+  ****************************************************************/
+
+-#if ! defined(PI)
+-#define                PI              3.1415927
+-#endif
+-
+ typedef struct {
+                unsigned char   digit[7];
+                } DigitRec;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000378.html">[Gpsd-dev] [PATCH] Avoid duplicate PI definition
+</A></li>
+	<LI>Next message: <A HREF="000385.html">[Gpsd-dev] Re: [PATCH] Avoid duplicate PI definition
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#384">[ date ]</a>
+              <a href="thread.html#384">[ thread ]</a>
+              <a href="subject.html#384">[ subject ]</a>
+              <a href="author.html#384">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,84 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Interleaving subtype probes with packet receives.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Interleaving%20subtype%20probes%20with%20packet%20receives.&In-Reply-To=%3C20061107034823.GA28441%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004946.html">
+   <LINK REL="Next"  HREF="004952.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Interleaving subtype probes with packet receives.</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Interleaving%20subtype%20probes%20with%20packet%20receives.&In-Reply-To=%3C20061107034823.GA28441%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Interleaving subtype probes with packet receives.">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Nov  7 04:48:23 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004946.html">[Gpsd-dev] Combining cgps &amp; xgps (preferably not)
+</A></li>
+        <LI>Next message: <A HREF="004952.html">[Gpsd-dev] [Gpsd-commit-watch] r3790 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4949">[ date ]</a>
+              <a href="thread.html#4949">[ thread ]</a>
+              <a href="subject.html#4949">[ subject ]</a>
+              <a href="author.html#4949">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I just checked in a change that gives the probe_subtype driver method a 
+second argument, which is a packet sequence number -- 0 when the device
+is recognized by a probe_detect method or a new device driver is switched
+to, &gt; 0 just after receipt of each full packet.  
+
+Existing probe_subtype methods have been modified so they fire only when the
+sequence number is 0, except for the NMEA one.  This one now interleaves its
+probe string sends with the first several packets received.
+
+Interestingly, this seems to *immediately* make detection of SiRF devices
+running in NMEA mode reliable.  That means that gpsctrl should be finished
+for the SiRF case very shortly.
+
+I implemented this because I think it might also solve Davor Emard's
+problem with the Garmin GPS-10.  He was reporting that all the probe
+string sends being done at once confuses that device.
+
+Looks like even the SiRF chips are vulnerable to having their input
+buffer spammed, and we were doing it inadvertently.  I have a happy
+feeling that I've not just fixed a bug here, but located and nuked
+what would have been a source of bugs in many future devices.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004946.html">[Gpsd-dev] Combining cgps &amp; xgps (preferably not)
+</A></li>
+	<LI>Next message: <A HREF="004952.html">[Gpsd-dev] [Gpsd-commit-watch] r3790 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4949">[ date ]</a>
+              <a href="thread.html#4949">[ thread ]</a>
+              <a href="subject.html#4949">[ subject ]</a>
+              <a href="author.html#4949">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

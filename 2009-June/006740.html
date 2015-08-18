@@ -1,0 +1,95 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Bug in GPS I suspect (with workaround)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Bug%20in%20GPS%20I%20suspect%20%28with%20workaround%29&In-Reply-To=%3Ca2d3b4550906062038j67e684e8x3867d3b19c36dba5%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006739.html">
+   <LINK REL="Next"  HREF="006741.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Bug in GPS I suspect (with workaround)</H1>
+    <B>Don Weeks</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Bug%20in%20GPS%20I%20suspect%20%28with%20workaround%29&In-Reply-To=%3Ca2d3b4550906062038j67e684e8x3867d3b19c36dba5%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Bug in GPS I suspect (with workaround)">don.l.weeks.jr at gmail.com
+       </A><BR>
+    <I>Sun Jun  7 05:38:58 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006739.html">[Gpsd-dev] Is manual configuration still needed for Bluetooth?
+</A></li>
+        <LI>Next message: <A HREF="006741.html">[Gpsd-dev] Bug in GPS I suspect (with workaround)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6740">[ date ]</a>
+              <a href="thread.html#6740">[ thread ]</a>
+              <a href="subject.html#6740">[ subject ]</a>
+              <a href="author.html#6740">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I modified the 2.39 code to accept a second /r as an NMEA_RECOGNIZED due to
+a problem with a Jackson-labs Firefly-1a. The Firefly-1a is now working with
+gpsd flawlessly. The issue was that the Firefly-1a was returning /r/r/n at
+the end of each of its NMEA strings which would cause a great deal of havoc.
+This was because the 2nd /r would cause it to return to ground and the code
+would decide to do a character discard on the after the /n. So not only did
+I lose /n, I was losing the $ of the next NMEA string. adding the code to
+accept the /r as an NMEA recognized did the trick. To have gone with
+allowing it to carry forward the /r as a NMEA_CR would have caused problems
+with the buffer counters in the checksum verification code.
+Here is the code snippet I changed:
+
+    case NMEA_LEADER_END:
+        if (c == '\r')
+            lexer-&gt;state = NMEA_CR;
+        else if (c == '$')
+            /* faster recovery from missing sentence trailers */
+            lexer-&gt;state = NMEA_DOLLAR;
+        else if (!isprint(c))
+            lexer-&gt;state = GROUND_STATE;
+        break;
+    case NMEA_CR:
+*        if (c == '\r')
+            lexer-&gt;state = NMEA_RECOGNIZED;
+        else* if (c == '\n')
+            lexer-&gt;state = NMEA_RECOGNIZED;
+        else
+            lexer-&gt;state = GROUND_STATE;
+        break;
+
+Hope this helps someone else.
+          Don
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090606/477ed675/attachment.html">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090606/477ed675/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006739.html">[Gpsd-dev] Is manual configuration still needed for Bluetooth?
+</A></li>
+	<LI>Next message: <A HREF="006741.html">[Gpsd-dev] Bug in GPS I suspect (with workaround)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6740">[ date ]</a>
+              <a href="thread.html#6740">[ thread ]</a>
+              <a href="subject.html#6740">[ subject ]</a>
+              <a href="author.html#6740">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

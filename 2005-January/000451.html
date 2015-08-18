@@ -1,0 +1,201 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] Teach xgpsspeed to show kilometer per hour
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Teach%20xgpsspeed%20to%20show%20kilometer%20per%20hour&In-Reply-To=%3C20050104061218.GB5001%40us.netrek.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000442.html">
+   <LINK REL="Next"  HREF="000452.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] Teach xgpsspeed to show kilometer per hour</H1>
+    <B>James Cameron</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Teach%20xgpsspeed%20to%20show%20kilometer%20per%20hour&In-Reply-To=%3C20050104061218.GB5001%40us.netrek.org%3E"
+       TITLE="[Gpsd-dev] [PATCH] Teach xgpsspeed to show kilometer per hour">quozl at us.netrek.org
+       </A><BR>
+    <I>Tue Jan  4 07:12:18 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000442.html">[Gpsd-dev] [PATCH] Teach xgpsspeed to show kilometer per hour
+</A></li>
+        <LI>Next message: <A HREF="000452.html">[Gpsd-dev] [PATCH] Teach xgpsspeed to show kilometer per hour
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#451">[ date ]</a>
+              <a href="thread.html#451">[ thread ]</a>
+              <a href="subject.html#451">[ subject ]</a>
+              <a href="author.html#451">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Mon, Jan 03, 2005 at 05:34:48PM -0500, Eric S. Raymond wrote:
+&gt;<i> Consider the alternatives:
+</I>&gt;<i> 
+</I>&gt;<i> (1) Current defaults, hosing everybody outside the U.S. and Jamaica.
+</I>&gt;<i> (2) Metric defaults, hosing the U.S. and Jamaica.
+</I>&gt;<i> (3) Dispatching on timezone. Does the right thing everywhere but Canada.
+</I>&gt;<i> 
+</I>&gt;<i> Under the circumstances, screw Canada.  I'll take a patch to do (3).
+</I>
+Here's a patch to do (3).  Checks for :US/ in the TZ environment
+variable, or /US/ in the link /etc/localtime.  It seems :US/Hawaii is
+the timezone for that volcano in the middle.
+
+Compiled clean, startup tested, but not tested with gpsd running.
+I'm not in the US or Canada.  ;-)
+
+Didn't touch the altitude stuff.  Adjusted documentation.  I miss a
+ChangeLog file, or a NEWS file.
+
+Note that get_resource() and get_default_speedunits() are instances of
+common code between both xgpsspeed.c and xgps.c, so perhaps it is time
+to move them somewhere.  No idea where.
+
+Another idea.
+
+We might not know their timezone, but at least the code could find out
+their geographic coordinates.  Now, if we can get a simple[1] polygon
+for the US, we could change the default as people cross the border.
+
+--
+1.  not the one used by some people; -90 to 90 and -180 to 180.
+
+-- 
+James Cameron    mailto:<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">quozl at us.netrek.org</A>     <A HREF="http://quozl.netrek.org/">http://quozl.netrek.org/</A>
+-------------- next part --------------
+Index: gpsd.xml
+===================================================================
+--- gpsd.xml	(revision 1274)
++++ gpsd.xml	(working copy)
+@@ -318,7 +318,7 @@
+ &lt;para&gt;The --speedunits option can be used to set the speed units for
+ display; follow the keyword with knots for nautical miles per hour,
+ kph for kilometres per hour, or mph for miles per hour.  The default
+-is miles per hour.  This option can also be set as the X resource 
++is miles per hour in US timezones.  This option can also be set as the X resource 
+ 'speedunits'.&lt;/para&gt;
+ 
+ &lt;para&gt;The --altunits option can be used to set the altitude units for
+@@ -337,7 +337,7 @@
+ &lt;para&gt;The --speedunits option can be used to set the speed units for
+ display; follow the keyword with knots for nautical miles per hour,
+ kph for kilometres per hour, or mph for miles per hour.  The default
+-is miles per hour.   This option can also be set as the X resource 
++is miles per hour in US timezones.   This option can also be set as the X resource 
+ 'speedunits'.&lt;/para&gt;
+ 
+ &lt;/refsect2&gt;
+Index: xgpsspeed.c
+===================================================================
+--- xgpsspeed.c	(revision 1274)
++++ xgpsspeed.c	(working copy)
+@@ -4,6 +4,7 @@
+ #include &lt;stdlib.h&gt;
+ #include &lt;stdio.h&gt;
+ #include &lt;math.h&gt;
++#include &lt;unistd.h&gt;
+ #include &lt;getopt.h&gt;
+ #include &lt;X11/Intrinsic.h&gt;
+ #include &lt;X11/Shell.h&gt;
+@@ -57,6 +58,21 @@
+   return default_value;
+ }
+ 
++static char *get_default_speedunits(void)
++{
++  char buf[80];
++  int len;
++
++  if (strstr(getenv(&quot;TZ&quot;), &quot;:US/&quot;)) return &quot;mph&quot;;
++
++  len = readlink(&quot;/etc/localtime&quot;, buf, 79);
++  if (len == -1) return &quot;kph&quot;;
++  buf[len] = '\0';
++
++  if (strstr(buf, &quot;/US/&quot;)) return &quot;mph&quot;;
++  return &quot;kph&quot;;
++}
++
+ int main(int argc, char **argv)
+ {
+     Arg             args[10];
+@@ -69,10 +85,12 @@
+ 				 options, XtNumber(options),
+ 				 &amp;argc, argv, fallback_resources, NULL);
+ 
+-    speedfactor = KNOTS_TO_MPH;		/* Software maintained in US */
+-    speedunits = get_resource(&quot;speedunits&quot;, &quot;mph&quot;);
++    speedfactor = KNOTS_TO_MPH;
++    speedunits = get_resource(&quot;speedunits&quot;, get_default_speedunits());
+     if (!strcmp(speedunits, &quot;kph&quot;)) 
+ 	speedfactor = KNOTS_TO_KPH;
++    else if (!strcmp(speedunits, &quot;mph&quot;))
++        speedfactor = KNOTS_TO_MPH;
+     else if (!strcmp(speedunits, &quot;knots&quot;))
+ 	speedfactor = 1;
+ 
+Index: xgps.c
+===================================================================
+--- xgps.c	(revision 1274)
++++ xgps.c	(working copy)
+@@ -306,6 +306,21 @@
+   return default_value;
+ }
+ 
++static char *get_default_speedunits(void)
++{
++  char buf[80];
++  int len;
++
++  if (strstr(getenv(&quot;TZ&quot;), &quot;:US/&quot;)) return &quot;mph&quot;;
++
++  len = readlink(&quot;/etc/localtime&quot;, buf, 79);
++  if (len == -1) return &quot;kph&quot;;
++  buf[len] = '\0';
++
++  if (strstr(buf, &quot;/US/&quot;)) return &quot;mph&quot;;
++  return &quot;kph&quot;;
++}
++
+ int main(int argc, char *argv[])
+ {
+     int option;
+@@ -341,7 +356,7 @@
+ 			       options, XtNumber(options), 
+ 			       &amp;argc,argv, fallback_resources,NULL);
+ 
+-    su = get_resource(&quot;speedunits&quot;, &quot;mph&quot;);
++    su = get_resource(&quot;speedunits&quot;, get_default_speedunits());
+     for (speedunits = speedtable; 
+ 	 speedunits &lt; speedtable + sizeof(speedtable)/sizeof(speedtable[0]);
+ 	 speedunits++)
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000442.html">[Gpsd-dev] [PATCH] Teach xgpsspeed to show kilometer per hour
+</A></li>
+	<LI>Next message: <A HREF="000452.html">[Gpsd-dev] [PATCH] Teach xgpsspeed to show kilometer per hour
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#451">[ date ]</a>
+              <a href="thread.html#451">[ thread ]</a>
+              <a href="subject.html#451">[ subject ]</a>
+              <a href="author.html#451">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

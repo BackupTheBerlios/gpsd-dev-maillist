@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] odd bug with gps_device string being lost/overwritten
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20odd%20bug%20with%20gps_device%20string%20being%20lost/overwritten&In-Reply-To=%3C20050520181218.GA24925%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001787.html">
+   <LINK REL="Next"  HREF="001795.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] odd bug with gps_device string being lost/overwritten</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20odd%20bug%20with%20gps_device%20string%20being%20lost/overwritten&In-Reply-To=%3C20050520181218.GA24925%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] odd bug with gps_device string being lost/overwritten">esr at thyrsus.com
+       </A><BR>
+    <I>Fri May 20 20:12:18 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001787.html">[Gpsd-dev] odd bug with gps_device string being lost/overwritten
+</A></li>
+        <LI>Next message: <A HREF="001795.html">[Gpsd-dev] odd bug with gps_device string being lost/overwritten
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1789">[ date ]</a>
+              <a href="thread.html#1789">[ thread ]</a>
+              <a href="subject.html#1789">[ subject ]</a>
+              <a href="author.html#1789">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Lonnie Mendez &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">lmendez19 at austin.rr.com</A>&gt;:
+
+&gt;<i>  Here is another session where I managed to do it again.  It doesn't
+</I>&gt;<i> happen as frequently as it did before though.
+</I>
+Damn.  This *is* a showstopper.  Does the watch command still show this
+happening in the same place?  What's the value of out-&gt;satellites at
+the time?
+
+&gt;<i>  Also in function gpsd_init() of libgpsd_core.c, I noticed strdup is
+</I>&gt;<i> being used to allocate memory/copy string data for 'device' and
+</I>&gt;<i> assign the location of that memory to the gps_device pointer.
+</I>&gt;<i> However I couldn't find a place within the gpsd / service library
+</I>&gt;<i> where that was being free'd.  It seems that each time the device is
+</I>&gt;<i> opened a new pointer is assigned to gps_device by strdup() and the
+</I>&gt;<i> old memory address is lost.  It looks like this is being handled
+</I>&gt;<i> correctly in the client library, libgps.
+</I>
+Fixed. That deallocation belongs in gpsd_wrap().
+
+&gt;<i> Another spot I noticed is in handle_control of gpsd.c.
+</I>&gt;<i> 
+</I>&gt;<i> static void handle_control(int sfd, char *buf)
+</I>&gt;<i> /* handle privileged commands coming through the control socket */
+</I>&gt;<i> {
+</I>&gt;<i>     char        *p, *stash;
+</I>&gt;<i>     struct gps_device_t **chp;
+</I>&gt;<i>     int cfd;
+</I>&gt;<i> 
+</I>&gt;<i>     if (buf[0] == '-') {
+</I>&gt;<i>         p = getline(buf+1, &amp;stash);
+</I>&gt;<i>         gpsd_report(1,&quot;&lt;= control(%d): removing %s\n&quot;, sfd, stash);
+</I>&gt;<i>         if ((chp = find_device(stash))) {
+</I>&gt;<i> 
+</I>&gt;<i>  I see that variable stash is a pointer to a char.  The call to
+</I>&gt;<i> getline(buf+1, &amp;stash) is what I don't understand.  Now I can't find the
+</I>&gt;<i> proper manpage for function getline, but if it is supposed to allocate
+</I>&gt;<i> memory for the second variable if it is NULL, how would this be possible
+</I>&gt;<i> when the memory address of the pointer is being passed?  I'm just a novice
+</I>&gt;<i> with C so I could be wrong...
+</I>
+The calling protocol isn't what you think.  This getline is *not*
+GNU getline; I've renamed it to 'snarfline' to avoid the confusion.
+Go read the source of snarfline() in that file.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001787.html">[Gpsd-dev] odd bug with gps_device string being lost/overwritten
+</A></li>
+	<LI>Next message: <A HREF="001795.html">[Gpsd-dev] odd bug with gps_device string being lost/overwritten
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1789">[ date ]</a>
+              <a href="thread.html#1789">[ thread ]</a>
+              <a href="subject.html#1789">[ subject ]</a>
+              <a href="author.html#1789">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

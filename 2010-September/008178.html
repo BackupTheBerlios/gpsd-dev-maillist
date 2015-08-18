@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Interaction between new/old client/server
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Interaction%20between%20new/old%20client/server&In-Reply-To=%3C201009160816.53327.remco%40rvt.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008175.html">
+   <LINK REL="Next"  HREF="008182.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Interaction between new/old client/server</H1>
+    <B>Remco Treffkorn</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Interaction%20between%20new/old%20client/server&In-Reply-To=%3C201009160816.53327.remco%40rvt.com%3E"
+       TITLE="[Gpsd-dev] Interaction between new/old client/server">remco at rvt.com
+       </A><BR>
+    <I>Thu Sep 16 17:16:53 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008175.html">[Gpsd-dev] Interaction between new/old client/server
+</A></li>
+        <LI>Next message: <A HREF="008182.html">[Gpsd-dev] Interaction between new/old client/server
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8178">[ date ]</a>
+              <a href="thread.html#8178">[ thread ]</a>
+              <a href="subject.html#8178">[ subject ]</a>
+              <a href="author.html#8178">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Let's get the technical stuff out of the way before I respond to your message.
+
+A gpsd user contacted me with a problem. He was using tangogps with gpsd.
+The application seemed to connect to the daemon alright, but nothing ever
+happened. He assumed his gps was broken.
+
+Turned out his hardware was alright, but Tangogps and gpsd were using
+incompatible protocols. 
+
+It would have been better to refuse the connection than keeping the client
+hanging.
+
+That could have been accomplished many ways. Simply putting the new
+protocol on a new service port would have solved the problem.
+
+This has nothing to do with backwards compatibility. Just with decent design.
+
+
+If your users benefit had ever been on your mind you could have accomplished
+backwards compatibility by just forking gpsd into gpsd-old on the known service
+port, and putting gpsd on a new service port. You could have dropped maintenance
+on gpsd-old immediately, telling people to go with the new protocol instead of
+asking for new features/bug-fixes in the old.
+
+
+This is the extend of my issue before you lost your marbles.
+
+On Wednesday, September 15, 2010, Eric Raymond wrote:
+&gt;<i> Remco Treffkorn &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>&gt;:
+</I>...
+&gt;<i>
+</I>&gt;<i> &gt; The current situation is effed up. And don't _dare_ you tell me otherwise.
+</I>&gt;<i> 
+</I>&gt;<i> You want to fix it? Hop into a time machine, go back and tell your earlier
+</I>&gt;<i> self to *add a greeting header with an embedded revision number*.  Ghod, the
+</I>&gt;<i> crap I went through because you left that out...
+</I>
+Oh goody! That's going to be so much fun.
+
+Let me start pointing out the obvious before we come to the good part.
+You pointing your finger at me makes three more pointing back at you,
+and one at Ghod (whoever that is).
+
+I never held a gun to your head to take the gpsd project. You called me.
+Gpsd was open source a decade before you came along. Why did you
+take it on after having access to the source for years? If it was so deficient
+why not just roll your own?
+
+Second best point: When you took over gpsd had around 8 alpha commands?
+Not real sure, but what I am sure of is that I encouraged you to change the protocol
+early on, because I knew it would not support what you wanted to do with it.
+You are the person who exhausted the name space adding features, not fixing
+the infrastructure. Sorry dude, that shit happened on your watch.
+You can just check this mailing list. It is all here. No opinion, no guessing, just
+facts.
+
+Now the best point: Version reporting was the very first feature of gpsd. It has been
+there since version 0.1 was committed to cvs. I have the archive to prove it.
+It was there until you removed it when you switched to the json interface.
+Anybody who has used gpsds telnet interface directly has seen it countless times.
+That you are too stupid to use it is your fault.
+
+&quot;Ghod, the crap I&quot; get from morons like you!
+
+&gt;<i> But even that would only ensure graceful degradation unless we kept
+</I>&gt;<i> both protocol engines (and a significant amount of otherwise
+</I>&gt;<i> unnecessary dispatcher code) around forever.  Which means our users
+</I>&gt;<i> would *pay* for both protocol engines (and the extra code) forever, in
+</I>&gt;<i> wasted resources and in a higher defect rate. That's fundamental; the
+</I>&gt;<i> separate-ports thing is really a red herring.
+</I>
+What does that even mean? &quot;That's fundamental&quot;?
+
+Last time I looked a decent Json parser was more complex than an xml
+parser, dwarfing the LOC of the old protocol.
+
+...
+&gt;<i> There came a point at which I judged a clean break and some short-tern
+</I>&gt;<i> pain had become a better solution than encouraging users to continue to
+</I>&gt;<i> depend on old features slowly bitrotting and spawning bugs.  And that
+</I>&gt;<i> judgment was not made lightly.  I've been struggling with these
+</I>&gt;<i> tradeoffs since the first NG design sketch in 2006.
+</I>&gt;<i> 
+</I>
+I have been here all the time. You have never ask me to help you in your
+struggle. Instead you have made bad decisions all the time without soliciting
+help here.
+
+In closing:
+I designed gpsd for a very narrow purpose. It served that purpose very well when
+you took over. You chose to take gpsd where it never was supposed to go, and then
+whine about its unsuitability to the task. Now you want to blame me for that?
+
+I don't know what medication you are on, but it's not working. The side effects
+are terrible. It's making you stupid.
+
+-- 
+Remco Treffkorn (RT445)
+HAM DC2XT
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008175.html">[Gpsd-dev] Interaction between new/old client/server
+</A></li>
+	<LI>Next message: <A HREF="008182.html">[Gpsd-dev] Interaction between new/old client/server
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8178">[ date ]</a>
+              <a href="thread.html#8178">[ thread ]</a>
+              <a href="subject.html#8178">[ subject ]</a>
+              <a href="author.html#8178">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

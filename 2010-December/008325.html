@@ -1,0 +1,104 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPS date fail due to week counter rollover (not a	gpsd bug)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPS%20date%20fail%20due%20to%20week%20counter%20rollover%20%28not%20a%0A%09gpsd%20bug%29&In-Reply-To=%3Crmi8vznx4ub.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008320.html">
+   <LINK REL="Next"  HREF="008327.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPS date fail due to week counter rollover (not a	gpsd bug)</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPS%20date%20fail%20due%20to%20week%20counter%20rollover%20%28not%20a%0A%09gpsd%20bug%29&In-Reply-To=%3Crmi8vznx4ub.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] GPS date fail due to week counter rollover (not a	gpsd bug)">gdt at ir.bbn.com
+       </A><BR>
+    <I>Sat Dec 18 02:11:24 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008320.html">[Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)
+</A></li>
+        <LI>Next message: <A HREF="008327.html">[Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8325">[ date ]</a>
+              <a href="thread.html#8325">[ thread ]</a>
+              <a href="subject.html#8325">[ subject ]</a>
+              <a href="author.html#8325">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+  I wouldn't be worrying about this in 2010 except that some of our embedded
+  deployments might have 9-year lifetimes.  What should we do?  What
+  *can* we do?
+
+A few thoughts:
+
+  Declare that disambiguating the week field into time is the GPS
+  receiver's problem.  (I replaced a ROM in a Truetime XL-DC timing
+  receiver, sent to me at no charge, during the W1K kerfluffle.)  It's
+  easy enough to have nvram/flash, operator entry, or a rom that knows
+  when it was compiled and then works for ~19 years.
+
+  If there are GPS receivers that support getting time at powerup to get
+  the above right, help them.
+
+  Have gpsd disambiguate 2-digit years using the local clock.  But since
+  we release often relative to 100-year rollover, that's not a worry and
+  the current &quot;assume 20XX&quot; seems fine.
+
+Also, while I don't argue with your characterization that 64-bit Linux
+has 64-bit time_t and thus can cope and 32-bit Linux has 32-bit time_t
+and cannot, I find it a bit odd that this type changes size based on
+processor, and suggest we be careful about the difference between time_t
+size and processor word size.
+
+In NetBSD, time_t is 32 bits, on all architectures, through NetBSD 5.
+NetBSD-current has, and thus the upcoming NetBSD 6 will have, 64-bit
+time_t on all architectures.  (System calls are versioned so old
+binaries will still work.)  I am unclear on the status of the other
+BSDs, but assume they'll change to 64-bit time_t long before it's
+needed.
+
+Is there any expectation that Linux on i386 will change to 64-bit
+time_t?
+
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20101217/f22ef00c/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20101217/f22ef00c/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008320.html">[Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)
+</A></li>
+	<LI>Next message: <A HREF="008327.html">[Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8325">[ date ]</a>
+              <a href="thread.html#8325">[ thread ]</a>
+              <a href="subject.html#8325">[ subject ]</a>
+              <a href="author.html#8325">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

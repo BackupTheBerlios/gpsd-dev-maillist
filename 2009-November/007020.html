@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] cgps problems
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20cgps%20problems&In-Reply-To=%3Calpine.LNX.1.10.0911101235450.22230%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007019.html">
+   <LINK REL="Next"  HREF="007021.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] cgps problems</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20cgps%20problems&In-Reply-To=%3Calpine.LNX.1.10.0911101235450.22230%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] cgps problems">gem at rellim.com
+       </A><BR>
+    <I>Tue Nov 10 21:47:42 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007019.html">[Gpsd-dev] [Gpsd-commit-watch] r6429 - trunk (fwd)
+</A></li>
+        <LI>Next message: <A HREF="007021.html">[Gpsd-dev] cgps problems
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7020">[ date ]</a>
+              <a href="thread.html#7020">[ thread ]</a>
+              <a href="subject.html#7020">[ subject ]</a>
+              <a href="author.html#7020">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo H&#229;kan!
+
+I think my 'GPS Type' unknown, and your cgps slow start, are the
+same problem.
+
+Check out cgps.c, lines 776 to 795.  At startup cgps sends an 'i'
+query to gpsd, and waits 10 seconds for a reply.  When no reply is
+received in 10 secs it defaults to 'unknown' and continues.
+
+When I start up cgps, the initial delay is exactly 10 secs, so
+looks very suspicious.
+
+If I telnet to localhost:2947 and manually issue an 'i' then I
+get the expected 'GPSD,I=' back promptly.  So the problem looks
+to be in cgps (or its libs).
+
+I added some debug code and it looks like update_probe()
+never gets called.
+
+I suspect some hiccup with the new json protocol.
+
+I suspect that may also be why gpsctl fails for me.
+
+Ideas?
+
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 109 NW Wilmington Ave., Suite E, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFK+dFyBmnRqz71OvMRAiAuAJsGDWOeZapz0X0W9gGh63LQLWeLwwCfQI84
+oqB0ClDNsmV3HTNB3kZdVtI=
+=/1n/
+-----END PGP SIGNATURE-----
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007019.html">[Gpsd-dev] [Gpsd-commit-watch] r6429 - trunk (fwd)
+</A></li>
+	<LI>Next message: <A HREF="007021.html">[Gpsd-dev] cgps problems
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7020">[ date ]</a>
+              <a href="thread.html#7020">[ thread ]</a>
+              <a href="subject.html#7020">[ subject ]</a>
+              <a href="author.html#7020">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

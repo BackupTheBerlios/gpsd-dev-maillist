@@ -1,0 +1,235 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] ntpshm.c PPS bad usec reference
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntpshm.c%20PPS%20bad%20usec%20reference&In-Reply-To=%3C20091105130331.GL31313%40localhost%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007003.html">
+   <LINK REL="Next"  HREF="007009.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] ntpshm.c PPS bad usec reference</H1>
+    <B>Miroslav Lichvar</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntpshm.c%20PPS%20bad%20usec%20reference&In-Reply-To=%3C20091105130331.GL31313%40localhost%3E"
+       TITLE="[Gpsd-dev] ntpshm.c PPS bad usec reference">mlichvar at redhat.com
+       </A><BR>
+    <I>Thu Nov  5 14:03:31 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007003.html">[Gpsd-dev] ntpshm.c PPS bad usec reference
+</A></li>
+        <LI>Next message: <A HREF="007009.html">[Gpsd-dev] ntpshm.c PPS bad usec reference
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7005">[ date ]</a>
+              <a href="thread.html#7005">[ thread ]</a>
+              <a href="subject.html#7005">[ subject ]</a>
+              <a href="author.html#7005">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Thu, Nov 05, 2009 at 07:14:57AM -0500, Eric S. Raymond wrote:
+&gt;<i> Please post the entire, corrected patch so Gary can review it.  He
+</I>&gt;<i> is the senior developer with expertise in this area and will make
+</I>&gt;<i> the call, as I don't understand the proble m domain well enough to
+</I>&gt;<i> do it myself.
+</I>
+Ok, it's in the attachment. It includes also the change to use the
+fixed precision -20.
+ 
+If it doesn't work correctly with the Zodiac driver, I believe all we
+need is to adjust the magic value 1.1. Based on the information
+provided by H&#229;kan, i.e. that the messages should be associated with
+the next pulse instead of previous, changing it to -0.4 might do the
+trick.
+
+Thanks,
+
+-- 
+Miroslav Lichvar
+-------------- next part --------------
+Index: gpsd.h-tail
+===================================================================
+--- gpsd.h-tail	(revision 6417)
++++ gpsd.h-tail	(working copy)
+@@ -487,7 +487,7 @@
+ extern int ntpshm_alloc(struct gps_context_t *);
+ extern bool ntpshm_free(struct gps_context_t *, int);
+ extern int ntpshm_put(struct gps_device_t *, double);
+-extern int ntpshm_pps(struct gps_device_t *,struct timeval *);
++extern int ntpshm_pps(struct gps_device_t *,struct timeval *, int rate);
+ 
+ extern void ecef_to_wgs84fix(/*@out@*/struct gps_data_t *,
+ 			     double, double, double, 
+Index: libgpsd_core.c
+===================================================================
+--- libgpsd_core.c	(revision 6417)
++++ libgpsd_core.c	(working copy)
+@@ -183,34 +183,38 @@
+ 	    duration = timediff(tv, pulse[state == 0]);
+ #undef timediff
+ 
+-	    if (cycle &gt; 199000 &amp;&amp; cycle &lt; 201000 ) {
++#define min_interval(center) ((center) * 9 / 10)
++#define max_interval(center) ((center) * 11 / 10)
++#define in_interval(x, center) ((x) &gt; min_interval(center) &amp;&amp; (x) &lt; max_interval(center))
++
++	    if (in_interval(cycle, 200000)) {
+ 		/* 5Hz cycle */
+ 		/* looks like 5hz PPS pulse */
+-		if (duration &gt; 45000)
+-		    (void)ntpshm_pps(session, &amp;tv);
++		if (duration &gt; min_interval(160000))
++		    (void)ntpshm_pps(session, &amp;tv, 5);
+ 		gpsd_report(LOG_RAW, &quot;5Hz PPS pulse. cycle: %d, duration: %d\n&quot;,
+ 			cycle, duration);
+-	    } else if (cycle &gt; 999000 &amp;&amp; cycle &lt; 1001000 ) {
++	    } else if (in_interval(cycle, 1000000)) {
+ 		/* looks like PPS pulse or square wave */
+-		if (duration &gt; 499000 &amp;&amp; duration &lt; 501000
++		if (in_interval(duration, 500000)
+ #if defined(NMEA_ENABLE) &amp;&amp; defined(GPSCLOCK_ENABLE)
+ 		  &amp;&amp; session-&gt;driver.nmea.ignore_trailing_edge
+ #endif /* GPSCLOCK_ENABLE */
+ 		  ) {
+ 		    /* looks like 1.0 Hz square wave, ignore trailing edge */
+ 		    if (state == 1) {
+-			 (void)ntpshm_pps(session, &amp;tv);
++			 (void)ntpshm_pps(session, &amp;tv, 1);
+ 		    }
+-		} else {
++		} else if (duration &gt; min_interval(800000)) {
+ 		    /* looks like PPS pulse */
+-		    (void)ntpshm_pps(session, &amp;tv);
++		    (void)ntpshm_pps(session, &amp;tv, 1);
+ 		}
+ 		gpsd_report(LOG_RAW, &quot;PPS pulse. cycle: %d, duration: %d\n&quot;,
+ 			cycle, duration);
+ 
+-	    } else if (cycle &gt; 1999000 &amp;&amp; cycle &lt; 2001000) {
++	    } else if (in_interval(cycle, 2000000)) {
+ 		/* looks like 0.5 Hz square wave */
+-		(void)ntpshm_pps(session, &amp;tv);
++		(void)ntpshm_pps(session, &amp;tv, 1);
+ 		gpsd_report(LOG_RAW, &quot;PPS square wave. cycle: %d, duration: %d\n&quot;,
+ 			cycle, duration);
+ 	    } else {
+@@ -222,6 +226,10 @@
+ 	}
+ 	/*@ -boolint @*/
+ 
++#undef min_interval
++#undef max_interval
++#undef in_interval
++
+ 	pulse[state] = tv;
+     }
+ 
+Index: ntpshm.c
+===================================================================
+--- ntpshm.c	(revision 6417)
++++ ntpshm.c	(working copy)
+@@ -22,9 +22,6 @@
+ #include &lt;sys/ipc.h&gt;
+ #include &lt;sys/shm.h&gt;
+ 
+-#define PPS_MAX_OFFSET	100000		/* microseconds the PPS can 'pull' */
+-#define PUT_MAX_OFFSET	500000		/* microseconds for lost lock */
+-
+ #define NTPD_BASE	0x4e545030	/* &quot;NTP0&quot; */
+ #define SHM_UNIT	0		/* SHM driver unit number (0..3) */
+ 
+@@ -151,11 +148,11 @@
+ #ifdef PPS_ENABLE
+ /* put NTP shared memory info based on received PPS pulse */
+ 
+-int ntpshm_pps(struct gps_device_t *session, struct timeval *tv)
++int ntpshm_pps(struct gps_device_t *session, struct timeval *tv, int rate)
+ {
+     struct shmTime *shmTime = NULL, *shmTimeP = NULL;
+     time_t seconds;
+-    double offset;
++    int usecs;
+     long l_offset;
+ 
+     if (session-&gt;shmindex &lt; 0 || session-&gt;shmTimeP &lt; 0 ||
+@@ -168,39 +165,28 @@
+ #ifdef S_SPLINT_S	/* avoids an internal error in splint 3.1.1 */
+     l_offset = 0;
+ #else
+-    l_offset = shmTime-&gt;receiveTimeStampSec - shmTime-&gt;clockTimeStampSec;
++    l_offset = tv-&gt;tv_sec - shmTime-&gt;receiveTimeStampSec;
+ #endif
+-    /*@ -ignorequals @*/
+     l_offset *= 1000000;
+-    l_offset += shmTime-&gt;receiveTimeStampUSec - shmTime-&gt;clockTimeStampUSec;
+-    /*@ +ignorequals @*/
+-    if (labs( l_offset ) &gt; PUT_MAX_OFFSET) {
++    l_offset += tv-&gt;tv_usec - shmTime-&gt;receiveTimeStampUSec;
++
++    if (l_offset &gt; 1000000 / rate || l_offset &lt; 0) {
+         gpsd_report(LOG_RAW, &quot;ntpshm_pps: not in locking range: %ld\n&quot;
+ 		, (long)l_offset);
+ 	return -1;
+     }
+-    /*@ -ignorequals @*/
+ 
+-    if (tv-&gt;tv_usec &lt; PPS_MAX_OFFSET) {
+-	seconds = (time_t)tv-&gt;tv_sec;
+-	offset = (double)tv-&gt;tv_usec / 1000000.0;
+-    } else {
+-	if (tv-&gt;tv_usec &gt; (1000000 - PPS_MAX_OFFSET)) {
+-	    seconds = (time_t)(tv-&gt;tv_sec + 1);
+-	    offset = 1 - ((double)tv-&gt;tv_usec / 1000000.0);
+-	} else {
+-	    shmTimeP-&gt;precision = -1;	/* lost lock */
+-	    gpsd_report(LOG_INF, &quot;ntpshm_pps: lost PPS lock\n&quot;);
+-	    return -1;
+-	}
+-    }
++    usecs = shmTime-&gt;clockTimeStampUSec + 1000000 / rate;
++    usecs -= usecs % (1000000 / rate);
++    seconds = shmTime-&gt;clockTimeStampSec + usecs / 1000000;
++    usecs %= 1000000;
+ 
+     shmTimeP-&gt;count++;
+     shmTimeP-&gt;clockTimeStampSec = seconds;
+-    shmTimeP-&gt;clockTimeStampUSec = 0;
++    shmTimeP-&gt;clockTimeStampUSec = usecs;
+     shmTimeP-&gt;receiveTimeStampSec = (time_t)tv-&gt;tv_sec;
+     shmTimeP-&gt;receiveTimeStampUSec = (int)tv-&gt;tv_usec;
+-    shmTimeP-&gt;precision = offset != 0 ? (int)(ceil(log(offset) / M_LN2)) : -20;
++    shmTimeP-&gt;precision = -20;
+     shmTimeP-&gt;count++;
+     shmTimeP-&gt;valid = 1;
+ 
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007003.html">[Gpsd-dev] ntpshm.c PPS bad usec reference
+</A></li>
+	<LI>Next message: <A HREF="007009.html">[Gpsd-dev] ntpshm.c PPS bad usec reference
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7005">[ date ]</a>
+              <a href="thread.html#7005">[ thread ]</a>
+              <a href="subject.html#7005">[ subject ]</a>
+              <a href="author.html#7005">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

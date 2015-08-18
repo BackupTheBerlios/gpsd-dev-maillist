@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: Time lag and speed problems on SiRFs
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20Time%20lag%20and%20speed%20problems%20on%20SiRFs&In-Reply-To=%3C20050705160556.GA13786%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002297.html">
+   <LINK REL="Next"  HREF="002303.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: Time lag and speed problems on SiRFs</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20Time%20lag%20and%20speed%20problems%20on%20SiRFs&In-Reply-To=%3C20050705160556.GA13786%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Re: Time lag and speed problems on SiRFs">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Jul  5 18:05:56 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002297.html">[Gpsd-dev] Re: Time lag and speed problems on SiRFs
+</A></li>
+        <LI>Next message: <A HREF="002303.html">[Gpsd-dev] DGPS... what About WAAS/Egnos...
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2313">[ date ]</a>
+              <a href="thread.html#2313">[ thread ]</a>
+              <a href="subject.html#2313">[ subject ]</a>
+              <a href="author.html#2313">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Darryl Ross &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">spam at afoyi.com</A>&gt;:
+&gt;<i> The problem happens even when the GPS has been running for 35 minutes
+</I>&gt;<i> (about the time it takes me to drive home from work). Isn't the UTC
+</I>&gt;<i> correction information sent every 10-15 minutes?
+</I>
+That's right.  So if you're seeing a 10-second lag after 35 minutes,
+it isn't the UTC correction at issue.
+ 
+&gt;<i> &gt; * Speed reports cap at about 30MPH even when he's doing 60.
+</I>&gt;<i> 
+</I>&gt;<i> Minor correction: kph not mph. Also, it's not a 'cap' as in its normal
+</I>&gt;<i> below the threshold and then just stops increasing as the car's speed
+</I>&gt;<i> increases, it's wrong for all speeds.
+</I>
+I have seen my gpsd/xgps setup report speeds higher than this while
+watching it in the passenger seat of my wife's car.  That's using
+the same BU303 + FC4 you have.  So there is something distinctly
+odd going on here, and I wish I knew what.
+
+Here's a good diagnostic first step: sirmon watches the raw binary
+packet stream from your GPS.  Run sirfmon and watch how the velocity
+(speed m/s) changes. If it tops 30kph, then the problem is somewhere
+in gpsd.  If it doesn't, something your GPS is doing is pretty wack.
+
+&gt;<i> And I've just realised, thinking about it, the speeds I'm getting after
+</I>&gt;<i> converting the m/s value from the 'o' command to km/h seem to
+</I>&gt;<i> numerically still be in m/s.
+</I>&gt;<i> 
+</I>&gt;<i> Eg: at 100kph I was getting a reading just shy of 30.
+</I>&gt;<i> 
+</I>&gt;<i> 100kph * 3600 / 1000 = 27.8 m/s
+</I>
+I have no idea what this means. All the drivers report speed in m/s.
+
+&gt;<i> Looking at the logs I've attached, I can't see any significant
+</I>&gt;<i> difference in the speeds being reported in NMEA mode versus sirf -- it's
+</I>&gt;<i> within 1 or 2m/s which taking into account the car changing speed
+</I>&gt;<i> slightly going through pot-holes and the like would be about right.
+</I>
+That's significant.  It means this isn't a SiRF-vs.-NMEA problem.
+Which is a good thing, as the SiRF driver would be the most difficult
+place to winkle a bug out of.
+ 
+&gt;<i> When I get time (it's almost 2am now) I'll grab some output from gpsd
+</I>&gt;<i> with debugging enabled. What debugging level would be useful?
+</I>
+-D 4.
+ 
+&gt;<i> &gt; I've asked Darryl for a packet log exhibiting the speed problem,
+</I>&gt;<i> &gt; but received no reply.
+</I>&gt;<i> 
+</I>&gt;<i> Sorry about the delay in supplying this, been a murderous week at work.
+</I>&gt;<i> 
+</I>&gt;<i> Attached are log files from 2 tests using a simple telnet client I wrote
+</I>&gt;<i> in python, which I've also attached. My client connects, enables watcher
+</I>&gt;<i> mode, forces gpsd to NMEA mode, catches 60 sentences and then switches
+</I>&gt;<i> to binary mode and catches 60 more sentences.
+</I>&gt;<i> 
+</I>&gt;<i> One test was done while stationary and the other one was done while
+</I>&gt;<i> driving at 60kph down a straight road with cruise enabled.
+</I>
+I'll look at these.  
+
+One thing that would be useful would be a few seconds of raw SiRF packets
+captured while you are moving at 60kph.  If I feed these through gpsfake 
+and don't see speed above 30kph, that would be good -- it would mean the 
+bug is reproducible.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002297.html">[Gpsd-dev] Re: Time lag and speed problems on SiRFs
+</A></li>
+	<LI>Next message: <A HREF="002303.html">[Gpsd-dev] DGPS... what About WAAS/Egnos...
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2313">[ date ]</a>
+              <a href="thread.html#2313">[ thread ]</a>
+              <a href="subject.html#2313">[ subject ]</a>
+              <a href="author.html#2313">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

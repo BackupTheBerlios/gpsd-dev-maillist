@@ -1,0 +1,109 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] git master fails to build on NetBSD
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20git%20master%20fails%20to%20build%20on%20NetBSD&In-Reply-To=%3Crmifwubwvug.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008261.html">
+   <LINK REL="Next"  HREF="008266.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] git master fails to build on NetBSD</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20git%20master%20fails%20to%20build%20on%20NetBSD&In-Reply-To=%3Crmifwubwvug.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] git master fails to build on NetBSD">gdt at ir.bbn.com
+       </A><BR>
+    <I>Mon Dec  6 02:09:27 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008261.html">[Gpsd-dev] following oncore updates
+</A></li>
+        <LI>Next message: <A HREF="008266.html">[Gpsd-dev] git master fails to build on NetBSD
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8262">[ date ]</a>
+              <a href="thread.html#8262">[ thread ]</a>
+              <a href="subject.html#8262">[ subject ]</a>
+              <a href="author.html#8262">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+git master fails to build.  The commit below doesn't build, but the
+parent does:
+
+  commit 2cea75335f1dc70301f07b374cbe9d8183c6d284
+  Author: Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;
+  Date:   Thu Dec 2 17:28:35 2010 -0800
+
+      Fix endianess issues in Garmin binary driver.
+
+      This fix works for me, but I have no way to test  on a beg endian
+      CPU.  So it might fix Bug# 17358, submitted by fdirosa
+
+The issue is the use of 'endian.h'.  The following commit (unpushed)
+fixes it.  Is that ok on other systems?  If not perhaps Gary or someone
+else can autoconfize tests for various headers, and I'm not sure what to
+do on systems that don't have le16toh.
+
+commit 6c5d1ebdc821bede2526cedf30a0c630b9d357e6
+Author: Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;
+Date:   Sun Dec 5 20:07:40 2010 -0500
+
+    Use &lt;sys/endian.h&gt;.
+    
+    Use &lt;sys/endian.h&gt; rather than &lt;endian.h&gt;, to fix build on NetBSD.
+    Probably this should be searched for with autoconf, and POSIX
+    specifications consulted.  I can't find any reference in POSIX to
+    le16toh and friends or the endian.h header.
+
+diff --git a/driver_garmin.c b/driver_garmin.c
+index 5073c7b..bb209ed 100644
+--- a/driver_garmin.c
++++ b/driver_garmin.c
+@@ -80,7 +80,7 @@
+ #define __USE_POSIX199309 1
+ 
+ #include &lt;math.h&gt;
+-#include &lt;endian.h&gt;  /* handle endianess */
++#include &lt;sys/endian.h&gt;  /* handle endianess */
+ 
+ #include &lt;string.h&gt;
+ #ifndef S_SPLINT_S
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20101205/fe92e011/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20101205/fe92e011/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008261.html">[Gpsd-dev] following oncore updates
+</A></li>
+	<LI>Next message: <A HREF="008266.html">[Gpsd-dev] git master fails to build on NetBSD
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8262">[ date ]</a>
+              <a href="thread.html#8262">[ thread ]</a>
+              <a href="subject.html#8262">[ subject ]</a>
+              <a href="author.html#8262">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

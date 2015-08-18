@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] Add test code for the NMEA parser
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Add%20test%20code%20for%20the%20NMEA%20parser&In-Reply-To=%3C2flbrbtsmql.fsf%40saruman.uio.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000523.html">
+   <LINK REL="Next"  HREF="000526.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] Add test code for the NMEA parser</H1>
+    <B>Petter Reinholdtsen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Add%20test%20code%20for%20the%20NMEA%20parser&In-Reply-To=%3C2flbrbtsmql.fsf%40saruman.uio.no%3E"
+       TITLE="[Gpsd-dev] [PATCH] Add test code for the NMEA parser">pere at hungry.com
+       </A><BR>
+    <I>Thu Jan 13 10:26:58 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000523.html">[Gpsd-dev] PATCH: getdtablesize()
+</A></li>
+        <LI>Next message: <A HREF="000526.html">[Gpsd-dev] [PATCH] Fix insecure buffer handling in gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#524">[ date ]</a>
+              <a href="thread.html#524">[ thread ]</a>
+              <a href="subject.html#524">[ subject ]</a>
+              <a href="author.html#524">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Here is a patch to add test code to the NMEA parser.  Test sentences
+are placed in nmea_parse-test.data.  It should probably be extended to
+check the values stored in the struct, but that will have to wait for
+later.  At least I am able to check that the parser still recognizes
+correct sentences.
+
+Index: Makefile.am
+===================================================================
+--- Makefile.am (revision 1320)
++++ Makefile.am (working copy)
+@@ -118,3 +118,9 @@
+ # This is not distributed
+ libgps: libgps.c .libs/libgps.a
+        $(CC) -o libgps -DTESTMAIN libgps.c .libs/libgps.a
++
++nmea_parse-test: nmea_parse.c
++       $(CC) $(CFLAGS) -o $@ -DTEST nmea_parse.c
++
++check: nmea_parse-test
++       ./nmea_parse-test
+
+Index: nmea_parse.c
+===================================================================
+--- nmea_parse.c        (revision 1320)
++++ nmea_parse.c        (working copy)
+@@ -517,3 +645,48 @@
+     nmea_add_checksum(buf + 1);
+     write(fd, buf, strlen(buf));
+ }
++
++#if defined(TEST)
++void gpsd_report(int errlevel UNUSED, const char *fmt, ... )
++{
++    char buf[BUFSIZ];
++    va_list ap;
++
++    strcpy(buf, &quot;gpsd: &quot;);
++    va_start(ap, fmt) ;
++    vsnprintf(buf + strlen(buf), sizeof(buf)-strlen(buf), fmt, ap);
++    va_end(ap);
++
++    fputs(buf, stdout);
++}
++
++int main(int argc UNUSED, char *argv[] UNUSED)
++{
++    int retval = 0;
++    struct gps_data_t gpsdata;
++    char buf[1024];
++    FILE *fp;
++    char *filename = argv[1];
++    memset(&amp;gpsdata, '\0', sizeof(gpsdata));
++
++    if (NULL == filename)
++        filename = &quot;nmea_parse-test.data&quot;;
++    fp = fopen(filename, &quot;r&quot;);
++    if (NULL == fp) {
++        gpsd_report(1, &quot;Failed to read '%s'\n&quot;, filename);
++       return 2;
++    }
++
++    gpsd_report(1, &quot;Parsing all NMEA statements in '%s'\n&quot;, filename);
++
++    while (fgets(buf, sizeof(buf), fp))
++    {
++       if (0 != nmea_parse(buf, &amp;gpsdata))
++       {
++           gpsd_report(1, &quot;Parse error: '%s'\n&quot;, buf);
++           retval = 1;
++       }
++    }
++    return retval;
++}
++#endif /* TEST */
+
+This is the tests I was able to extract from the source:
+
+% cat nmea_parse-test.data
+$GPGSA,A,2,,23,,,,,,,,07,13,,04.6,04.5,*1A
+$GPGSA,A,3,,,,,,16,18,,22,24,,,3.6,2.1,2.2*3C
+$GPGSV,2,1,08,01,40,083,46,02,17,308,41,12,07,344,39,14,22,228,45*75
+$PGRME,3.5,M,2.8,M,4.5,M*23
+$PGRMM,WGS 84*06
+$PRWIZCH,01,2,28,7,08,7,31,7,13,7,02,2,10,2,03,7,07,0,11,2,27,7,00,0*4C
+$PRWIZCH,30,7,10,7,06,7,02,0,00,0,17,7,18,7,26,2,16,7,29,0,15,7,23,7*4B
+%
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000523.html">[Gpsd-dev] PATCH: getdtablesize()
+</A></li>
+	<LI>Next message: <A HREF="000526.html">[Gpsd-dev] [PATCH] Fix insecure buffer handling in gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#524">[ date ]</a>
+              <a href="thread.html#524">[ thread ]</a>
+              <a href="subject.html#524">[ subject ]</a>
+              <a href="author.html#524">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

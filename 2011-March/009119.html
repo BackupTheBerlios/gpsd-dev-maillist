@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Single-writer/many-reader consistency
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3C20110327002018.GA30924%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009106.html">
+   <LINK REL="Next"  HREF="009120.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Single-writer/many-reader consistency</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3C20110327002018.GA30924%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Single-writer/many-reader consistency">esr at thyrsus.com
+       </A><BR>
+    <I>Sun Mar 27 01:20:18 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009106.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+        <LI>Next message: <A HREF="009120.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9119">[ date ]</a>
+              <a href="thread.html#9119">[ thread ]</a>
+              <a href="subject.html#9119">[ subject ]</a>
+              <a href="author.html#9119">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+&gt;<i> Excuse a stupid question, but how closely are you trying to synchronize.
+</I>&gt;<i> 
+</I>&gt;<i> If you are using a 1Hz GPS, without the pps, given the variable
+</I>&gt;<i> latency in GPSD and hardware, the value will be close, but sometime
+</I>&gt;<i> after the second boundary.
+</I>
+Gary or Chris will have to answer this.  I don't understand the NTP
+interface that well.
+ 
+&gt;<i> For readers, you could just do successive reads every 100 milliseconds
+</I>&gt;<i> or even 10 milliseconds (if the cache takes longer than this there are
+</I>&gt;<i> far worse problems) and find a set equal - without counters or
+</I>&gt;<i> anything.  Just memcmp.
+</I>
+Sorry, I didn't understand this.
+
+&gt;<i> Even if it is only a few times per second, what performance benefits
+</I>&gt;<i> will be gained by using shm instead of a shared file
+</I>&gt;<i> (write(fd,buf,sizeof(buf)); fsync())?  Especially if you start adding
+</I>&gt;<i> semaphores.
+</I>
+shm has two features of note:
+
+(1) We're already depending on it in the NTPSHM case.
+
+(2) I had written shm code before. I hadn't written shared-file code before
+    That made shm the path of lesser effort.
+
+Note that the shmness of the transport is pretty well isolated in two
+small modules.  If we wanted to change it, that wouldn't be difficult.
+ 
+&gt;<i> But do you need 10mS or 1mS accuracy?
+</I>
+It's not so much a question of what *we* need as of what GPSD's end users
+need.  I think they'd appreciate as much accuracy as they can get.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009106.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+	<LI>Next message: <A HREF="009120.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9119">[ date ]</a>
+              <a href="thread.html#9119">[ thread ]</a>
+              <a href="subject.html#9119">[ subject ]</a>
+              <a href="author.html#9119">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

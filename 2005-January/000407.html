@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] Allow gps_open() to use const strings
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Allow%20gps_open%28%29%20to%20use%20const%20strings&In-Reply-To=%3CE1Ckqrp-00002m-KQ%40saruman.uio.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000409.html">
+   <LINK REL="Next"  HREF="000408.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] Allow gps_open() to use const strings</H1>
+    <B>Petter Reinholdtsen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Allow%20gps_open%28%29%20to%20use%20const%20strings&In-Reply-To=%3CE1Ckqrp-00002m-KQ%40saruman.uio.no%3E"
+       TITLE="[Gpsd-dev] [PATCH] Allow gps_open() to use const strings">pere at hungry.com
+       </A><BR>
+    <I>Sat Jan  1 22:32:57 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000409.html">[Gpsd-dev] Earthmate USB - update the info please
+</A></li>
+        <LI>Next message: <A HREF="000408.html">[Gpsd-dev] [PATCH] Allow gps_open() to use const strings
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#407">[ date ]</a>
+              <a href="thread.html#407">[ thread ]</a>
+              <a href="subject.html#407">[ subject ]</a>
+              <a href="author.html#407">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I am trying to port gps3d to use libgps, and discovered that this code
+gave compile warnings:
+
+  const char *port = getPort();
+  const char *server = getServer();
+  status = gps_open(server, port);
+
+I believe this code should compile without warnings.  The solution is
+to change the arguments for gps_open() from 'char*' to 'const char*'.
+Included is a patch to do this.  Please include it in a future version
+of gpsd.
+
+I considered changing the raw_hook argument from 'char*' to 'const
+char*', but discoverd hook code modifying the argument passed to it,
+so it can't be const right now.
+
+Index: gps.h
+===================================================================
+--- gps.h	(revision 1214)
++++ gps.h	(working copy)
+@@ -98,9 +99,9 @@
+     void (*raw_hook)(char *buf);	/* raw-mode hook for GPS data */
+ };
+ 
+-struct gps_data_t *gps_open(char *host, char *port);
++struct gps_data_t *gps_open(const char *host, const char *port);
+ int gps_close(struct gps_data_t *);
+-int gps_query(struct gps_data_t *gpsdata, char *requests);
++int gps_query(struct gps_data_t *gpsdata, const char *requests);
+ int gps_poll(struct gps_data_t *gpsdata);
+ void gps_set_raw_hook(struct gps_data_t *gpsdata, void (*hook)(char *buf));
+ 
+Index: gpsd.h
+===================================================================
+--- gpsd.h	(revision 1214)
++++ gpsd.h	(working copy)
+@@ -74,7 +74,7 @@
+ extern void nmea_add_checksum(char *sentence);
+ extern int gpsd_open(int device_speed, int stopbits, struct gps_session_t *context);
+ extern void gpsd_close(struct gps_session_t *context);
+-extern int netlib_connectsock(char *host, char *service, char *protocol);
++extern int netlib_connectsock(const char *host, const char *service, const char *protocol);
+ 
+ /* External interface */
+ extern struct gps_session_t * gpsd_init(char devtype, char *dgpsserver);
+Index: libgps.c
+===================================================================
+--- libgps.c	(revision 1214)
++++ libgps.c	(working copy)
+@@ -7,7 +7,7 @@
+ 
+ #include &quot;gpsd.h&quot;
+ 
+-struct gps_data_t *gps_open(char *host, char *port)
++struct gps_data_t *gps_open(const char *host, const char *port)
+ /* open a connection to a gpsd daemon */
+ {
+     time_t now;
+@@ -202,7 +202,7 @@
+     return gps_unpack(buf, gpsdata);
+ }
+ 
+-int gps_query(struct gps_data_t *gpsdata, char *requests)
++int gps_query(struct gps_data_t *gpsdata, const char *requests)
+ /* query a gpsd instance for new data */
+ {
+     if (write(gpsdata-&gt;gps_fd, requests, strlen(requests)) &lt;= 0)
+Index: netlib.c
+===================================================================
+--- netlib.c	(revision 1214)
++++ netlib.c	(working copy)
+@@ -12,7 +12,7 @@
+ #define INADDR_NONE   ((in_addr_t)-1)
+ #endif
+ 
+-int netlib_connectsock(char *host, char *service, char *protocol)
++int netlib_connectsock(const char *host, const char *service, const char *protocol)
+ {
+     struct hostent *phe;
+     struct servent *pse;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000409.html">[Gpsd-dev] Earthmate USB - update the info please
+</A></li>
+	<LI>Next message: <A HREF="000408.html">[Gpsd-dev] [PATCH] Allow gps_open() to use const strings
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#407">[ date ]</a>
+              <a href="thread.html#407">[ thread ]</a>
+              <a href="subject.html#407">[ subject ]</a>
+              <a href="author.html#407">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

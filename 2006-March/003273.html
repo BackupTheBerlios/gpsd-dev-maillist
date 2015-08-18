@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Unix design rules
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Unix%20design%20rules&In-Reply-To=%3C91981b3e0603022322n7aea95e6tc36d4086e65d4ec1%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003272.html">
+   <LINK REL="Next"  HREF="003275.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Unix design rules</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Unix%20design%20rules&In-Reply-To=%3C91981b3e0603022322n7aea95e6tc36d4086e65d4ec1%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Unix design rules">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Fri Mar  3 08:22:25 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003272.html">[Gpsd-dev] Unix design rules
+</A></li>
+        <LI>Next message: <A HREF="003275.html">[Gpsd-dev] Unix design rules
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3273">[ date ]</a>
+              <a href="thread.html#3273">[ thread ]</a>
+              <a href="subject.html#3273">[ subject ]</a>
+              <a href="author.html#3273">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 3/2/06, Raphael Jacquot &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">sxpert at esitcom.org</A>&gt; wrote:
+&gt;<i> Russell Nelson wrote:
+</I>&gt;<i> &gt; Eric S. Raymond writes:
+</I>&gt;<i> &gt;  &gt; In general, if your client program is writing an output file sequentially
+</I>&gt;<i> &gt;  &gt; you should make it write to standard output so it can be used in pipelines.
+</I>&gt;<i> &gt;  &gt; The effect of specifing a file on the command line can be achieved
+</I>&gt;<i> &gt;  &gt; with the shell's redirect-append operator, &gt;&gt;.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; To which I would add &quot;Don't log.  Send progress information to stderr,
+</I>&gt;<i> &gt; and if your user wants it in a file, they can use 2&gt;/var/log/file.&quot;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; I would also add &quot;Don't format your output for human readability.
+</I>&gt;<i> &gt; Format it for ease of parsing.  Supply a post-processor which formats
+</I>&gt;<i> &gt; for readability and let your users pipe the output into it.&quot;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; And if I was really on a roll, I would add &quot;Don't format your output
+</I>&gt;<i> &gt; like this: &lt;tag&gt;output&lt;/tag&gt;, but instead like this: tag: output.  If
+</I>&gt;<i> &gt; your output has embedded newlines, replace them by \n\t&quot;.  If a tagged
+</I>&gt;<i> &gt; output is itself tagged, add another tab to all newlines.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Where are ya now, XML??  Who's yer daddy?  In four lines I just sent
+</I>&gt;<i> &gt; you to the bit-bucket of unparsability hell.
+</I>&gt;<i> &gt;
+</I>&gt;<i>
+</I>&gt;<i> hmm
+</I>&gt;<i> this program was designed with the following goals in mind:
+</I>&gt;<i>
+</I>&gt;<i> * it is to run in an embedded system, and using syslog is necessary in
+</I>&gt;<i> this case so as to be able to know what happened if a crash occurs
+</I>&gt;<i> (stderr won't serve any purpose if it's gone)
+</I>
+I don't really object to syslog but: if it's embedded, will it have
+dedicated net to send syslogs? if so, why not feed stderr into
+'logger'. if not, why not just redirect stderr to a file.
+
+&gt;<i> * generating gpx files which are stored on compact flash memory, so as
+</I>&gt;<i> to upload them to openstreetmap.org
+</I>
+again, stdout is just fine. maybe we can have -o file, to send it to a
+file, and if unspecified, stdout. gpxlogger (args) &gt; `date
+&quot;+gpxlog-%s.txt&quot;` to have uniquish log files...
+
+&gt;<i> the post processor is called gpsbabel.
+</I>
+yup. and i can think of a jillion other ways to process the files too.
+
+&gt;<i> I'll assume you're a troll
+</I>
+not necessarily.
+
+i think he just dislikes xml... as i do. the &quot;who's yer daddy&quot; is an
+amusing expression of frustration at the modern fad of xml-izing
+everything, even things that shouldn't be. i think he may not
+understand the point of gpx: namely a generic *path* interchange
+format, rather than a collection of points like NMEA is. in this case,
+xml is a pretty good format: the point becomes a part of a more
+valuable entity (a path) by virtue of the addition of the metadata,
+with attributes that may or may not be present. Granted these could be
+expressed like email headers, but the structure of the path lends
+itself quite nicely to xml.
+
+CK
+
+--
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003272.html">[Gpsd-dev] Unix design rules
+</A></li>
+	<LI>Next message: <A HREF="003275.html">[Gpsd-dev] Unix design rules
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3273">[ date ]</a>
+              <a href="thread.html#3273">[ thread ]</a>
+              <a href="subject.html#3273">[ subject ]</a>
+              <a href="author.html#3273">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

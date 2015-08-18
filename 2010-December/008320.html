@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPS%20date%20fail%20due%20to%20week%20counter%20rollover%20%28not%20a%0A%20gpsd%20bug%29&In-Reply-To=%3C20101217222332.GA23692%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008318.html">
+   <LINK REL="Next"  HREF="008325.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPS%20date%20fail%20due%20to%20week%20counter%20rollover%20%28not%20a%0A%20gpsd%20bug%29&In-Reply-To=%3C20101217222332.GA23692%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)">esr at thyrsus.com
+       </A><BR>
+    <I>Fri Dec 17 23:23:32 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008318.html">[Gpsd-dev] Symmetricom 58534A &quot;Timing Antenna&quot; GPS receiver
+</A></li>
+        <LI>Next message: <A HREF="008325.html">[Gpsd-dev] GPS date fail due to week counter rollover (not a	gpsd bug)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8320">[ date ]</a>
+              <a href="thread.html#8320">[ thread ]</a>
+              <a href="subject.html#8320">[ subject ]</a>
+              <a href="author.html#8320">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I've done some more looking into the implications of the GPS week rollover bug,
+and what I have found is ugly indeed.
+
+The basic problem is that GPS satellites send dates as, in effect, three
+numbers: a GPS week, an offset in seconds within the week, and an offset
+between cumulative GPS time and UTC. Time is expressed as weeks since
+the epoch (1980-01-06T00:00:00) plus an offset in seconds
+
+This would be fine and dandy - you'd get UTC time as
+
+     epoch + (week * SECONDS_PER_WEEK) + seconds + leapoffset
+
+except for one problem. The GPS week counters are short, only 10 bits.  They
+roll over every 1024 weeks. The last 10-bit rollover was in 1999; the next
+will be in 2019.
+
+Or maybe it's 8192 weeks - Wikipedia claims that &quot;modern&quot; GPS has a 13-bit 
+week field.  The first 13-bit rollover will be in 2173.
+
+In trying to track down what &quot;modern&quot; meant, all I could find was
+a hint in a corrigendum to ISGPS-2000 that Block IIF satellites have this 
+feature; by implication, earlier ones don't.  There's only one IIF bird
+up as of now, and it's experimental. I suppose the theory is that they're
+going to replace the whole constellation with sats that have the 13-bit 
+counter before 2019.
+
+So, when we hit the rollover point, what happens?  On the first
+restart after that, our receivers start reporting as though we'd
+dropped back in time to the last rollover, currently
+1999-08-22T00:00:00.  They can't do anything else.  The week counter
+and their epoch is all they have as a calendar.
+
+The hacker known as <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">f4eru at free.fr</A> pointed out consequences:
+
+&gt;<i> - the date is invalid, obviously
+</I>&gt;<i> - UTC time is correct, but a local time calculated on this will sometimes 
+</I>&gt;<i>   be off +- 1hr, due to wrong DST calculation
+</I>&gt;<i> - some receivers may not get a position (mine was fixing correctly)
+</I>
+These are obvious.  But also
+
+&gt;<i> - Finally, gpsd (and other SW probably) interprets the date &quot;99&quot; in
+</I>&gt;<i>   GPRMC as 2099, which gives a 32bit overflow in unix time, gpsmon
+</I>&gt;<i>   reports an error &quot;negative date&quot; and a date in 1969 (probably a -1
+</I>&gt;<i>   returned from the unix time lib), if i enable the GPZDA frame on
+</I>&gt;<i>   the Rx, it reports &quot;correctly&quot; 1999.
+</I>
+That is correct.  GPSD is caught in a nasty box here; we can't fix the
+fact that sentences other than ZDA only return 2-digit years, we can't
+force the bit length of time_t to 64 everywhere, and we can't change
+the length of the GPS rollover period.  These bugs synergize with each
+other.
+
+&gt;<i>                     A 64 bit system will probably report 2099
+</I>
+Only if it has 64-bit time_t.  64-bit Linux does (I just wrote and ran
+the obvious trivial C program to check), but I'm not sure even this is
+something we can take for granted on all platforms; it is at least
+imaginable that some might pin the size to 4 bits in some desperate
+effort to protect binary file compatibility
+
+I wrote a program to check (enclosed) and it at appears that least the
+Linux time routines mktime(3) and localtime(3) are 64-bit clean on
+64-bit Linux.  I was able to round-trip the ISO date
+2099-06-06T00:00:00 through them.  That doesn't save us on 32-bit
+machines, though.
+  
+&gt;<i> Some suggestions :
+</I>&gt;<i> 
+</I>&gt;<i> - correcting the GPRMC date detection to 20xx except 1999 for &quot;99&quot;
+</I>&gt;<i>   would perhaps be a good thing to do. At least gpsd will be
+</I>&gt;<i>   synchron to the GPS info, and no averflow will happen on 32 bit
+</I>&gt;<i>   time_t systems. Of course we loose one year before the 2100 bug,
+</I>&gt;<i>   but fair enough, that's an order of magnitude away from now than
+</I>&gt;<i>   2019
+</I>&gt;<i>
+</I>&gt;<i> - trying to compensate the 20 year error can be dangerous coz based
+</I>&gt;<i>   on the machine time which can be corrupt also, and, for some
+</I>&gt;<i>   applications,will later be based on GPS, etc... but it's feasible
+</I>&gt;<i>   if the detection is based on a proper window (ex : machine_utc -
+</I>&gt;<i>   gps_utc = n*1024 weeks +- 1 month). The non-trivial part is
+</I>&gt;<i>   calculating offsets of exactly n*1024 weeks in UTC in seconds...
+</I>
+Both these things are possible, but I fear introducing still more subtle
+edge cases. The behavior of the system is already quite difficult enough
+to reason about.  
+
+For example, suppose we try to implement the second suggestion.  What
+should we do about UTC leap seconds, if anything - especially since we 
+don't know what leap seconds will be inserted in the future?
+
+I wouldn't be worrying about this in 2010 except that some of our embedded
+deployments might have 9-year lifetimes.  What should we do?  What
+*can* we do?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: timecheck.c
+Type: text/x-csrc
+Size: 929 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20101217/31907dc5/attachment.c">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20101217/31907dc5/attachment.c</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008318.html">[Gpsd-dev] Symmetricom 58534A &quot;Timing Antenna&quot; GPS receiver
+</A></li>
+	<LI>Next message: <A HREF="008325.html">[Gpsd-dev] GPS date fail due to week counter rollover (not a	gpsd bug)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8320">[ date ]</a>
+              <a href="thread.html#8320">[ thread ]</a>
+              <a href="subject.html#8320">[ subject ]</a>
+              <a href="author.html#8320">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

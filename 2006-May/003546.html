@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: gpsmm_test.cpp doesn't compile
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20gpsmm_test.cpp%20doesn%27t%20compile&In-Reply-To=%3C1148459682.9099.34.camel%40mabupc.psk%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003545.html">
+   <LINK REL="Next"  HREF="003547.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: gpsmm_test.cpp doesn't compile</H1>
+    <B>Massimo Burcheri</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20gpsmm_test.cpp%20doesn%27t%20compile&In-Reply-To=%3C1148459682.9099.34.camel%40mabupc.psk%3E"
+       TITLE="[Gpsd-dev] Re: gpsmm_test.cpp doesn't compile">burcheri at fgan.de
+       </A><BR>
+    <I>Wed May 24 10:34:41 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003545.html">[Gpsd-dev] Re: gpsmm_test.cpp doesn't compile
+</A></li>
+        <LI>Next message: <A HREF="003547.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3546">[ date ]</a>
+              <a href="thread.html#3546">[ thread ]</a>
+              <a href="subject.html#3546">[ subject ]</a>
+              <a href="author.html#3546">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Am Mittwoch, den 24.05.2006, 10:26 +0200 schrieb Massimo Burcheri:
+
+&gt;<i> static void callback(struct gps_data_t* p, char* buf, size_t len, int
+</I>&gt;<i> level UNUSED);
+</I>
+...and a forward from the author:
+
+Am Mittwoch, den 24.05.2006, 10:13 +0200 schrieb Alfredo Pironti: 
+
+&gt;<i> I can reproduce the problem. However this code is no longer under my
+</I>&gt;<i> control, someone in the gpsd mailing list will surely help you to fix
+</I>&gt;<i> this problem.
+</I>&gt;<i> 
+</I>&gt;<i> I add here my comments, hoping they will help to fix this issue.
+</I>&gt;<i> Massimo, please forward them to the gpsd list, so they can help you.
+</I>&gt;<i> I'm no more subscribed to the gpsd lists, so please keep me informed if
+</I>&gt;<i> you need more help.
+</I>&gt;<i> 
+</I>&gt;<i> - ----8&lt;----
+</I>&gt;<i> 
+</I>&gt;<i> What I can see is that the libgpsmm interface has been changed, but I
+</I>&gt;<i> can't understand why. Changing an interface always has some side
+</I>&gt;<i> effects, among them it breaks programs relying on the old interface.
+</I>&gt;<i> This is what is happening with gpsmm_test. It has not been updated with
+</I>&gt;<i> the new libgpsmm library. This also implies that nobody run &quot;make check&quot;
+</I>&gt;<i> before releasing the software ;-)
+</I>&gt;<i> I cannot provide a fix for this since I can't understand what is the
+</I>&gt;<i> meaning of the change in the interface. Someone added two parameters to
+</I>&gt;<i> the callback function which seems to be not used.
+</I>&gt;<i> 
+</I>&gt;<i> Another thing I notice is that also the man page is obsolete, so there
+</I>&gt;<i> is no documentation about this change.
+</I>&gt;<i> 
+</I>&gt;<i> Please update the gpsmm_test and the libgps man page documenting and
+</I>&gt;<i> explaining the change (what the two new parameters are for), or revert
+</I>&gt;<i> the interface to its previous state.
+</I>&gt;<i> 
+</I>&gt;<i> - ----8&lt;----
+</I>
+&gt;<i> Another question is:
+</I>&gt;<i> &gt; By using the callback with my own update function I get informed about
+</I>&gt;<i> &gt; new data. What is the poll function for then?
+</I>&gt;<i> The poll function is blocking, when you call poll() you're program will
+</I>&gt;<i> be stuck until new data arrives.
+</I>&gt;<i> The callback function is threaded, this means that set_callback() is not
+</I>&gt;<i> blocking: you call it, then continue with your program execution. When
+</I>&gt;<i> new data will be available, the callback function will start and run
+</I>&gt;<i> *while* the main program is running. This can lead to race conditions
+</I>&gt;<i> (reading and writing on the same variable at the sime time and so
+</I>&gt;<i> on...), so be careful when you use it.
+</I>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003545.html">[Gpsd-dev] Re: gpsmm_test.cpp doesn't compile
+</A></li>
+	<LI>Next message: <A HREF="003547.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3546">[ date ]</a>
+              <a href="thread.html#3546">[ thread ]</a>
+              <a href="subject.html#3546">[ subject ]</a>
+              <a href="author.html#3546">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

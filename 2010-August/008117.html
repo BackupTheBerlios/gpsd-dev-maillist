@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] raw_hook uninitialised
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20raw_hook%20uninitialised&In-Reply-To=%3Crmilj81fnnx.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008109.html">
+   <LINK REL="Next"  HREF="008119.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] raw_hook uninitialised</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20raw_hook%20uninitialised&In-Reply-To=%3Crmilj81fnnx.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] raw_hook uninitialised">gdt at ir.bbn.com
+       </A><BR>
+    <I>Fri Aug 20 14:56:18 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008109.html">[Gpsd-dev] raw_hook uninitialised
+</A></li>
+        <LI>Next message: <A HREF="008119.html">[Gpsd-dev] raw_hook uninitialised
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8117">[ date ]</a>
+              <a href="thread.html#8117">[ thread ]</a>
+              <a href="subject.html#8117">[ subject ]</a>
+              <a href="author.html#8117">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+I've turned this into a git commit (not yet pushed), and set to NULL
+instead of 0 because this is a pointer.  I'll kick off a make check.
+
+Comments from others?  Any other cases like this?
+
+
+From c63dff18c923565e7da3bbdcc0100972276f7c48 Mon Sep 17 00:00:00 2001
+From: Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;
+Date: Fri, 20 Aug 2010 08:50:01 -0400
+Subject: [PATCH] Initialize gpsdata-&gt;raw_hook to avoid use-before-initalized.
+ From Diego Berge on gpsd-dev.
+
+---
+ libgps_core.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/libgps_core.c b/libgps_core.c
+index 9b69ff2..fbbc9b5 100644
+--- a/libgps_core.c
++++ b/libgps_core.c
+@@ -119,6 +119,7 @@ int gps_open(/*@null@*/const char *host, /*@null@*/const char *port,
+ 
+     gpsdata-&gt;set = 0;
+     gpsdata-&gt;status = STATUS_NO_FIX;
++    gpsdata-&gt;raw_hook = NULL;
+     gps_clear_fix(&amp;gpsdata-&gt;fix);
+ 
+     /* set up for line-buffered I/O over the daemon socket */
+-- 
+1.7.0.5
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100820/f2527c50/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100820/f2527c50/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008109.html">[Gpsd-dev] raw_hook uninitialised
+</A></li>
+	<LI>Next message: <A HREF="008119.html">[Gpsd-dev] raw_hook uninitialised
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8117">[ date ]</a>
+              <a href="thread.html#8117">[ thread ]</a>
+              <a href="subject.html#8117">[ subject ]</a>
+              <a href="author.html#8117">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

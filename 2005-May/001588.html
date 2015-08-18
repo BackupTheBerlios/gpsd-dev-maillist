@@ -1,0 +1,120 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Other Strange things...
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Other%20Strange%20things...&In-Reply-To=%3C20050508003450.GA10200%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001587.html">
+   <LINK REL="Next"  HREF="001589.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Other Strange things...</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Other%20Strange%20things...&In-Reply-To=%3C20050508003450.GA10200%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Other Strange things...">esr at thyrsus.com
+       </A><BR>
+    <I>Sun May  8 02:34:50 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001587.html">[Gpsd-dev] Other Strange things...
+</A></li>
+        <LI>Next message: <A HREF="001589.html">[Gpsd-dev] Other Strange things...
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1588">[ date ]</a>
+              <a href="thread.html#1588">[ thread ]</a>
+              <a href="subject.html#1588">[ subject ]</a>
+              <a href="author.html#1588">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Andreas Brauchli &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">a.brauchli at elementarea.net</A>&gt;:
+&gt;<i> never the less i still have the other problem - i purged my local copy
+</I>&gt;<i> of gpsd and checked it out again. i also removed any trace of another
+</I>&gt;<i> gpsd (i also removed all libraries and did a clean &quot;make install&quot;)
+</I>&gt;<i> 
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">root at powerbook</A>:/home/blk # gpsd -f /dev/ttyUSB0 -D10 -N
+</I>&gt;<i> gpsd: launching (Version 2.23)
+</I>&gt;<i> gpsd: listening on port gpsd
+</I>&gt;<i> gpsd: changing to group 20
+</I>&gt;<i> gpsd: running with effective group ID 20
+</I>&gt;<i> gpsd: running with effective user ID 65534
+</I>&gt;<i> gpsd: client connect on 4
+</I>&gt;<i> gpsd: checking 4 
+</I>&gt;<i> gpsd: &lt;= client: l
+</I>&gt;<i> gpsd: =&gt; client(4): GPSD,L=2 2.23 abcdefiklmnpqrstuvwxy
+</I>&gt;<i> gpsd: checking 4 
+</I>&gt;<i> gpsd: &lt;= client: g
+</I>&gt;<i> gpsd: =&gt; client(4): GPSD
+</I>&gt;<i> gpsd: checking 4 
+</I>&gt;<i> gpsd: &lt;= client: w
+</I>&gt;<i> gpsd: closing GPS=/dev/ttyUSB0
+</I>&gt;<i> gpsd: opening GPS data source at '/dev/ttyUSB0'
+</I>&gt;<i> gpsd: no probe matched...
+</I>&gt;<i> gpsd: hunting at speed 9600, 8N1
+</I>&gt;<i> gpsd: packet_sniff begins
+</I>&gt;<i> [CTRL+C] keeps stuck, so kill it (i've let it run for some minutes)
+</I>&gt;<i> gpsd: closing GPS=/dev/ttyUSB0
+</I>&gt;<i> gpsd: Received terminating signal 2. Exiting...
+</I>&gt;<i> 
+</I>&gt;<i> could it be because at this time the gps isn't fixed?
+</I>&gt;<i> the device is indeed set for 9600 baud
+</I>
+I don't understand this error.  As it happens, I use a BU-303 myself.
+gpsd picks it up just fine even when it has no fix.  Is sirfmon able
+to get packets from it?
+
+&gt;<i> and here you go without any device
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">root at powerbook</A>:/home/blk # gpsd -D10 -N
+</I>&gt;<i> gpsd: launching (Version 2.23)
+</I>&gt;<i> gpsd: listening on port gpsd
+</I>&gt;<i> gpsd: running with effective group ID 0
+</I>&gt;<i> gpsd: running with effective user ID 65534
+</I>&gt;<i> gpsd: client connect on 4
+</I>&gt;<i> gpsd: checking 4 
+</I>&gt;<i> gpsd: &lt;= client: l
+</I>&gt;<i> gpsd: =&gt; client(4): GPSD,L=2 2.23 abcdefiklmnpqrstuvwxy
+</I>&gt;<i> gpsd: checking 4 
+</I>&gt;<i> gpsd: &lt;= client: w
+</I>&gt;<i> gpsd: 4 turned on watching
+</I>&gt;<i> gpsd: =&gt; client(4): GPSD,W=1
+</I>&gt;<i> gpsd: checking 4 
+</I>&gt;<i> gpsd: &lt;= client: z
+</I>&gt;<i> Segmentation fault
+</I>
+I was able to reproduce this, and the fix is already in SVN head.  
+It's a weird corner case, though -- what client would do N or Z
+without attaching a device first?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001587.html">[Gpsd-dev] Other Strange things...
+</A></li>
+	<LI>Next message: <A HREF="001589.html">[Gpsd-dev] Other Strange things...
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1588">[ date ]</a>
+              <a href="thread.html#1588">[ thread ]</a>
+              <a href="subject.html#1588">[ subject ]</a>
+              <a href="author.html#1588">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

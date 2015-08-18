@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] build failure on NetBSD
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2008-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20build%20failure%20on%20NetBSD&In-Reply-To=%3Crmiabdnnhpw.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="006150.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] build failure on NetBSD</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20build%20failure%20on%20NetBSD&In-Reply-To=%3Crmiabdnnhpw.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] build failure on NetBSD">gdt at ir.bbn.com
+       </A><BR>
+    <I>Thu Oct  2 17:23:55 CEST 2008</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="006150.html">[Gpsd-dev] build failure on NetBSD
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6140">[ date ]</a>
+              <a href="thread.html#6140">[ thread ]</a>
+              <a href="subject.html#6140">[ subject ]</a>
+              <a href="author.html#6140">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+[lines are long to avoid wrapping log output]
+
+I may be using gpsd on a project, so went to get the latest and do a
+test build on NetBSD/i386 4_STABLE.  Mostly it built ok, but I had the
+following problem:
+
+  fnord gdt 21 ~/SOFTWARE/GPSD/gpsd-current &gt; gmake
+  gmake  all-am
+  gmake[1]: Entering directory `/usr/home/gdt/SOFTWARE/GPSD/gpsd-current'
+  /bin/ksh ./libtool --tag=CC   --mode=link gcc  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include  -L/usr/pkg/lib -R/usr/pkg/lib  -L/usr/pkg/lib -o xgpsspeed xgpsspeed.o Tachometer.o -lm -lc    -lXm -L/usr/pkg/lib -lSM -lICE libgps.la -lm -lpthread 
+  gcc -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -o .libs/xgpsspeed xgpsspeed.o Tachometer.o  -L/usr/pkg/lib /usr/pkg/lib/libXm.so /usr/pkg/lib/libXmu.so /usr/pkg/lib/libXt.so /usr/pkg/lib/libXp.so /usr/pkg/lib/libXext.so /usr/pkg/lib/libXft.so /usr/pkg/lib/libXrender.so /usr/pkg/lib/libfontconfig.so /usr/pkg/lib/libexpat.so /usr/pkg/lib/libfreetype.so -lz /usr/pkg/lib/libX11.so /usr/pkg/lib/libXau.so /usr/pkg/lib/libXdmcp.so /usr/pkg/lib/libSM.so /usr/pkg/lib/libICE.so ./.libs/libgps.so -lc -lm -lpthread  -Wl,--rpath -Wl,/usr/pkg/lib -Wl,--rpath -Wl,/usr/y0/lib
+  xgpsspeed.o: In function `main':
+  /home/gdt/SOFTWARE/GPSD/gpsd-current/xgpsspeed.c:143: undefined reference to `panedWidgetClass'
+  /home/gdt/SOFTWARE/GPSD/gpsd-current/xgpsspeed.c:147: undefined reference to `labelWidgetClass'
+  /home/gdt/SOFTWARE/GPSD/gpsd-current/xgpsspeed.c:158: undefined reference to `labelWidgetClass'
+  Tachometer.o: In function `Realize':
+  /home/gdt/SOFTWARE/GPSD/gpsd-current/Tachometer.c:486: undefined reference to `simpleClassRec'
+  Tachometer.o:(.data+0x0): undefined reference to `simpleClassRec'
+  gmake[1]: *** [xgpsspeed] Error 1
+  gmake[1]: Leaving directory `/usr/home/gdt/SOFTWARE/GPSD/gpsd-current'
+  gmake: *** [all] Error 2
+
+The problem seems to be the lack of Xaw.  My system has modular xorg via
+pkgsrc, and the following:
+
+  -rw-r--r--  1 root  wheel  354608 Jun 11 20:41 /usr/pkg/lib/libXaw3d.a
+  lrwxr-xr-x  1 root  wheel      13 Jun 11 20:41 /usr/pkg/lib/libXaw3d.so -&gt; libXaw3d.so.8
+  lrwxr-xr-x  1 root  wheel      15 Jun 11 20:41 /usr/pkg/lib/libXaw3d.so.8 -&gt; libXaw3d.so.8.0
+  -rwxr-xr-x  1 root  wheel  305379 Jun 11 20:41 /usr/pkg/lib/libXaw3d.so.8.0
+  -rw-r--r--  1 root  wheel  319294 Jun 11 13:04 /usr/pkg/lib/libXaw6.a
+  -rwxr-xr-x  1 root  wheel     916 Jun 11 13:04 /usr/pkg/lib/libXaw6.la
+  lrwxr-xr-x  1 root  wheel      16 Jun 11 13:04 /usr/pkg/lib/libXaw6.so -&gt; libXaw6.so.6.0.1
+  lrwxr-xr-x  1 root  wheel      16 Jun 11 13:04 /usr/pkg/lib/libXaw6.so.6 -&gt; libXaw6.so.6.0.1
+  -rwxr-xr-x  1 root  wheel  275601 Jun 11 13:04 /usr/pkg/lib/libXaw6.so.6.0.1
+  -rw-r--r--  1 root  wheel  445124 Jun 11 13:04 /usr/pkg/lib/libXaw7.a
+  -rwxr-xr-x  1 root  wheel     917 Jun 11 13:04 /usr/pkg/lib/libXaw7.la
+  lrwxr-xr-x  1 root  wheel      16 Jun 11 13:04 /usr/pkg/lib/libXaw7.so -&gt; libXaw7.so.7.0.0
+  lrwxr-xr-x  1 root  wheel      16 Jun 11 13:04 /usr/pkg/lib/libXaw7.so.7 -&gt; libXaw7.so.7.0.0
+  -rwxr-xr-x  1 root  wheel  388219 Jun 11 13:04 /usr/pkg/lib/libXaw7.so.7.0.0
+  -rw-r--r--  1 root  wheel  452626 Jun 11 13:04 /usr/pkg/lib/libXaw8.a
+  -rwxr-xr-x  1 root  wheel     923 Jun 11 13:04 /usr/pkg/lib/libXaw8.la
+  lrwxr-xr-x  1 root  wheel      16 Jun 11 13:04 /usr/pkg/lib/libXaw8.so -&gt; libXaw8.so.8.0.0
+  lrwxr-xr-x  1 root  wheel      16 Jun 11 13:04 /usr/pkg/lib/libXaw8.so.8 -&gt; libXaw8.so.8.0.0
+  -rwxr-xr-x  1 root  wheel  394576 Jun 11 13:04 /usr/pkg/lib/libXaw8.so.8.0.0
+
+I do not understand the 6/7/8 version issue.
+configure.ac seems to look for Xaw only:
+
+  AC_CHECK_HEADER([X11/Xaw/Label.h],, motif_includes=&quot;no&quot;)
+  AC_CHECK_LIB(Xaw, XawInitializeWidgetSet, XAW_LIBS=&quot;-lXaw&quot;,,
+          ${X_PRE_LIBS} ${X11_LIBS})
+  AC_SUBST(XAW_LIBS)
+  if test x&quot;$ac_cv_lib_Xaw_XawInitializeWidgetSet&quot; = &quot;xno&quot;; then
+    AC_MSG_WARN([libXaw problem - xgps won't be built.])
+  fi
+
+and it's disabling the wrong program - xgps doesn't use Xaw.
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 193 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20081002/15c301d9/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20081002/15c301d9/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="006150.html">[Gpsd-dev] build failure on NetBSD
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6140">[ date ]</a>
+              <a href="thread.html#6140">[ thread ]</a>
+              <a href="subject.html#6140">[ subject ]</a>
+              <a href="author.html#6140">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

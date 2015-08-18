@@ -1,0 +1,190 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Navcom patch &amp; RINEX
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Navcom%20patch%20%26%20RINEX&In-Reply-To=%3C45B08A85.2090909%40nippur.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005515.html">
+   <LINK REL="Next"  HREF="005525.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Navcom patch &amp; RINEX</H1>
+    <B>Diego Berge</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Navcom%20patch%20%26%20RINEX&In-Reply-To=%3C45B08A85.2090909%40nippur.net%3E"
+       TITLE="[Gpsd-dev] Navcom patch &amp; RINEX">gpsd at nippur.net
+       </A><BR>
+    <I>Fri Jan 19 10:08:21 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005515.html">[Gpsd-dev] State of Diego's Navcom driver,	and the regression tests.
+</A></li>
+        <LI>Next message: <A HREF="005525.html">[Gpsd-dev] Navcom patch &amp; RINEX
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5516">[ date ]</a>
+              <a href="thread.html#5516">[ thread ]</a>
+              <a href="subject.html#5516">[ subject ]</a>
+              <a href="author.html#5516">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>[ NOTE - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A> added to Cc's     ]
+[ NOTE - Origin e-mail address changed to avoid spam ]
+
+Chris Kuethe wrote:
+&gt;<i> On 1/18/07, Diego Berge &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">dberge at localhost</A>&gt; wrote:
+</I>&gt;&gt;<i> Chris Kuethe wrote:
+</I>&gt;&gt;<i> &gt; I'm just wondering if it might not be better to just have a standard
+</I>&gt;&gt;<i> &gt; form of pseudorange output and let the rinex writer accumulate enough
+</I>&gt;&gt;<i> &gt; observations to write records.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>    That's what I was aiming for.  I guess our difference of
+</I>&gt;&gt;<i> interpretation lies on where the RINEX writer should be, see below.
+</I>&gt;<i> 
+</I>&gt;<i> Discussion below...
+</I>&gt;<i> 
+</I>
+&gt;<i> The benefit was daemon simplicity. Not having to extend the daemon
+</I>&gt;<i> again and again for BINEX or SINEX or RINEX3 or MACM or....
+</I>
+   There would be two ways to go about it, one is to choose the widest
+encompassing format (i.e., that which provides the most information),
+the other.... the other I forgot but I'll come back to this paragraph
+when I remember... need more coffee :-P
+
+&gt;<i> Missile Applications Condensed Measurements. It is an efficient,
+</I>&gt;<i> high-speed wire protocol for your  gps to talk to your  navigation
+</I>&gt;<i> computer to integrate your measurements from your  inertial
+</I>&gt;<i> measurement unit so that you get high-rate fixes...
+</I>
+   Ahh, INSes is another thing we need to keep in the back of our minds
+when working on gpsd.  Sooner or latter someone is going to want to
+attach an INS to it (any guesses as to who has access to inertial
+navigation equipment and is starting to dribble? ;) )
+
+   I will have a look at MACM when I can get online properly and let you
+know what I think.  One thing in the meanwhile:  does it support
+communication of ephemeris data?
+
+&gt;<i> No, we haven't really picked a favorite. It seems you and I are the
+</I>&gt;<i> only two who care about precise positioning and/or software solvers to
+</I>&gt;<i> mention the issue on a regular basis... &quot;you snooze, you lose.&quot;
+</I>
+   Well, if you can deal with precise positioning, you can deal with
+coarse positioning, so it makes sense to focus on the former.
+
+&gt;<i> Basically, we were going for speed and integrity.
+</I>
+   There is an old joke about this:
+
+&quot;Quick Jos&#233;, what is 5 + 3?&quot;
+
+&quot;Nine!!!&quot; he shouts.
+
+&quot;No Jos&#233;.... Five and three is eight&quot;
+
+&quot;Ah my friend, you wanted speed or you wanted accuracy?&quot;
+
+&gt;<i> Whatever process is used to extract raw measurements from the vendor
+</I>&gt;<i> protocol must be fast and lightweight. Or maybe it can be a lot of
+</I>&gt;<i> work, but optional at compile-time. If it's modular, that becomes
+</I>&gt;<i> irrelevant.
+</I>
+   Well, it might be irrelevant from the point of view of gpsd, but the
+other tool will still have to deal with it, so the net result is the
+same, except now you have to extract data twice, once from the receiver
+and once from gpsd.
+
+&gt;<i> Second, we want to have maximum integrity. We should not do any
+</I>&gt;<i> floating point math, or any significant conversion (like printf).
+</I>
+   In that case, that leaves you with only one option, which is to
+output the raw GPS stream (possibly minus parity bits).  Problem is, not
+all receivers give you access to raw GPS, so you will have to take
+whichever numbers your GPS does give you and rearrange them back into
+raw data, which entails exactly the same amount of floating point and
+possibly conversion as going the opposite way.
+
+   So to summarise, we are discussing two or three things here, namely:
+
+ * What we offer to the client (pseudoranges, code &amp; phase measurements,
+doppler shifts, clock offsets, ephemeris).
+
+ * How we offer it.  RINEX is by far the dominant player in this area,
+but of course there might be other options instead of or in addition to it.
+
+ * How we produce what we offer (be it RINEX and/or something else).  We
+have identified three options here:
+
+   + Integrated in the server.  Same as PVTs, NMEA.
+
+   + As a compile-time option.  Same as RTCM.
+
+   + As an external client.  Same as the Google Maps PHP script.
+
+   Perhaps it might be best if we deal with each of these points one at
+a time?
+
+   I suggest we start at the top and decide what data is it specifically
+that we want to make available.
+
+   I propose that 1) there needs to be a stated use case for it (e.g.,
+&quot;obtain position information&quot;), 2) it needs to be something specific
+(i.e., &quot;everything&quot; doesn't count), and 3) it needs to be available
+today from at least one supported receiver (i.e., &quot;L5 phase&quot; doesn't count).
+
+   So I'll go ahead and make my proposal for our present purposes:
+
+ 1) I want to be able to calculate precise absolute positions and/or
+precise relative positions respect to other receivers, using data
+obtained from a GPS unit via gpsd.  To this end:
+
+ 2) I need timestamped code and phase[*] measurements in the L1 and
+L2[*] frequencies, along with satellite and receiver[*] clock offsets,
+as well as UTC and ionospheric parameters[*] and ephemeris data[*] for
+all satellites tracked.
+
+ 3) All of the above is available from at least one existing driver
+(yep, navcom).  Those items not marked with [*] and possibly others, are
+available from other drivers as well.  Items marked with [*] may or may
+not be available on a particular epoch even for a receiver capable of
+providing them and are optional.
+
+   Please expand, reduce, or approve the list of data items above,
+keeping in mind the specific use case mentioned.
+
+Regards,
+Diego Berge.
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005515.html">[Gpsd-dev] State of Diego's Navcom driver,	and the regression tests.
+</A></li>
+	<LI>Next message: <A HREF="005525.html">[Gpsd-dev] Navcom patch &amp; RINEX
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5516">[ date ]</a>
+              <a href="thread.html#5516">[ thread ]</a>
+              <a href="subject.html#5516">[ subject ]</a>
+              <a href="author.html#5516">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

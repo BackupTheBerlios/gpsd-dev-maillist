@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Holux USB/RS232 issues
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Holux%20USB/RS232%20issues&In-Reply-To=%3CAANLkTinPfVDETCqx01UAF%2BdnrnN9589P7wa71xnBWVRd%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008122.html">
+   <LINK REL="Next"  HREF="008129.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Holux USB/RS232 issues</H1>
+    <B>Mark Williams</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Holux%20USB/RS232%20issues&In-Reply-To=%3CAANLkTinPfVDETCqx01UAF%2BdnrnN9589P7wa71xnBWVRd%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Holux USB/RS232 issues">mwp at mwp.id.au
+       </A><BR>
+    <I>Thu Aug 26 17:35:44 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008122.html">[Gpsd-dev] new gps report
+</A></li>
+        <LI>Next message: <A HREF="008129.html">[Gpsd-dev] Holux USB/RS232 issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8124">[ date ]</a>
+              <a href="thread.html#8124">[ thread ]</a>
+              <a href="subject.html#8124">[ subject ]</a>
+              <a href="author.html#8124">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi all,
+
+I know these have had issues in the past, but i havent been able to
+find a fix so far.
+
+The device is a Holux M-1000B updating at 5HZ.
+
+Dumping data using &quot;microcom -p /dev/ttyUSB0 -s 38400&quot; i see (what
+appears to be) valid NMEA sentences.
+
+When running &quot;gpsd -D10 -N /dev/ttyUSB0&quot;, and then run &quot;gpsmon&quot;, i get
+vaild data for a few seconds, then nothing.
+The debug output suggests that gpsd is dropped back to garmin binary
+mode for some reason??
+
+gpsd's debug output looks like:
+
+gpsd: client 127.0.0.1 (0) connect on fd 4
+gpsd: =&gt; client(0):
+{&quot;class&quot;:&quot;VERSION&quot;,&quot;release&quot;:&quot;2.95&quot;,&quot;rev&quot;:&quot;2010-08-16T01:16:00&quot;,&quot;proto_major&quot;:3,&quot;proto_minor&quot;:3}\x0d\x0a
+gpsd: select waits
+gpsd: select() {3 4} -&gt; { 4 } at 1282836731.610224 (errno 0)
+gpsd: checking client(0)
+gpsd: &lt;= client(0): ?WATCH={&quot;raw&quot;:2}\x0d\x0a
+json: json_read_object() sees '{&quot;raw&quot;:2}
+'
+json: Target address for class (offset 0) is (nil)
+json: Target address for enable (offset 0) is 0x8053dec
+json: Target address for scaled (offset 0) is 0x8053df4
+json: Target address for timing (offset 0) is 0x8053df5
+json: Target address for device (offset 0) is 0x8053df6
+json: JSON parse of '{&quot;raw&quot;:2}
+' begins.
+json: State init          , looking at '{' (0xbf904b97)
+json: State await_attr    , looking at '&quot;' (0xbf904b98)
+json: State in_attr       , looking at 'r' (0xbf904b99)
+json: State in_attr       , looking at 'a' (0xbf904b9a)
+json: State in_attr       , looking at 'w' (0xbf904b9b)
+json: State in_attr       , looking at '&quot;' (0xbf904b9c)
+json: Collected attribute name raw
+json: Checking against class
+json: Checking against enable
+json: Checking against json
+json: Checking against raw
+json: State await_value   , looking at ':' (0xbf904b9d)
+json: State await_value   , looking at '2' (0xbf904b9e)
+json: State in_val_token  , looking at '}' (0xbf904b9f)
+json: Collected token value 2.
+json: State post_val      , looking at '}' (0xbf904b9f)
+json: Target address for raw (offset 0) is 0x8053df0
+json: JSON parse ends.
+gpsd: opening GPS data source type 3 at '/dev/ttyUSB0'
+gpsd: speed 38400, 8N1
+gpsd: =&gt; GPS: 2450415348512c5249442a32380d0a
+gpsd: =&gt; GPS: @F0.3=1*67\x0d\x0a
+gpsd: =&gt; GPS: @F2.2=1*64\x0d\x0a
+gpsd: writing oncore control type Cj:4040436a290d0a
+gpsd: =&gt; GPS: 4040436a290d0a
+gpsd: Navcom: command dump: 0299661c0800040200001203
+gpsd: =&gt; GPS: 0299661c0800040200001203
+gpsd: Navcom: sent command 0x1c (Test Support Block)
+gpsd: Navcom: command 0x1c mode = 02, length = 0
+gpsd: Navcom: command dump: 029966200e000001ae02000071000000f203
+gpsd: =&gt; GPS: 029966200e000001ae02000071000000f203
+gpsd: Navcom: sent command 0x20 (Data Request) - data block id = ae at rate 00
+gpsd: Navcom: command dump: 029966200e00000186020a0071000000d003
+gpsd: =&gt; GPS: 029966200e00000186020a0071000000d003
+gpsd: Navcom: sent command 0x20 (Data Request) - data block id = 86 at rate 0a
+gpsd: writing superstar2 control type 63 len 14:013fc008554750532d3030300304
+gpsd: =&gt; GPS: 013fc008554750532d3030300304
+gpsd: writing superstar2 control type 45 len 6:012dd2000100
+gpsd: =&gt; GPS: 012dd2000100
+gpsd: open(/dev/ttyUSB0) -&gt; 5 in gpsd_open()
+gpsd: Garmin: Can't open /proc/bus/usb/devices, will try anyway
+gpsd: Garmin: Set garmin_gps driver mode = 0
+gpsd: Garmin: PrintUSBPacket()
+gpsd: Garmin: Private, Set Mode: 1
+gpsd: =&gt; GPS: 4b6e1001020000000400000001000000
+gpsd: Garmin: SendPacket(), wrote 16 bytes
+gpsd: probe found Garmin USB binary driver...
+gpsd: NTPD ntpd_link_activate: 1
+gpsd: gpsd_activate(): opened GPS (fd 5)
+gpsd: Garmin: Get Product Data
+
+Anyone know whats going on here???
+
+Thanks!
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008122.html">[Gpsd-dev] new gps report
+</A></li>
+	<LI>Next message: <A HREF="008129.html">[Gpsd-dev] Holux USB/RS232 issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8124">[ date ]</a>
+              <a href="thread.html#8124">[ thread ]</a>
+              <a href="subject.html#8124">[ subject ]</a>
+              <a href="author.html#8124">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,202 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd logger
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20logger&In-Reply-To=%3C20050817183354.GC3513%40www%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002916.html">
+   <LINK REL="Next"  HREF="002918.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd logger</H1>
+    <B>Jeff Francis</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20logger&In-Reply-To=%3C20050817183354.GC3513%40www%3E"
+       TITLE="[Gpsd-dev] gpsd logger">jeff at gritch.org
+       </A><BR>
+    <I>Wed Aug 17 20:33:54 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002916.html">[Gpsd-dev] gpsdspewcurses is now in the main directory
+</A></li>
+        <LI>Next message: <A HREF="002918.html">[Gpsd-dev] gpsd logger
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2917">[ date ]</a>
+              <a href="thread.html#2917">[ thread ]</a>
+              <a href="subject.html#2917">[ subject ]</a>
+              <a href="author.html#2917">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>  Another &quot;works for me, might work for you, too&quot; piece of code.
+Unlike cgps.c, this one has no known bugs. ;^) This program connects
+to gpsd and logs the output into files.  The files are named using a
+time_t timestamp, so each file name is unique (and can be easily
+associated with a start time/day).  I use this data to keep track of
+my driving, I've got a separate perl NMEA parser I wrote ages ago that
+reads NMEA and loads the data into MySQL and a Common Lisp NMEA parser
+that also reads these files and uses the data to create maps.  There
+are probably other uses for it, as well.
+
+-- 
++--------------------------+
+|<i>   Jeff Francis - N0GQ    |
+</I>|<i> Snohomish, WA USA, Earth |
+</I>|<i>     <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>      |
+</I>|<i>  <A HREF="http://www.gritch.org">http://www.gritch.org</A>   |
+</I>+--------------------------+
+-------------- next part --------------
+/*
+ * Copyright (c) 2005 Jeff Francis &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>&gt;
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED &quot;AS IS&quot; AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+/*
+  Jeff Francis
+  <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>
+
+  Logs gpsd data to a file of the format:  gpsd.&lt;time_t timestamp&gt;.log
+
+  Works on Fedora Core 3,4 and OSX 10.4.2
+
+  Compile with:  gcc  -o gpsdlog gpsdlog.c-lgps
+*/
+
+/* TODO:  make this a command-line flag */
+#define VERBOSE talk_to_me_baby
+
+#include &lt;unistd.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;getopt.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;string.h&gt;
+#include &quot;gps.h&quot;
+
+/* Macro for declaring function arguments unused. */
+#if defined(__GNUC__)
+#  define UNUSED __attribute__((unused)) /* Flag variable as unused */
+#else /* not __GNUC__ */
+#  define UNUSED
+#endif
+
+static struct gps_data_t *gpsdata;
+FILE* gpslogfile;
+
+static void write_gpsd_data(struct gps_data_t *gpsdata,
+			   char *message,
+			   size_t len UNUSED, 
+			   int level UNUSED) {
+
+  int res;
+
+#ifdef VERBOSE
+  printf(&quot;%s&quot;,message);
+  fflush(stdout);
+#endif
+
+  /* write the sentence to the file */
+  if((res=fputs(message,gpslogfile))==EOF) {
+    printf(&quot;Error writing gps data to file\n&quot;);
+  }
+  
+  /* write it now, since something else might be doing tail -f */      
+  if((res=fflush(gpslogfile))==EOF) {
+    printf(&quot;Error flushing file\n&quot;);
+  }
+}
+
+int main(int argc, char **argv)
+{
+  int option, res, newstate;
+  char *colon, *server = NULL;
+  char *port = DEFAULT_GPSD_PORT;
+
+  char *timestring[255];
+  char *logname[255];
+
+  while ((option = getopt(argc, argv, &quot;h&quot;)) != -1) {
+    switch (option) {
+    case 'h': case '?':
+    default:
+      fputs(&quot;usage: gpsdlog [-h] [server[:port]]\n&quot;, stderr);
+      exit(1);
+    }
+  }
+
+  if (optind &lt; argc) {
+    server = strdup(argv[optind]);
+    colon = strchr(server, ':');
+    if (colon != NULL) {
+      server[colon - server] = '\0';
+      port = colon + 1;
+    }
+  }
+
+  if (!(gpsdata = gps_open(server, DEFAULT_GPSD_PORT))) {
+    fprintf(stderr, &quot;no gpsd running or network error (%d).\n&quot;, errno);
+    exit(2);
+  }
+
+  sprintf(logname,&quot;gpsd.%d.log&quot;,time(NULL));
+  printf(&quot;Logging to %s\n&quot;,logname);
+
+  if((gpslogfile=fopen(logname,&quot;a&quot;))==NULL) {
+    printf(&quot;Error opening log file\n&quot;);
+    exit(1);
+  }
+
+  gps_set_raw_hook(gpsdata, write_gpsd_data);
+
+  gps_query(gpsdata, &quot;r\n&quot;);
+
+  while(1) {
+    if((res=gps_poll(gpsdata))!=0) {
+      sleep(1);
+    }
+  }
+
+  gps_close(gpsdata);
+  return 0;
+}
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002916.html">[Gpsd-dev] gpsdspewcurses is now in the main directory
+</A></li>
+	<LI>Next message: <A HREF="002918.html">[Gpsd-dev] gpsd logger
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2917">[ date ]</a>
+              <a href="thread.html#2917">[ thread ]</a>
+              <a href="subject.html#2917">[ subject ]</a>
+              <a href="author.html#2917">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [ Bug #17494 ] cgps exits when terminal is resized
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5B%20Bug%20%2317494%20%5D%20cgps%20exits%20when%20terminal%20is%20resized&In-Reply-To=%3C84eiaz308w.fsf%40sauna.l.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008223.html">
+   <LINK REL="Next"  HREF="008231.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [ Bug #17494 ] cgps exits when terminal is resized</H1>
+    <B>Timo Juhani Lindfors</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5B%20Bug%20%2317494%20%5D%20cgps%20exits%20when%20terminal%20is%20resized&In-Reply-To=%3C84eiaz308w.fsf%40sauna.l.org%3E"
+       TITLE="[Gpsd-dev] [ Bug #17494 ] cgps exits when terminal is resized">timo.lindfors at iki.fi
+       </A><BR>
+    <I>Fri Nov  5 22:54:07 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008223.html">[Gpsd-dev] setting oncore timing parameters with gpsctl
+</A></li>
+        <LI>Next message: <A HREF="008231.html">[Gpsd-dev] [ Bug #17494 ] cgps exits when terminal is resized
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8224">[ date ]</a>
+              <a href="thread.html#8224">[ thread ]</a>
+              <a href="subject.html#8224">[ subject ]</a>
+              <a href="author.html#8224">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>[Reposting here since only few people seem to be paying attention to
+the bug tracker.]
+
+Date:
+2010-Sep-05 19:04
+Submitted By:
+lindi     Assigned To:
+none
+Category:
+None    Priority:
+5
+Bug Group:
+None    Resolution:
+None
+Summary:
+cgps exits when terminal is resized
+
+Original Submission:
+Steps to reproduce:
+1) xterm
+2) netcat -l -p gpsd &amp;
+3) cgps
+4) resize the xterm
+
+Expected results:
+4) cgps continues running
+
+Actual results:
+4) cgps exits with &quot;cgps: socket error 3&quot; and leaves the terminal in a weird mode.
+
+More info:
+1) diff of &quot;stty -a&quot; of normal terminal and the state to which cgps leaves the terminal is
+
+--- normal 2010-09-05 19:55:17.000000000 +0300
++++ after_cgps 2010-09-05 19:55:08.000000000 +0300
+@@ -3,8 +3,8 @@
+eol2 = &lt;undef&gt;; swtch = &lt;undef&gt;; start = ^Q; stop = ^S; susp = ^Z; rprnt = ^R;
+werase = ^W; lnext = ^V; flush = ^O; min = 1; time = 0;
+-parenb -parodd cs8 -hupcl -cstopb cread -clocal -crtscts
+--ignbrk -brkint -ignpar -parmrk -inpck -istrip -inlcr -igncr icrnl ixon -ixoff
++-ignbrk -brkint -ignpar -parmrk -inpck -istrip -inlcr -igncr -icrnl ixon -ixoff
+-iuclc -ixany -imaxbel -iutf8
+-opost -olcuc -ocrnl onlcr -onocr -onlret -ofill -ofdel nl0 cr0 tab0 bs0 vt0 ff0
+-isig icanon iexten echo echoe echok -echonl -noflsh -xcase -tostop -echoprt
++opost -olcuc -ocrnl -onlcr -onocr -onlret -ofill -ofdel nl0 cr0 tab0 bs0 vt0 ff0
++isig -icanon iexten -echo echoe echok -echonl -noflsh -xcase -tostop -echoprt
+echoctl echoke
+
+Proposed patch is in
+
+
+<A HREF="https://developer.berlios.de/patch/index.php?func=detailpatch&amp;">https://developer.berlios.de/patch/index.php?func=detailpatch&amp;</A>
+patch_id=3058&amp;group_id=2116
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: cgps-handle-WINCH.patch
+Type: text/x-diff
+Size: 801 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20101105/b761f987/attachment.patch">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20101105/b761f987/attachment.patch</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008223.html">[Gpsd-dev] setting oncore timing parameters with gpsctl
+</A></li>
+	<LI>Next message: <A HREF="008231.html">[Gpsd-dev] [ Bug #17494 ] cgps exits when terminal is resized
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8224">[ date ]</a>
+              <a href="thread.html#8224">[ thread ]</a>
+              <a href="subject.html#8224">[ subject ]</a>
+              <a href="author.html#8224">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

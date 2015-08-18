@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] NTRIP, and why we're not back to state Yellow
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20NTRIP%2C%20and%20why%20we%27re%20not%20back%20to%20state%20Yellow&In-Reply-To=%3C4D676D1C.7060603%40googlemail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008602.html">
+   <LINK REL="Next"  HREF="008607.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] NTRIP, and why we're not back to state Yellow</H1>
+    <B>Andre Naujoks</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20NTRIP%2C%20and%20why%20we%27re%20not%20back%20to%20state%20Yellow&In-Reply-To=%3C4D676D1C.7060603%40googlemail.com%3E"
+       TITLE="[Gpsd-dev] NTRIP, and why we're not back to state Yellow">nautsch2 at googlemail.com
+       </A><BR>
+    <I>Fri Feb 25 09:49:32 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008602.html">[Gpsd-dev] NTRIP, and why we're not back to state Yellow
+</A></li>
+        <LI>Next message: <A HREF="008607.html">[Gpsd-dev] NTRIP, and why we're not back to state Yellow
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8606">[ date ]</a>
+              <a href="thread.html#8606">[ thread ]</a>
+              <a href="subject.html#8606">[ subject ]</a>
+              <a href="author.html#8606">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Am 24.02.2011 18:46, schrieb Eric Raymond:
+&gt;<i> Andre Naujoks &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">nautsch2 at googlemail.com</A>&gt;:
+</I>&gt;&gt;<i> Thats good. I hope there are not more of these parts, where NTRIP needs a
+</I>&gt;&gt;<i> special treatment. At least it now works for you and me.
+</I>&gt;<i> 
+</I>&gt;<i> Alas, the drama may not quite be over.
+</I>&gt;<i> 
+</I>&gt;<i> I looked at the guard patch.  It would have worked as written, but it smelled
+</I>&gt;<i> bad to me.  The stink arose from the fact that there isn't any obvious 
+</I>&gt;<i> relationship between a GNSS service type in the global context and whether
+</I>&gt;<i> an individual, local sensor, should be probed.
+</I>&gt;<i> 
+</I>&gt;<i> So I started digging.
+</I>&gt;<i> 
+</I>&gt;<i> I quickly found a better point patch for that guard, using the is_serial 
+</I>&gt;<i> member of the device structure.  But in the process I unearthed a far more
+</I>&gt;<i> noxious stench.
+</I>
+I really like the is_serial approach. I just took the least intrusive thing I
+could think of for the guard, so nothing but ntrip was affected.
+
+&gt;<i> 
+</I>&gt;<i> I hadn't really looked at the global context members related to
+</I>&gt;<i> DGPS/NTRIP in a long time.  The code implementing those features came in 
+</I>&gt;<i> from third parties, seemed to work, and wasn't intrusive, so I merged it 
+</I>&gt;<i> without thinking much about it.
+</I>&gt;<i> 
+</I>&gt;<i> Turns out those global context members reflected a baked-in assumption
+</I>&gt;<i> that gpsd would only ever be connected to one DGPS service at a time.
+</I>
+I was aware of that assumption (I thought the dsock was a dead giveaway).
+I don't think its necessarily bad, because I doubt the ability of many
+GPS devices to be able to work with different streams of correction data.
+Let alone, when they are mangled in the context-&gt;rtcm_buf, which is still
+global.
+
+It definitely needs some catching and erroring out if someone wants to
+provide more than one of those.
+
+&gt;<i> They might even have predated my rewrite to support multiple
+</I>&gt;<i> sensors. In the architecture we have now, after that rewrite, this is
+</I>&gt;<i> a pretty serious orthogonality violation. Thus the stench.
+</I>&gt;<i> 
+</I>&gt;<i> All that global context state needed to become per-device state. I've
+</I>&gt;<i> done that, now, but it did require significant core code changes.
+</I>&gt;<i> We're therefore back to prerelease state Blue (1).  I have a bit more
+</I>&gt;<i> cleanup to do before asking Gary to re-test on the Garmins.
+</I>&gt;<i> 
+</I>&gt;<i> Andre, please pull head and test.  It'd be nice to know I haven't
+</I>&gt;<i> broken the NTRIP support.
+</I>
+See my other mail for a patch, that make the ntrip connection part work again.
+
+Another thing that I just confirmed is that ntrip_report() is no longer called.
+This is crucial to keep the connection alive. The server may determine what
+data to send depending on the current position of the client. So the NTRIP
+server needs a position from the client to work properly.
+
+It seems that net_gnss_dispatch is now only called for devices, that have a
+3D Fix, which is really not possible for an RTCM device.
+
+This worked before exactly because of the dsock member, which was used just
+for that kind of stuff.
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008602.html">[Gpsd-dev] NTRIP, and why we're not back to state Yellow
+</A></li>
+	<LI>Next message: <A HREF="008607.html">[Gpsd-dev] NTRIP, and why we're not back to state Yellow
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8606">[ date ]</a>
+              <a href="thread.html#8606">[ thread ]</a>
+              <a href="subject.html#8606">[ subject ]</a>
+              <a href="author.html#8606">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

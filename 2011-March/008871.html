@@ -1,0 +1,219 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPSD Protocol Inconsistencies
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3C20110317230510.GA24303%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008867.html">
+   <LINK REL="Next"  HREF="008874.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPSD Protocol Inconsistencies</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3C20110317230510.GA24303%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] GPSD Protocol Inconsistencies">esr at thyrsus.com
+       </A><BR>
+    <I>Fri Mar 18 00:05:11 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008867.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+        <LI>Next message: <A HREF="008874.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8871">[ date ]</a>
+              <a href="thread.html#8871">[ thread ]</a>
+              <a href="subject.html#8871">[ subject ]</a>
+              <a href="author.html#8871">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+&gt;<i> Currently there are only four data objects.  I don't see this
+</I>&gt;<i> increasing.  Adding an all/tpv/sky...etc on/off control and doing it
+</I>&gt;<i> per-device shouldn't be that hard.  I'm not saying the content should
+</I>&gt;<i> be ala carte, but which messages.  You are already ala carte with
+</I>&gt;<i> respect to json v.s. pseudo-nmea v.s. raw.
+</I>
+Oh, I see.  You want something like this, do you?
+
+    ?WATCH={&quot;enable&quot;:true,&quot;json&quot;:true,&quot;classes&quot;:{&quot;TPV&quot;}}
+
+That wouldn't be unreasonable.  I'll have to look at the implementation weight.
+
+&gt;<i> &gt; No. &#160;Orthogonality violation; also, TPV and SKY are typically emitted at
+</I>&gt;<i> &gt; different intervals. The POLL response gets away with this only because its
+</I>&gt;<i> &gt; semantics are &quot;show me what you have&quot;.
+</I>&gt;<i> 
+</I>&gt;<i> So if one of the binary protocols or a new one emitted parts of any of
+</I>&gt;<i> the existing data objects at different intervals then we should split
+</I>&gt;<i> them up?
+</I>
+That is implied, yes.  Fortunately there's sort of a standard meta-model
+of what these things ship that applies across all the devices we've seen; 
+it's what TPV and SKY were abstracted from.  I'm not actually worried 
+about a device breaking it - could happen, but the probability seems low.
+ 
+&gt;<i> OK, I agree that there should b e just one TPV data object.  So I
+</I>&gt;<i> would have to make an xhttpdrequest for TPV and I would get back a TPV
+</I>&gt;<i> identical to what is formatted if WATCH is enabled or within a POLL.
+</I>&gt;<i> Same for SKY.
+</I>
+What would be wrong with making a ?POLL; request?  Why have multiple ways
+of doing the same thing?
+
+&gt;<i> Note to self - check/audit the data objects.
+</I>
+Yes, please do.
+ 
+&gt;<i> &gt; OK, this is worth discussing. &#160;Is there any reason we shouldn't handle
+</I>&gt;<i> &gt; this by adding a rank attribute composed from mode and DOP? &#160;Then an
+</I>&gt;<i> &gt; application that just wants &quot;best&quot; could just pick the fix with rank 1.
+</I>&gt;<i> 
+</I>&gt;<i> It is a little more subtle - there needs to be a bit of hysteresis and
+</I>&gt;<i> the first two might be equally good, but you would want number 1 to be
+</I>&gt;<i> sticky so you don't oscillate since the fixes will tend to have
+</I>&gt;<i> persistent differences.
+</I>
+Agreed.  Good thinking!  OK, you own this piece.  Write the ranking
+algorithm the way you want it. I'll audit.
+
+&gt;<i> &gt;&gt; If we are going to include DoP calculations, XYZ might be good, but
+</I>&gt;<i> &gt;&gt; elliptical axes might be better. &#160;My apartment faces SE so I usually
+</I>&gt;<i> &gt;&gt; get an arc in that direction. &#160;X and Y are likely to be about equal,
+</I>&gt;<i> &gt;&gt; but SW-NE and SE-NW are likely to be very different.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Maybe, but I don't know how to get elliptical axes from the skyview
+</I>&gt;<i> &gt; covariance matrix. &#160;You'd have to show me the math before I'd consider
+</I>&gt;<i> &gt; this one seriously.
+</I>&gt;<i> 
+</I>&gt;<i> I will have to do a little searching.  I know one of the GPS units I
+</I>&gt;<i> have or were considering had this as part of some binary output.
+</I>
+Deferred, then.  We have enough other things to tackle.
+ 
+&gt;<i> &gt;&gt; We can leave the decimal points in for NOFLOAT - All I'm doing is
+</I>&gt;<i> &gt;&gt; %d.%06d for output which is still probably much faster than %f. &#160;(I do
+</I>&gt;<i> &gt;&gt; similar for speed, track, pdop, but in milli-units).
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; If we do &quot;NOFLOAT&quot; this way - is there a reason to keep FLOAT around
+</I>&gt;<i> &gt;&gt; after it is complete? &#160;It should be transparent except for the far
+</I>&gt;<i> &gt;&gt; fewer CPU cycles.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; I was assuming FLOAT would go away eventually. &#160;You've already won this
+</I>&gt;<i> &gt; one, provided you follow through with code.
+</I>&gt;<i> 
+</I>&gt;<i> As soon as the 3.0 branch is set up I can get started.  It won't be
+</I>&gt;<i> too quick and there will be a big crunch when we replace the instances
+</I>&gt;<i> of double in the fix structure.
+</I>
+We don't do long-lived branches in the public repo - I view them
+mainly as a way for code to bit-rot in isolation, and prefer a model
+in which features are merged into mainline as rapidly as possible
+along with tests to verify them.
+
+If you want to create local feature branches in your repo, go right ahead.
+Make lots of little ones and assume they'll be cherry-picked into mainline
+through your patch submissions.  If you code as good a game as you talk 
+you'll get dev access after a patch or three and can start doing those
+cherry-picks yourself.
+
+I'm not anticipating outright replacing the doubles for some time.
+For a while that struct is going to have two different shapes depending
+on whether or not NOFLOAT is defined.
+
+&gt;<i> &gt; You're probably right. &#160;The only reason the max response size is so small
+</I>&gt;<i> &gt; is that I didn't want to impose huge buffers on embedded deployments.
+</I>&gt;<i> &gt; You are an embedded deployment; what size do you think would be reasonable.
+</I>&gt;<i> 
+</I>&gt;<i> I would just expand the maximum size of any message to 4096 - we
+</I>&gt;<i> probably won't go near it, but I can imagine this being used to test
+</I>&gt;<i> an array of devices.  I can't come up with a limit because this is
+</I>&gt;<i> defined to be monolithic.
+</I>
+4096 seems reasonable.  Uh oh, though - if I'm going to do that I have to
+do it *now*.  Otherwise we'll break the ABI again when the size goes up;
+there's a buffer pegged to that size in struct gps_data_t.
+ 
+&gt;<i> That is why I'm suggesting replacing the current method with just
+</I>&gt;<i> returning each of the data objects available - also sorted per device
+</I>&gt;<i> (the current one has tpv1 tpv2 tpv3 sky1 sky2 sky3, I would do tpv1
+</I>&gt;<i> sky1 tpv2 sky2...).
+</I>&gt;<i> 
+</I>&gt;<i> You might encapsulate it in a poll-with response number class or
+</I>&gt;<i> something, but as I suggested:
+</I>&gt;<i> POLL DATA OBJECT BEGIN
+</I>&gt;<i> TPV for device 1 (should be identical to the last one emitted by a WATCH)
+</I>&gt;<i> SKY1 (device can be by rank or arbitrary order - but rank will then
+</I>&gt;<i> have to go somewhere).
+</I>&gt;<i> (others)1
+</I>&gt;<i> TPV2
+</I>&gt;<i> SKY2
+</I>&gt;<i> (others)2
+</I>&gt;<i> POLL DATA OBJECT END
+</I>&gt;<i> 
+</I>&gt;<i> I would not perfer this, but it could be encapsulated in a
+</I>&gt;<i> {class:&quot;poll&quot;,serno:&quot;1234&quot;, {class:&quot;TPV... to keep things straight,
+</I>&gt;<i> but begin/end should be sufficient.
+</I>&gt;<i> 
+</I>&gt;<i> There would be no arbitrary limits on the data buffer size.
+</I>&gt;<i> 
+</I>&gt;<i> With a guarantee that no notifications would occur within the poll output.
+</I>
+This will require more discussion and a more fleshed-out proposal from you.  
+
+I will tell you up front that I am going to be hostile by instinct to
+any proposal that requires clients to do parsing that is stateful
+above the JSON-object level.  Given that we're using JSON, I view that
+sort of statefulness requirement as bad protocol-design practice, a
+recipe for semi-infinite amounts of bugs and pain. I won't go there
+without a really compelling reason.
+
+I realize that this may imply huge JSON objects in some situations.
+So be it.  The advantages of every report being an atomic object with
+really well-defined syntactic boundaries are, IMO, worth accepting
+that tradeoff for - really, this is the whole point of using a JSON
+profile in the first place. Convincing me otherwise wouldn't be utterly 
+impossible, but you'd have to work very hard to do it.
+
+&gt;<i> See baud below for an example, though it is debugging, but if I am
+</I>&gt;<i> trying to correlate or sort data that might not be coming from GPSD.
+</I>&gt;<i> A different program might not be able to use the GPS clock, and might
+</I>&gt;<i> be coming in with more or less latency.
+</I>
+Noted as a possibility: A WATCH attribute that enables systime.  There's
+some precedent for this, there's already an attribute to enable timing
+sentences usable for profiling.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008867.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+	<LI>Next message: <A HREF="008874.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8871">[ date ]</a>
+              <a href="thread.html#8871">[ thread ]</a>
+              <a href="subject.html#8871">[ subject ]</a>
+              <a href="author.html#8871">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

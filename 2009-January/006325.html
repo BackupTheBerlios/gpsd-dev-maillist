@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Patch of Makefile.am fixes Mac OS X X11 build	errors...
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Patch%20of%20Makefile.am%20fixes%20Mac%20OS%20X%20X11%20build%0A%09errors...&In-Reply-To=%3C3C247B7E-E998-4204-97A8-1A0E370088BE%40ledford.cc%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006324.html">
+   <LINK REL="Next"  HREF="006326.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Patch of Makefile.am fixes Mac OS X X11 build	errors...</H1>
+    <B>Michael Ledford</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Patch%20of%20Makefile.am%20fixes%20Mac%20OS%20X%20X11%20build%0A%09errors...&In-Reply-To=%3C3C247B7E-E998-4204-97A8-1A0E370088BE%40ledford.cc%3E"
+       TITLE="[Gpsd-dev] Patch of Makefile.am fixes Mac OS X X11 build	errors...">michael at ledford.cc
+       </A><BR>
+    <I>Thu Jan 15 01:06:41 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006324.html">[Gpsd-dev] Patch of Makefile.am fixes Mac OS X X11 build	errors...
+</A></li>
+        <LI>Next message: <A HREF="006326.html">[Gpsd-dev] Patch of Makefile.am fixes Mac OS X X11 build	errors...
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6325">[ date ]</a>
+              <a href="thread.html#6325">[ thread ]</a>
+              <a href="subject.html#6325">[ subject ]</a>
+              <a href="author.html#6325">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+On Jan 14, 2009, at 2:34 PM, Greg Troxel wrote:
+
+&gt;<i> It seems that libXaw7 has recorded that it depends on Xt, both in the
+</I>&gt;<i> .so and in the .la.
+</I>
+So I did some more digging. This does seem like an OS X packaging  
+problem. First off...
+
+$ ls -al /usr/X11/lib/libXaw*
+lrwxr-xr-x 1 root wheel 13 Jan 14 08:12 /usr/X11/lib/libXaw.6.dylib -&gt;  
+libXaw6.dylib
+lrwxr-xr-x 1 root wheel 13 Jan 14 08:12 /usr/X11/lib/libXaw.7.dylib -&gt;  
+libXaw7.dylib
+lrwxr-xr-x 1 root wheel 13 Jan 14 08:12 /usr/X11/lib/libXaw.8.dylib -&gt;  
+libXaw8.dylib
+lrwxr-xr-x 1 root wheel 14 Jan 14 08:12 /usr/X11/lib/libXaw.dylib -&gt;  
+libXaw.8.dylib
+lrwxr-xr-x 1 root wheel 15 Jan 14 08:12 /usr/X11/lib/ 
+libXaw6.6.0.1.dylib -&gt; libXaw6.6.dylib
+-rwxr-xr-x 1 root wheel 1374608 Sep 24 2007 /usr/X11/lib/libXaw6.6.dylib
+lrwxr-xr-x 1 root wheel 15 Jan 14 08:12 /usr/X11/lib/libXaw6.dylib -&gt;  
+libXaw6.6.dylib
+-rwxr-xr-x 1 root wheel 1005 Sep 9 2007 /usr/X11/lib/libXaw6.la
+lrwxr-xr-x 1 root wheel 15 Jan 14 08:12 /usr/X11/lib/ 
+libXaw7.7.0.0.dylib -&gt; libXaw7.7.dylib
+-rwxr-xr-x 1 root wheel 1959984 Sep 24 2007 /usr/X11/lib/libXaw7.7.dylib
+lrwxr-xr-x 1 root wheel 15 Jan 14 08:12 /usr/X11/lib/libXaw7.dylib -&gt;  
+libXaw7.7.dylib
+-rwxr-xr-x 1 root wheel 1028 Sep 9 2007 /usr/X11/lib/libXaw7.la
+lrwxr-xr-x 1 root wheel 15 Jan 14 08:12 /usr/X11/lib/ 
+libXaw8.8.0.0.dylib -&gt; libXaw8.8.dylib
+-rwxr-xr-x 1 root wheel 1982784 Sep 24 2007 /usr/X11/lib/libXaw8.8.dylib
+lrwxr-xr-x 1 root wheel 15 Jan 14 08:12 /usr/X11/lib/libXaw8.dylib -&gt;  
+libXaw8.8.dylib
+-rwxr-xr-x 1 root wheel 1050 Sep 9 2007 /usr/X11/lib/libXaw8.la
+
+So from what I can tell in configure.ac the existence of Xaw is  
+checked using AC_CHECK_LIB in the following order:
+
+-lXaw, -lXaw8, -lXaw7
+
+When libtool goes to check -lXaw it first looks for libXaw.la, but  
+libXaw.la is not there but it does find libXaw.dylib, therefore the  
+lib dependancies are not included, libXt amongst others. As you can  
+see libXaw[6,7,8].la files do exist. So I'm wondering if the order  
+that we are searching for the libXaw in configure.ac might need to be  
+changed or make sure that the libraries that libXaw depend on are  
+included conditionally.
+
+Whew!
+
+Sincerely,
+Michael
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006324.html">[Gpsd-dev] Patch of Makefile.am fixes Mac OS X X11 build	errors...
+</A></li>
+	<LI>Next message: <A HREF="006326.html">[Gpsd-dev] Patch of Makefile.am fixes Mac OS X X11 build	errors...
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6325">[ date ]</a>
+              <a href="thread.html#6325">[ thread ]</a>
+              <a href="subject.html#6325">[ subject ]</a>
+              <a href="author.html#6325">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

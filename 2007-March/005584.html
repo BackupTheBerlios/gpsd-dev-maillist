@@ -1,0 +1,195 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] patch - controlling gpsd's listen address
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20patch%20-%20controlling%20gpsd%27s%20listen%20address&In-Reply-To=%3C91981b3e0703261853j47163b98h2ac184c0adb7ab1b%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005579.html">
+   <LINK REL="Next"  HREF="005585.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] patch - controlling gpsd's listen address</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20patch%20-%20controlling%20gpsd%27s%20listen%20address&In-Reply-To=%3C91981b3e0703261853j47163b98h2ac184c0adb7ab1b%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] patch - controlling gpsd's listen address">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Tue Mar 27 03:53:52 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005579.html">[Gpsd-dev] What does your application need from the config	variables?
+</A></li>
+        <LI>Next message: <A HREF="005585.html">[Gpsd-dev] patch - controlling gpsd's listen address
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5584">[ date ]</a>
+              <a href="thread.html#5584">[ thread ]</a>
+              <a href="subject.html#5584">[ subject ]</a>
+              <a href="author.html#5584">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>works for me, opening it up to discussion.
+
+default: -l 127.0.0.1 -&gt; listen on localhost
+-l ip_addr -&gt; listen on ip_addr
+-l 0.0.0.0 -&gt; listen on all addresses
+
+Index: gpsd.c
+===================================================================
+--- gpsd.c	(revision 4324)
++++ gpsd.c	(working copy)
+@@ -3,6 +3,7 @@
+ #include &lt;sys/socket.h&gt;
+ #include &lt;sys/un.h&gt;
+ #include &lt;netinet/in.h&gt;
++#include &lt;arpa/inet.h&gt;
+ #include &lt;unistd.h&gt;
+ #include &lt;stdlib.h&gt;
+ #include &lt;syslog.h&gt;
+@@ -194,7 +195,7 @@
+
+ static void usage(void)
+ {
+-    (void)printf(&quot;usage: gpsd [-b] [-n] [-N] [-D n] [-F sockfile] [-P
+pidfile] [-S port] [-h] device...\n\
++    (void)printf(&quot;usage: gpsd [-b] [-n] [-N] [-D n] [-F sockfile] [-P
+pidfile] [-l addr] [-S port] [-h] device...\n\
+   Options include: \n\
+   -b                     	= bluetooth-safe: open data sources read-only\n\
+   -n                            = don't wait for client connects to poll GPS\n\
+@@ -202,6 +203,7 @@
+   -F sockfile                   = specify control socket location\n\
+   -P pidfile              	= set file to record process ID \n\
+   -D integer (default 0)  	= set debug level \n\
++  -l addr (default 127.0.0.1)	= set listen-address for daemon \n\
+   -S integer (default %s)	= set port for daemon \n\
+   -h                     	= help message \n\
+   -V                            = emit version and exit.\n\
+@@ -212,7 +214,7 @@
+ 	   DEFAULT_GPSD_PORT);
+ }
+
+-static int passivesock(char *service, char *protocol, int qlen)
++static int passivesock(char *addr, char *service, char *protocol, int qlen)
+ {
+     struct servent *pse;
+     struct protoent *ppe ;
+@@ -222,7 +224,12 @@
+     /*@ -mustfreefresh @*/
+     memset((char *) &amp;sin, 0, sizeof(sin));
+     /*@i1@*/sin.sin_family = AF_INET;
+-    sin.sin_addr.s_addr = INADDR_ANY;
++    if (addr == NULL){
++	sin.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
++    } else {
++	if ((sin.sin_addr.s_addr = inet_addr(addr)) == INADDR_NONE)
++	    sin.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
++    }
+
+     if ((pse = getservbyname(service, protocol)))
+ 	sin.sin_port = htons(ntohs((in_port_t)pse-&gt;s_port));
+@@ -1237,6 +1244,7 @@
+     static int st, csock = -1;
+     static gps_mask_t changed;
+     static char *gpsd_service = NULL;
++    static char *listen_address = NULL;
+ #ifdef RTCM104_SERVICE
+     static char *rtcm_service = NULL;
+     static int nsock;
+@@ -1262,7 +1270,7 @@
+ #endif
+     debuglevel = 0;
+     device_readonly = false;
+-    while ((option = getopt(argc, argv, &quot;F:D:S:bhNnP:V&quot;
++    while ((option = getopt(argc, argv, &quot;F:D:l:S:bhNnP:V&quot;
+ #ifdef RTCM104_SERVICE
+ 			    &quot;R:&quot;
+ #endif /* RTCM104_SERVICE */
+@@ -1285,6 +1293,9 @@
+ 	    rtcm_service = optarg;
+ 	    break;
+ #endif /* RTCM104_SERVICE */
++	case 'l':
++	    listen_address = optarg;
++	    break;
+ 	case 'S':
+ 	    gpsd_service = optarg;
+ 	    break;
+@@ -1351,7 +1362,7 @@
+     if (!gpsd_service)
+ 	gpsd_service = getservbyname(&quot;gpsd&quot;, &quot;tcp&quot;) ? &quot;gpsd&quot; : DEFAULT_GPSD_PORT;
+     /*@ +observertrans @*/
+-    if ((msock = passivesock(gpsd_service, &quot;tcp&quot;, QLEN)) &lt; 0) {
++    if ((msock = passivesock(listen_address, gpsd_service, &quot;tcp&quot;, QLEN)) &lt; 0) {
+ 	gpsd_report(LOG_ERR,&quot;command socket create failed, netlib error %d\n&quot;,msock);
+ 	exit(2);
+     }
+@@ -1361,7 +1372,7 @@
+     if (!rtcm_service)
+ 	rtcm_service = getservbyname(&quot;rtcm&quot;, &quot;tcp&quot;) ? &quot;rtcm&quot; : DEFAULT_RTCM_PORT;
+     /*@ +observertrans @*/
+-    if ((nsock = passivesock(rtcm_service, &quot;tcp&quot;, QLEN)) &lt; 0) {
++    if ((nsock = passivesock(listen_address, rtcm_service, &quot;tcp&quot;, QLEN)) &lt; 0) {
+ 	gpsd_report(LOG_ERROR,&quot;RTCM104 socket create failed, netlib error
+%d\n&quot;,nsock);
+ 	exit(2);
+     }
+Index: gpsd.xml
+===================================================================
+--- gpsd.xml	(revision 4324)
++++ gpsd.xml	(working copy)
+@@ -22,6 +22,7 @@
+       &lt;arg choice='opt'&gt;-F &lt;replaceable&gt;control-socket&lt;/replaceable&gt;&lt;/arg&gt;
+       &lt;!-- arg choice='opt'&gt;-R
+       &lt;replaceable&gt;rtcm-listener-port&lt;/replaceable&gt;&lt;/arg --&gt;
++      &lt;arg choice='opt'&gt;-l &lt;replaceable&gt;listener-address&lt;/replaceable&gt;&lt;/arg&gt;
+       &lt;arg choice='opt'&gt;-S &lt;replaceable&gt;listener-port&lt;/replaceable&gt;&lt;/arg&gt;
+       &lt;arg choice='opt'&gt;-b &lt;/arg&gt;
+       &lt;arg choice='opt'&gt;-n &lt;/arg&gt;
+@@ -107,6 +108,12 @@
+ clients.&lt;/para&gt;&lt;/listitem&gt;
+ &lt;/varlistentry --&gt;
+ &lt;varlistentry&gt;
++&lt;term&gt;-l&lt;/term&gt;
++&lt;listitem&gt;&lt;para&gt;Set IP address on which to listen for GPSD clients
++(default is 127.0.0.1). A listener address of 0.0.0.0 listens on all
++addresses.&lt;/para&gt;&lt;/listitem&gt;
++&lt;/varlistentry&gt;
++&lt;varlistentry&gt;
+ &lt;term&gt;-S&lt;/term&gt;
+ &lt;listitem&gt;&lt;para&gt;Set TCP/IP port on which to listen for GPSD clients
+ (default is 2947).&lt;/para&gt;&lt;/listitem&gt;
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005579.html">[Gpsd-dev] What does your application need from the config	variables?
+</A></li>
+	<LI>Next message: <A HREF="005585.html">[Gpsd-dev] patch - controlling gpsd's listen address
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5584">[ date ]</a>
+              <a href="thread.html#5584">[ thread ]</a>
+              <a href="subject.html#5584">[ subject ]</a>
+              <a href="author.html#5584">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

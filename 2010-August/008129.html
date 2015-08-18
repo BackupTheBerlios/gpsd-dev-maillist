@@ -1,0 +1,160 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Holux USB/RS232 issues
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Holux%20USB/RS232%20issues&In-Reply-To=%3CAANLkTi%3DWDAtsmbCH%3DJnF8e8mTW5Dq4YP0oqoPDm-GFp5%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008124.html">
+   <LINK REL="Next"  HREF="008130.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Holux USB/RS232 issues</H1>
+    <B>Mark Williams</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Holux%20USB/RS232%20issues&In-Reply-To=%3CAANLkTi%3DWDAtsmbCH%3DJnF8e8mTW5Dq4YP0oqoPDm-GFp5%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Holux USB/RS232 issues">mwp at mwp.id.au
+       </A><BR>
+    <I>Fri Aug 27 10:21:46 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008124.html">[Gpsd-dev] Holux USB/RS232 issues
+</A></li>
+        <LI>Next message: <A HREF="008130.html">[Gpsd-dev] Holux USB/RS232 issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8129">[ date ]</a>
+              <a href="thread.html#8129">[ thread ]</a>
+              <a href="subject.html#8129">[ subject ]</a>
+              <a href="author.html#8129">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>An update....
+
+I have got this GPS module working by...
+
+I cut the PC -&gt; GPS serial data line, so that the GPS cannot receive
+any instructions from GPSd.
+Recompiled GPSd with everything disabled except NMEA support.
+
+MWP.
+
+On 27 August 2010 01:05, Mark Williams &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mwp at mwp.id.au</A>&gt; wrote:
+&gt;<i> Hi all,
+</I>&gt;<i>
+</I>&gt;<i> I know these have had issues in the past, but i havent been able to
+</I>&gt;<i> find a fix so far.
+</I>&gt;<i>
+</I>&gt;<i> The device is a Holux M-1000B updating at 5HZ.
+</I>&gt;<i>
+</I>&gt;<i> Dumping data using &quot;microcom -p /dev/ttyUSB0 -s 38400&quot; i see (what
+</I>&gt;<i> appears to be) valid NMEA sentences.
+</I>&gt;<i>
+</I>&gt;<i> When running &quot;gpsd -D10 -N /dev/ttyUSB0&quot;, and then run &quot;gpsmon&quot;, i get
+</I>&gt;<i> vaild data for a few seconds, then nothing.
+</I>&gt;<i> The debug output suggests that gpsd is dropped back to garmin binary
+</I>&gt;<i> mode for some reason??
+</I>&gt;<i>
+</I>&gt;<i> gpsd's debug output looks like:
+</I>&gt;<i>
+</I>&gt;<i> gpsd: client 127.0.0.1 (0) connect on fd 4
+</I>&gt;<i> gpsd: =&gt; client(0):
+</I>&gt;<i> {&quot;class&quot;:&quot;VERSION&quot;,&quot;release&quot;:&quot;2.95&quot;,&quot;rev&quot;:&quot;2010-08-16T01:16:00&quot;,&quot;proto_major&quot;:3,&quot;proto_minor&quot;:3}\x0d\x0a
+</I>&gt;<i> gpsd: select waits
+</I>&gt;<i> gpsd: select() {3 4} -&gt; { 4 } at 1282836731.610224 (errno 0)
+</I>&gt;<i> gpsd: checking client(0)
+</I>&gt;<i> gpsd: &lt;= client(0): ?WATCH={&quot;raw&quot;:2}\x0d\x0a
+</I>&gt;<i> json: json_read_object() sees '{&quot;raw&quot;:2}
+</I>&gt;<i> '
+</I>&gt;<i> json: Target address for class (offset 0) is (nil)
+</I>&gt;<i> json: Target address for enable (offset 0) is 0x8053dec
+</I>&gt;<i> json: Target address for scaled (offset 0) is 0x8053df4
+</I>&gt;<i> json: Target address for timing (offset 0) is 0x8053df5
+</I>&gt;<i> json: Target address for device (offset 0) is 0x8053df6
+</I>&gt;<i> json: JSON parse of '{&quot;raw&quot;:2}
+</I>&gt;<i> ' begins.
+</I>&gt;<i> json: State init &#160; &#160; &#160; &#160; &#160;, looking at '{' (0xbf904b97)
+</I>&gt;<i> json: State await_attr &#160; &#160;, looking at '&quot;' (0xbf904b98)
+</I>&gt;<i> json: State in_attr &#160; &#160; &#160; , looking at 'r' (0xbf904b99)
+</I>&gt;<i> json: State in_attr &#160; &#160; &#160; , looking at 'a' (0xbf904b9a)
+</I>&gt;<i> json: State in_attr &#160; &#160; &#160; , looking at 'w' (0xbf904b9b)
+</I>&gt;<i> json: State in_attr &#160; &#160; &#160; , looking at '&quot;' (0xbf904b9c)
+</I>&gt;<i> json: Collected attribute name raw
+</I>&gt;<i> json: Checking against class
+</I>&gt;<i> json: Checking against enable
+</I>&gt;<i> json: Checking against json
+</I>&gt;<i> json: Checking against raw
+</I>&gt;<i> json: State await_value &#160; , looking at ':' (0xbf904b9d)
+</I>&gt;<i> json: State await_value &#160; , looking at '2' (0xbf904b9e)
+</I>&gt;<i> json: State in_val_token &#160;, looking at '}' (0xbf904b9f)
+</I>&gt;<i> json: Collected token value 2.
+</I>&gt;<i> json: State post_val &#160; &#160; &#160;, looking at '}' (0xbf904b9f)
+</I>&gt;<i> json: Target address for raw (offset 0) is 0x8053df0
+</I>&gt;<i> json: JSON parse ends.
+</I>&gt;<i> gpsd: opening GPS data source type 3 at '/dev/ttyUSB0'
+</I>&gt;<i> gpsd: speed 38400, 8N1
+</I>&gt;<i> gpsd: =&gt; GPS: 2450415348512c5249442a32380d0a
+</I>&gt;<i> gpsd: =&gt; GPS: @F0.3=1*67\x0d\x0a
+</I>&gt;<i> gpsd: =&gt; GPS: @F2.2=1*64\x0d\x0a
+</I>&gt;<i> gpsd: writing oncore control type Cj:4040436a290d0a
+</I>&gt;<i> gpsd: =&gt; GPS: 4040436a290d0a
+</I>&gt;<i> gpsd: Navcom: command dump: 0299661c0800040200001203
+</I>&gt;<i> gpsd: =&gt; GPS: 0299661c0800040200001203
+</I>&gt;<i> gpsd: Navcom: sent command 0x1c (Test Support Block)
+</I>&gt;<i> gpsd: Navcom: command 0x1c mode = 02, length = 0
+</I>&gt;<i> gpsd: Navcom: command dump: 029966200e000001ae02000071000000f203
+</I>&gt;<i> gpsd: =&gt; GPS: 029966200e000001ae02000071000000f203
+</I>&gt;<i> gpsd: Navcom: sent command 0x20 (Data Request) - data block id = ae at rate 00
+</I>&gt;<i> gpsd: Navcom: command dump: 029966200e00000186020a0071000000d003
+</I>&gt;<i> gpsd: =&gt; GPS: 029966200e00000186020a0071000000d003
+</I>&gt;<i> gpsd: Navcom: sent command 0x20 (Data Request) - data block id = 86 at rate 0a
+</I>&gt;<i> gpsd: writing superstar2 control type 63 len 14:013fc008554750532d3030300304
+</I>&gt;<i> gpsd: =&gt; GPS: 013fc008554750532d3030300304
+</I>&gt;<i> gpsd: writing superstar2 control type 45 len 6:012dd2000100
+</I>&gt;<i> gpsd: =&gt; GPS: 012dd2000100
+</I>&gt;<i> gpsd: open(/dev/ttyUSB0) -&gt; 5 in gpsd_open()
+</I>&gt;<i> gpsd: Garmin: Can't open /proc/bus/usb/devices, will try anyway
+</I>&gt;<i> gpsd: Garmin: Set garmin_gps driver mode = 0
+</I>&gt;<i> gpsd: Garmin: PrintUSBPacket()
+</I>&gt;<i> gpsd: Garmin: Private, Set Mode: 1
+</I>&gt;<i> gpsd: =&gt; GPS: 4b6e1001020000000400000001000000
+</I>&gt;<i> gpsd: Garmin: SendPacket(), wrote 16 bytes
+</I>&gt;<i> gpsd: probe found Garmin USB binary driver...
+</I>&gt;<i> gpsd: NTPD ntpd_link_activate: 1
+</I>&gt;<i> gpsd: gpsd_activate(): opened GPS (fd 5)
+</I>&gt;<i> gpsd: Garmin: Get Product Data
+</I>&gt;<i>
+</I>&gt;<i> Anyone know whats going on here???
+</I>&gt;<i>
+</I>&gt;<i> Thanks!
+</I>&gt;<i>
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008124.html">[Gpsd-dev] Holux USB/RS232 issues
+</A></li>
+	<LI>Next message: <A HREF="008130.html">[Gpsd-dev] Holux USB/RS232 issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8129">[ date ]</a>
+              <a href="thread.html#8129">[ thread ]</a>
+              <a href="subject.html#8129">[ subject ]</a>
+              <a href="author.html#8129">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

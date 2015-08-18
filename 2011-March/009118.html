@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] netcat &quot;nc&quot; and gpsd interaction
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20netcat%20%22nc%22%20and%20gpsd%20interaction&In-Reply-To=%3CAANLkTi%3DBRBnG7oFWHejaC252pcL3JOX%2B9zxx%3Dj4pNWN_%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009116.html">
+   <LINK REL="Next"  HREF="009145.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] netcat &quot;nc&quot; and gpsd interaction</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20netcat%20%22nc%22%20and%20gpsd%20interaction&In-Reply-To=%3CAANLkTi%3DBRBnG7oFWHejaC252pcL3JOX%2B9zxx%3Dj4pNWN_%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] netcat &quot;nc&quot; and gpsd interaction">thomas at mich.com
+       </A><BR>
+    <I>Sat Mar 26 23:58:12 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009116.html">[Gpsd-dev] netcat &quot;nc&quot; and gpsd interaction
+</A></li>
+        <LI>Next message: <A HREF="009145.html">[Gpsd-dev] netcat &quot;nc&quot; and gpsd interaction
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9118">[ date ]</a>
+              <a href="thread.html#9118">[ thread ]</a>
+              <a href="subject.html#9118">[ subject ]</a>
+              <a href="author.html#9118">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>You can do someting like
+echo ... | socat -t999 stdin stdout | nc localhost 2947
+
+where socat will hold the connection 999 seconds after the close from echo.
+
+There is probably a way of using just socat alone.
+
+On Sat, Mar 26, 2011 at 6:52 PM, tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt; wrote:
+&gt;<i> You probably also want ... &quot;json&quot;:true ...
+</I>&gt;<i>
+</I>&gt;<i> &quot;json&quot;:&quot;true&quot; sets json to a string, not a boolean.
+</I>&gt;<i>
+</I>&gt;<i> On Sat, Mar 26, 2011 at 6:49 PM, tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt; wrote:
+</I>&gt;&gt;<i> echo closes that end of the pipe after one line. &#160;gpsd thinks of that
+</I>&gt;&gt;<i> as a disconnect.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On Sat, Mar 26, 2011 at 5:46 PM, Michael R. Davis &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mrdvt92 at yahoo.com</A>&gt; wrote:
+</I>&gt;&gt;&gt;<i> GPSD Folks,
+</I>&gt;&gt;&gt;<i> Can anyone tell me why nc does not work as I expect with gpsd. &#160;It seems to me that nc should read from gpsd forever but it stop after reading three objects (before TPV/SKY objects).
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> $ echo '?WATCH={&quot;enable&quot;:true,&quot;json&quot;:true};' | 127.0.0.1 2947
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> {&quot;class&quot;:&quot;VERSION&quot;,&quot;release&quot;:&quot;2.96~dev&quot;,&quot;rev&quot;:&quot;2011-03-17T02:51:23&quot;,&quot;proto_major&quot;:3,&quot;proto_minor&quot;:4}
+</I>&gt;&gt;&gt;<i> {&quot;class&quot;:&quot;DEVICES&quot;,&quot;devices&quot;:[{&quot;class&quot;:&quot;DEVICE&quot;,&quot;path&quot;:&quot;/dev/cuaU0&quot;,&quot;activated&quot;:1301175168.17,&quot;flags&quot;:1,&quot;driver&quot;:&quot;uBlox UBX binary&quot;,&quot;native&quot;:1,&quot;bps&quot;:9600,&quot;parity&quot;:&quot;N&quot;,&quot;stopbits&quot;:1,&quot;cycle&quot;:1.00,&quot;mincycle&quot;:0.25}]}
+</I>&gt;&gt;&gt;<i> {&quot;class&quot;:&quot;WATCH&quot;,&quot;enable&quot;:true,&quot;json&quot;:true,&quot;nmea&quot;:false,&quot;raw&quot;:0,&quot;scaled&quot;:false,&quot;timing&quot;:false}
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Thanks,
+</I>&gt;&gt;&gt;<i> Mike
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> mrdvt92
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;&gt;<i> Gpsd-dev mailing list
+</I>&gt;&gt;&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;&gt;&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009116.html">[Gpsd-dev] netcat &quot;nc&quot; and gpsd interaction
+</A></li>
+	<LI>Next message: <A HREF="009145.html">[Gpsd-dev] netcat &quot;nc&quot; and gpsd interaction
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9118">[ date ]</a>
+              <a href="thread.html#9118">[ thread ]</a>
+              <a href="subject.html#9118">[ subject ]</a>
+              <a href="author.html#9118">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

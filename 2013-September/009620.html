@@ -1,0 +1,136 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [RFC] Fix coveraging mode in SConstruct
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2013-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BRFC%5D%20Fix%20coveraging%20mode%20in%20SConstruct&In-Reply-To=%3C52351C72.8050106%40gna.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009619.html">
+   <LINK REL="Next"  HREF="009621.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [RFC] Fix coveraging mode in SConstruct</H1>
+    <B>Christian Gagneraud</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BRFC%5D%20Fix%20coveraging%20mode%20in%20SConstruct&In-Reply-To=%3C52351C72.8050106%40gna.org%3E"
+       TITLE="[Gpsd-dev] [RFC] Fix coveraging mode in SConstruct">chgans at gna.org
+       </A><BR>
+    <I>Sun Sep 15 04:33:22 CEST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009619.html">[Gpsd-dev] [RFC] Fix coveraging mode in SConstruct
+</A></li>
+        <LI>Next message: <A HREF="009621.html">[Gpsd-dev] [RFC] Fix coveraging mode in SConstruct
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9620">[ date ]</a>
+              <a href="thread.html#9620">[ thread ]</a>
+              <a href="subject.html#9620">[ subject ]</a>
+              <a href="author.html#9620">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 09/15/2013 05:44 AM, Eric S. Raymond wrote:
+&gt;<i> Christian Gagneraud &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">chgans at gna.org</A>&gt;:
+</I>&gt;&gt;<i> This patch fixes the coveraging mode, unfortunately the built of the python
+</I>&gt;&gt;<i> bindings requires a dirty hack as it doesn't pickup the global gcc flags.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Right now, it is possible to get coverage data for some of the testsuites,
+</I>&gt;&gt;<i> some fail because the test programs segfault.
+</I>&gt;<i> I'm applying and pushing this.  It's a step forward, we can clean up
+</I>&gt;<i> the minor idssues as we go.
+</I>&gt;<i>
+</I>&gt;&gt;<i> Passed testsuites:
+</I>&gt;&gt;<i>   time-regress
+</I>&gt;&gt;<i>   unpack-regress
+</I>&gt;&gt;<i>   json-regress
+</I>&gt;&gt;<i>   maidenhead-locator-regress
+</I>&gt;&gt;<i>   gps-regress
+</I>&gt;&gt;<i> Failed testsuites (segfault):
+</I>&gt;&gt;<i>   rtcm-regress
+</I>&gt;&gt;<i>   aivdm-regress
+</I>&gt;&gt;<i>   packet-regress
+</I>&gt;&gt;<i>   geoid-regress
+</I>&gt;<i> You say in later mail that these are failing with a regular build, but
+</I>&gt;<i> that's not happening here.  I've been hitting the AIVDM tests, in
+</I>&gt;<i> particular, pretty hard while wotking on the split24 feature.
+</I>&gt;<i>
+</I>&gt;<i> The GPSD build may be revealing a toolchain issue in your environment.
+</I>&gt;<i> That's happened before more than once.
+</I>I have exactly the same problem on a Ubuntu 12.04 server:
+
+$ scons -c
+[...]
+$ scons
+[...]
+gcc -o libgpsd.so.22.0.0 -shared -Wl,-Bsymbolic 
+-Wl,-soname=libgpsd.so.22 -Wl,-rpath=//usr/local/lib bsd_base64.os 
+crc24q.os gpsd_json.os geoid.os isgps.os libgpsd_core.os net_dgpsip.os 
+net_gnss_dispatch.os net_ntrip.os packet.os pseudonmea.os pseudoais.os 
+serial.os subframe.os timebase.os drivers.os driver_ais.os 
+driver_evermore.os driver_garmin.os driver_garmin_txt.os 
+driver_geostar.os driver_italk.os driver_navcom.os driver_nmea0183.os 
+driver_nmea2000.os driver_oncore.os driver_rtcm2.os driver_rtcm3.os 
+driver_sirf.os driver_superstar2.os driver_tsip.os driver_ubx.os 
+driver_zodiac.os -L. -L/usr/local/lib -lm -lgps
+/usr/bin/ld: ./libgps.a(bits.o): relocation R_X86_64_32 against 
+`.rodata' can not be used when making a shared object; recompile with -fPIC
+./libgps.a: could not read symbols: Bad value
+collect2: ld returned 1 exit status
+scons: *** [libgpsd.so.22.0.0] Error 1
+scons: building terminated because of errors.
+
+The -fPI looks suspicious to me.
+
+And scons check failed as well, but for a SO linkage this time:
+$ scons -c
+[...]
+$ scons check
+[...]
+gcc -o test_bits.o -c -D_GNU_SOURCE -O2 test_bits.c
+gcc -o test_bits -Wl,-rpath=//usr/local/lib test_bits.o -L. 
+-L/usr/local/lib -lgps -lm
+./test_bits --quiet
+./test_bits: error while loading shared libraries: libgps.so.21: cannot 
+open shared object file: No such file or directory
+scons: *** [bits-regress] Error 127
+scons: building terminated because of errors.
+
+So basically, I have problems with an &quot;old&quot; and stable distro: Ubuntu 
+12.04 LTS and a &quot;bleeding edge&quot; distro: OpenSUSE 13.1 Milestone4.
+
+The only common property I can see is that they are both 64 bits OS: 
+OpenSUSE on Intel i7 and Ubuntu on Intel  Xeon (VM).
+
+What kind of config are people running on here?
+
+Chris.
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009619.html">[Gpsd-dev] [RFC] Fix coveraging mode in SConstruct
+</A></li>
+	<LI>Next message: <A HREF="009621.html">[Gpsd-dev] [RFC] Fix coveraging mode in SConstruct
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9620">[ date ]</a>
+              <a href="thread.html#9620">[ thread ]</a>
+              <a href="subject.html#9620">[ subject ]</a>
+              <a href="author.html#9620">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

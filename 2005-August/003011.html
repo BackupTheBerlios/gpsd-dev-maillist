@@ -1,0 +1,146 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-commit-watch] r3170 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r3170%20-%20trunk&In-Reply-To=%3C20050821213235.GA3477%40www%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003008.html">
+   <LINK REL="Next"  HREF="003012.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-commit-watch] r3170 - trunk</H1>
+    <B>Jeff Francis</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r3170%20-%20trunk&In-Reply-To=%3C20050821213235.GA3477%40www%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-commit-watch] r3170 - trunk">jeff at gritch.org
+       </A><BR>
+    <I>Sun Aug 21 23:32:35 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003008.html">[Gpsd-dev] Broken gps mouse
+</A></li>
+        <LI>Next message: <A HREF="003012.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r3170 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3011">[ date ]</a>
+              <a href="thread.html#3011">[ thread ]</a>
+              <a href="subject.html#3011">[ subject ]</a>
+              <a href="author.html#3011">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>  Small patch to cgps.c to fix/change a few things.
+
+  1.  Satellites weren't showing up in the satellite window.
+  2.  Satellite window not big enough for all satellites.
+  3.  &quot;Blanking&quot; string of spaces too long.
+  4.  Added a &quot;command&quot; window for future use (still only accepts 'q'
+      for now).
+
+-- 
++--------------------------+
+|<i>   Jeff Francis - N0GQ    |
+</I>|<i> Snohomish, WA USA, Earth |
+</I>|<i>     <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>      |
+</I>|<i>  <A HREF="http://www.gritch.org">http://www.gritch.org</A>   |
+</I>+--------------------------+
+-------------- next part --------------
+Index: cgps.c
+===================================================================
+--- cgps.c	(revision 3174)
++++ cgps.c	(working copy)
+@@ -52,7 +52,7 @@
+ static char *altunits = &quot;ft&quot;;
+ static char *speedunits = &quot;mph&quot;;
+ 
+-static WINDOW *datawin, *satellites, *messages;
++static WINDOW *datawin, *satellites, *messages, *command;
+ 
+ /* Function to call when we're all done.  Does a bit of clean-up. */
+ static void die(int sig UNUSED) 
+@@ -89,15 +89,15 @@
+     /* This is for the satellite status display.  Lifted almost verbatim
+        from xgps.c. */
+     if (gpsdata-&gt;satellites) {
+-	for (i = 0; i &lt; MAXCHANNELS; i++) {
++      for (i = 0; i &lt; (MAXCHANNELS - 2); i++) {
+ 	    (void)wmove(satellites, i+2, 1);
+ 	    if (i &lt; gpsdata-&gt;satellites) {
+-		(void)printw(&quot; %3d    %02d    %03d    %02d      %c    &quot;,
++	      (void)wprintw(satellites,&quot; %3d    %02d    %03d    %02d      %c  &quot;,
+ 		       gpsdata-&gt;PRN[i],
+ 		       gpsdata-&gt;elevation[i], gpsdata-&gt;azimuth[i], 
+ 		       gpsdata-&gt;ss[i],	gpsdata-&gt;used[i] ? 'Y' : 'N');
+ 	    } else {
+-		(void)printw(&quot;                                  &quot;);
++	      (void)wprintw(satellites,&quot;                              &quot;);
+ 	    }
+ 	}
+     }
+@@ -201,6 +201,7 @@
+     (void)wrefresh(datawin);
+     (void)wrefresh(satellites);
+     (void)wrefresh(messages);
++    (void)wrefresh(command);
+ }
+ 
+ int main(int argc, char *argv[])
+@@ -307,15 +308,16 @@
+     (void)signal(SIGHUP,die);
+ 
+     /*@ -onlytrans @*/
+-    datawin    = newwin(13, 45, 1, 0);
+-    satellites = newwin(13, 35, 1, 45);
+-    messages   = newwin(0,  0,  14, 0);
++    datawin    = newwin(15, 45, 1, 0);
++    satellites = newwin(15, 35, 1, 45);
++    command    = newwin(3,  45,  16, 0);
++    messages   = newwin(0,  0,  19, 0);
+     /*@ +onlytrans @*/
+     (void)scrollok(messages, true);
+     (void)wsetscrreg(messages, 0, LINES-13);
+     (void)nodelay(messages,(bool)TRUE);
+ 
+-    (void)mvprintw(0, 31, &quot;cgps test client&quot;);
++    (void)mvprintw(0, 31, &quot;CGPS Test Client&quot;);
+     (void)refresh();
+ 
+     /* Do the initial field label setup. */
+@@ -333,6 +335,8 @@
+     (void)wborder(datawin, 0, 0, 0, 0, 0, 0, 0, 0);
+     (void)mvwprintw(satellites, 1,1, &quot;PRN:   Elev:  Azim:  SNR:  Used:&quot;);
+     (void)wborder(satellites, 0, 0, 0, 0, 0, 0, 0, 0);
++    (void)mvwprintw(command, 1,1, &quot;Command:  &quot;);
++    (void)wborder(command, 0, 0, 0, 0, 0, 0, 0, 0);
+ 
+ 
+     /* Here's where updates go. */
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003008.html">[Gpsd-dev] Broken gps mouse
+</A></li>
+	<LI>Next message: <A HREF="003012.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r3170 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3011">[ date ]</a>
+              <a href="thread.html#3011">[ thread ]</a>
+              <a href="subject.html#3011">[ subject ]</a>
+              <a href="author.html#3011">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

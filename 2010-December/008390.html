@@ -1,0 +1,242 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsctl fails
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsctl%20fails&In-Reply-To=%3Calpine.LNX.1.00.1012311234530.21114%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008389.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsctl fails</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsctl%20fails&In-Reply-To=%3Calpine.LNX.1.00.1012311234530.21114%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] gpsctl fails">gem at rellim.com
+       </A><BR>
+    <I>Fri Dec 31 21:38:00 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008389.html">[Gpsd-dev] garmin usb protocol: with libusb, why linux only?
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8390">[ date ]</a>
+              <a href="thread.html#8390">[ thread ]</a>
+              <a href="subject.html#8390">[ subject ]</a>
+              <a href="author.html#8390">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo All!
+
+I can't get gpsctl in git head to work.  Looks like a bug in the
+JSON.  A VERSION is received, but not perceived:
+
+dagwood ~ # gpsctl  -D 7
+[...]
+VERSION: release=2.96~dev rev=2010-12-31T20:01:29 proto=3.3
+libgps: final flags: (0x0800) {VERSION}
+gpsctl: no VERSION response received; update your gpsd.
+[...]
+
+Full debug output:
+
+dagwood ~ # gpsctl  -D 7
+libgps: gps_open(localhost, 2947)
+libgps: netlib_connectsock() returns socket on fd 3
+libgps: gps_unpack({&quot;class&quot;:&quot;VERSION&quot;,&quot;release&quot;:&quot;2.96~dev&quot;,&quot;rev&quot;:&quot;2010-12-31T20:)1:29&quot;,&quot;proto_major&quot;:3,&quot;proto_minor&quot;:3}
+libgps: gps_unpack() segment parse '{&quot;class&quot;:&quot;VERSION&quot;,&quot;release&quot;:&quot;2.96~dev&quot;,&quot;rev':&quot;2010-12-31T20:01:29&quot;,&quot;proto_major&quot;:3,&quot;proto_minor&quot;:3}
+json: json_read_object() sees '{&quot;class&quot;:&quot;VERSION&quot;,&quot;release&quot;:&quot;2.96~dev&quot;,&quot;rev&quot;:&quot;20'0-12-31T20:01:29&quot;,&quot;proto_major&quot;:3,&quot;proto_minor&quot;:3}
+json: Target address for class (offset 0) is (nil)
+json: Target address for release (offset 0) is 0x7fff8ef0de28
+json: Target address for rev (offset 0) is 0x7fff8ef0de68
+json: Target address for proto_major (offset 0) is 0x7fff8ef0dea8
+json: Target address for proto_minor (offset 0) is 0x7fff8ef0deac
+json: JSON parse of '{&quot;class&quot;:&quot;VERSION&quot;,&quot;release&quot;:&quot;2.96~dev&quot;,&quot;rev&quot;:&quot;2010-12-31T2' begins.&quot;proto_major&quot;:3,&quot;proto_minor&quot;:3}
+json: State init          , looking at '{' (0x7fff8ef0c618)
+json: State await_attr    , looking at '&quot;' (0x7fff8ef0c619)
+json: State in_attr       , looking at 'c' (0x7fff8ef0c61a)
+json: State in_attr       , looking at 'l' (0x7fff8ef0c61b)
+json: State in_attr       , looking at 'a' (0x7fff8ef0c61c)
+json: State in_attr       , looking at 's' (0x7fff8ef0c61d)
+json: State in_attr       , looking at 's' (0x7fff8ef0c61e)
+json: State in_attr       , looking at '&quot;' (0x7fff8ef0c61f)
+json: Collected attribute name class
+json: Checking against class
+json: State await_value   , looking at ':' (0x7fff8ef0c620)
+json: State await_value   , looking at '&quot;' (0x7fff8ef0c621)
+json: State in_val_string , looking at 'V' (0x7fff8ef0c622)
+json: State in_val_string , looking at 'E' (0x7fff8ef0c623)
+json: State in_val_string , looking at 'R' (0x7fff8ef0c624)
+json: State in_val_string , looking at 'S' (0x7fff8ef0c625)
+json: State in_val_string , looking at 'I' (0x7fff8ef0c626)
+json: State in_val_string , looking at 'O' (0x7fff8ef0c627)
+json: State in_val_string , looking at 'N' (0x7fff8ef0c628)
+json: State in_val_string , looking at '&quot;' (0x7fff8ef0c629)
+json: Collected string value VERSION
+json: State post_val      , looking at ',' (0x7fff8ef0c62a)
+json: Target address for class (offset 0) is (nil)
+json: State await_attr    , looking at '&quot;' (0x7fff8ef0c62b)
+json: State in_attr       , looking at 'r' (0x7fff8ef0c62c)
+json: State in_attr       , looking at 'e' (0x7fff8ef0c62d)
+json: State in_attr       , looking at 'l' (0x7fff8ef0c62e)
+json: State in_attr       , looking at 'e' (0x7fff8ef0c62f)
+json: State in_attr       , looking at 'a' (0x7fff8ef0c630)
+json: State in_attr       , looking at 's' (0x7fff8ef0c631)
+json: State in_attr       , looking at 'e' (0x7fff8ef0c632)
+json: State in_attr       , looking at '&quot;' (0x7fff8ef0c633)
+json: Collected attribute name release
+json: Checking against class
+json: Checking against release
+json: State await_value   , looking at ':' (0x7fff8ef0c634)
+json: State await_value   , looking at '&quot;' (0x7fff8ef0c635)
+json: State in_val_string , looking at '2' (0x7fff8ef0c636)
+json: State in_val_string , looking at '.' (0x7fff8ef0c637)
+json: State in_val_string , looking at '9' (0x7fff8ef0c638)
+json: State in_val_string , looking at '6' (0x7fff8ef0c639)
+json: State in_val_string , looking at '~' (0x7fff8ef0c63a)
+json: State in_val_string , looking at 'd' (0x7fff8ef0c63b)
+json: State in_val_string , looking at 'e' (0x7fff8ef0c63c)
+json: State in_val_string , looking at 'v' (0x7fff8ef0c63d)
+json: State in_val_string , looking at '&quot;' (0x7fff8ef0c63e)
+json: Collected string value 2.96~dev
+json: State post_val      , looking at ',' (0x7fff8ef0c63f)
+json: Target address for release (offset 0) is 0x7fff8ef0de28
+json: State await_attr    , looking at '&quot;' (0x7fff8ef0c640)
+json: State in_attr       , looking at 'r' (0x7fff8ef0c641)
+json: State in_attr       , looking at 'e' (0x7fff8ef0c642)
+json: State in_attr       , looking at 'v' (0x7fff8ef0c643)
+json: State in_attr       , looking at '&quot;' (0x7fff8ef0c644)
+json: Collected attribute name rev
+json: Checking against class
+json: Checking against release
+json: Checking against rev
+json: State await_value   , looking at ':' (0x7fff8ef0c645)
+json: State await_value   , looking at '&quot;' (0x7fff8ef0c646)
+json: State in_val_string , looking at '2' (0x7fff8ef0c647)
+json: State in_val_string , looking at '0' (0x7fff8ef0c648)
+json: State in_val_string , looking at '1' (0x7fff8ef0c649)
+json: State in_val_string , looking at '0' (0x7fff8ef0c64a)
+json: State in_val_string , looking at '-' (0x7fff8ef0c64b)
+json: State in_val_string , looking at '1' (0x7fff8ef0c64c)
+json: State in_val_string , looking at '2' (0x7fff8ef0c64d)
+json: State in_val_string , looking at '-' (0x7fff8ef0c64e)
+json: State in_val_string , looking at '3' (0x7fff8ef0c64f)
+json: State in_val_string , looking at '1' (0x7fff8ef0c650)
+json: State in_val_string , looking at 'T' (0x7fff8ef0c651)
+json: State in_val_string , looking at '2' (0x7fff8ef0c652)
+json: State in_val_string , looking at '0' (0x7fff8ef0c653)
+json: State in_val_string , looking at ':' (0x7fff8ef0c654)
+json: State in_val_string , looking at '0' (0x7fff8ef0c655)
+json: State in_val_string , looking at '1' (0x7fff8ef0c656)
+json: State in_val_string , looking at ':' (0x7fff8ef0c657)
+json: State in_val_string , looking at '2' (0x7fff8ef0c658)
+json: State in_val_string , looking at '9' (0x7fff8ef0c659)
+json: State in_val_string , looking at '&quot;' (0x7fff8ef0c65a)
+json: Collected string value 2010-12-31T20:01:29
+json: State post_val      , looking at ',' (0x7fff8ef0c65b)
+json: Target address for rev (offset 0) is 0x7fff8ef0de68
+json: State await_attr    , looking at '&quot;' (0x7fff8ef0c65c)
+json: State in_attr       , looking at 'p' (0x7fff8ef0c65d)
+json: State in_attr       , looking at 'r' (0x7fff8ef0c65e)
+json: State in_attr       , looking at 'o' (0x7fff8ef0c65f)
+json: State in_attr       , looking at 't' (0x7fff8ef0c660)
+json: State in_attr       , looking at 'o' (0x7fff8ef0c661)
+json: State in_attr       , looking at '_' (0x7fff8ef0c662)
+json: State in_attr       , looking at 'm' (0x7fff8ef0c663)
+json: State in_attr       , looking at 'a' (0x7fff8ef0c664)
+json: State in_attr       , looking at 'j' (0x7fff8ef0c665)
+json: State in_attr       , looking at 'o' (0x7fff8ef0c666)
+json: State in_attr       , looking at 'r' (0x7fff8ef0c667)
+json: State in_attr       , looking at '&quot;' (0x7fff8ef0c668)
+json: Collected attribute name proto_major
+json: Checking against class
+json: Checking against release
+json: Checking against rev
+json: Checking against proto_major
+json: State await_value   , looking at ':' (0x7fff8ef0c669)
+json: State await_value   , looking at '3' (0x7fff8ef0c66a)
+json: State in_val_token  , looking at ',' (0x7fff8ef0c66b)
+json: Collected token value 3.
+json: State post_val      , looking at ',' (0x7fff8ef0c66b)
+json: Target address for proto_major (offset 0) is 0x7fff8ef0dea8
+json: State await_attr    , looking at '&quot;' (0x7fff8ef0c66c)
+json: State in_attr       , looking at 'p' (0x7fff8ef0c66d)
+json: State in_attr       , looking at 'r' (0x7fff8ef0c66e)
+json: State in_attr       , looking at 'o' (0x7fff8ef0c66f)
+json: State in_attr       , looking at 't' (0x7fff8ef0c670)
+json: State in_attr       , looking at 'o' (0x7fff8ef0c671)
+json: State in_attr       , looking at '_' (0x7fff8ef0c672)
+json: State in_attr       , looking at 'm' (0x7fff8ef0c673)
+json: State in_attr       , looking at 'i' (0x7fff8ef0c674)
+json: State in_attr       , looking at 'n' (0x7fff8ef0c675)
+json: State in_attr       , looking at 'o' (0x7fff8ef0c676)
+json: State in_attr       , looking at 'r' (0x7fff8ef0c677)
+json: State in_attr       , looking at '&quot;' (0x7fff8ef0c678)
+json: Collected attribute name proto_minor
+json: Checking against class
+json: Checking against release
+json: Checking against rev
+json: Checking against proto_major
+json: Checking against proto_minor
+json: State await_value   , looking at ':' (0x7fff8ef0c679)
+json: State await_value   , looking at '3' (0x7fff8ef0c67a)
+json: State in_val_token  , looking at '}' (0x7fff8ef0c67b)
+json: Collected token value 3.
+json: State post_val      , looking at '}' (0x7fff8ef0c67b)
+json: Target address for proto_minor (offset 0) is 0x7fff8ef0deac
+json: JSON parse ends.
+flags: (0x0800) {VERSION}
+VERSION: release=2.96~dev rev=2010-12-31T20:01:29 proto=3.3
+libgps: final flags: (0x0800) {VERSION}
+gpsctl: no VERSION response received; update your gpsd.
+libgps: gps_close()
+
+
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 109 NW Wilmington Ave., Suite E, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFNHj8tBmnRqz71OvMRAjUyAKDiJkweKe5OL9CNlOZ8JNxJXVNMsQCeIGkZ
+zIpsGMOapvWk83GM3Dz6PJA=
+=azIi
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008389.html">[Gpsd-dev] garmin usb protocol: with libusb, why linux only?
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8390">[ date ]</a>
+              <a href="thread.html#8390">[ thread ]</a>
+              <a href="subject.html#8390">[ subject ]</a>
+              <a href="author.html#8390">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

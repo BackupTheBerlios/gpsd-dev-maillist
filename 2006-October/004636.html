@@ -1,0 +1,132 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] SiRF tweaks
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20SiRF%20tweaks&In-Reply-To=%3C91981b3e0610241402t4415a6b5ldb07f7a2e9411147%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004635.html">
+   <LINK REL="Next"  HREF="004653.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] SiRF tweaks</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20SiRF%20tweaks&In-Reply-To=%3C91981b3e0610241402t4415a6b5ldb07f7a2e9411147%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] SiRF tweaks">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Tue Oct 24 23:02:22 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004635.html">[Gpsd-dev] SiRF tweaks
+</A></li>
+        <LI>Next message: <A HREF="004653.html">[Gpsd-dev] SiRF tweaks
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4636">[ date ]</a>
+              <a href="thread.html#4636">[ thread ]</a>
+              <a href="subject.html#4636">[ subject ]</a>
+              <a href="author.html#4636">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 10/24/06, Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> Chris Kuethe wrote:
+</I>&gt;<i> &gt; Turn on sirf message 7 unconditionally. Software solvers need it, and
+</I>&gt;<i> &gt; for regular display, we get the week display wrong - toggles between
+</I>&gt;<i> &gt; truncated and extended week number.
+</I>&gt;<i>
+</I>&gt;<i> If you want to enable this in the driver init, and add the appropriate
+</I>&gt;<i> handler code to the message type case, go to it.
+</I>
+OK. I've seen gpsd/cgps flashing between extended and truncated week
+number. By making message 7 the authoritative source of week number,
+the problem goes away. I'll look  into not screwing that up. :)
+
+&gt;<i> &gt;                                  Software version is small - but
+</I>&gt;<i> &gt; it's nice, and not really needed for anything other than sirfmon.
+</I>&gt;<i> &gt; Almanac and ephemeris are really only needed for those playing with
+</I>&gt;<i> &gt; software solvers.
+</I>&gt;<i>
+</I>&gt;<i> I'm not clear what actual change in gpsd is being recommended here.
+</I>
+I was musing that it might be nice to have the software version
+reported every so often. But it's not really good for anything. Well,
+that's not quite true. We use it to decide whether to stay in SiRF
+binary mode. Perhaps if we cached the version, we could make that be
+part of the response to the &quot;I&quot; command?
+
+If I could schedule an almanac/ephemeris dump, I would. Alas, the
+firmware only lets you poll them - unless you're brave and parse them
+out of the 50bps data stream.
+
+Change recommended: make it possible to consume this data over the
+wire. Either poll for it or don't disable it if the receiver is
+already safely sending it. gpsd might not use it internally, but it
+should pass raw data along if a client app signals that it would like
+that data.
+
+&gt;<i> OK, but under what circumstances are you recommending we turn on
+</I>&gt;<i> tracker mode?
+</I>
+Given the port speed required to support tracker mode: when the user
+requests it. And consider not disabling it if the the port is already
+running fast enough?
+
+&gt;<i> I'm missing context here.  Where and when did a &quot;toggle chattiness&quot;
+</I>&gt;<i> command come up?
+</I>
+I was thinking aloud. Trying to take off the gpsd developer hat - as a
+user, I am annoyed by any software that unnecessarily reconfigures my
+hardware without giving me a chance to prevent that reconfiguration or
+undo it. It seems bluetooth users would agree with me. :P Just reading
+over my protocol references again to see if it's possible to fully
+describe the device's configuration, and then to restore it.
+
+We already allow a switch from NMEA to vendor binary - some things
+just aren't available in NMEA. It doesn't seem like and unreasonable
+step to then say: &quot;give me everything the gps can tell me. I know what
+I'm doing&quot;
+
+For some receivers, switching to binary mode pretty much requires a
+speed switch. I haven't added it up exactly, but I think it's barely
+possible to run iTalk at 38400, and Fastrax recommends that you run at
+least 115200. And I don't know enough about the protocol and the
+hardware yet to say what messages can be configured and how to make
+that change reversible.
+
+Yay for interesting design discussions!
+
+CK
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004635.html">[Gpsd-dev] SiRF tweaks
+</A></li>
+	<LI>Next message: <A HREF="004653.html">[Gpsd-dev] SiRF tweaks
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4636">[ date ]</a>
+              <a href="thread.html#4636">[ thread ]</a>
+              <a href="subject.html#4636">[ subject ]</a>
+              <a href="author.html#4636">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

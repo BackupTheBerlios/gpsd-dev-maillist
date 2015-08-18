@@ -1,0 +1,143 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-commit-watch] r2158 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r2158%20-%20trunk&In-Reply-To=%3CPine.LNX.4.62.0503271521110.1537%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001106.html">
+   <LINK REL="Next"  HREF="001083.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-commit-watch] r2158 - trunk</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r2158%20-%20trunk&In-Reply-To=%3CPine.LNX.4.62.0503271521110.1537%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-commit-watch] r2158 - trunk">gem at rellim.com
+       </A><BR>
+    <I>Mon Mar 28 01:25:17 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001106.html">[Gpsd-dev] Re: 2.19 Doesn't compile on Mac OS X
+</A></li>
+        <LI>Next message: <A HREF="001083.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2158 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1079">[ date ]</a>
+              <a href="thread.html#1079">[ thread ]</a>
+              <a href="subject.html#1079">[ subject ]</a>
+              <a href="author.html#1079">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Eric!
+
+On Sun, 27 Mar 2005, Eric S. Raymond at BerliOS wrote:
+
+&gt;<i> Log:
+</I>&gt;<i> unix_to_iso8601() should not do timezone correction.  That's the driver's job.
+</I>
+This change puts the bug back in.
+
+It WAS doing TZ correction and my change fixed it.  You added TZ corretion
+back in.
+
+gmtime_r() does not correct for TZ and localtime_r() does.
+
+- From the man page:
+
+       The localtime() function converts the calendar time  timep
+       to  broken-time  representation, expressed relative to the
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^
+       user's specified time zone.
+        ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- From a practical point I KNOW I have very accurate/exact Zulu because my
+ntpd agrees it is in cwsyncsince with other chimers.  With my patch
+xgps shows Zulu, and with yours it shows local.  Exactly what the man
+page says.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+
+&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Modified: trunk/HACKING
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- trunk/HACKING	2005-03-27 06:23:37 UTC (rev 2157)
+</I>&gt;<i> +++ trunk/HACKING	2005-03-27 06:49:38 UTC (rev 2158)
+</I>&gt;<i> @@ -178,6 +178,10 @@
+</I>&gt;<i>  The watcher-mode logic relies on these as its way of knowing what to
+</I>&gt;<i>  publish.
+</I>&gt;<i>
+</I>&gt;<i> +Note, also, that all the timestamps your driver puts in the session
+</I>&gt;<i> +structure should be UTC.  The report-generator function for D and
+</I>&gt;<i> +O does *not* apply a timezone offset.
+</I>&gt;<i> +
+</I>&gt;<i>  Local variables:
+</I>&gt;<i>  mode: outline
+</I>&gt;<i>  paragraph-separate: &quot;[ 	]*$&quot;
+</I>&gt;<i>
+</I>&gt;<i> Modified: trunk/gpsutils.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- trunk/gpsutils.c	2005-03-27 06:23:37 UTC (rev 2157)
+</I>&gt;<i> +++ trunk/gpsutils.c	2005-03-27 06:49:38 UTC (rev 2158)
+</I>&gt;<i> @@ -64,7 +64,7 @@
+</I>&gt;<i>
+</I>&gt;<i>      fractional = modf(fixtime, &amp;integral);
+</I>&gt;<i>      intfixtime = (time_t)integral;
+</I>&gt;<i> -    gmtime_r(&amp;intfixtime, &amp;when);
+</I>&gt;<i> +    localtime_r(&amp;intfixtime, &amp;when);
+</I>&gt;<i>
+</I>&gt;<i>      strftime(isotime, 28, &quot;%Y-%m-%dT%H:%M:%S&quot;, &amp;when);
+</I>&gt;<i>      slen = strlen(isotime);
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-commit-watch mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-commit-watch at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="http://lists.berlios.de/mailman/listinfo/gpsd-commit-watch">http://lists.berlios.de/mailman/listinfo/gpsd-commit-watch</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.2.3 (GNU/Linux)
+
+iD8DBQFCR0Dg8KZibdeR3qURAioOAJwMSiISYXgAsBFLo9tFweehpDf7PQCfbl8q
+JqaIN2e5HSxNm15SsSS4Yso=
+=MJ/K
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001106.html">[Gpsd-dev] Re: 2.19 Doesn't compile on Mac OS X
+</A></li>
+	<LI>Next message: <A HREF="001083.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2158 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1079">[ date ]</a>
+              <a href="thread.html#1079">[ thread ]</a>
+              <a href="subject.html#1079">[ subject ]</a>
+              <a href="author.html#1079">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

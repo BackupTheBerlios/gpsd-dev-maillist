@@ -1,0 +1,114 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20Single-writer/many-reader%20consistency%3A%0A%20Test%20program%20written%20%26%20verified&In-Reply-To=%3C4D90EA84.1050100%40tmsw.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009160.html">
+   <LINK REL="Next"  HREF="009165.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified</H1>
+    <B>Terje Mathisen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20Single-writer/many-reader%20consistency%3A%0A%20Test%20program%20written%20%26%20verified&In-Reply-To=%3C4D90EA84.1050100%40tmsw.no%3E"
+       TITLE="[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified">terje at tmsw.no
+       </A><BR>
+    <I>Mon Mar 28 22:07:32 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009160.html">[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified
+</A></li>
+        <LI>Next message: <A HREF="009165.html">[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9161">[ date ]</a>
+              <a href="thread.html#9161">[ thread ]</a>
+              <a href="subject.html#9161">[ subject ]</a>
+              <a href="author.html#9161">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Dave Hart wrote:
+&gt;<i> On Mon, Mar 28, 2011 at 19:21 UTC, Gary E. Miller&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;  wrote:
+</I>&gt;&gt;<i> On Mon, 28 Mar 2011, Terje Mathisen wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Dave Hart&amp;  I have banged quite a bit against the (fixed) version of the test
+</I>&gt;&gt;&gt;<i> program, and the conclusion is quite nice:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Good result, but missing the most crucial detail on the tests: what CPU
+</I>&gt;&gt;<i> architecture?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> As we have seen x86 has the strongest rules on reordering. &#194; What about on
+</I>&gt;&gt;<i> another CPU, like ARM with weaker rules?
+</I>&gt;<i>
+</I>&gt;<i> There's some porting work to be done.  So far just x86 using threads
+</I>&gt;<i> on Windows.  Still, I did include a dual-proc Pentium II 400MHz, which
+</I>&gt;<i> predates Intel's strictest guarantees.  Below are the hour-long runs I
+</I>&gt;<i> did.  Note the output is misleading, it still says 10 seconds when it
+</I>&gt;<i> was in fact 3600.  Also despite the mention of debug\test_shm the
+</I>&gt;<i> binary was fully optimized, including link-time code generation and
+</I>&gt;<i> non-debug C runtime.  The source file is test-shm.c, the test_shm.exe
+</I>&gt;<i> name is a result of quirk in how I set up the build here.
+</I>
+[various x86 test targets snipped]
+
+&gt;<i>
+</I>&gt;<i> Nowhere near as interesting as Alpha or ARM, granted, and hard to
+</I>
+I agree.
+
+&gt;<i> interpret without the source, which will have to wait for Terje.
+</I>
+I still haven't made the program runtime configurable, i.e. command line 
+parameters for things like test time duration and number of threads, but 
+the current source code is located here:
+
+<A HREF="http://norloff.org/ntp/shm-test/">http://norloff.org/ntp/shm-test/</A>
+
+This version actually uses 32 extra bytes per 32-byte timestamp record, 
+making the total 64 bytes.
+
+This means that each timestamp uses a separate cache line, meaning that 
+with proper alignment (which is currently still missing) the writer can 
+generate a new timestamp record without forcing all the readers to give 
+up their read access to the previous record. It did increase the maximum 
+read/write frequency by quite a bit.
+
+I would love to see a *ix port, if nobody volunteers I'll use a VMware 
+64-bit Ubuntu to see if I can figure out the relevant Linux calls.
+
+Terje
+-- 
+- &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Terje at tmsw.no</A>&gt;
+&quot;almost all programming can be viewed as an exercise in caching&quot;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009160.html">[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified
+</A></li>
+	<LI>Next message: <A HREF="009165.html">[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9161">[ date ]</a>
+              <a href="thread.html#9161">[ thread ]</a>
+              <a href="subject.html#9161">[ subject ]</a>
+              <a href="author.html#9161">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

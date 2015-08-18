@@ -1,0 +1,120 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] splint just turned up a third bug
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20splint%20just%20turned%20up%20a%20third%20bug&In-Reply-To=%3C25538.213.84.187.156.1117483666.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001970.html">
+   <LINK REL="Next"  HREF="001972.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] splint just turned up a third bug</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20splint%20just%20turned%20up%20a%20third%20bug&In-Reply-To=%3C25538.213.84.187.156.1117483666.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] splint just turned up a third bug">gpsd at xs4all.nl
+       </A><BR>
+    <I>Mon May 30 22:07:46 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001970.html">[Gpsd-dev] splint just turned up a third bug
+</A></li>
+        <LI>Next message: <A HREF="001972.html">[Gpsd-dev] splint just turned up a third bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1971">[ date ]</a>
+              <a href="thread.html#1971">[ thread ]</a>
+              <a href="subject.html#1971">[ subject ]</a>
+              <a href="author.html#1971">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> On Mon, 30 May 2005, Rob Janssen wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Maybe it is better to change all occurrences of pow(x,2) into x * x
+</I>&gt;&gt;<i> everywhere in the software.  Could be faster as well.
+</I>&gt;<i>
+</I>&gt;<i> Better maybe, faster, no way. (x * x) will produce a full FPU multiply.
+</I>&gt;<i> pow() is smart enough just to add to the exponent.  That is WAY faster.
+</I>&gt;<i>
+</I>&gt;<i> Does it matter on a GHz+ CPU?  Surely not.  Maybe an embedded system
+</I>&gt;<i> might notice.
+</I>
+I wrote, compiled and disassembled a small testprogram.
+(too lazy to find my way in the maze of twisty little passages that claims
+it is the source of the C library)
+
+The x*x case compiles to just an inline fmul.
+The pow(x,2) case calls a function (via the usual shared lib overhead)
+that does lots of condition checks and calls another function
+(ieee754_pow) that again has many conditional jumps.  Probably the
+implementation of the smartness you claim it has.
+
+My guess is that on a typical P4-class CPU, on wich execution speed
+depends more on the execution path than on the actually executed
+instructions, the multiply will be orders of magnitude faster.
+
+When we would want to help embedded systems without floating point
+processor, we probably could make a lot of difference by removing all
+floating point and replacing it with fixed point (scaled) integer
+arithmetic.  Or by going back to float instead of double.
+
+
+The point was that splint outputs a warning for statements like:
+
+z = sqrt(pow(x,2) + pow(y,2));
+
+... warning that the order of evaluation is undefined and so it isn't
+defined in which order the pow() calls are made.  Of course this is true,
+but it is almost completely pointless.
+It would only be relevant when the function has side-effects that could
+depend on the order of calls.  But the only side-effect of pow() is that
+it can set errno, and it only does so when a negative number is raised to
+a non-integral exponent.  The exponent is constant and integral, so this
+cannot happen.  Apparently splint cannot see that.
+
+To make the warning go away, magic comments need to be inserted.  But
+alternatively, we could write:
+
+z = sqrt(x*x + y*y);
+
+and make splint shut up.  As Andreas suggested, we could also use
+something like:
+
+#define square(x)      ((x)*(x))
+
+in that case someone worried about the performance and not about splint
+could change it to:
+
+#define square(x)
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001970.html">[Gpsd-dev] splint just turned up a third bug
+</A></li>
+	<LI>Next message: <A HREF="001972.html">[Gpsd-dev] splint just turned up a third bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1971">[ date ]</a>
+              <a href="thread.html#1971">[ thread ]</a>
+              <a href="subject.html#1971">[ subject ]</a>
+              <a href="author.html#1971">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

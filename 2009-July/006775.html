@@ -1,0 +1,124 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] oncore / jupiter_t binary driver
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20oncore%20/%20jupiter_t%20binary%20driver&In-Reply-To=%3Calpine.DEB.1.10.0907151943180.1199%40org-pc51.fy.chalmers.se%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006774.html">
+   <LINK REL="Next"  HREF="006776.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] oncore / jupiter_t binary driver</H1>
+    <B>H&#229;kan Johansson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20oncore%20/%20jupiter_t%20binary%20driver&In-Reply-To=%3Calpine.DEB.1.10.0907151943180.1199%40org-pc51.fy.chalmers.se%3E"
+       TITLE="[Gpsd-dev] oncore / jupiter_t binary driver">f96hajo at chalmers.se
+       </A><BR>
+    <I>Wed Jul 15 20:00:07 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006774.html">[Gpsd-dev] oncore / jupiter_t binary driver
+</A></li>
+        <LI>Next message: <A HREF="006776.html">[Gpsd-dev] oncore / jupiter_t binary driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6775">[ date ]</a>
+              <a href="thread.html#6775">[ thread ]</a>
+              <a href="subject.html#6775">[ subject ]</a>
+              <a href="author.html#6775">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+On Wed, 15 Jul 2009, Chris Kuethe wrote:
+
+&gt;<i> still in private development stage. I do have a couple of oncore
+</I>&gt;<i> receivers in storage - but they're not at all easy to get to. I might
+</I>&gt;<i> have some oncore logs i can use to whip up a basic driver.
+</I>&gt;<i>
+</I>&gt;<i> I'd be interested in seeing your changes to motosend.c.
+</I>
+Attached are the (quite dirty) additions to motosend.c, just to see it 
+running.  Also plastered in is a minimal pps-pickup, from ntpshm.c.  (I'm 
+currently running with a USB-serial-TTL-dongle, waiting for a 
+RS232-TTL-converter to get micro- instead of millisecond precision time 
+stamps.)  Some example output is pasted below.
+
+--&gt; 1  189105
+ntpshm_pps: clock: 1247679879 @ 1247679878.989963
+--&gt; 0  989963
+@@Ea: 2009-07-15 17:44:39.000543074  57.698259  11.958184   43.47 0   0.59 
+302.6
+  6.4 00 n11 t4 s20
+SV:30 8  44 a2      ### the 44 is the signal strength
+SV:29 0   0 00
+SV:21 0   0 00
+SV:12 8  46 a2
+SV:31 0   0 20
+SV:23 0   0 00
+SV:02 8  50 a2
+SV:24 8  46 a2
+
+--&gt; 1  188931
+@@Bb: n11
+SV:02 -1906 30  52 0  ###  30 and 52 are elevation and azimuth
+SV:04 -3571  4  29 0
+SV:10  3064  5  93 0
+SV:12 -3199 28 113 0
+SV:16  3571  6 287 0
+SV:21  3529  9 181 0
+SV:23  1526 12 342 0
+SV:24  2870 34 151 0
+SV:29  1018 72 207 0
+SV:30 -2129 58 125 0
+SV:31   426 53 274 0
+SV:00     0  0   0 0
+
+The --&gt; shows when the pps changes state.   To get the unit to deliver 
+data, I execute two commands with motosend:
+
+./motosend 9600 /dev/ttyUSB0 Ea &quot;01&quot;
+./motosend 9600 /dev/ttyUSB0 Bb &quot;01&quot;
+
+and then just let it run to print the messages it produces
+
+I'd be happy to have a go at a gpsd-driver, even if it would have sharp 
+edges :)
+
+H&#229;kan
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: motosend.c
+Type: text/x-csrc
+Size: 11060 bytes
+Desc: 
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090715/5c3bfc06/attachment.c">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090715/5c3bfc06/attachment.c</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006774.html">[Gpsd-dev] oncore / jupiter_t binary driver
+</A></li>
+	<LI>Next message: <A HREF="006776.html">[Gpsd-dev] oncore / jupiter_t binary driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6775">[ date ]</a>
+              <a href="thread.html#6775">[ thread ]</a>
+              <a href="subject.html#6775">[ subject ]</a>
+              <a href="author.html#6775">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

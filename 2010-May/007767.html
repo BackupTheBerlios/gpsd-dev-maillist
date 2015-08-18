@@ -1,0 +1,124 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Input packets buffering bug(s)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3Crmibpc5fppy.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007765.html">
+   <LINK REL="Next"  HREF="007768.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Input packets buffering bug(s)</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3Crmibpc5fppy.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] Input packets buffering bug(s)">gdt at ir.bbn.com
+       </A><BR>
+    <I>Mon May 24 14:28:57 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007765.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+        <LI>Next message: <A HREF="007768.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7767">[ date ]</a>
+              <a href="thread.html#7767">[ thread ]</a>
+              <a href="subject.html#7767">[ subject ]</a>
+              <a href="author.html#7767">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+I think your analysis is at least basically right.
+
+On an actual serial port, characters arrive one at a time, and then the
+host is interrupted either per character or every few characters.  Then,
+characters are placed in the input buffer, and finally a process does
+read(2) which reads some number.  Depending on timing this could be a
+single byte or it could be 300 bytes and several NMEA sentences.
+
+With your test program, I think you are saying characters arrive in bulk
+From a write(2) call from the generator.
+
+With USB devices, USB packets (not what gpsd calls packets) arrive,
+containing some number of bytes.  These are added to the usb tty input
+queue all at once.
+
+I have been seeing time lags sometimes with a ublox antaris 4 USB GPS
+receiver on NetBSD.  Some others have seen problems, but they've been
+hard to track down.
+
+After reading your message, I ran gpsd in debug mode, and sure enough
+here is an excerpt (widen your screen to make this easier to read):
+
+gpsd: Read 73 chars to buffer offset 0 (total 73): 244750524d432c3132313631332e30302c412c343232332e34313039312c4e2c30373130382e38343237322c572c302e3737302c33332e35382c3234303531302c2c2c412a34410d0a
+gpsd: packet_get() fd 5 -&gt; 73 (0)
+gpsd: Packet type 1 accepted 73 = 244750524d432c3132313631332e30302c412c343232332e34313039312c4e2c30373130382e38343237322c572c302e3737302c33332e35382c3234303531302c2c2c412a34410d0a
+gpsd: Packet discard of 73, chars remaining is 0 =
+gpsd: packet sniff on /dev/dtyU0 finds type 1
+gpsd: switch_driver(Generic NMEA) called...
+gpsd: selecting Generic NMEA driver...
+gpsd: Read 40 chars to buffer offset 0 (total 40): 2447505654472c33332e35382c542c2c4d2c302e3737302c4e2c312e3432362c4b2c412a30310d0a
+
+[continues for a while]
+
+gpsd: Read 120 chars to buffer offset 0 (total 120): 2447504753412c412c332c31352c30352c32312c30382c31302c32342c2c2c2c2c2c2c322e39352c322e32342c312e39322a30460d0a2447504753562c342c312c31342c31352c38342c3131362c32352c32362c36342c\
+3230362c2c32392c33302c3232322c2c30352c33332c3037382c33332a37320d0a
+
+gpsd: Packet type 1 accepted 54 = 2447504753412c412c332c31352c30352c32312c30382c31302c32342c2c2c2c2c2c2c322e39352c322e32342c312e39322a30460d0a
+gpsd: Packet discard of 54, chars remaining is 66 = 2447504753562c342c312c31342c31352c38342c3131362c32352c32362c36342c3230362c2c32392c33302c3232322c2c30352c33332c3037382c33332a37320d0a
+
+[here, we got 120 bytes in one system call, and the first 54 is an nmea
+sentence:]
+
+gpsd: &lt;= GPS: $GPGSA,A,3,15,05,21,08,10,24,,,,,,,2.95,2.24,1.92*0F\x0d\x0a
+
+gpsd: Read 66 chars to buffer offset 66 (total 132): 2447504753562c342c312c31342c31352c38342c3131362c32352c32362c36342c3230362c2c32392c33302c3232322c2c30352c33332c3037382c33332a37320d0a
+
+I think the receiver is sending multiple sentences GSA GSV in one USB
+transaction.
+
+
+So, it seems pretty clear that gpsd should, after getting a packet from
+the buffer, redo the check on the buffer to make sure there is not
+another full packet.  It's not obvious how to change this in the code
+with the least amount of trouble.
+
+                                                                                                                                           
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100524/356546e1/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100524/356546e1/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007765.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+	<LI>Next message: <A HREF="007768.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7767">[ date ]</a>
+              <a href="thread.html#7767">[ thread ]</a>
+              <a href="subject.html#7767">[ subject ]</a>
+              <a href="author.html#7767">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

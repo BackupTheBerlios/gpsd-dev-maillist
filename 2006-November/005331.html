@@ -1,0 +1,204 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Another Garmin &quot;patch&quot;
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Another%20Garmin%20%22patch%22&In-Reply-To=%3C1164839208.4313.33.camel%40haktar%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005381.html">
+   <LINK REL="Next"  HREF="005351.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Another Garmin &quot;patch&quot;</H1>
+    <B>Daniel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Another%20Garmin%20%22patch%22&In-Reply-To=%3C1164839208.4313.33.camel%40haktar%3E"
+       TITLE="[Gpsd-dev] Another Garmin &quot;patch&quot;">garkein at mailueberfall.de
+       </A><BR>
+    <I>Wed Nov 29 23:26:48 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005381.html">[Gpsd-dev] Data in trunk/test/trimble-lassen_iq-3dfix.log	doesn't look right
+</A></li>
+        <LI>Next message: <A HREF="005351.html">[Gpsd-dev] Another Garmin &quot;patch&quot;
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5331">[ date ]</a>
+              <a href="thread.html#5331">[ thread ]</a>
+              <a href="subject.html#5331">[ subject ]</a>
+              <a href="author.html#5331">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hello,
+as already promised to Eric, I had a look at the garmin driver to figure
+out why satellite SNR display is wrong.
+Luckily I have a Garmin GPS which shows some nice bars on the display
+and also gives me the possibility to connect it via USB _and_ serial
+(NMEA) simultaneously, which I just did.
+
+garmin.c, line 457ff shows:
+// snr units??
+// garmin 0 -&gt; 0xffff, NMEA 99 -&gt; 0
+session-&gt;gpsdata.ss[j] 
+	= 99 - (int)((100 *( unsigned long)sats-&gt;snr) &gt;&gt; 16);
+if ( (uint8_t)0 != (sats-&gt;status &amp; 4 ) )  {
+    // used in solution?
+    session-&gt;gpsdata.used[session-&gt;gpsdata.satellites_used++]
+    = (int)sats-&gt;svid;
+}
+
+which is a very optimistic assumption on how these SNR values are to be
+transformed. ;-)
+
+Today I learned by googling that even the NMEA SNR values usually only
+use a small range of 0-99 as they are also in dB and may vary depedning
+on manufacturer.
+So the easiest way to get an educated guess about those SNR values in
+garmin protocol was to use both interfaces simultaneously, and watch.
+
+Here's what the unit spit out over USB:
+
+gpsd: garmin_ser_parse() Type: 0x72, Len: 0x54, chksum: 00
+gpsd: PrintSERPacket(, 0x72, 0x54, )
+gpsd: SAT Data Sz: 84
+gpsd:   Sat  25, snr:  3430, elev: 25, Azmth: 101, Stat: 15
+gpsd:   Sat   1, snr:  2760, elev: 56, Azmth:  73, Stat: 15
+gpsd:   Sat  31, snr:  2590, elev: 23, Azmth:  92, Stat: 15
+gpsd:   Sat  14, snr:  1910, elev: 16, Azmth:  41, Stat: 5
+gpsd:   Sat  23, snr:  1500, elev: 26, Azmth: 197, Stat: 4
+gpsd:   Sat  20, snr: 65436, elev: 67, Azmth: 264, Stat: 4
+gpsd:   Sat  11, snr:  2410, elev: 61, Azmth: 163, Stat: 5
+gpsd:   Sat  17, snr:  2020, elev: 35, Azmth: 296, Stat: 5
+gpsd:   Sat 255, snr:     0, elev:  0, Azmth:   0, Stat: 0
+gpsd:   Sat 255, snr:     0, elev:  0, Azmth:   0, Stat: 0
+gpsd:   Sat 255, snr:     0, elev:  0, Azmth:   0, Stat: 0
+gpsd:   Sat 255, snr:     0, elev:  0, Azmth:   0, Stat: 0
+
+And this is what I got over the serial port at the same time:
+$GPGSV,2,1,08,01,56,073,28,11,61,163,24,14,16,041,19,17,35,296,20*7B
+$GPGSV,2,2,08,20,67,264,00,23,26,197,15,25,25,101,34,31,23,092,26*77
+
+Written side by side:
+[PRN]	[SNR garmin]	[SNR NMEA]
+1	2760		28
+11	2410		24
+14	1910		19
+17	2020		20
+20	65436		00
+23	1500		15
+25	3430		34
+31	2590		26
+
+Garmin's represantation is just dB (as in NMEA) * 100.
+Then, look at those high values. 65436... now if you know 2's complement
+numbers, some bells should be ringing. That 16 bit value is actually a
+signed integer, and 65436 is -100, which divided by 100 is just -1.
+So Garmin uses a dB value of -1 for unused satellites.
+
+Now this is easy....
+
+I also would propose to change the SNR comment in gps.h to make it clear
+that it is a SNR value (a ratio) instead of an absolute strength value.
+
+Ok, so now I get the same satellite SNR values over USB as I would get
+over serial NMEA.
+
+One thing which is left unsolved is
+
+if ( (uint8_t)0 != (sats-&gt;status &amp; 4 ) )  {
+    // used in solution?
+    session-&gt;gpsdata.used[session-&gt;gpsdata.satellites_used++]
+    = (int)sats-&gt;svid;
+}
+
+which currently marks all satellites seen as &quot;used&quot;. In my trace above
+you can see that all satellites my Garmin sees, that bit is set, so the
+interpretation of that bit looks wrong. 
+So forward that information to clients in raw mode, we would have to
+generate a GPGSA sentence, for which we would need *DOP values which we
+don't get over USB. *doh*
+
+Nevertheless, another step forward. :)
+
+
+Thanks,
+Daniel
+
+
+Here's the complete diff:
+Index: garmin.c
+===================================================================
+--- garmin.c    (Revision 4029)
++++ garmin.c    (Arbeitskopie)
+@@ -131,7 +131,7 @@
+ // This is the data format of the satellite data from the garmin USB
+ typedef struct {
+        uint8_t  svid;
+-       uint16_t snr; // 0 - 0xffff
++       int16_t snr; // 0 - 0xffff
+        uint8_t  elev;
+        uint16_t azmth;
+        uint8_t  status; // bit 0, has ephemeris, 1, has diff correction
+@@ -454,10 +454,12 @@
+            session-&gt;gpsdata.PRN[j]       = (int)sats-&gt;svid;
+            session-&gt;gpsdata.azimuth[j]   = (int)sats-&gt;azmth;
+            session-&gt;gpsdata.elevation[j] = (int)sats-&gt;elev;
+-           // snr units??
+-           // garmin 0 -&gt; 0xffff, NMEA 99 -&gt; 0
+-           session-&gt;gpsdata.ss[j]
+-               = 99 - (int)((100 *( unsigned long)sats-&gt;snr) &gt;&gt; 16);
++           // snr is in dB*100
++        // known, but not seen satellites have a dB value of -1*100
++           session-&gt;gpsdata.ss[j] = (int)round((float)sats-&gt;snr / 100);
++        if (session-&gt;gpsdata.ss[j] &lt; 0) {
++            session-&gt;gpsdata.ss[j] = 0;
++        }
+            if ( (uint8_t)0 != (sats-&gt;status &amp; 4 ) )  {
+                // used in solution?
+                session-&gt;gpsdata.used[session-&gt;gpsdata.satellites_used
+++]
+Index: gps.h
+===================================================================
+--- gps.h       (Revision 4029)
++++ gps.h       (Arbeitskopie)
+@@ -242,7 +242,7 @@
+     int PRN[MAXCHANNELS];      /* PRNs of satellite */
+     int elevation[MAXCHANNELS];        /* elevation of satellite */
+     int azimuth[MAXCHANNELS];  /* azimuth */
+-    int ss[MAXCHANNELS];       /* signal strength */
++    int ss[MAXCHANNELS];       /* signal noise ratio (dB) */
+
+ #if 0  /* not yet used or filled in */
+     /* measurement data */
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005381.html">[Gpsd-dev] Data in trunk/test/trimble-lassen_iq-3dfix.log	doesn't look right
+</A></li>
+	<LI>Next message: <A HREF="005351.html">[Gpsd-dev] Another Garmin &quot;patch&quot;
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5331">[ date ]</a>
+              <a href="thread.html#5331">[ thread ]</a>
+              <a href="subject.html#5331">[ subject ]</a>
+              <a href="author.html#5331">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

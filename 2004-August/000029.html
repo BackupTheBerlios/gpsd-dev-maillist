@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] blocked client eventually stalls gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20blocked%20client%20eventually%20stalls%20gpsd&In-Reply-To=%3C20040825123218.GL25829%40us.netrek.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000030.html">
+   <LINK REL="Next"  HREF="000032.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] blocked client eventually stalls gpsd</H1>
+    <B>James Cameron</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20blocked%20client%20eventually%20stalls%20gpsd&In-Reply-To=%3C20040825123218.GL25829%40us.netrek.org%3E"
+       TITLE="[Gpsd-dev] blocked client eventually stalls gpsd">quozl at us.netrek.org
+       </A><BR>
+    <I>Wed Aug 25 14:32:18 CEST 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000030.html">[Gpsd-dev] PRWIZCH -- Threat or Menace?
+</A></li>
+        <LI>Next message: <A HREF="000032.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#29">[ date ]</a>
+              <a href="thread.html#29">[ thread ]</a>
+              <a href="subject.html#29">[ subject ]</a>
+              <a href="author.html#29">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I've just found that if one client is blocked in some way (stopped,
+network black hole, or some other cause) then eventually the socket
+write queue fills up and blocks gpsd.  For a public gpsd, this could be
+a denial of service vector, but that's not what I'm thinking of ...
+rather I'm thinking of high latency radio network links with
+interruptions due to interference or path propogation changes.
+
+So how to handle a full client socket?
+
+The socket writability could be select()ed for, ... which complicates
+matters quite a bit, because a socket can be writable for n bytes, we
+write n+m, and the program blocks.  We'd have to plan for partial
+write() completion and non-blocking sockets.  Which means our own
+buffers.
+
+(The code as it stands could experience partial write() completion on a
+client socket, which isn't tested for; this is where write() returns
+something less than the number of bytes we asked to write.)
+
+Yet another method might be an SIOCOUTQ ioctl() per tcp(7) to get the
+size of the unacknowledged output queue for the client.  In conjunction
+with a SO_SNDBUF setsockopt() and some heuristic like &quot;things haven't
+got better for a while&quot;, we might slow and drop the connection.
+
+Is it a problem worth fixing?  It only matters for NMEA and watch mode.
+
+Here's how to reproduce ...
+- run &quot;gpsd -D 2&quot;,
+- use telnet to connect a client,
+- set it to NMEA full dump mode,
+- exert flow control in some way (e.g. kill -STOP ${telnetpid}),
+- &quot;watch -d netstat -an|grep 2947'&quot;,
+- wait until the buffers reach their maximum point,
+- observe gpsd blocked on write() to the client socket,
+- restore flow and gpsd resumes.
+
+-- 
+James Cameron    mailto:<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">quozl at us.netrek.org</A>     <A HREF="http://quozl.netrek.org/">http://quozl.netrek.org/</A>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000030.html">[Gpsd-dev] PRWIZCH -- Threat or Menace?
+</A></li>
+	<LI>Next message: <A HREF="000032.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#29">[ date ]</a>
+              <a href="thread.html#29">[ thread ]</a>
+              <a href="subject.html#29">[ subject ]</a>
+              <a href="author.html#29">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

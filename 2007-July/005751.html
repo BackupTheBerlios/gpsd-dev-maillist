@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Repost of a potential problem seen in libgpsd_core
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Repost%20of%20a%20potential%20problem%20seen%20in%20libgpsd_core&In-Reply-To=%3C200707071808.16238.mick.durkin%40saunalahti.fi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005750.html">
+   <LINK REL="Next"  HREF="005754.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Repost of a potential problem seen in libgpsd_core</H1>
+    <B>Mick Durkin</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Repost%20of%20a%20potential%20problem%20seen%20in%20libgpsd_core&In-Reply-To=%3C200707071808.16238.mick.durkin%40saunalahti.fi%3E"
+       TITLE="[Gpsd-dev] Repost of a potential problem seen in libgpsd_core">mick.durkin at saunalahti.fi
+       </A><BR>
+    <I>Sat Jul  7 17:08:16 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005750.html">[Gpsd-dev] direct post of another scrubbed text attachment
+</A></li>
+        <LI>Next message: <A HREF="005754.html">[Gpsd-dev] Confirmation about the behaviour of gpsd_poll routine in libgpsd_core
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5751">[ date ]</a>
+              <a href="thread.html#5751">[ thread ]</a>
+              <a href="subject.html#5751">[ subject ]</a>
+              <a href="author.html#5751">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>All,
+
+I posted this report back on 29/6/2007 and so far no comment at all...
+
+Maybe it got missed at the month end?
+
+Still, I would welcome some comments on this as I still think what I observed 
+is not correct.
+
+Thanks
+
+Mick Durkin
+
+p.s. Much embarassment! I accidentally posted this to  
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev-request at lists.berlios.de</A>
+in error at first!
+
+====================================================================
+
+
+
+I am working on a problem with the 1pps and Fedora 7 experienced by David 
+Cottle. He is helping me to debug my Jupiter-T driver and as part of our 
+testing, I have been heavily instrumenting parts of the code.
+
+Tonight I was tracing the handling of the serial stream, especially in 
+relation to the selection mechanism which tries to find a match for the data 
+stream with one of the compiled-in packet geometries. This in itself works 
+nicely, but I noticed an odd behaviour in the &quot;fixcnt&quot; variable.
+
+This variable is fully described as &quot;session-&gt;context-&gt;fixcnt&quot; and gets 
+incremented in libgpsd_core.c in the codeblock:-
+
+gps_mask_t gpsd_poll(struct gps_device_t *session)
+
+The critical line is around line 743 and reads:-
+
+&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;session-&gt;context-&gt;fixcnt++;
+
+This is fine, but it appears to me that this will be executed everytime any 
+packet is handled cleanly by gpsd_poll. I would have expected this 
+incrementing to be conditionalised so it applied only when an actual fix 
+packet is handled, as this general path is also trodden by other valid 
+packets such as manufacturer specific admin and control packets.
+
+To ensure it was not just an artefact of my jupiter driver, I triggered the 
+device into its native Navman mode which is captured by the existing Zodiac 
+driver and I see the same effect. Here is a description of what I saw:-
+
+A genuine fix packet (message 1000 - geodetic position status output) arrived 
+which resulted in a pseudo NMEA GPGGA being generated from the Zodiac data 
+and fixcnt was incremented (as we would expect).
+
+Then came a non-fix packet (message 1002 - channel summary), which resulted in 
+a pseudo NMEA PRWIZCH being generated and fixcnt was again incremented. This 
+is not what I expected.
+
+Is this indeed a fault, or have I grasped the principle wrongly? I don't think 
+so, as we use fixcnt to determine whether or not to use the 1pps data in 
+libgpsd_core.c around line 166 like this:-
+
+&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;if ( session-&gt;context-&gt;fixcnt &gt; 3 ) {
+
+I offer no solution at this point until I am sure I am not &quot;barking up the 
+wrong tree&quot;.
+
+Best Regards
+Mick Durkin
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005750.html">[Gpsd-dev] direct post of another scrubbed text attachment
+</A></li>
+	<LI>Next message: <A HREF="005754.html">[Gpsd-dev] Confirmation about the behaviour of gpsd_poll routine in libgpsd_core
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5751">[ date ]</a>
+              <a href="thread.html#5751">[ thread ]</a>
+              <a href="subject.html#5751">[ subject ]</a>
+              <a href="author.html#5751">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

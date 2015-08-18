@@ -1,0 +1,211 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH 1/2] Move chrony SOCK sending to a new	function
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%201/2%5D%20Move%20chrony%20SOCK%20sending%20to%20a%20new%0A%09function&In-Reply-To=%3Calpine.LNX.1.00.1104141041370.26427%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009302.html">
+   <LINK REL="Next"  HREF="009303.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH 1/2] Move chrony SOCK sending to a new	function</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%201/2%5D%20Move%20chrony%20SOCK%20sending%20to%20a%20new%0A%09function&In-Reply-To=%3Calpine.LNX.1.00.1104141041370.26427%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] [PATCH 1/2] Move chrony SOCK sending to a new	function">gem at rellim.com
+       </A><BR>
+    <I>Thu Apr 14 19:43:11 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009302.html">[Gpsd-dev] SOCK offset broken
+</A></li>
+        <LI>Next message: <A HREF="009303.html">[Gpsd-dev] scons
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9301">[ date ]</a>
+              <a href="thread.html#9301">[ thread ]</a>
+              <a href="subject.html#9301">[ subject ]</a>
+              <a href="author.html#9301">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Miroslav!
+
+I would rather not fork the PPS code.  We end up with two essentially
+identical functions.  When the new ntpd SHM code is out the ntpd SHM
+interface will look even more like the Chrony Sock interface.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 109 NW Wilmington Ave., Suite E, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+
+On Thu, 14 Apr 2011, Miroslav Lichvar wrote:
+
+&gt;<i> Date: Thu, 14 Apr 2011 16:27:16 +0200
+</I>&gt;<i> From: Miroslav Lichvar &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mlichvar at redhat.com</A>&gt;
+</I>&gt;<i> Subject: [PATCH 1/2] Move chrony SOCK sending to a new function
+</I>&gt;<i>
+</I>&gt;<i> ---
+</I>&gt;<i>  ntpshm.c |   68 ++++++++++++++++++++++++++++++++++---------------------------
+</I>&gt;<i>  1 files changed, 38 insertions(+), 30 deletions(-)
+</I>&gt;<i>
+</I>&gt;<i> diff --git a/ntpshm.c b/ntpshm.c
+</I>&gt;<i> index 76697c2..46cadd1 100644
+</I>&gt;<i> --- a/ntpshm.c
+</I>&gt;<i> +++ b/ntpshm.c
+</I>&gt;<i> @@ -417,6 +417,40 @@ static int ntpshm_pps(struct gps_device_t *session, struct timeval *tv)
+</I>&gt;<i>          TS_NORM( ts ); \
+</I>&gt;<i>      } while (0)
+</I>&gt;<i>
+</I>&gt;<i> +
+</I>&gt;<i> +static int chronysock_pps(struct gps_device_t *session, struct timespec *ts, int fd)
+</I>&gt;<i> +{
+</I>&gt;<i> +/* for chrony SOCK interface, which allows nSec timekeeping */
+</I>&gt;<i> +#define SOCK_MAGIC 0x534f434b
+</I>&gt;<i> +    struct sock_sample {
+</I>&gt;<i> +	struct timeval tv;
+</I>&gt;<i> +	double offset;
+</I>&gt;<i> +	int pulse;
+</I>&gt;<i> +	int leap;
+</I>&gt;<i> +	int _pad;	/* unused */
+</I>&gt;<i> +	int magic;	/* must be SOCK_MAGIC */
+</I>&gt;<i> +    } sample;
+</I>&gt;<i> +
+</I>&gt;<i> +    /* chrony expects tv-sec since Jan 1970 */
+</I>&gt;<i> +    /* FIXME!! offset is double of the error from local time */
+</I>&gt;<i> +    sample.pulse = 0;
+</I>&gt;<i> +    sample.leap = 0;
+</I>&gt;<i> +    sample.magic = SOCK_MAGIC;
+</I>&gt;<i> +    TSTOTV(&amp;sample.tv, ts);
+</I>&gt;<i> +
+</I>&gt;<i> +    /* FIXME!! this is wrong if signal is 5Hz or 10Hz instead of PPS */
+</I>&gt;<i> +    /* carefull, unix time to nSec is more precision that a double */
+</I>&gt;<i> +    sample.offset = 1 + session-&gt;last_fixtime - ts-&gt;tv_sec;
+</I>&gt;<i> +    sample.offset -= ts-&gt;tv_nsec / 1e9;
+</I>&gt;<i> +    (void)send(fd, &amp;sample, sizeof (sample), 0);
+</I>&gt;<i> +    gpsd_report(LOG_RAW, &quot;PPS chrony sock %lu.%06lu offset %.9f\n&quot;,
+</I>&gt;<i> +	    (unsigned long)sample.tv.tv_sec,
+</I>&gt;<i> +	    (unsigned long)sample.tv.tv_usec,
+</I>&gt;<i> +	    sample.offset);
+</I>&gt;<i> +
+</I>&gt;<i> +    return 1;
+</I>&gt;<i> +}
+</I>&gt;<i> +
+</I>&gt;<i>  #endif
+</I>&gt;<i>
+</I>&gt;<i>  #if defined(PPS_ENABLE) &amp;&amp; defined(TIOCMIWAIT)
+</I>&gt;<i> @@ -543,16 +577,6 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
+</I>&gt;<i>      struct timespec tv_kpps;
+</I>&gt;<i>      pps_info_t pi;
+</I>&gt;<i>  #endif
+</I>&gt;<i> -/* for chrony SOCK interface, which allows nSec timekeeping */
+</I>&gt;<i> -#define SOCK_MAGIC 0x534f434b
+</I>&gt;<i> -    struct sock_sample {
+</I>&gt;<i> -	struct timeval tv;
+</I>&gt;<i> -	double offset;
+</I>&gt;<i> -	int pulse;
+</I>&gt;<i> -	int leap;
+</I>&gt;<i> -	int _pad;	/* unused */
+</I>&gt;<i> -	int magic;      /* must be SOCK_MAGIC */
+</I>&gt;<i> -    } sample;
+</I>&gt;<i>      /* chrony must be started first as chrony insists on creating the socket */
+</I>&gt;<i>      /* open the chrony socket */
+</I>&gt;<i>      struct sockaddr_un s;
+</I>&gt;<i> @@ -821,11 +845,6 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
+</I>&gt;<i>  	    gpsd_report(LOG_RAW, &quot;%.100s&quot;, log);
+</I>&gt;<i>  	}
+</I>&gt;<i>  	if (0 != ok) {
+</I>&gt;<i> -	    /* chrony expects tv-sec since Jan 1970 */
+</I>&gt;<i> -	    /* FIXME!! offset is double of the error from local time */
+</I>&gt;<i> -	    sample.pulse = 0;
+</I>&gt;<i> -	    sample.leap = 0;
+</I>&gt;<i> -	    sample.magic = SOCK_MAGIC;
+</I>&gt;<i>  #if defined(HAVE_SYS_TIMEPPS_H)
+</I>&gt;<i>              if ( 0 &lt;= kernelpps_handle ) {
+</I>&gt;<i>  		/* pick the right edge */
+</I>&gt;<i> @@ -834,16 +853,9 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
+</I>&gt;<i>  		} else {
+</I>&gt;<i>  		    ts = pi.clear_timestamp;  /* structure copy */
+</I>&gt;<i>  		}
+</I>&gt;<i> -		TSTOTV( &amp;sample.tv, &amp;ts);
+</I>&gt;<i> -	    } else
+</I>&gt;<i> +		TSTOTV( &amp;tv, &amp;ts);
+</I>&gt;<i> +	    }
+</I>&gt;<i>  #endif
+</I>&gt;<i> -	    {
+</I>&gt;<i> -		sample.tv = tv; 	/* structure copy */
+</I>&gt;<i> -	    }
+</I>&gt;<i> -	    /* FIXME!! this is wrong if signal is 5Hz or 10Hz instead of PPS */
+</I>&gt;<i> -	    /* carefull, unix time to nSec is more precision that a double */
+</I>&gt;<i> -	    sample.offset = 1 + session-&gt;last_fixtime - ts.tv_sec;
+</I>&gt;<i> -	    sample.offset -= ts.tv_nsec / 1e9;
+</I>&gt;<i>  /* was: defined(ONCORE_ENABLE) &amp;&amp; defined(BINARY_ENABLE) */
+</I>&gt;<i>  #ifdef __UNUSED__
+</I>&gt;<i>  	    /*@-noeffect@*/
+</I>&gt;<i> @@ -857,13 +869,9 @@ static /*@null@*/ void *gpsd_ppsmonitor(void *arg)
+</I>&gt;<i>  #endif
+</I>&gt;<i>
+</I>&gt;<i>  	    if ( 0 &lt;= chronyfd ) {
+</I>&gt;<i> -		(void)send(chronyfd, &amp;sample, sizeof (sample), 0);
+</I>&gt;<i> -		gpsd_report(LOG_RAW, &quot;PPS chrony sock %lu.%06lu offset %.9f\n&quot;,
+</I>&gt;<i> -			    (unsigned long)sample.tv.tv_sec,
+</I>&gt;<i> -			    (unsigned long)sample.tv.tv_usec,
+</I>&gt;<i> -			    sample.offset);
+</I>&gt;<i> +		(void)chronysock_pps(session, &amp;ts, chronyfd);
+</I>&gt;<i>  	    }
+</I>&gt;<i> -	    TSTOTV( &amp;tv, &amp;ts );
+</I>&gt;<i> +
+</I>&gt;<i>  	    (void)ntpshm_pps(session, &amp;tv);
+</I>&gt;<i>  	} else {
+</I>&gt;<i>  	    gpsd_report(LOG_INF, &quot;PPS edge rejected\n&quot;);
+</I>&gt;<i> --
+</I>&gt;<i> 1.7.4
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> --LQksG6bCIzRHxTLp
+</I>&gt;<i> Content-Type: text/plain; charset=us-ascii
+</I>&gt;<i> Content-Disposition: attachment; filename=&quot;0002-Calculate-SOCK-offset-from-SHM-clock-timestamp-inste.patch&quot;
+</I>&gt;<i>
+</I>-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFNpzI0BmnRqz71OvMRAhgCAJ9upY6rZI+Ax/IDi73qoVlGsa/HcQCg1rbK
+j/wDfzXyVHr8lSdHZ+w6qgE=
+=3a75
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009302.html">[Gpsd-dev] SOCK offset broken
+</A></li>
+	<LI>Next message: <A HREF="009303.html">[Gpsd-dev] scons
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9301">[ date ]</a>
+              <a href="thread.html#9301">[ thread ]</a>
+              <a href="subject.html#9301">[ subject ]</a>
+              <a href="author.html#9301">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

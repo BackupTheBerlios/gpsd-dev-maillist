@@ -1,0 +1,87 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] fix core compiling with nmea disabled
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20fix%20core%20compiling%20with%20nmea%20disabled&In-Reply-To=%3C1240469424-8544-1-git-send-email-l.fu%40pengutronix.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006700.html">
+   <LINK REL="Next"  HREF="006702.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] fix core compiling with nmea disabled</H1>
+    <B>Luotao Fu</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20fix%20core%20compiling%20with%20nmea%20disabled&In-Reply-To=%3C1240469424-8544-1-git-send-email-l.fu%40pengutronix.de%3E"
+       TITLE="[Gpsd-dev] [PATCH] fix core compiling with nmea disabled">l.fu at pengutronix.de
+       </A><BR>
+    <I>Thu Apr 23 08:50:24 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006700.html">[Gpsd-dev] [marcus.wolschon at googlemail.com] [OSM-dev] First	TMC-support in Traveling Salesman
+</A></li>
+        <LI>Next message: <A HREF="006702.html">[Gpsd-dev] [PATCH] fix link breakage if some drivers are not enabled
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6701">[ date ]</a>
+              <a href="thread.html#6701">[ thread ]</a>
+              <a href="subject.html#6701">[ subject ]</a>
+              <a href="author.html#6701">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>struct nmea is only defined in the driver union if NMEA_ENABLED is set.
+libpgsd_core however acquires if the ignore_trailing_edge in nmea is set or not
+carelessly if NMEA_ENABLED is set. Add an additional ifdef of NMEA_ENABLE to fix
+this.
+
+Signed-off-by: Luotao Fu &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">l.fu at pengutronix.de</A>&gt;
+---
+ libgpsd_core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/libgpsd_core.c b/libgpsd_core.c
+index 8220eae..71dd5ba 100644
+--- a/libgpsd_core.c
++++ b/libgpsd_core.c
+@@ -206,7 +206,7 @@ static /*@null@*/void *gpsd_ppsmonitor(void *arg)
+ 	    } else if (cycle &gt; 999000 &amp;&amp; cycle &lt; 1001000 ) {
+ 		/* looks like PPS pulse or square wave */
+ 		if (duration &gt; 499000 &amp;&amp; duration &lt; 501000
+-#ifdef GPSCLOCK_ENABLE
++#if defined(NMEA_ENABLE) &amp;&amp; defined(GPSCLOCK_ENABLE)
+ 		  &amp;&amp; session-&gt;driver.nmea.ignore_trailing_edge
+ #endif /* GPSCLOCK_ENABLE */
+ 		  ) {
+-- 
+1.6.2.1
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006700.html">[Gpsd-dev] [marcus.wolschon at googlemail.com] [OSM-dev] First	TMC-support in Traveling Salesman
+</A></li>
+	<LI>Next message: <A HREF="006702.html">[Gpsd-dev] [PATCH] fix link breakage if some drivers are not enabled
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6701">[ date ]</a>
+              <a href="thread.html#6701">[ thread ]</a>
+              <a href="subject.html#6701">[ subject ]</a>
+              <a href="author.html#6701">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

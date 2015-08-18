@@ -1,0 +1,180 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] regression with garmin serial
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20regression%20with%20garmin%20serial&In-Reply-To=%3Crmiwsc2uik2.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006395.html">
+   <LINK REL="Next"  HREF="006380.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] regression with garmin serial</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20regression%20with%20garmin%20serial&In-Reply-To=%3Crmiwsc2uik2.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] regression with garmin serial">gdt at ir.bbn.com
+       </A><BR>
+    <I>Sat Feb  7 20:57:01 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006395.html">[Gpsd-dev] RPMs for gpsd-2.38
+</A></li>
+        <LI>Next message: <A HREF="006380.html">[Gpsd-dev] regression with garmin serial
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6379">[ date ]</a>
+              <a href="thread.html#6379">[ thread ]</a>
+              <a href="subject.html#6379">[ subject ]</a>
+              <a href="author.html#6379">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+I build r5128 in my usual way, with just --mandir and --prefix, and it
+fails to recognize a Garmin serial over USB serial adaptor.  The device
+is a GPS V, and the same serial adaptor/receiver works with gardump and
+a slightly hacked gpsbabel.  System is NetBSD/i386 5.0RC1
+
+
+gpsd: launching (Version 2.38rc4)
+gpsd: listening on port gpsd
+gpsd: Priority sertting failed.
+gpsd: shmat(65536,0,0) succeeded
+gpsd: shmat(589827,0,0) succeeded
+gpsd: shmat(1703937,0,0) succeeded
+gpsd: shmat(262146,0,0) succeeded
+gpsd: running with effective group ID 0
+gpsd: running with effective user ID 0
+gpsd: opening GPS data source at '/dev/dtyU0'
+gpsd: speed 9600, 8N1
+gpsd: =&gt; GPS: $PASHQ,RID*28\x0d
+
+gpsd: Navcom: command dump: 0299661c0800040200001203
+gpsd: =&gt; GPS: 0299661c0800040200001203
+gpsd: Navcom: sent command 0x1c (Test Support Block)
+gpsd: Navcom: command 0x1c mode = 02, length = 0
+gpsd: Navcom: command dump: 029966200e000001ae02000071000000f203
+gpsd: =&gt; GPS: 029966200e000001ae02000071000000f203
+gpsd: Navcom: sent command 0x20 (Data Request) - data block id = ae at rate 00
+gpsd: Navcom: command dump: 029966200e00000186020a0071000000d003
+gpsd: =&gt; GPS: 029966200e00000186020a0071000000d003
+gpsd: Navcom: sent command 0x20 (Data Request) - data block id = 86 at rate 0a
+gpsd: garmin_gps not active.
+gpsd: no probe matched...
+gpsd: gpsd_activate(1): opened GPS (4)
+gpsd: select waits
+gpsd: select waits
+gpsd: select waits
+gpsd: select waits
+gpsd: select waits
+gpsd: select waits
+gpsd: Received terminating signal 2. Exiting...
+gpsd: closing GPS=/dev/dtyU0 (4)
+
+
+I get the same debug output with the off, on with no sats, and with a 3D
+differential WAAS solution.
+
+This recently worked for me, but I don't remember the version - a few
+weeks ago.
+
+If I flip the device to NMEA, gpsd gets position which on inspection
+with cgps looks right.
+
+I disabled navcom in configure, I get similar output but missing the
+navcom lines above.
+
+
+
+
+
+configure output with no explicit arguments:
+
+==========================================
+gpsd 2.38rc4
+------------------------------------------
+        Protocols
+        ---------
+Ashtech                 : yes
+Earthmate               : yes
+EverMore                : yes
+FV-18                   : yes
+Garmin                  : yes
+Garmin Simple Text      : no
+iTrax                   : yes
+NMEA                    : yes
+NTRIP                   : yes
+Navcom                  : yes
+RTCM104V2               : yes
+RTCM104V3               : yes
+SiRF                    : yes
+SuperStarII             : no
+Trimble TSIP            : yes
+Tripmate                : yes
+True North              : no
+OceanServer             : no
+UBX                     : yes
+GPSclock                : yes
+MKT-3301                : yes
+        Daemon Features
+        ---------------
+NTP SHM                 : yes
+NTP PPS                 : yes
+PPS input on            : DCD
+Fixed port speed        : no
+Priv-drop user          : nobody
+Enable shared libraries : yes
+Enable DBUS support     : no
+Enable X11 support      : yes
+Enable Python support   : yes
+Limited max clients     : no
+Limited max devices     : no
+Allow device reconfig   : yes
+Squelch logging/hexdump : no
+Build ncurses programs  : yes
+------------------------------------------
+configure: creating ./config.status
+config.status: creating Makefile
+config.status: creating gpsd.spec
+config.status: creating libgps.pc
+config.status: creating libgpsd.pc
+config.status: creating gpsd_config.h
+config.status: gpsd_config.h is unchanged
+config.status: executing depfiles commands
+Configure finished, type 'make' to build.
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 193 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090207/57e12748/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090207/57e12748/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006395.html">[Gpsd-dev] RPMs for gpsd-2.38
+</A></li>
+	<LI>Next message: <A HREF="006380.html">[Gpsd-dev] regression with garmin serial
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6379">[ date ]</a>
+              <a href="thread.html#6379">[ thread ]</a>
+              <a href="subject.html#6379">[ subject ]</a>
+              <a href="author.html#6379">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

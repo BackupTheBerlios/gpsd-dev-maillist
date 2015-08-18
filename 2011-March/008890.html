@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [ntp:hackers]  ntpd shm changes
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20%20ntpd%20shm%20changes&In-Reply-To=%3CAANLkTimz9k_-4NZojgfzb%3DuKXdho%2BdXNrku5oRzDsD5T%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008889.html">
+   <LINK REL="Next"  HREF="008901.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [ntp:hackers]  ntpd shm changes</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20%20ntpd%20shm%20changes&In-Reply-To=%3CAANLkTimz9k_-4NZojgfzb%3DuKXdho%2BdXNrku5oRzDsD5T%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [ntp:hackers]  ntpd shm changes">thomas at mich.com
+       </A><BR>
+    <I>Sat Mar 19 14:46:49 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008889.html">[Gpsd-dev] [ntp:hackers]  ntpd shm changes
+</A></li>
+        <LI>Next message: <A HREF="008901.html">[Gpsd-dev] [ntp:hackers]  ntpd shm changes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8890">[ date ]</a>
+              <a href="thread.html#8890">[ thread ]</a>
+              <a href="subject.html#8890">[ subject ]</a>
+              <a href="author.html#8890">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>volatile != mutex as someone pointed out.
+
+The sync GCC builtins appear to be for itanium only.  Every processor
+has a different one, but I think what you are looking for is a
+systemwide semaphore.  Linux and BSD has sem_open for named
+semaphores.
+
+You would not need a pointer, and two buffers should work as I
+suggested in an earlier message, however there can be only one reader
+and one writer.  Note that a pipe would be almost the same thing.
+
+I was using shared memory when I wanted readers to access data fast,
+and it was all atomic 32 bit integers so the writes couldn't update
+only part of an integer, and hiccups would be noncritical.
+
+For the two (or N) buffer model with one reader and one writer, a flag
+in each is interpreted as &quot;ok to read&quot; or &quot;ok to write&quot; depending on
+state (usually zero/nonzero, a C boolean), initially set to &quot;ok to
+write&quot;.  The writer will find the first buffer &quot;ok to write&quot;, update
+the whole structure, and set the flag &quot;ok to read&quot;.
+
+The reader would scan the buffers for &quot;ok to read&quot;, pull the data,
+then set the flag back to &quot;ok to write&quot;.
+
+The key here is that only the writer can say &quot;ok to read&quot; for a
+buffer, and only the reader can say &quot;ok to write&quot;.
+Most of the time only the first buffer will be used by the writer, but
+if a collision happens if the write is important the data will end up
+in the second (or later) buffer.  The writer can also pause and check
+a few milliseconds later, or if it isn't important to get every
+sample, just not write that cycle (as might happen if the read process
+is halted or being restarted or busy).
+
+Circular queues are also safe as the writer will increment the head
+and the reader will increment the tail - this is ultimately what the
+pointer you mention originally would end up being - but you need two,
+one to indicate the last write, and one to indicate the last read.  It
+still doesn't help with multiple readers.
+
+There is no easy way to do multiple readers to a single buffer without
+a semaphore - you can do the multi buffer trick above with semaphores
+or just have it pause the write.  However you can do something like a
+linked list daisy chain of readers so the first reader becomes a
+writer and pipe (literally or through some other structure) the data
+from the head to the tail or the read list or otherwise distribute it.
+
+On Sat, Mar 19, 2011 at 7:56 AM, Dave Hart
+&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">davehart_gmail_exchange_tee at davehart.net</A>&gt; wrote:
+&gt;<i> On Sat, Mar 19, 2011 at 11:20 UTC, Terje Mathisen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">terje at tmsw.no</A>&gt; wrote:
+</I>&gt;&gt;<i> The best you can do with a single producer and one/multiple readers (which
+</I>&gt;&gt;<i> are allowed to read the same data), is probably to have multiple slots for
+</I>&gt;&gt;<i> the data packets together with a single pointer to the current/last updated
+</I>&gt;&gt;<i> slot.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> The pointer can even be a simple index, using a byte variable makes it
+</I>&gt;&gt;<i> impossible for a reader to read a partially updated value.
+</I>&gt;<i>
+</I>&gt;<i> That sounds like a good way to go to me. &#160;Can you think of any reason
+</I>&gt;<i> two slots would not be enough? &#160;Also I'd feel better about the atomic
+</I>&gt;<i> handling of th index with it manipulated as the native word size
+</I>&gt;<i> (currently 32 or 64, could set aside 128 bits). &#160;At least on some RISC
+</I>&gt;<i> platforms, byte access is handled by the compiler as a native word
+</I>&gt;<i> size plus extra instructions, killing atomicity I believe.
+</I>&gt;<i>
+</I>&gt;<i> Thanks,
+</I>&gt;<i> Dave Hart
+</I>&gt;<i>
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008889.html">[Gpsd-dev] [ntp:hackers]  ntpd shm changes
+</A></li>
+	<LI>Next message: <A HREF="008901.html">[Gpsd-dev] [ntp:hackers]  ntpd shm changes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8890">[ date ]</a>
+              <a href="thread.html#8890">[ thread ]</a>
+              <a href="subject.html#8890">[ subject ]</a>
+              <a href="author.html#8890">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

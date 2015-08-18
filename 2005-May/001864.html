@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd_report / syslog
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd_report%20/%20syslog&In-Reply-To=%3C20050524082738.GA27463%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001859.html">
+   <LINK REL="Next"  HREF="001860.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd_report / syslog</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd_report%20/%20syslog&In-Reply-To=%3C20050524082738.GA27463%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] gpsd_report / syslog">esr at thyrsus.com
+       </A><BR>
+    <I>Tue May 24 10:27:38 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001859.html">[Gpsd-dev] gpsd_report / syslog
+</A></li>
+        <LI>Next message: <A HREF="001860.html">[Gpsd-dev] making gosdrive haoot
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1864">[ date ]</a>
+              <a href="thread.html#1864">[ thread ]</a>
+              <a href="subject.html#1864">[ subject ]</a>
+              <a href="author.html#1864">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+&gt;<i> Another thing that needs to be looked into:
+</I>&gt;<i> 
+</I>&gt;<i> the function gpsd_report calls either syslog() or fputs().
+</I>&gt;<i> 
+</I>&gt;<i> syslog expects no trailing newline, fputs does.  the code usually reports
+</I>&gt;<i> a string with trailing newline, which is OK with fputs.  Sometimes a
+</I>&gt;<i> string without newline is reported, which means fputs will put the next
+</I>&gt;<i> string after it.  But syslog writes a separate log entry in this case.
+</I>&gt;<i> 
+</I>&gt;<i> There are a few scattered gpsd_report calls that seem to depend on this
+</I>&gt;<i> incremental building of log output lines (i.e. no newline in the message),
+</I>&gt;<i> but gpsd_report now first prints &quot;gpsd: &quot; so it does not work too well.
+</I>
+Yup, I found several of these in garmin.c and one in some very old code of 
+mine.  I terminated them with newlines.
+ 
+&gt;<i> Probably best is to remove all \n from format strings passed to
+</I>&gt;<i> gpsd_report, change the function to append a newline when calling fputs
+</I>&gt;<i> (not for syslog), and find and remove the places where partial loglines
+</I>&gt;<i> are reported.
+</I>
+No, there's one case this would mess up -- reports like 
+
+	gpsd_report(3, &quot;&lt;= GPS: %s&quot;, buf);
+
+where you're expecting the line that gets subbed into %s to end in a
+newline and don't want an extra one.  So instead I've made use of the
+fact that syslog ignores one trailing newline and fixed all the
+messages that don't fit one of these two cases.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001859.html">[Gpsd-dev] gpsd_report / syslog
+</A></li>
+	<LI>Next message: <A HREF="001860.html">[Gpsd-dev] making gosdrive haoot
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1864">[ date ]</a>
+              <a href="thread.html#1864">[ thread ]</a>
+              <a href="subject.html#1864">[ subject ]</a>
+              <a href="author.html#1864">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

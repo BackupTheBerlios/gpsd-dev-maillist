@@ -1,0 +1,136 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] A lightweight synchronization mechanism for shared	memory
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20A%20lightweight%20synchronization%20mechanism%20for%20shared%0A%09memory&In-Reply-To=%3CAANLkTimnBxDgbpk4rxi2xCpEz_QEtF7PJ3N1oZxc5N9k%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009016.html">
+   <LINK REL="Next"  HREF="009018.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] A lightweight synchronization mechanism for shared	memory</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20A%20lightweight%20synchronization%20mechanism%20for%20shared%0A%09memory&In-Reply-To=%3CAANLkTimnBxDgbpk4rxi2xCpEz_QEtF7PJ3N1oZxc5N9k%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] A lightweight synchronization mechanism for shared	memory">thomas at mich.com
+       </A><BR>
+    <I>Fri Mar 25 04:22:56 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009016.html">[Gpsd-dev] A lightweight synchronization mechanism for shared memory
+</A></li>
+        <LI>Next message: <A HREF="009018.html">[Gpsd-dev] A lightweight synchronization mechanism for shared memory
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9012">[ date ]</a>
+              <a href="thread.html#9012">[ thread ]</a>
+              <a href="subject.html#9012">[ subject ]</a>
+              <a href="author.html#9012">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Thu, Mar 24, 2011 at 10:55 PM, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at snark.thyrsus.com</A>&gt; wrote:
+
+&gt;<i> Let's say we have a given struct payload_t we want to ship safely. &#160;On
+</I>&gt;<i> each update, we actually write a wrapper structure that looks like
+</I>&gt;<i> this:
+</I>&gt;<i>
+</I>&gt;<i> struct wrapper_t
+</I>&gt;<i> {
+</I>&gt;<i> &#160; &#160;int startguard;
+</I>&gt;<i> &#160; &#160;struct payload_t payload;
+</I>&gt;<i> &#160; &#160;int endguard;
+</I>&gt;<i> };
+</I>&gt;<i>
+</I>&gt;<i> The sentinels startguard and endguard are initially zero. Before each write,
+</I>&gt;<i> they are incremented.
+</I>
+I assume the process is:
+
+Increment startguard.
+alter payload
+increment endguard.
+
+&gt;<i> The reader's algorithm is simple: memcpy from the shared segment. &#160;If both
+</I>&gt;<i> sentinels are correct, the read is good.
+</I>
+By correct, do you mean equal?
+
+Anyway it won't work if memcpy is interruptable.
+
+Reader starts the memcpy, copies the start sentinel and half the payload.
+Writer increments the start sentinel. and writes into the payload.
+Reader continues the memcpy where it left off through the end sentinel.
+
+Both sentinels are equal, yet the bottom part of the payload is invalid.
+
+If both sentinels are changed together, a memcpy will not detect it at all.
+
+If the end sentinel is changed at the start the reader will have to go
+in a forward direction.
+
+&gt;<i> I believe all that is required for guaranteed correctness is that the
+</I>&gt;<i> writer updates the storage bytes in the shared-memory segment in an
+</I>&gt;<i> order that is either monotonic-increasing or monotonic-decreasing, and
+</I>&gt;<i> the reader likewise reads bytes in a monotonic order.
+</I>
+That doesn't help.  In fact it would be better if they went in
+opposite directions for the reasons stated above.
+
+&gt;<i> Part of the reason I think this is an interesting technique is that I
+</I>&gt;<i> believe the following: on essentially all modern processors, memcpy(3)
+</I>&gt;<i> is optimized to a single-instruction bitblt that reads and updates
+</I>&gt;<i> memory in a monotonic order (certainly this is true of naive C
+</I>&gt;<i> implementations of memcpy()). Thus, it should be sufficient for the
+</I>&gt;<i> writer to memcpy() into the struct and the reader to memcpy() out of
+</I>&gt;<i> it. &#160;It doesn't matter whether or not memcpy() is interruptible.
+</I>
+nm .libs/lt-gpsd shows it is using memcpy from glibc, not optimizing it out.
+
+In fact I can't get the current gcc to optimize ANYTHING in string.h
+out - there might be a bug in /usr/include/bits or sys/bits - there
+are a large number of #ifdef XYZ that if every one of them are set
+right it should use the inline version of the functions, but I cannot
+find any combinations of flags or optimizatinos that will guarantee
+it.
+
+The direction of memcpy is implementation dependent.
+
+You could do
+__inline__ function my_memcpy(u8 *d, u8 *s, uint32 l) { while( l-- )
+*d++ = *c++; };
+and it would probably work.  Even with optimization but without the inline.
+
+The only way I can think of is a single writer sets a bool to safe to
+read - unsafe to write, and a single reader sets it back to safe to
+read - unsafe to write.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009016.html">[Gpsd-dev] A lightweight synchronization mechanism for shared memory
+</A></li>
+	<LI>Next message: <A HREF="009018.html">[Gpsd-dev] A lightweight synchronization mechanism for shared memory
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9012">[ date ]</a>
+              <a href="thread.html#9012">[ thread ]</a>
+              <a href="subject.html#9012">[ subject ]</a>
+              <a href="author.html#9012">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

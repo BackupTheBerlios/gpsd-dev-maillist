@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Backwards-compatibilty costs
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Backwards-compatibilty%20costs&In-Reply-To=%3C20100915211655.0C41E20C24C%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008164.html">
+   <LINK REL="Next"  HREF="008185.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Backwards-compatibilty costs</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Backwards-compatibilty%20costs&In-Reply-To=%3C20100915211655.0C41E20C24C%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Backwards-compatibilty costs">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Wed Sep 15 23:16:54 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008164.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+        <LI>Next message: <A HREF="008185.html">[Gpsd-dev] Interaction between new/old client/server
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8174">[ date ]</a>
+              <a href="thread.html#8174">[ thread ]</a>
+              <a href="subject.html#8174">[ subject ]</a>
+              <a href="author.html#8174">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>A list regular asked why gpsd doesn't support old protocol on 
+port 2947 and the new, JSON-based protocol on another port.
+
+The answer is code size and complexity.  The gpsd codebase needs to
+stay lean and mean because a significant part of our userbase is
+on SBCs, handhelds, and embedded systems with limited memory. Having
+two different protocol engines adds bulk.
+
+With other features (AIS support, for example), we can mitigate the
+code-bulk problem by making it possible to configure the feature out
+at compile time.  But if we did that with old protocol, we'd lose the
+compatibility gurantee we're supposed to be trying to maintain.
+
+Additionally, two protocol engines is a significant maintenance 
+headache.  Especially when they're not anything like re-lexifications
+of each other!  Removing old protocol from the daemon had no impact
+on the drivers, but it enabled a significant decrease in the complexity
+of the dispatcher layer, with serious implications for reliability
+and long-term maintainance costs.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+The most foolish mistake we could possibly make would be to permit 
+the conquered Eastern peoples to have arms.  History teaches that all 
+conquerors who have allowed their subject races to carry arms have 
+prepared their own downfall by doing so.
+        -- Adolph Hitler, April 11 1942.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008164.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+	<LI>Next message: <A HREF="008185.html">[Gpsd-dev] Interaction between new/old client/server
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8174">[ date ]</a>
+              <a href="thread.html#8174">[ thread ]</a>
+              <a href="subject.html#8174">[ subject ]</a>
+              <a href="author.html#8174">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

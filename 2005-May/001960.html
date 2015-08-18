@@ -1,0 +1,120 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: splint
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20splint&In-Reply-To=%3C20050527082002.GB32312%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001957.html">
+   <LINK REL="Next"  HREF="001951.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: splint</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20splint&In-Reply-To=%3C20050527082002.GB32312%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Re: splint">esr at thyrsus.com
+       </A><BR>
+    <I>Fri May 27 10:20:02 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001957.html">[Gpsd-dev] Re: splint
+</A></li>
+        <LI>Next message: <A HREF="001951.html">[Gpsd-dev] splint
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1960">[ date ]</a>
+              <a href="thread.html#1960">[ thread ]</a>
+              <a href="subject.html#1960">[ subject ]</a>
+              <a href="author.html#1960">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+&gt;<i> &gt; Probably, but since this is my first day of using splint I have not
+</I>&gt;<i> &gt; learned it yet.  There is an option called +charint that tells
+</I>&gt;<i> &gt; splint to tread characters as integral types.
+</I>&gt;<i> 
+</I>&gt;<i> I think it is insane to pickup a new tool like this, and without having
+</I>&gt;<i> even a day of experience start editing like mad to make all code in an
+</I>&gt;<i> existing project comply with its taste, one day before release of a new
+</I>&gt;<i> version.
+</I>
+Well...I had already concluded that releasing tomorrow would be a mistake.
+I just hadn't gotten around to mentioning it yet :-).
+
+&gt;<i> This is not going to improve the product quality on the short term.
+</I>&gt;<i> I think you should not focus on bringing the count of warnings down, but
+</I>&gt;<i> instead read through them and see what problems its warnings are based on
+</I>&gt;<i> and decide how they should be fixed.
+</I>
+That's hard to do when you're looking at 2500 messages.  We have to bring the
+count down, or we won't be able to see the real ones in the clutter.  I'm
+not just theorizing when I say this, I started to spot real problems when
+the warning count dipped below about 1300.
+ 
+&gt;<i> Pedantic warnings about (int)0 not being equal to (unsigned char)0, which
+</I>&gt;<i> are even false because C defines they are equal, should not lead you into
+</I>&gt;<i> making edits that are later regretted because they conceal implicit casts
+</I>&gt;<i> that are really harmful.
+</I>
+You have it backwards.  splint *reveals* implicit promotions and casts.
+Unfortunately it does rather too good a job of this and has to be 
+restrained a bit. I've already enabled +charindex, which tells it not
+to bitch about using char or unsigned char as array indexes.
+
+&gt;<i> Issues like replacing !value with value==0 are just personal tastes of the
+</I>&gt;<i> writer of the tool.  They are defined to be the same, and you choose which
+</I>&gt;<i> one to use based on the situation.  The first is normally used in
+</I>&gt;<i> true/false checking situations, and the second is used when you are
+</I>&gt;<i> looking for a numeric value of zero.
+</I>&gt;<i> Blindly replacing something like !have_fix with have_fix==0 is not
+</I>&gt;<i> improving quality, rather worsening it (because readability improves
+</I>&gt;<i> understanding of the code by future maintainers and would hopefully
+</I>&gt;<i> prevent some mistakes when changes are made).
+</I>
+No worries.  I agree with you that those changes were a readability
+problem; I grew unhappy with them and have instead started to use
+stdbool.h and splint's facilities for checking booleans as a separate
+type.  The exiguous ==0 and !=0 checks are almost all gone now, and
+I'll get rid of the rest over the next day or so.
+
+So: (a) your criticism is welcome, and being heeded, but (b) relax.  What
+I'm doing here is exploratory -- if I screw the pooch, it's easy enough
+to back up.  (Subversion's whole-directory commits are an immense 
+advantage here, as Gary finally noticed earlier today.)
+
+I'm slowly figuring out how to annotate the code so that splint can do a 
+pretty good job of flow analysis on the memory allocation.  That's where
+the big payoff will be, I think.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001957.html">[Gpsd-dev] Re: splint
+</A></li>
+	<LI>Next message: <A HREF="001951.html">[Gpsd-dev] splint
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1960">[ date ]</a>
+              <a href="thread.html#1960">[ thread ]</a>
+              <a href="subject.html#1960">[ subject ]</a>
+              <a href="author.html#1960">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,152 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [RFC] Fix coveraging mode in SConstruct
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2013-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BRFC%5D%20Fix%20coveraging%20mode%20in%20SConstruct&In-Reply-To=%3C1379139387-12783-1-git-send-email-chgans%40gna.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="009617.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [RFC] Fix coveraging mode in SConstruct</H1>
+    <B>Christian Gagneraud</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BRFC%5D%20Fix%20coveraging%20mode%20in%20SConstruct&In-Reply-To=%3C1379139387-12783-1-git-send-email-chgans%40gna.org%3E"
+       TITLE="[Gpsd-dev] [RFC] Fix coveraging mode in SConstruct">chgans at gna.org
+       </A><BR>
+    <I>Sat Sep 14 08:16:27 CEST 2013</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="009617.html">[Gpsd-dev] [RFC] Fix coveraging mode in SConstruct
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9616">[ date ]</a>
+              <a href="thread.html#9616">[ thread ]</a>
+              <a href="subject.html#9616">[ subject ]</a>
+              <a href="author.html#9616">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>This patch fixes the coveraging mode, unfortunately the built of the python
+bindings requires a dirty hack as it doesn't pickup the global gcc flags.
+
+Right now, it is possible to get coverage data for some of the testsuites,
+some fail because the test programs segfault.
+
+Passed testsuites:
+ time-regress
+ unpack-regress
+ json-regress
+ maidenhead-locator-regress
+ gps-regress
+Failed testsuites (segfault):
+ rtcm-regress
+ aivdm-regress
+ packet-regress
+ geoid-regress
+
+I still don't know if the segfault is specific to my distro or not
+(OpenSUSE 13.1-M4/64bits).
+Any feedback welcome!
+
+Signed-off-by: Christian Gagneraud &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">chgans at gna.org</A>&gt;
+---
+ SConstruct | 21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
+
+diff --git a/SConstruct b/SConstruct
+index 04899ef..bd231ed 100644
+--- a/SConstruct
++++ b/SConstruct
+@@ -17,6 +17,7 @@
+ 
+ # Unfinished items:
+ # * Out-of-directory builds: see <A HREF="http://www.scons.org/wiki/UsingBuildDir">http://www.scons.org/wiki/UsingBuildDir</A>
++# * Coveraging mode: gcc &quot;-coverage&quot; flag requires a hack for building the python bindings
+ 
+ # Release identification begins here
+ gpsd_version = &quot;3.10~dev&quot;
+@@ -250,10 +251,6 @@ for key, value in os.environ.iteritems():
+     if key.startswith('CCC_'):
+         env.Append(ENV={key:value})
+ 
+-# FIXME: Set up compilation for gcov - doesn't work yet.
+-if env['coveraging']:
+-    env['CFLAGS'].append(['-fprofile-arcs', '-ftest-coverage'])
+-
+ # Placeholder so we can kluge together something like VPATH builds.
+ # $SRCDIR replaces occurrences for $(srcdir) in the autotools build.
+ env['SRCDIR'] = '.'
+@@ -294,9 +291,16 @@ if not 'CCFLAGS' in os.environ:
+     if env['profiling']:
+         env.Append(CCFLAGS=['-pg'])
+         env.Append(LDFLAGS=['-pg'])
++    # Should we build with coveraging?
++    if env['coveraging']:
++        env.Append(CFLAGS=['-coverage'])
++        env.Append(LDFLAGS=['-coverage'])
++        env.Append(LINKFLAGS=['-coverage'])
+     # Should we build with debug symbols?
+     if env['debug']:
+         env.Append(CCFLAGS=['-g'])
++    # Should we build with optimisation?
++    if env['debug'] or env['coveraging']:
+         env.Append(CCFLAGS=['-O0'])
+     else:
+         env.Append(CCFLAGS=['-O2'])
+@@ -948,10 +952,6 @@ gpsmon_sources = [
+ if not env['shared'] or not env[&quot;implicit_link&quot;]:
+     env.MergeFlags(&quot;-lm&quot;)
+ 
+-# FIXME: Part of an attempt to support coverage testing.
+-if env['coveraging']:
+-    env.MergeFlags(&quot;-lgcov&quot;)
+-
+ gpsd_env = env.Clone()
+ gpsd_env.MergeFlags(&quot;-pthread&quot;)
+ 
+@@ -1036,6 +1036,11 @@ else:
+         if vars[i] is None:
+             vars[i] = []
+     (cc, cxx, opt, basecflags, ccshared, ldshared, so_ext, includepy, ldflags) = vars
++    # FIXME: build of python wrappers doesn't pickup flags set for coveraging, manually add them here
++    if env['coveraging']:
++        basecflags += ' -coverage'
++        ldflags += ' -coverage'
++        ldshared += ' -coverage'
+     # in case CC/CXX was set to the scan-build wrapper,
+     # ensure that we build the python modules with scan-build, too
+     if env['CC'] is None or env['CC'].find('scan-build') &lt; 0:
+-- 
+1.8.3.1
+
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="009617.html">[Gpsd-dev] [RFC] Fix coveraging mode in SConstruct
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9616">[ date ]</a>
+              <a href="thread.html#9616">[ thread ]</a>
+              <a href="subject.html#9616">[ subject ]</a>
+              <a href="author.html#9616">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,199 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Advice needed about using the &quot;nowait&quot; mode
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Advice%20needed%20about%20using%20the%20%22nowait%22%20mode&In-Reply-To=%3C200612101418.58790.mick.durkin%40saunalahti.fi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005408.html">
+   <LINK REL="Next"  HREF="005413.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Advice needed about using the &quot;nowait&quot; mode</H1>
+    <B>Mick Durkin</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Advice%20needed%20about%20using%20the%20%22nowait%22%20mode&In-Reply-To=%3C200612101418.58790.mick.durkin%40saunalahti.fi%3E"
+       TITLE="[Gpsd-dev] Advice needed about using the &quot;nowait&quot; mode">mick.durkin at saunalahti.fi
+       </A><BR>
+    <I>Sun Dec 10 13:18:58 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005408.html">[Gpsd-dev] cgps and xpsg &quot;w+x&quot;
+</A></li>
+        <LI>Next message: <A HREF="005413.html">[Gpsd-dev] Advice needed about using the &quot;nowait&quot; mode
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5409">[ date ]</a>
+              <a href="thread.html#5409">[ thread ]</a>
+              <a href="subject.html#5409">[ subject ]</a>
+              <a href="author.html#5409">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Guys,
+
+Now I am trying to understand the action if we run in &quot;nowait&quot; mode.
+
+It is clear that we shouldn't drop the device immediately after the 
+probe_subtype call as we do normally if there are no waiting clients.
+
+I ran the daemon in nowait mode and normal mode, each time exiting before 
+attaching any clients. The only difference was that the wrapup call is 
+deferred until we actually kill the daemon in nowait mode . Otherwise the 
+steps are the same.
+
+================================================
+
+[<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">root at linuxbox</A> gpsd]# gpsd -n -N -D3 /dev/ttyS0
+gpsd: launching (Version 2.34)
+gpsd: listening on port gpsd
+gpsd: shmat(0,0,0) succeeded
+gpsd: shmat(0,0,0) succeeded
+gpsd: shmat(0,0,0) succeeded
+gpsd: shmat(0,0,0) succeeded
+gpsd: running with effective group ID 0
+gpsd: running with effective user ID 0
+gpsd: opening GPS data source at '/dev/ttyS0'
+gpsd: speed 9600, 8N1
+gpsd: jupiter_t_probe_detect: Probing for a Jupiter-T device
+gpsd: jupiter_t_set_raw: Changing serial port settings
+gpsd: jupiter_t_sniff: Writing Jupiter-T command '4040436a290d0a', GET_ID
+gpsd: jupiter_t_sniff: Giving Jupiter-T a chance to respond
+gpsd: jupiter_t_probe_detect: Jupiter-T device detected
+gpsd: probe found Jupiter-T binary driver...
+gpsd: gpsd_activate(0): opened GPS (4)
+gpsd: jupiter_t_probe_subtype: Entering call
+gpsd: =&gt; GPS: 4040436a290d0a
+gpsd: jupiter_t_probe_subtype: Call was successful
+gpsd: jupiter_t_parse: Output message is 'Cj' and means 'Report Receiver ID'
+gpsd: jupiter_t_parse: Software info '93.07' has now been stored and 
+DEVICEID_SET flag has been set
+.
+.
+.
+. &lt;--- Kill daemon
+gpsd: jupiter_t_wrapup: Restoring original device settings
+gpsd: jupiter_t_reset_raw: Restoring original serial port settings
+gpsd: jupiter_t_wrapup: Device restoration complete
+gpsd: closing GPS=/dev/ttyS0 (4)
+gpsd: Received terminating signal 2. Exiting...
+[<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">root at linuxbox</A> gpsd]#
+
+=============================================================
+
+[<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">root at linuxbox</A> gpsd]# gpsd -N -D3 /dev/ttyS0
+gpsd: launching (Version 2.34)
+gpsd: listening on port gpsd
+gpsd: shmat(0,0,0) succeeded
+gpsd: shmat(0,0,0) succeeded
+gpsd: shmat(0,0,0) succeeded
+gpsd: shmat(0,0,0) succeeded
+gpsd: running with effective group ID 0
+gpsd: running with effective user ID 0
+gpsd: opening GPS data source at '/dev/ttyS0'
+gpsd: speed 9600, 8N1
+gpsd: jupiter_t_probe_detect: Probing for a Jupiter-T device
+gpsd: jupiter_t_set_raw: Changing serial port settings
+gpsd: jupiter_t_sniff: Writing Jupiter-T command '4040436a290d0a', GET_ID
+gpsd: jupiter_t_sniff: Giving Jupiter-T a chance to respond
+gpsd: jupiter_t_probe_detect: Jupiter-T device detected
+gpsd: probe found Jupiter-T binary driver...
+gpsd: gpsd_activate(0): opened GPS (4)
+gpsd: jupiter_t_probe_subtype: Entering call
+gpsd: =&gt; GPS: 4040436a290d0a
+gpsd: jupiter_t_probe_subtype: Call was successful
+gpsd: jupiter_t_parse: Output message is 'Cj' and means 'Report Receiver ID'
+gpsd: jupiter_t_parse: Software info '93.07' has now been stored and 
+DEVICEID_SET flag has been set
+gpsd: jupiter_t_wrapup: Restoring original device settings
+gpsd: jupiter_t_reset_raw: Restoring original serial port settings
+gpsd: jupiter_t_wrapup: Device restoration complete
+gpsd: closing GPS=/dev/ttyS0 (4)
+.
+.
+.
+. &lt;--- Kill daemon
+gpsd: Received terminating signal 2. Exiting...
+[<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">root at linuxbox</A> gpsd]#
+
+
+========================================================
+
+However, if I use nowait mode and trigger a client, the client gets no data. 
+It is because there is no call to the configurator in this mode. In normal 
+mode, when the device is re-scanned at client attach time, we follow the 
+probe_subtype immediately with a configurator call. Have I missed something 
+out in my driver, or is there a hole in the logic elsewhere?
+
+
+=======================================================
+
+[<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">root at linuxbox</A> gpsd]# gpsd -n -N -D3 /dev/ttyS0
+gpsd: launching (Version 2.34)
+.
+.
+. (snip)
+gpsd: jupiter_t_probe_subtype: Call was successful
+gpsd: jupiter_t_parse: Output message is 'Cj' and means 'Report Receiver ID'
+gpsd: jupiter_t_parse: Software info '93.07' has now been stored and 
+DEVICEID_SET flag has been set
+.
+.
+. &lt;--- Trigger client
+gpsd: client connect on 5
+gpsd: checking client(0)
+gpsd: client(0): assigning channel...
+gpsd: User requires 2, channel type is 9
+gpsd: client(0): channel 4 already active.
+gpsd: checking client(0)
+gpsd: client(0): channel 4 already active.
+gpsd: client(0): channel 4 already active.
+.
+.
+. &lt;--- Kill client
+gpsd: checking client(0)
+gpsd: detaching 0 in detach_client
+.
+.
+. &lt;--- Kill daemon
+gpsd: jupiter_t_wrapup: Restoring original device settings
+gpsd: jupiter_t_reset_raw: Restoring original serial port settings
+gpsd: jupiter_t_wrapup: Device restoration complete
+gpsd: closing GPS=/dev/ttyS0 (4)
+gpsd: Received terminating signal 2. Exiting...
+[<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">root at linuxbox</A> gpsd]#
+
+===========================================
+
+Best Regards
+
+Mick
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005408.html">[Gpsd-dev] cgps and xpsg &quot;w+x&quot;
+</A></li>
+	<LI>Next message: <A HREF="005413.html">[Gpsd-dev] Advice needed about using the &quot;nowait&quot; mode
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5409">[ date ]</a>
+              <a href="thread.html#5409">[ thread ]</a>
+              <a href="subject.html#5409">[ subject ]</a>
+              <a href="author.html#5409">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

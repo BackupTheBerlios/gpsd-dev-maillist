@@ -1,0 +1,156 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Rob's second architecture bug
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Rob%27s%20second%20architecture%20bug&In-Reply-To=%3C10284.213.84.187.156.1118649718.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002108.html">
+   <LINK REL="Next"  HREF="002119.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Rob's second architecture bug</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Rob%27s%20second%20architecture%20bug&In-Reply-To=%3C10284.213.84.187.156.1118649718.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] Rob's second architecture bug">gpsd at xs4all.nl
+       </A><BR>
+    <I>Mon Jun 13 10:01:58 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002108.html">[Gpsd-dev] Rob's second architecture bug
+</A></li>
+        <LI>Next message: <A HREF="002119.html">[Gpsd-dev] Detecting end-of-cycle
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2116">[ date ]</a>
+              <a href="thread.html#2116">[ thread ]</a>
+              <a href="subject.html#2116">[ subject ]</a>
+              <a href="author.html#2116">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;&gt;<i>For example, in TSIP the position, velocity, time and DOP data are all
+</I>&gt;&gt;<i>sent in different messages in a cycle.  handle_packet (before my patch)
+</I>&gt;&gt;<i>assumes that DOP values are only sent in message that also contain
+</I>&gt;&gt;<i> LATLON,
+</I>&gt;&gt;<i>but this is simply not the case.
+</I>&gt;<i>
+</I>&gt;<i> I think you might have slightly misinterpreted the code.  There are
+</I>&gt;<i> separate LATLON_SET and DOP_SET flags precisely so those messages
+</I>&gt;<i> *won't* be tied together in the handler logic.  That separation is
+</I>&gt;<i> what made the change you suggested yesterday something that was possible
+</I>&gt;<i> to do quickly and easily.
+</I>
+... but I am not so sure why that check was there in the first place.
+The DOP_SET flags were only looked at inside an if statement that checked
+for LATLON_SET so they were only handled when both latitude/longitude and
+DOP appeared in the same message, which they don't for a Trimble receiver.
+Maybe there is some other receiver where the DOP values are invalid when
+there is no latitude/longitude and that is why that check was made?
+The check is still around the SPEEDERR and CLIMBERR checks, do you want to
+say that it can be removed there as well?
+(I did not want to do that as it seems to save state, including lat/lon,
+from the previous fix)
+
+&gt;&gt;<i>As the O= output is sent for every message parsed (as I wrote yesterday),
+</I>&gt;&gt;<i>things are even worse: for every message parsed an O packet is assembled
+</I>&gt;&gt;<i>with different mask flags as a starting point, so O packets are sent with
+</I>&gt;&gt;<i>alternating valid and unknown data in the same position.
+</I>&gt;<i>
+</I>&gt;<i> Once again you are correct.  That is an unavoidable consequence of the
+</I>&gt;<i> assumption now built in, which is that there will be one immediate
+</I>&gt;<i> report per sentence or packet.
+</I>
+One of the problems is that part of the O line builder uses _NOT_VALID
+values (which *are* saved across GPS message boundaries), and part uses
+_SET  indicators (which only refer to the last received message),
+The latter causes the toggling of valid/invalid data.
+But of course the former means that sometimes data is present in the
+message that is obtained from a previous message cycle, and thus from a
+previous fix.
+
+&gt;<i> There turns out to be a more fundamental problem with accumulating
+</I>&gt;<i> data -- as you correctly point out, the real issue is detecting the
+</I>&gt;<i> start and end of a send cycle so we'll know when to flush buffers and
+</I>&gt;<i> clear flags.
+</I>&gt;<i>
+</I>&gt;<i> You recognize this problem, but I don't think you have yet realized
+</I>&gt;<i> just how nasty it is.  While the opposition to increasing latency
+</I>&gt;<i> discouraged me, I didn't really give up on the idea of buffering data
+</I>&gt;<i> until I ran head-on into this second issue.
+</I>
+It depends on the actual receiver at hand.  But a quite large subset of
+the receivers works (at least as I read it from protocol documents) like
+this:
+
+1. the receiver calculates a fix from the received satellite signals.
+
+2. it stores this fix in internal memory, including a timestamp that
+defines when this fix was obtained.
+
+3. it looks at communication configuration bits and sends out a series of
+messages that contain several subsets of this fix data, and usually also
+the timestamp.
+
+4. it waits for another cycletime tick (usually a second) and goes back to 1.
+
+The timestamp in the messages is not the current time, but the time the
+fix was calculated.  This also explains why time in messages is often off
+so much more than one would expect from only communication delays.
+
+So it is actually quite simple to find the start of the cycle: this occurs
+when the timestamp in the messages differs from the last-seen one.  Some
+protocols even have a cycling &quot;fix sequence number&quot; that can be used to
+correlate the messages within a single fix.
+
+Of course, what is not so easy is to know which message is the last in a
+series.  One could peek down in the communication buffer and assume that a
+message is last when no data immediately arrives after it, but as you
+point out that could be unreliable when cycles run together.
+
+Maybe the two techniques could be combined: when the timestamp changes we
+always assume a new cycle has started (this may misfire on some receivers
+but it will never make matters worse than they are now).  When no input is
+pending after processing a message, we ship the fix data to the client. 
+When we detect that a new cycle starts and we had not yet sent the data
+from the previous cycle, we send it immediately.
+
+That should work.  However, when you want to guarantee that all data in an
+O message is as-much-as-possible from a single fix calculated by the
+receiver, you will need to double-buffer the fix data.
+The message parser now immediately overwrites fix data, so when it returns
+and the caller detects (by checking the timestamp) the message had started
+a new cycle, it is too late to ship the accumulated data from the previous
+cycle intact.
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002108.html">[Gpsd-dev] Rob's second architecture bug
+</A></li>
+	<LI>Next message: <A HREF="002119.html">[Gpsd-dev] Detecting end-of-cycle
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2116">[ date ]</a>
+              <a href="thread.html#2116">[ thread ]</a>
+              <a href="subject.html#2116">[ subject ]</a>
+              <a href="author.html#2116">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

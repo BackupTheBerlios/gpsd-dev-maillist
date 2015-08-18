@@ -1,0 +1,144 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPS reconnect problem
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPS%20reconnect%20problem&In-Reply-To=%3C050LLeT1F2356S18.1196884385%40cmsweb18.cms.usa.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005798.html">
+   <LINK REL="Next"  HREF="005800.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPS reconnect problem</H1>
+    <B>Petr Slansky</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPS%20reconnect%20problem&In-Reply-To=%3C050LLeT1F2356S18.1196884385%40cmsweb18.cms.usa.net%3E"
+       TITLE="[Gpsd-dev] GPS reconnect problem">slansky at usa.net
+       </A><BR>
+    <I>Wed Dec  5 20:53:05 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005798.html">[Gpsd-dev] huge vertical error
+</A></li>
+        <LI>Next message: <A HREF="005800.html">[Gpsd-dev] Confirmation about the behaviour of	gpsd_poll	routine in libgpsd_core
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5799">[ date ]</a>
+              <a href="thread.html#5799">[ thread ]</a>
+              <a href="subject.html#5799">[ subject ]</a>
+              <a href="author.html#5799">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> Which is the eTrex?
+</I>&gt;<i> -- 
+</I>
+eTrex is Garmin based personal GPS. It can be programed to output data in
+several formats. I think my notice was about GARMIN protocol, you have to send
+a commnand to GPS to get regular output (probe, initialisation commands).
+
+Petr
+
+
+------ Original Message ------
+Received: Wed, 05 Dec 2007 10:27:40 AM CET
+From: &quot;Eric S. Raymond&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt;
+To: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>
+Subject: Re: [Gpsd-dev] GPS reconnect problem
+
+&gt;<i> Petr Slansky &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">slansky at usa.net</A>&gt;:
+</I>&gt;<i> &gt; maybe you know what happens when you unplug and re-plug your serial mouse
+</I>in
+&gt;<i> &gt; X-windows under Linux. Mouse doesn't work any more, you have to restart
+</I>whole
+&gt;<i> &gt; X-windows to initialise mouse. OK, this was solved recently, you don't
+</I>need to
+&gt;<i> &gt; restart X-windows on the latest Linux distributions anymore in 2007 but it
+</I>was
+&gt;<i> &gt; needed one or two years ago. (I think mouse sends some signal that it was
+</I>&gt;<i> &gt; connected and needs initialization but this query was ignored by mouse
+</I>driver
+&gt;<i> &gt; for long time).
+</I>&gt;<i> 
+</I>&gt;<i> I know this works for USB and PS/2 mice now, but I'm doubtful it works for 
+</I>&gt;<i> real old-fashioned RS-232 mice.  Serial ports are *very* stupid -- an
+</I>inactive
+&gt;<i> one isn't readily distinguishable from a disconnected one without keepalive
+</I>&gt;<i> signalling that most serial devices (especially cheap low-end ones like
+</I>mice) 
+&gt;<i> don't supply. 
+</I>&gt;<i> 
+</I>&gt;<i> And serial devices that *do* supply it may do it an one of two or
+</I>&gt;<i> three different ways -- autoconfiguration is a nightmare.  There are
+</I>several
+&gt;<i> reasons USB has just about driven RS232C to extinction  but inability
+</I>&gt;<i> to supply reliable hotplug signalling may in fact be the biggest.
+</I>&gt;<i> 
+</I>&gt;<i> Nevertheless your point is valid.  In the presence of more modern
+</I>interfaces
+&gt;<i> like USB, it is a main goal of gpsd to cope with disconnect/reconnect 
+</I>&gt;<i> gracefully.  If we're not doing that, something is broken.
+</I>&gt;<i>  
+</I>&gt;<i> &gt; gpsd has similar problems with some GPSs, you start gpsd, GPS is
+</I>detected,
+&gt;<i> &gt; initialized, it works for some time. You reboot GPS (remove power plug,
+</I>change
+&gt;<i> &gt; battery, etc), GPS is initialized, maybe it has possition but it doesn't
+</I>pass
+&gt;<i> &gt; information to gpsd, it is invisible for gpsd. You have to restart gpsd
+</I>to
+&gt;<i> &gt; start detection process. When you restart gpsd, all connected clients are
+</I>&gt;<i> &gt; disconnected.
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; Garmin eTrex in binary mode is an example of GPS that can be detected
+</I>during
+&gt;<i> &gt; gpsd start but cannot be reactivated when you &quot;reset&quot; GPS because GPS is
+</I>&gt;<i> &gt; silent after reset, it needs &quot;wakeup&quot; commands. I think this is missing
+</I>&gt;<i> &gt; feature in gpsd design. What to do when no data are received for some
+</I>time
+&gt;<i> &gt; (timeout). When to start new search for GPS.
+</I>&gt;<i> 
+</I>&gt;<i> For the reasons outlined above, I plain don't think we can do this for
+</I>&gt;<i> serial-port mice.  We already do it for USB mice by watching for hotplug
+</I>&gt;<i> notifications shipped to the gpsd control port.  
+</I>&gt;<i> 
+</I>&gt;<i> Which is the eTrex?
+</I>&gt;<i> -- 
+</I>&gt;<i> 		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i> 
+</I>
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005798.html">[Gpsd-dev] huge vertical error
+</A></li>
+	<LI>Next message: <A HREF="005800.html">[Gpsd-dev] Confirmation about the behaviour of	gpsd_poll	routine in libgpsd_core
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5799">[ date ]</a>
+              <a href="thread.html#5799">[ thread ]</a>
+              <a href="subject.html#5799">[ subject ]</a>
+              <a href="author.html#5799">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

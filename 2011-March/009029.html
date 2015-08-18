@@ -1,0 +1,166 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20A%20lightweight%20synchronization%0A%20mechanism%20for%20shared%20memory&In-Reply-To=%3Calpine.DEB.1.10.1103250906460.15794%40org-pc51.fy.chalmers.se%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009028.html">
+   <LINK REL="Next"  HREF="009030.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory</H1>
+    <B>H&#229;kan Johansson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20A%20lightweight%20synchronization%0A%20mechanism%20for%20shared%20memory&In-Reply-To=%3Calpine.DEB.1.10.1103250906460.15794%40org-pc51.fy.chalmers.se%3E"
+       TITLE="[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory">f96hajo at chalmers.se
+       </A><BR>
+    <I>Fri Mar 25 09:33:22 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009028.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+        <LI>Next message: <A HREF="009030.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9029">[ date ]</a>
+              <a href="thread.html#9029">[ thread ]</a>
+              <a href="subject.html#9029">[ subject ]</a>
+              <a href="author.html#9029">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+On Fri, 25 Mar 2011, Terje Mathisen wrote:
+
+&gt;<i> Eric Raymond wrote:
+</I>&gt;&gt;<i> tz&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+</I>&gt;&gt;&gt;<i> Anyway it won't work if memcpy is interruptable.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Reader starts the memcpy, copies the start sentinel and half the payload.
+</I>&gt;&gt;&gt;<i> Writer increments the start sentinel. and writes into the payload.
+</I>&gt;&gt;&gt;<i> Reader continues the memcpy where it left off through the end sentinel.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Both sentinels are equal, yet the bottom part of the payload is invalid.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Hm.  You're right.  The copy has to be uninterruptible.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> The only way I can think of is a single writer sets a bool to safe to
+</I>&gt;&gt;&gt;<i> read - unsafe to write, and a single reader sets it back to safe to
+</I>&gt;&gt;&gt;<i> read - unsafe to write.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Doesn't help the multiple-readers case.
+</I>&gt;<i>
+</I>&gt;<i> I've been reading the source code for this shm interface, and to me it
+</I>&gt;<i> seems almost like a no-brainer to go to a circular buffer of 2^N
+</I>&gt;<i> entries, along with a single (write-update only) counter at the front
+</I>&gt;<i> end which indicates where the latest valid entry is located.
+</I>
+Going to a more-than-1 entry buffer does not immediately give any further 
+guarantees, but it does open another loophole:
+
+If the writer crashes in a mid-update, say entry 3, then until the next 
+alive writer has overwritten that entry, say when it just claims to be 
+writing next entry 4, the reader may get the idea that the previous entry 
+(number 3) is now good and usable.
+
+Perhaps fixable by part of the count (or another variable) holding also a 
+bitmask of the valid entries, but such an approach requires the analysis 
+of a lot more contrieved edge-cases to (if at all possible) make 
+guarantees, as opposed to the 1-entry method.  Where we know it cannot 
+always allow a successful correct read within finite time, but we know how 
+to make any claimed successful read also be that.
+
+&gt;<i> The readers (one or more) can then always read the last valid entry, it
+</I>&gt;<i> might be a re-read of what they read on the previous iteration, but that
+</I>&gt;<i> is something which it is easy for the reader to guard against:
+</I>&gt;<i>
+</I>&gt;<i>   unsigned cnt = shm-&gt;count;
+</I>&gt;<i>   if (cnt == prev_cnt) return;
+</I>&gt;<i>
+</I>&gt;<i> When the counter is valid you mask it with the buffer count mask to
+</I>&gt;<i> bring it into range:
+</I>
+If I'm only allowed to mask the counter when it is valid, the time during 
+any writer update makes all entries unusable anyhow, so 2^N is no better 
+than 1.
+
+&gt;<i>   prev_cnt = cnt;
+</I>&gt;<i>   cnt &amp;= shm-&gt;count_mask; // Bring it into [0..7] range?
+</I>&gt;<i>
+</I>&gt;<i> Copy the current entry into local vars:
+</I>&gt;<i>
+</I>&gt;<i>     tvr.tv_sec=shm-&gt;[cnt].receiveTimeStampSec;
+</I>&gt;<i>     tvr.tv_usec=shm-&gt;[cnt].receiveTimeStampUSec;
+</I>&gt;<i>     tvt.tv_sec=shm-&gt;[cnt].clockTimeStampSec;
+</I>&gt;<i>     tvt.tv_usec=shm-&gt;[cnt].clockTimeStampUSec;
+</I>&gt;<i>
+</I>&gt;<i> This is of course still not absolutely bulletproof, in that a reader
+</I>&gt;<i> process which starts to read an entry, then gets put to sleep for N(=8?)
+</I>&gt;<i> seconds, can wake up again and read the last half of an updated record.
+</I>&gt;<i>
+</I>&gt;<i> This is easy to guard against by re-reading the shm-&gt;count value: Since
+</I>&gt;<i> this counter is explicitly allowed to wrap around at 2^32 or 2^64, you
+</I>&gt;<i> cannot sleep for that many seconds.
+</I>&gt;<i>
+</I>&gt;<i> a) You can always read the last valid entry.
+</I>&gt;<i> b) The only sync barrier needed is in the producer (gpsd) which should
+</I>&gt;<i> have a write barrier between the last write to the new record, and the
+</I>&gt;<i> increment of the shm-&gt;count variable.
+</I>
+Read barriers too.  Please see the linux kernel documentation:
+
+<A HREF="http://www.kernel.org/doc/Documentation/memory-barriers.txt">http://www.kernel.org/doc/Documentation/memory-barriers.txt</A>
+
+Also note how the word 'volatile' is absent.
+
+Another point to note is that the way in which the memory copying is 
+implemented - inlined, function call, for loop, even 
+local-cpu-irq-disabled - does not help against the interplay of the memory 
+subsystems of the two cpus involved, which - without write/read-barriers - 
+may provide the read data as new and old intermixed.
+
+Cheers,
+H&#229;kan
+
+
+&gt;<i> c) The protocol is _very_ similar to the current shm-&gt;mode == 1 code.
+</I>&gt;<i>
+</I>&gt;<i> Terje
+</I>&gt;<i>
+</I>&gt;<i> -- 
+</I>&gt;<i> - &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Terje at tmsw.no</A>&gt;
+</I>&gt;<i> &quot;almost all programming can be viewed as an exercise in caching&quot;
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I></PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009028.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+	<LI>Next message: <A HREF="009030.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9029">[ date ]</a>
+              <a href="thread.html#9029">[ thread ]</a>
+              <a href="subject.html#9029">[ subject ]</a>
+              <a href="author.html#9029">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

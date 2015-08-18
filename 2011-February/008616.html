@@ -1,0 +1,84 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] strlcpy
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20strlcpy&In-Reply-To=%3C4D67E108.9090703%40bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008613.html">
+   <LINK REL="Next"  HREF="008619.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] strlcpy</H1>
+    <B>Michael Cook</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20strlcpy&In-Reply-To=%3C4D67E108.9090703%40bbn.com%3E"
+       TITLE="[Gpsd-dev] strlcpy">mcook at bbn.com
+       </A><BR>
+    <I>Fri Feb 25 18:04:08 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008613.html">[Gpsd-dev] strlcpy (was: [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-840-ge7febaf)
+</A></li>
+        <LI>Next message: <A HREF="008619.html">[Gpsd-dev] strlcpy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8616">[ date ]</a>
+              <a href="thread.html#8616">[ thread ]</a>
+              <a href="subject.html#8616">[ subject ]</a>
+              <a href="author.html#8616">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 2/25/2011 10:26 AM, Eric Raymond wrote:
+&gt;<i> True.  Do you have a similar implementation of strlcat() up your sleeve?
+</I>
+Here you go.
+
+size_t strlcat(char *dst, const char *src, size_t siz)
+{
+   size_t slen = strlen(src);
+   size_t dlen = strnlen(dst, siz);
+   if (dlen == siz)
+     --dlen;
+   if (siz != 0) {
+     if (dlen + slen &lt; siz)
+       memcpy(dst + dlen, src, slen + 1);
+     else {
+       memcpy(dst + dlen, src, siz - dlen - 1);
+       dst[siz - 1] = '\0';
+     }
+   }
+   return dlen + slen;
+}
+
+Michael
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008613.html">[Gpsd-dev] strlcpy (was: [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-840-ge7febaf)
+</A></li>
+	<LI>Next message: <A HREF="008619.html">[Gpsd-dev] strlcpy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8616">[ date ]</a>
+              <a href="thread.html#8616">[ thread ]</a>
+              <a href="subject.html#8616">[ subject ]</a>
+              <a href="author.html#8616">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,133 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Possible bug with Trimble Thunderbolt
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Possible%20bug%20with%20Trimble%20Thunderbolt&In-Reply-To=%3Cl2wb9d9547f1005030541ucad55227lffc98297ba3c7203%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007739.html">
+   <LINK REL="Next"  HREF="007723.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Possible bug with Trimble Thunderbolt</H1>
+    <B>Joe Davidson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Possible%20bug%20with%20Trimble%20Thunderbolt&In-Reply-To=%3Cl2wb9d9547f1005030541ucad55227lffc98297ba3c7203%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Possible bug with Trimble Thunderbolt">nugins99 at gmail.com
+       </A><BR>
+    <I>Mon May  3 14:41:01 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007739.html">[Gpsd-dev] [PATCH] AIVDM channels, memory init, segfault, report
+</A></li>
+        <LI>Next message: <A HREF="007723.html">[Gpsd-dev] Possible bug with Trimble Thunderbolt
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7722">[ date ]</a>
+              <a href="thread.html#7722">[ thread ]</a>
+              <a href="subject.html#7722">[ subject ]</a>
+              <a href="author.html#7722">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I tried setting up GPSD with a Trimble Thunderbolt that I have with little
+luck.    The basic problem is that &quot;cgps&quot; was not getting time and position
+messages.   I turned on gpsd debug and did a little digging and found a few
+possible problems within driver_tsip.c:
+
+1)   The primary time message (0x84ab)  comes out right before the position
+message (0x8fac).   The time message does not get reported to clients.
+There is a REPORT_IS message was not being added to the mask for the time
+messages.  Is this intentional?
+
+2) The receiver mode flag was always being reported as &quot;0&quot; whenever gpsd
+gets restarted.   If I power cycle the gps, the reciever mode gets forced
+back to &quot;4&quot; which  indicates the receiver has the full 3D position.
+Restarting gpsd again causes the receiver flag to zero out again.
+
+Before I dig into this any further,  I'd like to see if somebody familiar
+with the TSIP interface has some insight as to what is happening.
+
+Below is a diff showing what I did to debug the problem and &quot;fix&quot; it.   The
+first change fixes the time reporting.   The second just forces the position
+messages to get reported if the receiver mode gets reset to zero.
+
+This patch is against 2.94.
+
+--- gpsd-2.94.orig/driver_tsip.c        2010-04-20 13:23:14.000000000 -0400
++++ gpsd-2.94/driver_tsip.c     2010-05-03 08:33:44.600828000 -0400
+@@ -771,7 +771,7 @@
+                session-&gt;newdata.time =
+                    gpstime_to_unix((int)s1, session-&gt;context-&gt;gps_tow)
+                    - (double)s2;
+-               mask |= TIME_IS;
++               mask |= TIME_IS | REPORT_IS;
+                gpsd_report(LOG_DATA, &quot;SP-TTS 0xab time=%.2f mask={TIME}\n&quot;,
+                            session-&gt;newdata.time);
+            }
+@@ -805,6 +805,27 @@
+
+            /* Decode Fix modes */
+            switch (u2 &amp; 7) {
++            case 0:     /* Auto */
++                switch (u1) {
++                       /* According to the Thunderbolt Manual, the first
+byte of the supplemental timing packet
++                          simply indicates the configuration of the device,
+not the actual lock,
++                          so we need to look at the decode status. */
++                       case 0:   /* &quot;Doing Fixes&quot; */
++                         session-&gt;newdata.mode = MODE_3D;
++                         break;
++                       case 0x0B: /* &quot;Only 3 usable sats&quot; */
++                         session-&gt;newdata.mode = MODE_2D;
++                         break;
++                       case 0x1:   /* &quot;Don't have GPS time&quot; */
++                       case 0x3:   /* &quot;PDOP is too high&quot; */
++                       case 0x8:   /* &quot;No usable sats&quot; */
++                       case 0x9:   /* &quot;Only 1 usable sat&quot; */
++                       case 0x0A:  /* &quot;Only 2 usable sats */
++                       case 0x0C:  /* &quot;The chosen sat is unusable&quot; */
++                       case 0x10:  /* TRAIM rejected the fix */
++                       default:
++                          session-&gt;newdata.mode = MODE_NO_FIX;
++                }
+            case 6:             /* Clock Hold 2D */
+            case 3:             /* 2D Position Fix */
+                //session-&gt;gpsdata.status = STATUS_FIX;
+
+
+
+--
+Joe
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100503/30b713ce/attachment.html">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100503/30b713ce/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007739.html">[Gpsd-dev] [PATCH] AIVDM channels, memory init, segfault, report
+</A></li>
+	<LI>Next message: <A HREF="007723.html">[Gpsd-dev] Possible bug with Trimble Thunderbolt
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7722">[ date ]</a>
+              <a href="thread.html#7722">[ thread ]</a>
+              <a href="subject.html#7722">[ subject ]</a>
+              <a href="author.html#7722">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

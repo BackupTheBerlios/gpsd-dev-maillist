@@ -1,0 +1,241 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH 9/9] gps.py: Make poll() read all buffered data	before returning
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%209/9%5D%20gps.py%3A%20Make%20poll%28%29%20read%20all%20buffered%20data%0A%09before%20returning&In-Reply-To=%3C1242993621-6082-8-git-send-email-bbolli%40ewanet.ch%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006722.html">
+   <LINK REL="Next"  HREF="006726.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH 9/9] gps.py: Make poll() read all buffered data	before returning</H1>
+    <B>Beat Bolli</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%209/9%5D%20gps.py%3A%20Make%20poll%28%29%20read%20all%20buffered%20data%0A%09before%20returning&In-Reply-To=%3C1242993621-6082-8-git-send-email-bbolli%40ewanet.ch%3E"
+       TITLE="[Gpsd-dev] [PATCH 9/9] gps.py: Make poll() read all buffered data	before returning">bbolli at ewanet.ch
+       </A><BR>
+    <I>Fri May 22 14:00:21 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006722.html">[Gpsd-dev] [PATCH 8/9] gps.py: Unknown data is excluded before the	switch
+</A></li>
+        <LI>Next message: <A HREF="006726.html">[Gpsd-dev] [PATCH 9/9] gps.py: Make poll() read all buffered data	before returning
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6725">[ date ]</a>
+              <a href="thread.html#6725">[ thread ]</a>
+              <a href="subject.html#6725">[ subject ]</a>
+              <a href="author.html#6725">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>This might well be the most controversial change. I have rewritten much
+of the reading code in order to make sure that a client receives all
+data sent by GPSd. I was using a client which slept for a few seconds
+between calls to gpsdata.poll(), which had two effects:
+
+1. The client was more and more behind with reading messages
+   because it only ever read the next line from GPSd. The most
+   obvious thing was that the GPS time displayed advanced only one
+   second per sleep interval.
+
+2. The TCP input queue grew non-stop because data sent by GPSd
+   was not read fast enough.
+
+With this change, readlines() and readstanzas() become generator
+functions that return whatever has not yet been read by the client.
+Every time poll() is called, it reads the whole input queue until
+it's empty and updates the GPS data from each received message.
+So a client can poll GPSd as infrequently as it wants and still
+gets everything.
+---
+ gps.py |   98 ++++++++++++++++++++++++++++++++++++++++++---------------------
+ 1 files changed, 65 insertions(+), 33 deletions(-)
+
+diff --git a/gps.py b/gps.py
+index 208ecf3..2eef589 100755
+--- a/gps.py
++++ b/gps.py
+@@ -183,7 +183,8 @@ class gps(gpsdata):
+     def __init__(self, host=&quot;127.0.0.1&quot;, port=&quot;2947&quot;, verbose=0):
+         gpsdata.__init__(self)
+         self.sock = None        # in case we blow up in connect
+-        self.sockfile = None
++        self.eof = False
++        self.buf = ''
+         self.connect(host, port)
+         self.verbose = verbose
+         self.raw_hook = None
+@@ -206,14 +207,12 @@ class gps(gpsdata):
+         #if self.debuglevel &gt; 0: print 'connect:', (host, port)
+         msg = &quot;getaddrinfo returns an empty list&quot;
+         self.sock = None
+-        self.sockfile = None
+         for res in socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM):
+             af, socktype, proto, canonname, sa = res
+             try:
+                 self.sock = socket.socket(af, socktype, proto)
+                 #if self.debuglevel &gt; 0: print 'connect:', (host, port)
+                 self.sock.connect(sa)
+-                self.sockfile = self.sock.makefile()
+             except socket.error, msg:
+                 #if self.debuglevel &gt; 0: print 'connect fail:', (host, port)
+                 self.close()
+@@ -226,18 +225,15 @@ class gps(gpsdata):
+         self.raw_hook = hook
+ 
+     def close(self):
+-        if self.sockfile:
+-            self.sockfile.close()
+         if self.sock:
+             self.sock.close()
+         self.sock = None
+-        self.sockfile = None
+ 
+     def __del__(self):
+         self.close()
+ 
+     def __unpack(self, buf):
+-        # unpack a daemon response into the instance members
++        &quot;&quot;&quot;Unpack a daemon response into the instance members&quot;&quot;&quot;
+         self.fix.time = 0.0
+         fields = buf.strip().split(&quot;,&quot;)
+         if fields[0] == &quot;GPSD&quot;:
+@@ -370,42 +366,78 @@ class gps(gpsdata):
+             self.raw_hook(buf);
+ 
+     def waiting(self):
+-        &quot;Return True if data is ready for the client.&quot;
+-        (winput, woutput, wexceptions) = select.select((self.sock,), (), (), 0)
+-        return winput != []
++        &quot;&quot;&quot;Return True if data is ready for the client.&quot;&quot;&quot;
++        try:
++            (winput, woutput, wexceptions) = select.select([self.sock], [], [], 0)
++        except select.error, socket.error:
++            self.eof = True
++            return False
++        return len(winput) &gt; 0
++
++    def readlines(self):
++        &quot;&quot;&quot;Yield the next few complete lines. If no data is available,
++        return an empty string.&quot;&quot;&quot;
++        if self.eof or not self.waiting():
++            yield ''
++        while self.waiting():
++            buf = self.sock.recv(512)
++            if buf:
++                self.buf += buf
++            else:
++                self.eof = True
++                break
++        lines = self.buf.split('\r\n')
++        for l in lines[:]:
++            if l:
++                yield l
++                del lines[0]
++        self.buf = '\r\n'.join(lines)
++
++    def readstanzas(self):
++        &quot;&quot;&quot;Read a possibly multi-line response.
++        Currently used for RTCM2 H responses.&quot;&quot;&quot;
++        stanza = []
++        for frag in self.readlines():
++            if self.eof:
++                yield ''
++            if frag:
++                stanza.append(frag)
++                if stanza[0][0] not in 'H' or '=' in stanza[0]:
++                    yield frag
++                    stanza = []
++                if frag == '.':
++                    yield '\r\n'.join(stanza)
++                    stanza = []
+ 
+     def poll(self):
+-        &quot;Wait for and read data being streamed from gpsd.&quot;
+-        self.response = self.sockfile.readline()
+-        if self.response.startswith(&quot;H&quot;) and &quot;=&quot; not in self.response:
+-            while True:
+-                frag = self.sockfile.readline()
+-                self.response += frag
+-                if frag.startswith(&quot;.&quot;):
+-                    break
+-        if not self.response:
+-            return -1
+-        if self.verbose:
+-            sys.stderr.write(&quot;GPS DATA %s\n&quot; % repr(self.response))
+-        self.timings.c_recv_time = time.time()
+-        self.__unpack(self.response)
+-        if self.profiling:
+-            if self.timings.sentence_time != '?':
+-                basetime = self.timings.sentence_time
+-            else:
+-                basetime = self.timings.d_xmit_time
+-            self.timings.c_decode_time = time.time() - basetime
+-            self.timings.c_recv_time -= basetime
++        &quot;&quot;&quot;Wait for and read data being streamed from gpsd.
++        Return values: -1 on EOF, 1 on no more data, 0 otherwise&quot;&quot;&quot;
++        for self.response in self.readstanzas():
++            if self.eof:
++                return -1
++            if not self.response:
++                return 1
++            if self.verbose:
++                sys.stderr.write(&quot;GPS DATA %r\n&quot; % self.response)
++            self.timings.c_recv_time = time.time()
++            self.__unpack(self.response)
++            if self.profiling:
++                if self.timings.sentence_time != '?':
++                    basetime = self.timings.sentence_time
++                else:
++                    basetime = self.timings.d_xmit_time
++                self.timings.c_decode_time = time.time() - basetime
++                self.timings.c_recv_time -= basetime
+         return 0
+ 
+     def send(self, commands):
+-        &quot;Ship commands to the daemon.&quot;
++        &quot;&quot;&quot;Ship commands to the daemon.&quot;&quot;&quot;
+         if not commands.endswith(&quot;\n&quot;):
+             commands += &quot;\n&quot;
+         self.sock.send(commands)
+ 
+     def query(self, commands):
+-        &quot;Send a command, get back a response.&quot;
++        &quot;&quot;&quot;Send a command, get back a response.&quot;&quot;&quot;
+         self.send(commands)
+         return self.poll()
+ 
+-- 
+1.6.1
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006722.html">[Gpsd-dev] [PATCH 8/9] gps.py: Unknown data is excluded before the	switch
+</A></li>
+	<LI>Next message: <A HREF="006726.html">[Gpsd-dev] [PATCH 9/9] gps.py: Make poll() read all buffered data	before returning
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6725">[ date ]</a>
+              <a href="thread.html#6725">[ thread ]</a>
+              <a href="subject.html#6725">[ subject ]</a>
+              <a href="author.html#6725">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

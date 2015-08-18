@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd interface to turn on/off gps radio
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20interface%20to%20turn%20on/off%20gps%20radio&In-Reply-To=%3C91981b3e1002191000i7a015fd0nddbc445823c2beb8%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007369.html">
+   <LINK REL="Next"  HREF="007371.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd interface to turn on/off gps radio</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20interface%20to%20turn%20on/off%20gps%20radio&In-Reply-To=%3C91981b3e1002191000i7a015fd0nddbc445823c2beb8%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] gpsd interface to turn on/off gps radio">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Fri Feb 19 19:00:03 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007369.html">[Gpsd-dev] gpsd interface to turn on/off gps radio
+</A></li>
+        <LI>Next message: <A HREF="007371.html">[Gpsd-dev] gpsd interface to turn on/off gps radio
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7370">[ date ]</a>
+              <a href="thread.html#7370">[ thread ]</a>
+              <a href="subject.html#7370">[ subject ]</a>
+              <a href="author.html#7370">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Short version: there is no way for you to request the gps to power off.
+
+Longer version: at least not with gpsd. Also &quot;the gps&quot; is a uselessly
+vague description. If we knew what chipset and firmware you're
+planning on using, we can tell you if we've heard of any power saving
+features. Not all chips, modules or firmwares can do this; some
+receivers assume that they get to run 24/7, some receivers have a
+command in their protocol to control power saving, and some modules
+are shipped with intentionally crippled/stripped-down firmware.
+
+I'm going to disagree with Eric and assert that most GPSes do not do
+any sort of serial-line controlled power saving. At least, none of the
+OEM boards and modules I'm using do. Power them up, they start
+computing fixes whether or not there's anything attached to the serial
+port. Many consumer modules are read-only. They have power, TX and
+ground. Perhaps the USB-serial controller might go into low power
+mode, but not the GPS core. I'd suggest setting up a test harness
+where you can measure the current draw of the device with and without
+an active consumer of data - I got a shiny new penny that says it
+won't make any difference.[*]
+
+If you're looking for privacy controls, you can bind gpsd to localhost
+so remote clients can't connect to it. Or block TCP connections to
+127.0.0.1:2947 and only allow connections via a properly permitted
+unix domain socket. It might be interesting to think about how to add
+some sort of authorization token to the protocol so unauthorized local
+clients can't query... just a random, before-coffee idea.
+
+[*] says the guy who's working on an embedded project where a 3uA
+saving is something to get excited about.
+
+On Fri, Feb 19, 2010 at 9:32 AM,  &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">kevronx_m_rees at linux.intel.com</A>&gt; wrote:
+&gt;&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">kevronx_m_rees at linux.intel.com</A> &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">kevronx_m_rees at linux.intel.com</A>&gt;:
+</I>&gt;&gt;&gt;<i> Is there currently a way to turn on/off the gps radio via gpsd or any
+</I>&gt;&gt;&gt;<i> other means? &#160;I have been told that if the device isn't being used it
+</I>&gt;&gt;&gt;<i> will
+</I>&gt;&gt;&gt;<i> go into sleep mode. &#160;Possibly there is some command that gpsd can send
+</I>&gt;&gt;&gt;<i> to
+</I>&gt;&gt;&gt;<i> the device to put it in sleep mode?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Yes, most GPSses will go into a low-power mode when their serial device is
+</I>&gt;&gt;<i> not opened for reading. &#160;gpsd encourages this by not keeping devices open
+</I>&gt;&gt;<i> when
+</I>&gt;&gt;<i> no client is requesting fixes. &#160;So it's already doing as well as you could
+</I>&gt;&gt;<i> with a xwitch; you get maximum power economy automatically.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> So there is no way to force gpsd to close the serial device even when
+</I>&gt;<i> clients are requesting a fix? &#160;The use-case I am seeing the need for this
+</I>&gt;<i> is in the case of a handset where a background application is requesting a
+</I>&gt;<i> fix and the user has no way of shutting it off. &#160;Or wants a one-touch way
+</I>&gt;<i> of turning off gps without having to close every application that may be
+</I>&gt;<i> possibly using gps. &#160;There are many cases where the user may want to turn
+</I>&gt;<i> off gps either for paranoia reasons or to save battery life.
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>
+
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007369.html">[Gpsd-dev] gpsd interface to turn on/off gps radio
+</A></li>
+	<LI>Next message: <A HREF="007371.html">[Gpsd-dev] gpsd interface to turn on/off gps radio
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7370">[ date ]</a>
+              <a href="thread.html#7370">[ thread ]</a>
+              <a href="subject.html#7370">[ subject ]</a>
+              <a href="author.html#7370">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

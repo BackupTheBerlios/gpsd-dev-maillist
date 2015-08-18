@@ -1,0 +1,157 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] PATCH: Re: Debian bug #329259: xgpsspeed: just flashing blob
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PATCH%3A%20Re%3A%20Debian%20bug%20%23329259%3A%20xgpsspeed%3A%20just%20flashing%20blob&In-Reply-To=%3C91981b3e0602142211w48018fb5u8f26c50f3618bc6a%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003189.html">
+   <LINK REL="Next"  HREF="003199.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] PATCH: Re: Debian bug #329259: xgpsspeed: just flashing blob</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PATCH%3A%20Re%3A%20Debian%20bug%20%23329259%3A%20xgpsspeed%3A%20just%20flashing%20blob&In-Reply-To=%3C91981b3e0602142211w48018fb5u8f26c50f3618bc6a%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] PATCH: Re: Debian bug #329259: xgpsspeed: just flashing blob">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Wed Feb 15 07:11:18 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003189.html">[Gpsd-dev] PATCH: Re: Debian bug #329259: xgpsspeed: just flashing blob
+</A></li>
+        <LI>Next message: <A HREF="003199.html">[Gpsd-dev] Maximum GPS Channel Discrepancy; Was: PATCH: Re: Debian bug #329259: xgpsspeed: just flashing blob
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3198">[ date ]</a>
+              <a href="thread.html#3198">[ thread ]</a>
+              <a href="subject.html#3198">[ subject ]</a>
+              <a href="author.html#3198">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>OK, I'll stop slacking and have a look at this. Eric asked me to have
+a look at a couple of other things too, so I'll enqueue this. :)
+
+CK (the lazy slacker gps hacker)
+
+On 2/3/06, Marr &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">marr at flex.com</A>&gt; wrote:
+&gt;<i> GPSD Devs,
+</I>&gt;<i>
+</I>&gt;<i> I submitted this patch on Jan 24th to fix a problem reported on the 'users'
+</I>&gt;<i> list. Since then, it seems like it hasn't been applied in the source code.
+</I>&gt;<i>
+</I>&gt;<i> Therefore, I'm resubmitting this (slightly edited to remove tangential issues
+</I>&gt;<i> already addressed) to the 'dev' list (which, in retrospect, I probably should
+</I>&gt;<i> have CC'd in the first place), in the hopes that someone with check-in
+</I>&gt;<i> privileges will see this and apply the patch.
+</I>&gt;<i>
+</I>&gt;<i> Thanks!
+</I>&gt;<i>
+</I>&gt;<i> By the way, does anybody know when the next release of 'gpsd' will be out?
+</I>&gt;<i>
+</I>&gt;<i> Bill Marr
+</I>&gt;<i>
+</I>&gt;<i> On Tuesday 24 January 2006 02:29am, Gary E. Miller wrote:
+</I>&gt;<i> &gt; Yo Hamish!
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; That bug pretty much describes what I see as well...
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; RGDS
+</I>&gt;<i> &gt; GARY
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; On Tue, 24 Jan 2006, Hamish wrote:
+</I>&gt;<i> &gt; &gt; Hi, I am wondering if xgpsspeed is working for anybody outside of the
+</I>&gt;<i> &gt; &gt; Debian world?
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt; see  <A HREF="http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=329259">http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=329259</A>
+</I>&gt;<i>
+</I>&gt;<i> Greetings all,
+</I>&gt;<i>
+</I>&gt;<i> I had noticed odd behavior a while ago too but ignored it. Since seeing these
+</I>&gt;<i> messages (and after recalling that 'xgpsspeed' had worked fine for me long
+</I>&gt;<i> ago [gpsd-1.x-era]), I took a quick look into this and (apparently) solved
+</I>&gt;<i> the problem described by the Debian bug report.
+</I>&gt;<i>
+</I>&gt;<i> The fix merely involved the addition of a couple boundary checks. Without
+</I>&gt;<i> these, the 'update_display()' routine in 'xgpsspeed.c' spins in what
+</I>&gt;<i> essentially turns out to be a never-ending loop as a result of the fact that
+</I>&gt;<i> 'gpsd' seems to be reporting 'NaN' for 'fix.speed' for the first few passes
+</I>&gt;<i> when 'xgpsspeed' is run (at least on my system). This results in a ridiculous
+</I>&gt;<i> value (-2147483648) after the conversion to (e.g.) MPH, which sends the
+</I>&gt;<i> tachometer update routine into &quot;crazy-land&quot;. Essentially, the
+</I>&gt;<i> tachometer-widget's needle is spinning all over the place, which looks
+</I>&gt;<i> predictably odd.
+</I>&gt;<i>
+</I>&gt;<i> While perusing the 'xgpsspeed' code and doing patch testing, I noticed that
+</I>&gt;<i> there are a couple of other bugs in 'xgpsspeed' as well, which I've also
+</I>&gt;<i> fixed.
+</I>&gt;<i>
+</I>&gt;<i> ------------------------------
+</I>&gt;<i>
+</I>&gt;<i> Attached is a patch against 'xgpsspeed.c' in the 2.30 release of 'gpsd'. It
+</I>&gt;<i> fixes the following bugs in the 'xgpsspeed' application:
+</I>&gt;<i>
+</I>&gt;<i> (1) Missing limit-checks on the tachometer widget can result in the tachometer
+</I>&gt;<i> needle spinning madly if invalid vehicle speeds are reported by 'gpsd'.
+</I>&gt;<i>
+</I>&gt;<i> (2) The display of speed units (e.g. &quot;Miles per Hour&quot;) above the &quot;speedometer&quot;
+</I>&gt;<i> was erroneously always displaying &quot;Km per Hour&quot;, regardless of the speed
+</I>&gt;<i> units in use. Furthermore, although there was already a provision to select
+</I>&gt;<i> &quot;knots&quot; as the speed units (&quot;-speedunits knots&quot;), there was never any code to
+</I>&gt;<i> display the proper text!
+</I>&gt;<i>
+</I>&gt;<i> (3) An erroneous conversion factor (the reciprocal of the correct value) was
+</I>&gt;<i> used to convert the native 'meters per second' GPS-reported speed into knots.
+</I>&gt;<i> This results in an erroneous needle position when &quot;-speedunits knots&quot; has
+</I>&gt;<i> been specified on the command line.
+</I>&gt;<i>
+</I>&gt;<i> ------------------------------
+</I>&gt;<i>
+</I>&gt;<i> Although 'xgpsspeed' is a rather silly application (especially since it's
+</I>&gt;<i> limited to 0-100, given that it uses a 'tachometer percentage' widget to
+</I>&gt;<i> mimic a speedometer), if we're going to distribute it with 'gpsd', it might
+</I>&gt;<i> as well work as correctly as possible.
+</I>&gt;<i>
+</I>&gt;<i> Therefore, I'd appreciate it if someone (Gary?) with check-in privileges could
+</I>&gt;<i> apply this patch for the next revision of 'gpsd'.
+</I>&gt;<i>
+</I>&gt;<i> Thanks!
+</I>&gt;<i>
+</I>&gt;<i> Bill Marr
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>
+
+--
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003189.html">[Gpsd-dev] PATCH: Re: Debian bug #329259: xgpsspeed: just flashing blob
+</A></li>
+	<LI>Next message: <A HREF="003199.html">[Gpsd-dev] Maximum GPS Channel Discrepancy; Was: PATCH: Re: Debian bug #329259: xgpsspeed: just flashing blob
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3198">[ date ]</a>
+              <a href="thread.html#3198">[ thread ]</a>
+              <a href="subject.html#3198">[ subject ]</a>
+              <a href="author.html#3198">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

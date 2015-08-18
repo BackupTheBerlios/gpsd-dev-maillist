@@ -1,0 +1,105 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Blocking issues for gpsd release
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Blocking%20issues%20for%20gpsd%20release&In-Reply-To=%3C20060910163248.GA26863%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004285.html">
+   <LINK REL="Next"  HREF="004291.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Blocking issues for gpsd release</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Blocking%20issues%20for%20gpsd%20release&In-Reply-To=%3C20060910163248.GA26863%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Blocking issues for gpsd release">esr at thyrsus.com
+       </A><BR>
+    <I>Sun Sep 10 18:32:48 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004285.html">[Gpsd-dev] Blocking issues for gpsd release
+</A></li>
+        <LI>Next message: <A HREF="004291.html">[Gpsd-dev] Blocking issues for gpsd release
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4287">[ date ]</a>
+              <a href="thread.html#4287">[ thread ]</a>
+              <a href="subject.html#4287">[ subject ]</a>
+              <a href="author.html#4287">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+&gt;<i> So what is the difference between fix.time and newdata.time?
+</I>
+If you svn up you'll see the newdata member is gone (this is the 
+memory-footprint reduction I was promising).  It used to be that the
+difference was this:
+
+1. newdata only held data from the last packet received
+
+2. fix held accumulated data from the current cycle.
+
+The difference wasn't significant for devices like the SiRF that send
+all their fix data in one sentence; it mattered mainly for NMEA
+devices.  The data accumulation used to be done in libgpsd_core.c.
+
+Now, the fix member holds last-packet data (like the old newdata
+member) and accumulation is done into a per-user-session buffer in
+gpsd.c.  That way, the J switch can control whether the per-user
+buffer is cleared at start of cycle or not.
+
+The new code is much simpler and will be much more flexible if and when
+we decide to do other policy-level things (like, say, interpolation).
+
+&gt;<i> Digging a bit more this is more of the problem:
+</I>&gt;<i> 
+</I>&gt;<i> 234c234
+</I>&gt;<i> &lt;     if (session-&gt;gpsdata.fix.mode &gt; 1) {
+</I>&gt;<i> - ---
+</I>&gt;<i> &gt;     if (session-&gt;gpsdata.newdata.mode &gt; 1) {
+</I>&gt;<i> 
+</I>&gt;<i> The check for fix.mode works, but newdata.mode always fails.  Not sure what
+</I>&gt;<i> that means...
+</I>
+Oh, frotz.  I think I know what it means.  In an NMEA device, mode is
+only actually set by GPGSA, which doesn't carry fix data (that's in
+GPRMC, GPGGA, and GPGLL).  So you never get mode &gt; 1 and fix data from
+the same packet.  (Once again, SiRFs and other single-packet-
+per-cycle devices don't have this problem.)
+
+We'll need to add a member to the session structure that accumulates mode
+across the whole current cycle.  But before we commit that, I want to hear from
+Jeff Francis about when J=1 broke again.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004285.html">[Gpsd-dev] Blocking issues for gpsd release
+</A></li>
+	<LI>Next message: <A HREF="004291.html">[Gpsd-dev] Blocking issues for gpsd release
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4287">[ date ]</a>
+              <a href="thread.html#4287">[ thread ]</a>
+              <a href="subject.html#4287">[ subject ]</a>
+              <a href="author.html#4287">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

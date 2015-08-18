@@ -1,0 +1,186 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Possible bug with Trimble Thunderbolt
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Possible%20bug%20with%20Trimble%20Thunderbolt&In-Reply-To=%3Cz2pb9d9547f1005040523i510c5999m3679eb3c19debb80%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007723.html">
+   <LINK REL="Next"  HREF="007725.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Possible bug with Trimble Thunderbolt</H1>
+    <B>Joe Davidson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Possible%20bug%20with%20Trimble%20Thunderbolt&In-Reply-To=%3Cz2pb9d9547f1005040523i510c5999m3679eb3c19debb80%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Possible bug with Trimble Thunderbolt">nugins99 at gmail.com
+       </A><BR>
+    <I>Tue May  4 14:23:06 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007723.html">[Gpsd-dev] Possible bug with Trimble Thunderbolt
+</A></li>
+        <LI>Next message: <A HREF="007725.html">[Gpsd-dev] Possible bug with Trimble Thunderbolt
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7724">[ date ]</a>
+              <a href="thread.html#7724">[ thread ]</a>
+              <a href="subject.html#7724">[ subject ]</a>
+              <a href="author.html#7724">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Mon, May 3, 2010 at 10:27 PM, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+
+&gt;<i> Joe Davidson &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">nugins99 at gmail.com</A>&gt;:
+</I>&gt;<i> &gt; I tried setting up GPSD with a Trimble Thunderbolt that I have with
+</I>&gt;<i> little
+</I>&gt;<i> &gt; luck.    The basic problem is that &quot;cgps&quot; was not getting time and
+</I>&gt;<i> position
+</I>&gt;<i> &gt; messages.   I turned on gpsd debug and did a little digging and found a
+</I>&gt;<i> few
+</I>&gt;<i> &gt; possible problems within driver_tsip.c:
+</I>&gt;<i>
+</I>&gt;<i> Chris Kuethe says he can't reproduce this on his Thunderbolt,. but
+</I>&gt;<i> TSIP's behavior is sufficiently complicated and hairy that I can
+</I>&gt;<i> easily imagine firmware rev making a difference.
+</I>&gt;<i>
+</I>The firmware rev that I get is:
+ gpsd: Software version: 3.0 020627 10.2 011114
+
+
+&gt;<i> &gt; 1)   The primary time message (0x84ab)  comes out right before the
+</I>&gt;<i> position
+</I>&gt;<i> &gt; message (0x8fac).   The time message does not get reported to clients.
+</I>&gt;<i> &gt; There is a REPORT_IS message was not being added to the mask for the time
+</I>&gt;<i> &gt; messages.  Is this intentional?
+</I>&gt;<i>
+</I>&gt;<i> Yes.  The REPORT flag should be set only for the sentence that ends the
+</I>&gt;<i> device's reporting cycle.  Any time information from previous sentence
+</I>&gt;<i> should be a merged part of the report.
+</I>&gt;<i>
+</I>
+I don't think the reports are getting merged correctly.   I removed the
+&quot;REPORT_IS&quot; flag from the first message.   Without the REPORT flag,  cgps
+does not receive the time tag.  I'm just guessing that because cgps has a
+field for time, that the normal behavior is that clients will receive a time
+tag with the position updates.
+
+Here is some debug with the two messages:
+
+gpsd: SP-TTS 0xab time=1272973636.00 mask={TIME}
+gpsd: modeling errors: mode=2, masks={ONLINE|TIME|PACKET}
+gpsd: SP-TPS 0xac time=nan lat=38.86 lon=-77.38 alt=142.67
+mask={LATLON|ALTITUDE|MODE|CLEAR|REPORT}
+gpsd: modeling errors: mode=2,
+masks={ONLINE|LATLON|ALTITUDE|MODE|PACKET|CLEAR|REPORT}
+gpsd: GPS Position XYZ 1086194.125000 -4853324.500000 3980093.000000
+215251.000000
+gpsd: modeling errors: mode=2, masks={ONLINE|PACKET}
+gpsd: GPS Velocity XYZ 0.000000 0.000000 0.000000 0.041246 215251.000000
+
+
+&gt;<i> &gt; 2) The receiver mode flag was always being reported as &quot;0&quot; whenever gpsd
+</I>&gt;<i> &gt; gets restarted.   If I power cycle the gps, the reciever mode gets forced
+</I>&gt;<i> &gt; back to &quot;4&quot; which  indicates the receiver has the full 3D position.
+</I>&gt;<i> &gt; Restarting gpsd again causes the receiver flag to zero out again.
+</I>&gt;<i>
+</I>&gt;<i> I don't understand this report, sorry.  You'll need to be specific about
+</I>&gt;<i> whose &quot;receiver mode flag&quot; this is, and how the actual behavior differs
+</I>&gt;<i> from the expected behavior.
+</I>&gt;<i>
+</I>
+This receiver mode is what is being reported by the GPS.   The receiver
+modes are:
+Auto/Time/2D/3D/DGPS Ref/Clock Hold(2D)/Overdetermined Clock.   The reciever
+mode field in the supplemental time packet for the thunderbolt is defined to
+hold the mode setting the GPS is currently configured for.   The manual
+seems to indicate that this field doesn't have anything to do with the
+current fix.
+
+The code interprets this field to indicate what kind of fix the GPS
+currently has.   To verify this,   I started gpsd, had it detect &amp; configure
+the Thunderbolt.   Then I power cycled the GPS.  When the GPS came back up,
+the receiver mode was &quot;3D fix&quot;, but the Lat/Long/Alt reported by the GPS was
+0/0/0.  (This worked this way because of a minor bug:  GPSD doesn't seem to
+recognize when the Trimble is powercycled and resend configuration).
+
+The reciever mode flag is the mode the Thunderbolt is operating in.   In
+tsip_event_hook() the following lines force the trimble to an auto (2D/3D
+mode):
+
+
+        /* Set Position Fix Mode (auto 2D/3D) */
+        putbyte(buf, 0, 0x00);
+        (void)tsip_write(session, 0x22, buf, 1);
+
+There is possibly a difference in how different trimble devices handle this
+command.  It appears that this command causes Thunderbolt (with the above SW
+version) to report &quot;Auto&quot; mode in the supplemental timing packet. Removing
+this command appears to fix the lack of position updates from getting
+reported to clients in my environment because the receiver will report that
+it is in a 3D mode.   I'm not advocating removing this line at this point
+because I believe it was put in for a reason.  (Maybe another trimble device
+or software version required it).
+
+
+&gt;<i>
+</I>&gt;<i> &gt; Before I dig into this any further,  I'd like to see if somebody familiar
+</I>&gt;<i> &gt; with the TSIP interface has some insight as to what is happening.
+</I>&gt;<i>
+</I>&gt;<i> Poke ckuethe about this.
+</I>&gt;<i>
+</I>&gt;<i> &gt; Below is a diff showing what I did to debug the problem and &quot;fix&quot; it.
+</I>&gt;<i> The
+</I>&gt;<i> &gt; first change fixes the time reporting.   The second just forces the
+</I>&gt;<i> position
+</I>&gt;<i> &gt; messages to get reported if the receiver mode gets reset to zero.
+</I>&gt;<i>
+</I>&gt;<i> Took the second band, didn't take the first and won't without more
+</I>&gt;<i> careful examination.  Is the second band alone sufficient to solve your
+</I>&gt;<i> bug?
+</I>&gt;<i>
+</I>Thanks for taking the second band.  That band alone will get gpsd to report
+position messages, without the first band (or some other fix), there is no
+way of getting the time messages to clients.
+
+
+&gt;<i> --
+</I>&gt;<i>                &lt;a href=&quot;<A HREF="http://www.catb.org/~esr/&lt;http://www.catb.org/%7Eesr/">http://www.catb.org/~esr/&lt;http://www.catb.org/%7Eesr/</A>&gt;&quot;&gt;Eric
+</I>&gt;<i> S. Raymond&lt;/a&gt;
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100504/7aaa130a/attachment.html">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100504/7aaa130a/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007723.html">[Gpsd-dev] Possible bug with Trimble Thunderbolt
+</A></li>
+	<LI>Next message: <A HREF="007725.html">[Gpsd-dev] Possible bug with Trimble Thunderbolt
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7724">[ date ]</a>
+              <a href="thread.html#7724">[ thread ]</a>
+              <a href="subject.html#7724">[ subject ]</a>
+              <a href="author.html#7724">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Possible shm problem: Structure alignment?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Possible%20shm%20problem%3A%20Structure%20alignment%3F&In-Reply-To=%3CAANLkTi%3DZG%2BFvvS7E1adj0uojy5a%2BYJ3B4r45N%3DjWD%2Bj6%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009083.html">
+   <LINK REL="Next"  HREF="009085.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Possible shm problem: Structure alignment?</H1>
+    <B>Dave Hart</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Possible%20shm%20problem%3A%20Structure%20alignment%3F&In-Reply-To=%3CAANLkTi%3DZG%2BFvvS7E1adj0uojy5a%2BYJ3B4r45N%3DjWD%2Bj6%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Possible shm problem: Structure alignment?">hart at ntp.org
+       </A><BR>
+    <I>Sat Mar 26 00:51:58 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009083.html">[Gpsd-dev] Possible shm problem: Structure alignment?
+</A></li>
+        <LI>Next message: <A HREF="009085.html">[Gpsd-dev] Possible shm problem: Structure alignment?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9084">[ date ]</a>
+              <a href="thread.html#9084">[ thread ]</a>
+              <a href="subject.html#9084">[ subject ]</a>
+              <a href="author.html#9084">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Fri, Mar 25, 2011 at 20:56 UTC, Terje Mathisen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">terje at tmsw.no</A>&gt; wrote:
+&gt;<i> OK, there is already an attempt underway (started by H&#229;kan from Sweden) to
+</I>&gt;<i> define a new (POSIX?) shm interface with ns support, merging that work with
+</I>&gt;<i> this effort to get a much more portable/stable interface would be good.
+</I>
+Juergen Perlinger also has proposed changes to ntpd's refclock_shm.c
+in the form of a tarball and an html to-do list in
+<A HREF="http://support.ntp.org/people/perlinger/">http://support.ntp.org/people/perlinger/</A>
+
+Here's an attempt to itemize the various improvements suggested.
+
+0.  Leave existing reflcock_shm.c shared memory structure definition
+in place for backwards compat, allow user to control which variant to
+use via ntp.conf.  I'm not sure what the default should be.
+1.  Ensure 32-bit and 64-bit clients use the same layout expressed in
+fixed-size types
+2.  Use 64-bit wide storage where atomic access is required, declared
+as a union of u_int32[2], a double to force 64-bit alignment on 32-bit
+platforms lacking u_int64, and a u_int64, accessed through a member
+name aliased to the u_int64 on 64-bit, and the least significant
+u_int32 on 32-bit.  This accomodates any 64-bit architectures where
+32-bit access is not atomic.  Even if there is no such architecture
+today, I believe it's worthwhile future-proofing.
+3.  Similarly for time_t containers, use a union of time_t,
+u_int32[2], and a double to force 64-bit storage and alignment.
+4.  Switch to nanosecond resolution for timestamps.
+5.  Arrange the members to avoid compiler padding for alignment.
+6.  Switch from sysv to POSIX named shared memory to broaden supported
+platforms.  Assumption here is there are no interesting systems which
+support sysv shared memory but not POSIX.
+7.  Mark all members volatile to bar access re-ordering by the
+compiler.  Guard the declaration with extern &quot;C&quot; when pulled into C++
+code to use C volatile semantics.
+8.  Come to agreement on the consistency protocol for one writer,
+multiple readers, including use of memory barriers where available,
+but do not require memory barrier support from the compiler, as (IIUC)
+x86/x64 do not need them for volatile atomic accesses to be coherent
+across processors, and the ovewhelming majority of current
+refclock_shm users are on x86 or x64.
+
+I have a feeling I've omitted at least one suggested improvement,
+please followup with any others that come to mind.
+
+If your message is rejected by either list, feel free to forward it to
+me with a request to repost to that list.
+
+Thanks for all the lively participation.  I think we've come a long
+way towards consensus.
+
+Cheers,
+Dave Hart
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009083.html">[Gpsd-dev] Possible shm problem: Structure alignment?
+</A></li>
+	<LI>Next message: <A HREF="009085.html">[Gpsd-dev] Possible shm problem: Structure alignment?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9084">[ date ]</a>
+              <a href="thread.html#9084">[ thread ]</a>
+              <a href="subject.html#9084">[ subject ]</a>
+              <a href="author.html#9084">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

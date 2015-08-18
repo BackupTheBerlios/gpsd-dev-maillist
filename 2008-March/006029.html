@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Bug in gps.py?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2008-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Bug%20in%20gps.py%3F&In-Reply-To=%3C1206653026.6726.26.camel%40andy-desktop%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006027.html">
+   <LINK REL="Next"  HREF="006028.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Bug in gps.py?</H1>
+    <B>Andreas Stricker</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Bug%20in%20gps.py%3F&In-Reply-To=%3C1206653026.6726.26.camel%40andy-desktop%3E"
+       TITLE="[Gpsd-dev] Bug in gps.py?">andy at knitter.ch
+       </A><BR>
+    <I>Thu Mar 27 22:23:46 CET 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006027.html">[Gpsd-dev] Bug in gps.py?
+</A></li>
+        <LI>Next message: <A HREF="006028.html">[Gpsd-dev] recursion using raw_hook?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6029">[ date ]</a>
+              <a href="thread.html#6029">[ thread ]</a>
+              <a href="subject.html#6029">[ subject ]</a>
+              <a href="author.html#6029">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Michael Hartmann schrieb:
+&gt;<i> I'm new to both gpsd and python, but when playing with some python code and 
+</I>&gt;<i> gpsd.py, I got very strange values for altitude. After some time searching, I 
+</I>&gt;<i> figured out that NaN is defined 1e10 in line 17.
+</I>
+Yeah, that's strange, I wondered too.
+
+&gt;<i> I'm not quite sure what this should mean, but 1e10 is definitley a number. And 
+</I>&gt;<i> every time gpsd (the daemon) returns &quot;?&quot; for altitude I see 1e10 as altitude 
+</I>&gt;<i> in my python script.
+</I>
+Yes, each time '?' is received the altitude is set to 1e10 
+(&quot;special&quot; NaN).
+
+&gt;<i> I fixed it by saying: NaN = float(&quot;nan&quot;)
+</I>&gt;<i> That works for me (Python 2.5.1) on my 64bit machine, but I have no idea, 
+</I>&gt;<i> wether this is correct nor this is backward compatible.
+</I>
+This should work with newer versions, but it definitely doesn't work
+with all versions as mentioned in PEP 754 [1]:
+
+&gt;<i> I also don't understand what the function isnan should do:
+</I>&gt;<i> def isnan(x): return x &gt; 1e9
+</I>&gt;<i> If it should test, if x is a number (x is not a nan), it should be:
+</I>&gt;<i> def isnam(x): return str(x) != &quot;nan&quot;
+</I>
+Testing for NaN by converting to a string works on some systems. But as
+described in PEP 754 this isn't always true.
+
+The test for NaN with NaN == NaN is not possible because IEEE 754
+floating point operation should not return true for this. (while Python
+&lt; 2.3 returns True, newer ones return correctly False)
+
+&gt;<i> I hope this is helpful.
+</I>
+Of course. 
+
+A solution is not easy if backwards compatibility is required.
+
+AFAIK the correct solution is to directly test the bit pattern for NaN.
+
+We may use the fpconst module, but this means another dependency. It's
+quite small and may be distributed with gpsd if the licence is not an
+issue.
+
+But before I should read &quot;What Every Computer Scientist Should Know
+About Floating-Point Arithmetic&quot; [3] ...
+
+Attached is a little patch to point to the right URL for PEP 754.
+
+Cheers, Andy
+
+[1] <A HREF="http://www.python.org/dev/peps/pep-0754/">http://www.python.org/dev/peps/pep-0754/</A>
+[2] <A HREF="http://pypi.python.org/pypi/fpconst/0.7.2">http://pypi.python.org/pypi/fpconst/0.7.2</A>
+[3] <A HREF="http://www.validlab.com/goldberg/paper.pdf">http://www.validlab.com/goldberg/paper.pdf</A>
+
+--- gps.py      (Revision 4691)
++++ gps.py      (Arbeitskopie)
+@@ -6,7 +6,7 @@
+ import time, calendar, math, socket, sys, select
+ 
+ # Needed in all versions of Python that don't implement
+-# PEP 75 (<A HREF="http://python.fyxm.net/peps/pep-0754.html">http://python.fyxm.net/peps/pep-0754.html</A>).
++# PEP 754 (<A HREF="http://www.python.org/dev/peps/pep-0754/">http://www.python.org/dev/peps/pep-0754/</A>)
+ # This includes at least versions up to 2.3.4.
+ # PosInf = 1e300000
+ # NaN = PosInf/PosInf
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 189 bytes
+Desc: Dies ist ein digital signierter Nachrichtenteil
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20080327/7677c846/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20080327/7677c846/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006027.html">[Gpsd-dev] Bug in gps.py?
+</A></li>
+	<LI>Next message: <A HREF="006028.html">[Gpsd-dev] recursion using raw_hook?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6029">[ date ]</a>
+              <a href="thread.html#6029">[ thread ]</a>
+              <a href="subject.html#6029">[ subject ]</a>
+              <a href="author.html#6029">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,90 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] regression failures
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20regression%20failures&In-Reply-To=%3Crmi1vjahg76.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007236.html">
+   <LINK REL="Next"  HREF="007238.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] regression failures</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20regression%20failures&In-Reply-To=%3Crmi1vjahg76.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] regression failures">gdt at ir.bbn.com
+       </A><BR>
+    <I>Fri Dec  4 17:11:41 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007236.html">[Gpsd-dev] regression failures
+</A></li>
+        <LI>Next message: <A HREF="007238.html">[Gpsd-dev] regression failures
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7237">[ date ]</a>
+              <a href="thread.html#7237">[ thread ]</a>
+              <a href="subject.html#7237">[ subject ]</a>
+              <a href="author.html#7237">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+According to <A HREF="http://docs.sun.com/source/806-3568/ncg_math.html">http://docs.sun.com/source/806-3568/ncg_math.html</A> , 1 ULP
+in double is about 2.220446e-16, which is just about the difference in
+the sin outputs.
+
+So as I see it:
+
+  sin is sometimes different in the lowest order bit, more or less.
+
+  For points that are very close, earth_distance computes distances that
+  can be several % off (0.25 vs 0.21 or something like that) depending
+  on this tiny difference in sin().
+
+If that's true, the problem is poor numerical stability of
+earth_distance, not the sin() implementation.  It's not clear that
+either of hte answers is correct.
+
+It's very good to have found this - unless I'm confused all uses of
+earth_distance may be getting the wrong answer.
+
+
+
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091204/5a79e176/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091204/5a79e176/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007236.html">[Gpsd-dev] regression failures
+</A></li>
+	<LI>Next message: <A HREF="007238.html">[Gpsd-dev] regression failures
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7237">[ date ]</a>
+              <a href="thread.html#7237">[ thread ]</a>
+              <a href="subject.html#7237">[ subject ]</a>
+              <a href="author.html#7237">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,169 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Problems compiling with lots of warning flags enabled
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Problems%20compiling%20with%20lots%20of%20warning%20flags%20enabled&In-Reply-To=%3CE1Chl0S-0005XE-Ss%40saruman.uio.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000393.html">
+   <LINK REL="Next"  HREF="000374.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Problems compiling with lots of warning flags enabled</H1>
+    <B>Petter Reinholdtsen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Problems%20compiling%20with%20lots%20of%20warning%20flags%20enabled&In-Reply-To=%3CE1Chl0S-0005XE-Ss%40saruman.uio.no%3E"
+       TITLE="[Gpsd-dev] Problems compiling with lots of warning flags enabled">pere at hungry.com
+       </A><BR>
+    <I>Fri Dec 24 09:41:04 CET 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000393.html">[Gpsd-dev] How should the python bindings work?
+</A></li>
+        <LI>Next message: <A HREF="000374.html">[Gpsd-dev] Problems compiling with lots of warning flags enabled
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#371">[ date ]</a>
+              <a href="thread.html#371">[ thread ]</a>
+              <a href="subject.html#371">[ subject ]</a>
+              <a href="author.html#371">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I try to get gpsd compiling with more warning flags enabled with GCC.
+I ran into a problem with these warnings:
+
+  gpsd.c: In function `main':
+
+  gpsd.c:403: warning: variable `dgpsserver' might be clobbered by
+    `longjmp' or `vfork'
+  gpsd.c:406: warning: variable `nowait' might be clobbered by
+    `longjmp' or `vfork'
+  gpsd.c:406: warning: variable `gpsd_speed' might be clobbered by
+    `longjmp' or `vfork'
+  gpsd.c:408: warning: variable `gpstype' might be clobbered by
+    `longjmp' or `vfork'
+
+I'm not quite sure how to get rid of these warnings.  Any ideas?  I
+see the same warnings with the default warning flags when compiling
+using GCC 2.95.4 in Debian Woody.
+
+Here is the current patch, adding lots of warning flags, making a new
+macro UNUSED used to flag unused function arguments, and using it
+several places.  In handle_request() I rewrote the code to actually
+use the buflen variable instead of flagging it as unused.
+
+Index: configure.in
+===================================================================
+--- configure.in        (revision 1144)
++++ configure.in        (working copy)
+@@ -11,7 +11,7 @@
+ AC_C_BIGENDIAN
+
+ if eval &quot;test x$GCC = xyes&quot;; then
+-       CFLAGS=&quot;$CFLAGS -Wall -Werror&quot;
++       CFLAGS=&quot;$CFLAGS -Wall -Werror -W -Wcast-align -Wcast-qual -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type&quot; fi
+
+ AC_CHECK_HEADERS(termios.h sys/termios.h sys/select.h strings.h sys/filio.h sys/time.h X11/xpm.h xpm.h getopt.h sys/modem.h)
+Index: gps.h
+===================================================================
+--- gps.h       (revision 1144)
++++ gps.h       (working copy)
+@@ -120,6 +120,8 @@
+
+ #define DEFAULT_GPSD_PORT      &quot;2947&quot;  /* IANA assignment */
+
++#define UNUSED(a) (void)(a)    /* Flag variable as unused */
++
+ #ifdef __cplusplus
+ }  /* End of the 'extern &quot;C&quot;' block */
+ #endif
+Index: zodiac.c
+===================================================================
+--- zodiac.c    (revision 1144)
++++ zodiac.c    (working copy)
+@@ -283,6 +283,7 @@
+ static void handle1005(struct gps_session_t *session, unsigned short *p)
+ {
+     int i, numcorrections = p[O(12)];
++    UNUSED(session);
+
+ #if 1
+   gpsd_report(1, &quot;Station bad: %d\n&quot;, (p[O(9)] &amp; 1) ? 1 : 0);
+Index: report.c
+===================================================================
+--- report.c    (revision 1144)
++++ report.c    (working copy)
+@@ -1,5 +1,7 @@
++#include &quot;config.h&quot;
+ #include &lt;stdio.h&gt;
+ #include &lt;stdarg.h&gt;
++#include &quot;gpsd.h&quot;
+
+ void gpsd_report(int errlevel, const char *fmt, ... )
+ /* stub logger for clients that don't supply one */
+@@ -9,5 +11,6 @@
+     va_start(ap, fmt);
+     vfprintf(stderr, fmt, ap);
+     va_end(ap);
++    UNUSED(errlevel);
+ }
+
+Index: gpsd.c
+===================================================================
+--- gpsd.c      (revision 1144)
++++ gpsd.c      (working copy)
+@@ -43,6 +43,7 @@
+
+ static void restart(int sig)
+ {
++    UNUSED(sig);
+     longjmp(restartbuf, THROW_SIGHUP);
+ }
+
+@@ -155,6 +156,7 @@
+
+ static int validate(int fd)
+ {
++    UNUSED(fd);
+ #define VALIDATION_COMPLAINT(level, legend) \
+         gpsd_report(level, legend &quot; (status=%d, mode=%d).\r\n&quot;, \
+                    session-&gt;gNMEAdata.status, session-&gt;gNMEAdata.mode)
+@@ -180,7 +182,7 @@
+
+     sprintf(reply, &quot;GPSD&quot;);
+     p = buf;
+-    while (*p) {
++    while (*p &amp;&amp; p - buf &lt; buflen) {
+        switch (toupper(*p++)) {
+        case 'A':
+            if (!validate(fd))
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000393.html">[Gpsd-dev] How should the python bindings work?
+</A></li>
+	<LI>Next message: <A HREF="000374.html">[Gpsd-dev] Problems compiling with lots of warning flags enabled
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#371">[ date ]</a>
+              <a href="thread.html#371">[ thread ]</a>
+              <a href="subject.html#371">[ subject ]</a>
+              <a href="author.html#371">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

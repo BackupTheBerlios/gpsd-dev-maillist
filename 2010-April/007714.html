@@ -1,0 +1,87 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsdecode segfault
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsdecode%20segfault&In-Reply-To=%3C201004261529.24507.contact_gpsd%40nirgal.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007716.html">
+   <LINK REL="Next"  HREF="007717.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsdecode segfault</H1>
+    <B>Nirgal</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsdecode%20segfault&In-Reply-To=%3C201004261529.24507.contact_gpsd%40nirgal.com%3E"
+       TITLE="[Gpsd-dev] gpsdecode segfault">contact_gpsd at nirgal.com
+       </A><BR>
+    <I>Mon Apr 26 16:29:18 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007716.html">[Gpsd-dev] Garbage in gpsdecode output
+</A></li>
+        <LI>Next message: <A HREF="007717.html">[Gpsd-dev] new gps report
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7714">[ date ]</a>
+              <a href="thread.html#7714">[ thread ]</a>
+              <a href="subject.html#7714">[ subject ]</a>
+              <a href="author.html#7714">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I have a interresting one: I have a dual channel ais decoder that mixes the channels:
+
+Input:
+!AIVDM,1,1,,B,402Un8iua&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">oss2RJobGenCi00 at 0C</A>
+!AIVDM,1,1,,A,402Un8iua&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">oss2RJobGenCi00 at 0C</A>,0*4F
+,0*4C
+
+Program received signal SIGSEGV, Segmentation fault.
+[Switching to Thread 0xb7c7e6c0 (LWP 11213)]
+aivdm_decode (buf=0xbfffd910 &quot;!AIVDM,1,1,,B,402Un8iua&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">oss2RJobGenCi00 at 0C</A>\n&quot;, 
+    buflen=43, ais_context=0xbfffcb04, ais=0xbfffe0c8) at driver_aivdm.c:108
+108	    pad = ais_context-&gt;field[6][0];
+
+This is because sometimes field[6] is not initialized (at start time). I have the feeling it can be worse when field reference old memory in next iterrations...
+
+I'll manage regarding the interlacing of the A &amp; B channels, but segfault should be fixed anyways!
+
+Attached is a facist code fragment that discard any lines without 6 coma separated fields.
+
+In that example lines 1 and 3 are discarded, without segfault.
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: driver_aivdm.c.2.diff
+Type: text/x-diff
+Size: 524 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100426/164e56bb/attachment.diff">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100426/164e56bb/attachment.diff</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007716.html">[Gpsd-dev] Garbage in gpsdecode output
+</A></li>
+	<LI>Next message: <A HREF="007717.html">[Gpsd-dev] new gps report
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7714">[ date ]</a>
+              <a href="thread.html#7714">[ thread ]</a>
+              <a href="subject.html#7714">[ subject ]</a>
+              <a href="author.html#7714">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

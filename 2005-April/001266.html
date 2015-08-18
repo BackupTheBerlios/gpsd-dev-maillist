@@ -1,0 +1,114 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] result of trying svn version
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20result%20of%20trying%20svn%20version&In-Reply-To=%3C17611.213.84.187.156.1112860506.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001255.html">
+   <LINK REL="Next"  HREF="001246.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] result of trying svn version</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20result%20of%20trying%20svn%20version&In-Reply-To=%3C17611.213.84.187.156.1112860506.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] result of trying svn version">gpsd at xs4all.nl
+       </A><BR>
+    <I>Thu Apr  7 09:55:06 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001255.html">[Gpsd-dev] result of trying svn version
+</A></li>
+        <LI>Next message: <A HREF="001246.html">[Gpsd-dev] result of trying svn version
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1266">[ date ]</a>
+              <a href="thread.html#1266">[ thread ]</a>
+              <a href="subject.html#1266">[ subject ]</a>
+              <a href="author.html#1266">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+</I>&gt;&gt;<i> There seems to be an issue with the ecef_to_wgs84fix calculation.
+</I>&gt;&gt;<i> The calculated altitude is wrong, I think the wgs84_separation has the
+</I>&gt;&gt;<i> wrong sign.  When I change the addition of wgs84_separation into
+</I>&gt;&gt;<i> subtraction, the result here (52N 5E) is OK.
+</I>&gt;<i>
+</I>&gt;<i> Ask Oleg Gusev.  He gave me the code for WGS84 separations.
+</I>
+After some discussion it seems like the wgs84_separation is ok but it
+should just be - instead of + in ecef_to_wgs84fix.
+
+
+&gt;&gt;<i> There also is an issue that I have observed ever since writing sirf.c
+</I>&gt;&gt;<i> (what is now called sirfmon.c) and using it on my receiver:
+</I>&gt;&gt;<i> My uBlox receiver outputs both x/y/z and lat/lon/alt.
+</I>&gt;&gt;<i> The latter is output in a manufacturer-defined packet (0x62).
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> In my sirf.c I have been displaying both, one normal and one bold, at
+</I>&gt;&gt;<i> the
+</I>&gt;&gt;<i> same position.  One can often see the fields toggle between two values
+</I>&gt;&gt;<i> because the results are not exactly the same (I think due to rounding).
+</I>&gt;&gt;<i> But now, there is a bigger difference: 0x02 packets calculate altitude
+</I>&gt;&gt;<i> above mean sea level, and the 0x62 packet has altitude above the wgs84
+</I>&gt;&gt;<i> geoid.
+</I>&gt;&gt;<i> So the output shown on the screen toggles between two values differing
+</I>&gt;&gt;<i> about 45m.
+</I>&gt;<i>
+</I>&gt;<i> This is why I wanted WGS84 separation code.  I wanted to be able to throw
+</I>&gt;<i> away packet 0x29 (the SiRF Geodetic Navigation Data) and the equivalent
+</I>&gt;<i> uBlox 0x62 and get all my fix info from *one* packet with a well-defined
+</I>&gt;<i> timestamp.
+</I>
+Ok, but that will require the almanac for UTC time.
+I see you have already studied the nice-and-clean structure of the data so
+probably that will be solved, and this packet is not really required
+anymore.
+
+&gt;&gt;<i> Maybe there should be more than one &quot;fix&quot; structure per receiver?
+</I>&gt;&gt;<i> (but how to access them from the TCP socket?)
+</I>&gt;<i>
+</I>&gt;<i> Why, if they're all returning the same data?  And in your case they are,
+</I>&gt;<i> subject to change in coordinate system.  If I've got the sign of the
+</I>&gt;<i> correction wrong, that's a simple bug and a different issue.
+</I>
+They are not returning the same data.  In the uBlox 0x62 the altitude is
+not above sealevel but above wgs84 ellipsoid.  There are also some DOP
+fields in this packet.
+
+I think gpsd should keep a separate field for altitude above ellipsoid or
+for the separation, so that both values are available to the client (as
+with NMEA). ecef_to_wgs84fix can set these.
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001255.html">[Gpsd-dev] result of trying svn version
+</A></li>
+	<LI>Next message: <A HREF="001246.html">[Gpsd-dev] result of trying svn version
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1266">[ date ]</a>
+              <a href="thread.html#1266">[ thread ]</a>
+              <a href="subject.html#1266">[ subject ]</a>
+              <a href="author.html#1266">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

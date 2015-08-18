@@ -1,0 +1,174 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] RFC: GPS parameters &amp; A-GPS
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20RFC%3A%20GPS%20parameters%20%26%20A-GPS&In-Reply-To=%3C20091026123336.GB10138%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006955.html">
+   <LINK REL="Next"  HREF="006956.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] RFC: GPS parameters &amp; A-GPS</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20RFC%3A%20GPS%20parameters%20%26%20A-GPS&In-Reply-To=%3C20091026123336.GB10138%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] RFC: GPS parameters &amp; A-GPS">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Oct 26 13:33:36 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006955.html">[Gpsd-dev] RFC: GPS parameters &amp; A-GPS
+</A></li>
+        <LI>Next message: <A HREF="006956.html">[Gpsd-dev] gpsd switched to wrong driver SVN 6397
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6962">[ date ]</a>
+              <a href="thread.html#6962">[ thread ]</a>
+              <a href="subject.html#6962">[ subject ]</a>
+              <a href="author.html#6962">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Baruch Even &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">baruch at ev-en.org</A>&gt;:
+&gt;<i> I'd like to add some new features to gpsd and would like to discuss them
+</I>&gt;<i> before I spend time to implement them, I'd like to see if it will be
+</I>&gt;<i> accepted in gpsd.
+</I>
+You picked a good time to bring this up. We've just switched to a new,
+JSON-based command protocol that is specifically intended to support 
+extensiuons like those you have in mind.
+ 
+&gt;<i> My knowledge is about the u-blox 4 GPS which is available in the Neo
+</I>&gt;<i> Freerunner phone, I didn't yet take a look at other GPSs, maybe others
+</I>&gt;<i> can chime in how such features are relevant to other models.
+</I>&gt;<i> 
+</I>&gt;<i> The features I'd like to support in the u-blox 4 are:
+</I>&gt;<i> * Navigation parameters (CFG-NAV2, CFG-SBAS)
+</I>&gt;<i> * Ephemeris &amp; Almanac download/upload
+</I>&gt;<i> * A-GPS support
+</I>
+We're open to these.  I know my chief lieutenant, Chris Kuethe, is
+specifically interested in ephemeris/almanac access for SiRFs 
+and Trimbles.
+
+&gt;<i> Navigation Parameters
+</I>&gt;<i> ---------------------
+</I>&gt;<i> 
+</I>&gt;<i> The navigation parameters include two key params: Mode &amp; Static
+</I>&gt;<i> threshold. Mode can be Stationary, Pedestrian, Car, Marine and three
+</I>&gt;<i> levels of Flight (&lt;1g, &lt;2g &amp; &lt;4g). Static threshold is a value in cm/s
+</I>&gt;<i> below which the GPS doesn't consider it a movement. The Static threshold
+</I>&gt;<i> helps to get a cleaner signal when the car is stopped at a red-light
+</I>&gt;<i> f.ex.
+</I>&gt;<i> 
+</I>&gt;<i> There may be additional parameters but these two are the key, the rest
+</I>&gt;<i> can be supported as well.
+</I>&gt;<i> 
+</I>&gt;<i> My thinking for the parameters is to have a GPSD api to get all
+</I>&gt;<i> parameters, this will give us the name and the value and to be able to
+</I>&gt;<i> set them. We can try to map the parameters appropriate to different GPSs
+</I>&gt;<i> so that we will have as much in common between them all.
+</I>
+Yes.  The way to implement this sort of thing would be to add a driver
+method for parameter-setting - signature something like this:
+
+void gpsctl(struct gps_device_t *session, int paramtype, bool set, int *value);
+
+There would be an eumerated type or series of #defines for paramtype
+
+#define NAV_MODE	1
+#define THRESHOLD	2
+
+etc.  There's at least one other chipset - SiRF - that could support these.
+Then we'd add new JSON commands to call the hook.  None of this would be
+very difficult, the main issue is actually deciding what the command set
+ought to look like.
+ 
+&gt;<i> Ephemeris &amp; Almanac download/upload
+</I>&gt;<i> -----------------------------------
+</I>&gt;<i> 
+</I>&gt;<i> The u-blox 4 allows the user to get periodically the ephemeris &amp; almanac
+</I>&gt;<i> and to upload it at startup so that if the user restarts the GPS not too
+</I>&gt;<i> long after he turned it off the GPS can get a hot-start and get a fix
+</I>&gt;<i> very quickly. This is currently employed in the Freerunner FSO framework
+</I>&gt;<i> to great success. The logic is simple, get the ephemeris, keep it in
+</I>&gt;<i> memory, when the gps is turned off save it to disk, when the gps is
+</I>&gt;<i> started load it back up. Saving it to disk is debatable.
+</I>&gt;<i> 
+</I>&gt;<i> This can be extended to download the data from the u-blox assist online
+</I>&gt;<i> website just before the user leaves his network connection. This needs
+</I>&gt;<i> to be triggered from outside.
+</I>&gt;<i> 
+</I>&gt;<i> I've seen a few discussions in the past regarding ephemeris download and
+</I>&gt;<i> upload but that was in relation to a TCP/IP server, here I'm interested
+</I>&gt;<i> in the local saving of the data, once we have that it should also be
+</I>&gt;<i> possible to create an open service that collects such information and
+</I>&gt;<i> distributes it.
+</I>
+Yes.  This should be even easier.  All we'd need to do is initialize
+the chip into a mode that emits these periodically, then recognize
+those packets coming back up and make them trigger a JSON report to
+client sessions.  As before, the major issue is defigning s reasonable
+chipset-independent support format.
+ 
+&gt;<i> A-GPS
+</I>&gt;<i> -----
+</I>&gt;<i> 
+</I>&gt;<i> The idea here is part of the one above, A-GPS in this context is to
+</I>&gt;<i> provide the GPS with a good time and location estimates to start with.
+</I>&gt;<i> The time can be taken from the system, maybe with an offset if the
+</I>&gt;<i> system time is found to be wrong.
+</I>&gt;<i> 
+</I>&gt;<i> The location can be estimated externally by different means, in my case
+</I>&gt;<i> I already implemented a crude service to estimate the location based on
+</I>&gt;<i> GSM cell data, so that you can get not-too-bad estimate in a second and
+</I>&gt;<i> feed it to the gps so it will have a chance to get a faster fix. The
+</I>&gt;<i> accuracy of the GSM location is at worst about 30Km (give or take),
+</I>&gt;<i> which should be sufficient for the GPS.
+</I>&gt;<i> 
+</I>&gt;<i> In this case we need a way to register an A-GPS provider with gpsd so
+</I>&gt;<i> that we can register multiple providers (maybe wifi hot-spot based) and
+</I>&gt;<i> let gpsd use it as needed.
+</I>
+Use it how?  What would trigger a data transfer, and how would it be incodesd?
+
+One easy step we could take would vbe to write a JSON command that would
+ship the chip a position and time estimate.  This, again, would require 
+another standard driver method, but that's OK - sereveral of our
+supported chipsets could use it.
+
+If your location service could behave as a gpsd client (e.g., oprn
+a client connection and ship it a JSON-encoded estimate) that problem
+would be solved.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006955.html">[Gpsd-dev] RFC: GPS parameters &amp; A-GPS
+</A></li>
+	<LI>Next message: <A HREF="006956.html">[Gpsd-dev] gpsd switched to wrong driver SVN 6397
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6962">[ date ]</a>
+              <a href="thread.html#6962">[ thread ]</a>
+              <a href="subject.html#6962">[ subject ]</a>
+              <a href="author.html#6962">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

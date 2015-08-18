@@ -1,0 +1,105 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-users]  Preparing for 2.93 point release
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-users%5D%20%20Preparing%20for%202.93%20point%20release&In-Reply-To=%3C20100714081238.GA8254%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008060.html">
+   <LINK REL="Next"  HREF="008058.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-users]  Preparing for 2.93 point release</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-users%5D%20%20Preparing%20for%202.93%20point%20release&In-Reply-To=%3C20100714081238.GA8254%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] [Gpsd-users]  Preparing for 2.93 point release">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Jul 14 10:12:38 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008060.html">[Gpsd-dev] 2.95 release has been shipped
+</A></li>
+        <LI>Next message: <A HREF="008058.html">[Gpsd-dev] new gps report
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8057">[ date ]</a>
+              <a href="thread.html#8057">[ thread ]</a>
+              <a href="subject.html#8057">[ subject ]</a>
+              <a href="author.html#8057">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>wheresmyhat &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">wheresmyhat at lavabit.com</A>&gt;:
+&gt;<i> My platform is Ubuntu 10.04, gpsd and gpsd-clients upgraded to release
+</I>&gt;<i> 2.94_2 from debian unstable:
+</I>&gt;<i> - Linux 2.6.32-23-generic #37-Ubuntu SMP Fri Jun 11 08:03:28 UTC 2010 x86_64
+</I>&gt;<i> GNU/Linux
+</I>&gt;<i> - gpsd: 2.94 (revision 2010-05-09T23:34:56)
+</I>&gt;<i> 
+</I>&gt;<i> My GPS receiver is a BU-353 (USB): native mode is SiRF, and also supports
+</I>&gt;<i> NMEA 0183.
+</I>&gt;<i> 
+</I>&gt;<i> The gpsmon client works fluently when the receiver is in SiRF binary mode,
+</I>&gt;<i> and accessed directly through /dev/ttyUSB0 (no gpsd involved). In this case
+</I>&gt;<i> I don't even notice the CPU load reported by Hakan.
+</I>&gt;<i> 
+</I>&gt;<i> When the receiver is in SiRF binary mode, but accessed via gpsd, the gpsmon
+</I>&gt;<i> client fails immediatly with &quot;Read error from device&quot;.
+</I>&gt;<i> I've uploaded the result of sudo strace -oSiRF.gpsd.strace gpsmon: 
+</I>&gt;<i> <A HREF="http://old.nabble.com/file/p28951035/SiRF.gpsd.strace">http://old.nabble.com/file/p28951035/SiRF.gpsd.strace</A> SiRF.gpsd.strace 
+</I>&gt;<i> 
+</I>&gt;<i> When the receiver is set to NMEA mode, and accessed via gpsd, the gpsmon
+</I>&gt;<i> client also fails immediatly with &quot;Read error from device&quot;.
+</I>&gt;<i> I've uploaded the result of sudo strace -oNMEA.gpsd.strace gpsmon: 
+</I>&gt;<i> <A HREF="http://old.nabble.com/file/p28951035/NMEA.gpsd.strace">http://old.nabble.com/file/p28951035/NMEA.gpsd.strace</A> NMEA.gpsd.strace 
+</I>&gt;<i> 
+</I>&gt;<i> When the receiver is set to NMEA mode, and accessed directly through
+</I>&gt;<i> /dev/ttyUSB0, the gpsmon client fails with &quot;Read error from device&quot;, but
+</I>&gt;<i> after a few seconds of normal activity.
+</I>&gt;<i> I've uploaded the result of sudo strace -oNMEA.direct.strace gpsmon
+</I>&gt;<i> /dev/ttyUSB0:  <A HREF="http://old.nabble.com/file/p28951035/NMEA.direct.strace">http://old.nabble.com/file/p28951035/NMEA.direct.strace</A>
+</I>&gt;<i> NMEA.direct.strace 
+</I>&gt;<i> 
+</I>&gt;<i> Rem: To set the receiver to NMEA mode, I had to bypass the daemon.
+</I>&gt;<i> $ sudo gpsctl -f -n /dev/ttyUSB0 
+</I>&gt;<i> gpsctl: /dev/ttyUSB0 identified as a SiRF binary at 4800.
+</I>&gt;<i> gpsctl: switching to mode NMEA.
+</I>&gt;<i> gpsctl: after mode change, /dev/ttyUSB0 looks like a Generic NMEA
+</I>&gt;<i> GSW3.2.4_3.1.00.12-SDK003P1.00a  at 4800.
+</I>
+We just shipped 2.95, which includes some subtle changes in the way 
+zero-length reads from devices are handled. It is possible this will
+solve your problem.  If not, knowing if the behasvior you're seeing
+has *changed* might help us isolate the problem.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008060.html">[Gpsd-dev] 2.95 release has been shipped
+</A></li>
+	<LI>Next message: <A HREF="008058.html">[Gpsd-dev] new gps report
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8057">[ date ]</a>
+              <a href="thread.html#8057">[ thread ]</a>
+              <a href="subject.html#8057">[ subject ]</a>
+              <a href="author.html#8057">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

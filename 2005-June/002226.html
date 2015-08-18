@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] First results from Valgrind
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20First%20results%20from%20Valgrind&In-Reply-To=%3C200506251442.j5PEg9LR011207%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002229.html">
+   <LINK REL="Next"  HREF="002227.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] First results from Valgrind</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20First%20results%20from%20Valgrind&In-Reply-To=%3C200506251442.j5PEg9LR011207%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] First results from Valgrind">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Sat Jun 25 16:42:09 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002229.html">[Gpsd-dev] Re: SiRF-testing
+</A></li>
+        <LI>Next message: <A HREF="002227.html">[Gpsd-dev] compiler error with --enable-dbus
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2226">[ date ]</a>
+              <a href="thread.html#2226">[ thread ]</a>
+              <a href="subject.html#2226">[ subject ]</a>
+              <a href="author.html#2226">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I've been spending my working time the last couple of days heavily
+hacking gpsfake with the intention of supporting serious Valgrind
+auditing of the code.  Here are the first results:
+
+1. gpsfake is now a trivial wrapper around a TestSession class that
+can be used to completely control a daemon test.  The class has
+methods to create and terminate clients, also to attach and detach
+fake GPS devices.  Each fake GPS is in actuality a subthread cycling
+sentences from a specified logfile into the master end of a pty, with
+a gpsd instance watching the slave end.
+
+2. The distribution now includes a Python script called
+valgrind-audit, which uses the TestSession class to run gpsd
+under Valgrind in a completely controlled environment.
+
+3. valgrind-audit has uncovered a memory leak exactly where one might
+have been expected, in device deallocation.  This is now fixed.
+
+The splint audit was stage one; this is stage two.  I expect to make
+valgrind-audit a thorough torture test of the dynamic-allocation
+behavior of the daemon.  This will give us objective reason for
+confidence that the code does not contain memory leaks, double frees,
+overruns of the stack or dynamic storage areas, etc.
+
+My current plan is to do a point release when the Valgrind audit
+looks complete, probably late this coming week.  There are currently
+no new features or logic changes in the damon itself other than
+minor bug fixes.
+
+Other developers are encouraged to add their own tests to
+valgrind-audit.  All the TestSession class methods are documented,
+and the usage pattern should be apparent from the existing tests.
+
+As a side effect, I have sent a patch to the Valgrind maintainers to
+fix an annoying confirmation prompt :-).
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+A human being should be able to change a diaper, plan an invasion,
+butcher a hog, conn a ship, design a building, write a sonnet, balance
+accounts, build a wall, set a bone, comfort the dying, take orders, give
+orders, cooperate, act alone, solve equations, analyze a new problem,
+pitch manure, program a computer, cook a tasty meal, fight efficiently,
+die gallantly. Specialization is for insects.
+	-- Robert A. Heinlein, &quot;Time Enough for Love&quot;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002229.html">[Gpsd-dev] Re: SiRF-testing
+</A></li>
+	<LI>Next message: <A HREF="002227.html">[Gpsd-dev] compiler error with --enable-dbus
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2226">[ date ]</a>
+              <a href="thread.html#2226">[ thread ]</a>
+              <a href="subject.html#2226">[ subject ]</a>
+              <a href="author.html#2226">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

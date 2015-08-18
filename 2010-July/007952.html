@@ -1,0 +1,105 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpxlogger
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpxlogger&In-Reply-To=%3C20100701070951.GD63689%40glebius.int.ru%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="007960.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpxlogger</H1>
+    <B>Gleb Smirnoff</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpxlogger&In-Reply-To=%3C20100701070951.GD63689%40glebius.int.ru%3E"
+       TITLE="[Gpsd-dev] gpxlogger">glebius at glebius.int.ru
+       </A><BR>
+    <I>Thu Jul  1 09:09:51 CEST 2010</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="007960.html">[Gpsd-dev] gpxlogger
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7952">[ date ]</a>
+              <a href="thread.html#7952">[ thread ]</a>
+              <a href="subject.html#7952">[ subject ]</a>
+              <a href="author.html#7952">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>  Greg,
+
+On Wed, Jun 30, 2010 at 11:50:10AM -0400, Greg Troxel wrote:
+G&gt;   @@ -305,11 +306,11 @@ static int socket_mainloop(void)
+G&gt;        struct gps_data_t gpsdata;
+G&gt; 
+G&gt;        if (gps_open_r(source.server, source.port, &amp;gpsdata) != 0) {
+G&gt;   -	(void)fprintf(stderr,
+G&gt;   -		      &quot;%s: no gpsd running or network error: %d, %s\n&quot;,
+G&gt;   -		      progname, errno, gps_errstr(errno));
+G&gt;   +	syslog(LOG_ERR, &quot;no gpsd running or network error: %d, %s&quot;,
+G&gt;   +	    errno, gps_errstr(errno));
+G&gt;           exit(1);
+G&gt;   -    }
+G&gt;   +    } else
+G&gt;   +	syslog(LOG_NOTICE, &quot;connected to gpsd at %s:%s&quot;, source.server, source.port);
+G&gt; 
+G&gt;        gps_set_raw_hook(&amp;gpsdata, process);
+G&gt;        (void)gps_stream(&amp;gpsdata, WATCH_ENABLE, NULL);
+G&gt; 
+G&gt; Unilaterally changing from stderr complaints to syslog seems not ok.
+G&gt; gpxlogger is fundamentally a command-line tool and should be usable as
+G&gt; such.  It seems fine to add options to log via syslog instead, and to
+G&gt; make that the default when being a daemon.
+
+I am doing openlog() with LOG_PERROR, so all messages are printed to stderr,
+if we are running non-daemon.
+
+I see that gpxlogger is mostly a command-line tool for debugging, now. IMHO,
+it should also be a good daemon working in conjunction with gpsd. Logging the
+trace is a daemon task. I am already using gpxlogger as daemon on a CarPC,
+where even monitor is not connected 50% of time. And I want to make the
+logger better.
+
+I think this tasklet should be done within the gpsd project framework,
+without forking a separate project for say gpxlogger-2.
+
+G&gt; I am unclear on whether gpsd works on cygwin at the moment.  Presumably
+G&gt; syslog support would be conditional anyway on support being present, so
+G&gt; it wouldn't be a problem on environments without it.
+
+We can declare local function syslog() in the !HAVE_SYSLOG_H case, that
+does fprintf(stderr,...
+
+-- 
+Totus tuus, Glebius.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="007960.html">[Gpsd-dev] gpxlogger
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7952">[ date ]</a>
+              <a href="thread.html#7952">[ thread ]</a>
+              <a href="subject.html#7952">[ subject ]</a>
+              <a href="author.html#7952">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

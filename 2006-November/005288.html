@@ -1,0 +1,185 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Changes to driver_proto.c
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Changes%20to%20driver_proto.c&In-Reply-To=%3C200611201943.12466.mick.durkin%40saunalahti.fi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005286.html">
+   <LINK REL="Next"  HREF="005294.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Changes to driver_proto.c</H1>
+    <B>Mick Durkin</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Changes%20to%20driver_proto.c&In-Reply-To=%3C200611201943.12466.mick.durkin%40saunalahti.fi%3E"
+       TITLE="[Gpsd-dev] Changes to driver_proto.c">mick.durkin at saunalahti.fi
+       </A><BR>
+    <I>Mon Nov 20 18:43:12 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005286.html">[Gpsd-dev] NVML
+</A></li>
+        <LI>Next message: <A HREF="005294.html">[Gpsd-dev] Changes to driver_proto.c
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5288">[ date ]</a>
+              <a href="thread.html#5288">[ thread ]</a>
+              <a href="subject.html#5288">[ subject ]</a>
+              <a href="author.html#5288">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Eric,
+
+Your changes to my proposals make sense to me. I understand your point about 
+not labelling the types for the methods. I guess its a bit like not stating 
+the type of a variable as part of its name; leads to all kinds of confusion.
+
+I also realise that I mixed the meanings of .wrapup and .revert (which you 
+caught), though that was a mistake in this code that I had not made in my 
+driver.
+
+I offer a few changes again. I have added the missing hooks except those to do 
+with rate switching. I think that recently the rate switching function has 
+possibly been canned by you/Chris/Gary because subsecond reports don't 
+actually give subsecond resolution to the results.
+
+I have added a comment to the methods table to emphasise the significance of 
+the parameters/return types for each method. The values in driver_proto.c, as 
+you pointed out, may not reflect the current situation because it doesn't get 
+compiled. All the real drivers do, so they will complain if we change 
+anything in the methods without updating each driver.
+
+The comment refers the reader to gpsd.h where the real information is to be 
+found in gps_type_t.
+
+Here is the diff.
+
+Best Regards
+
+Mick
+
+=================================================
+
+--- driver_proto.c.org	2006-11-20 18:01:54.000000000 +0200
++++ driver_proto.c	2006-11-20 19:18:37.000000000 +0200
+@@ -85,12 +85,19 @@
+     /* set operating mode here */
+ }
+ 
++static void proto_set_mode(struct gps_device_t *session, speed_t speed)
++{
++    /*
++     * Insert your actual mode switching code here.
++     */
++}
++
+ static void set_mode(struct gps_device_t *session, int mode)
+ {
+     if (mode == 0) {
+-	(void)gpsd_switch_driver(session, &quot;Generic NMEA&quot;);
+-	(void)proto_set_mode(session, session-&gt;gpsdata.baudrate, false);
++	proto_set_mode(session, session-&gt;gpsdata.baudrate);
+ 	session-&gt;gpsdata.driver_mode = 0;
++	(void)gpsd_switch_driver(session, &quot;Generic NMEA&quot;);
+     }
+ }
+ 
+@@ -112,6 +119,23 @@
+    return false;
+ }
+ 
++static void proto_revert(struct gps_device_t *session)
++{
++   /*
++    * Reverse what the .configurator method changed.
++    */
++}
++
++static void probe_wakeup(struct gps_device_t *session)
++{
++   /*
++    * Code to make the device ready to communicate. This is
++    * run everytime we are about to try a different baud
++    * rate in the autobaud sequence. Only needed if the
++    * device is in some kind of sleeping state.
++    */
++}
++
+ static void proto_wrapup(struct gps_device_t *session)
+ {
+    /*
+@@ -125,18 +149,32 @@
+     /* Change sentence mix and set reporting modes as needed */
+ }
+ 
++/* The methods in this code take parameters and have */
++/* return values that conform to the requirements AT */
++/* THE TIME THE CODE WAS WRITTEN.                    */
++/*                                                   */
++/* These values may well have changed by the time    */
++/* you read this and methods could have been added   */
++/* or deleted.                                       */
++/*                                                   */
++/* The latest situation can be found by inspecting   */
++/* the contents of struct gps_type_t in gpsd.h.      */
++/*                                                   */
++/* This always contains the correct definitions that */
++/* any driver must use to compile.                   */
++
+ /* This is everything we export */
+ struct gps_type_t proto_binary = {
+     /* Full name of type */
+     .typename         = &quot;Prototype driver&quot;,
+-    /* Response string that identifies device */
++    /* Response string that identifies device (not active) */
+     .trigger          = NULL,
+     /* Number of satellite channels supported by the device */
+     .channels         = 12,
+     /* Startup-time device detector */
+     .probe_detect     = probe_detect,
+     /* Wakeup to be done before each baud hunt */
+-    .probe_wakeup     = NULL,
++    .probe_wakeup     = probe_wakeup,
+     /* Initialize the device and get subtype */
+     .probe_subtype    = probe_subtype,
+ #ifdef ALLOW_RECONFIGURE
+@@ -159,7 +197,7 @@
+     .cycle_chars      = -1,
+ #ifdef ALLOW_RECONFIGURE
+     /* Undo the actions of .configurator */
+-    .revert         = NULL,
++    .revert           = proto_revert,
+ #endif /* ALLOW_RECONFIGURE */
+     /* Puts device back to original settings */
+     .wrapup           = proto_wrapup,
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005286.html">[Gpsd-dev] NVML
+</A></li>
+	<LI>Next message: <A HREF="005294.html">[Gpsd-dev] Changes to driver_proto.c
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5288">[ date ]</a>
+              <a href="thread.html#5288">[ thread ]</a>
+              <a href="subject.html#5288">[ subject ]</a>
+              <a href="author.html#5288">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Version-control and forge migration
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Version-control%20and%20forge%20migration&In-Reply-To=%3C4B9B6359.8090307%40bzed.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007404.html">
+   <LINK REL="Next"  HREF="007406.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Version-control and forge migration</H1>
+    <B>Bernd Zeimetz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Version-control%20and%20forge%20migration&In-Reply-To=%3C4B9B6359.8090307%40bzed.de%3E"
+       TITLE="[Gpsd-dev] Version-control and forge migration">bernd at bzed.de
+       </A><BR>
+    <I>Sat Mar 13 11:05:13 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007404.html">[Gpsd-dev] Version-control and forge migration
+</A></li>
+        <LI>Next message: <A HREF="007406.html">[Gpsd-dev] Version-control and forge migration
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7405">[ date ]</a>
+              <a href="thread.html#7405">[ thread ]</a>
+              <a href="subject.html#7405">[ subject ]</a>
+              <a href="author.html#7405">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Eric Raymond wrote:
+&gt;<i> Bernd Zeimetz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">bernd at bzed.de</A>&gt;:
+</I>&gt;&gt;<i> - Add a script which pushes to github and similar pages regulary, thats an
+</I>&gt;&gt;<i> easy and cheap backup (and safe due to the checksums git uses) and it
+</I>&gt;&gt;<i> also allows other peopel to clone the codebase easily to add their
+</I>&gt;&gt;<i> changes and ask to pull them.
+</I>&gt;<i> 
+</I>&gt;<i> What would trigger the script?  You want one of us to run it by hand
+</I>&gt;<i> occasionally, or do you want it in a commit hook?
+</I>
+I'd just use a cronjob.
+
+&gt;&gt;<i> - Provide &quot;stable&quot; branches, similar to what the kernel developers
+</I>&gt;&gt;<i> do. For distributions like Debian it is important to be able to
+</I>&gt;&gt;<i> update packages in case of important bugs easily. And it makes
+</I>&gt;&gt;<i> things much more easy for packagers if such bugfixes are available
+</I>&gt;&gt;<i> in the upstream's repository. Otherwise you have to find the right
+</I>&gt;&gt;<i> commits, pick them onto the older code base
+</I>&gt;<i> 
+</I>&gt;<i> I think master *is* the stable branch.  If we need to create an
+</I>&gt;<i> unstable later, fine, but I don''t think anyone has plans for
+</I>&gt;<i> destabizing changes in the foreseeable future.
+</I>
+But it is not possible to use the master branch as an update for bugs of older
+revisions. Stable updates in Debian only allow to include bugfixes, no new
+features. The master branch includes new features, so there is no way for me to
+use it. As long as it is only me it is probably not worth to create stable
+branches, but other packages might benefit from it, too.
+
+&gt;&gt;<i> - Never allow to push non-fast-forwards. Otherwise it will be a PITA
+</I>&gt;&gt;<i> to use for others.
+</I>&gt;<i> 
+</I>&gt;<i> Explain?
+</I>
+You might want to have a look at
+<A HREF="http://eagain.net/articles/git-for-computer-scientists/">http://eagain.net/articles/git-for-computer-scientists/</A> to understand the theory
+behind git. Non-fast-forward pushes drop existing parts from the graph.
+
+
+&gt;&gt;<i> - Please write proper commit messages: A short summary in the first
+</I>&gt;&gt;<i> line, then one empty line, then the long description. Recent vim
+</I>&gt;&gt;<i> installations should have a proper syntax highlighting for it. Makes
+</I>&gt;&gt;<i> it much more easy if you want to create patches from them - or just
+</I>&gt;&gt;<i> want to have a look at the shortlog.
+</I>&gt;<i> 
+</I>&gt;<i> Noted.  Is there Emacs support for this convention?  Is a log message consisting
+</I>&gt;<i> *only* of a summary line within form?
+</I>
+No idea about emacs, but I guess there is :)
+git log normally shows the long form, but you're able to configure it via the
+config fil eo roptions to show only the summary.
+
+&gt;&gt;<i> - Add proper commit hooks, at least to send commit diffs. There are
+</I>&gt;&gt;<i> hooks for various tasks, including rejecting commits for various
+</I>&gt;&gt;<i> reasons. Wondering if we have reasons to reject commits - probably
+</I>&gt;&gt;<i> for a missing proper log message? Not sure.
+</I>&gt;<i> 
+</I>&gt;<i> I'm counting on you to set up the CIA hook so we get commit notifications
+</I>&gt;<i> to #gpsd.
+</I>
+Will do.I'm at the 'Chemnitzer Linux Tage' (Linux days in Chemnitz) right now,
+as soon as I find the time and a proper network connection I'll set the hooks up.
+Do we want to enforce things like proper commit messages while pushing? Or
+similar things?
+
+Cheers,
+
+Bernd
+
+-- 
+ Bernd Zeimetz                            Debian GNU/Linux Developer
+ <A HREF="http://bzed.de">http://bzed.de</A>                                <A HREF="http://www.debian.org">http://www.debian.org</A>
+ GPG Fingerprints: 06C8 C9A2 EAAD E37E 5B2C BE93 067A AD04 C93B FF79
+                   ECA1 E3F2 8E11 2432 D485 DD95 EB36 171A 6FF9 435F
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007404.html">[Gpsd-dev] Version-control and forge migration
+</A></li>
+	<LI>Next message: <A HREF="007406.html">[Gpsd-dev] Version-control and forge migration
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7405">[ date ]</a>
+              <a href="thread.html#7405">[ thread ]</a>
+              <a href="subject.html#7405">[ subject ]</a>
+              <a href="author.html#7405">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

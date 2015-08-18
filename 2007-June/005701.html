@@ -1,0 +1,131 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Garmin endian portability
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Garmin%20endian%20portability&In-Reply-To=%3CPine.LNX.4.64.0706041327290.17886%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005698.html">
+   <LINK REL="Next"  HREF="005699.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Garmin endian portability</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Garmin%20endian%20portability&In-Reply-To=%3CPine.LNX.4.64.0706041327290.17886%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] Garmin endian portability">gem at rellim.com
+       </A><BR>
+    <I>Mon Jun  4 22:35:09 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005698.html">[Gpsd-dev] Garmin endian portability
+</A></li>
+        <LI>Next message: <A HREF="005699.html">[Gpsd-dev] udev rules update
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5701">[ date ]</a>
+              <a href="thread.html#5701">[ thread ]</a>
+              <a href="subject.html#5701">[ subject ]</a>
+              <a href="author.html#5701">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Eric!
+
+On Sun, 3 Jun 2007, Eric S. Raymond wrote:
+
+&gt;<i> Petr Slansky &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">slansky at usa.net</A>&gt;:
+</I>&gt;<i> &gt; I have several problems with these functions:
+</I>&gt;<i> &gt; 1) confusing names. They look as function to work with signed numbers but they
+</I>&gt;<i> &gt; work with unsigned numbers in the real.
+</I>&gt;<i> &gt; 2) Dulicate code. garmin.c unit ignores functions defined in bits.h used
+</I>&gt;<i> &gt; already by other modules.
+</I>&gt;<i>
+</I>&gt;<i> That's definitely not good.  We should be using the bits.h macros
+</I>&gt;<i> everywhere for consistency and readability.  However, just now I'm not
+</I>&gt;<i> going to insist on an immediate switch, because I'm thinking about
+</I>&gt;<i> renaming those to distinguish clearly between the big-endian and
+</I>&gt;<i> little-endian version and eliminating the LITTLE_ENDIAN and BIG_ENDIAN
+</I>&gt;<i> defines.  The Navcom driver, you see, uses macros from *both* sets...
+</I>
+Moving to consistency is in general a good idea.  However gpsd is so
+diverse in what it supports that every time a move is made to unify
+the drivers a lot gets broken.  So I say if it ain't broke, don't fix
+it.  We have enough known broken things to spend our limited time on.
+
+&gt;<i> &gt; 3) no functions to read/write float numbers; float numbers are used in
+</I>&gt;<i> &gt; cpo_pvt_data structure for example.
+</I>
+There is no such thing as a big or little endian IEE754.  Therefore no
+conversion is required.  The proof of this is that the current code
+works on bug and little endian w/o any conversion.
+
+&gt;<i> &gt; 4) garmin.c code ignores these function at several places and reads/writes
+</I>&gt;<i> &gt; binary data directly.
+</I>&gt;<i>
+</I>&gt;<i> I think, give the way Garmin declares C structures in its interface, that
+</I>&gt;<i> we're supposed to assume that the device ships back data in twos-complement
+</I>&gt;<i> little-endian with IEEE754 floats.
+</I>
+Yep, and it works.
+
+&gt;<i> That would explain the technique I'm
+</I>&gt;<i> seeing, which is to suck in entire structures and then little-endianize
+</I>&gt;<i> individual members when using them.
+</I>
+Yep.  Many ways to skin a cat.
+
+&gt;<i> &gt; Eric, what is your advice? What is the best way to cleanup code?
+</I>&gt;<i>
+</I>&gt;<i> Not sure yet.  Gary, have I described the set of assumptions you're using?
+</I>
+As good an explanation as any.  I could recode this in a dozen different
+ways, but I prefer to chase down the few remaining lose ends than start
+over just to meet some arbitrary style.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 109 NW Wilmington Ave., Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFGZHeA8KZibdeR3qURAnuYAKDw+oktrtUOIwE1Mu61w0bqv3ZLzwCffrY5
+iwUiRbBdQXJgCS3q370MOgw=
+=CY5u
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005698.html">[Gpsd-dev] Garmin endian portability
+</A></li>
+	<LI>Next message: <A HREF="005699.html">[Gpsd-dev] udev rules update
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5701">[ date ]</a>
+              <a href="thread.html#5701">[ thread ]</a>
+              <a href="subject.html#5701">[ subject ]</a>
+              <a href="author.html#5701">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

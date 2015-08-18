@@ -1,0 +1,86 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] Don't lose the RPATH when building gpsd.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Don%27t%20lose%20the%20RPATH%20when%20building%20gpsd.&In-Reply-To=%3C1302204416-13876-1-git-send-email-bbolli%40ewanet.ch%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009258.html">
+   <LINK REL="Next"  HREF="009263.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] Don't lose the RPATH when building gpsd.</H1>
+    <B>Beat Bolli</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Don%27t%20lose%20the%20RPATH%20when%20building%20gpsd.&In-Reply-To=%3C1302204416-13876-1-git-send-email-bbolli%40ewanet.ch%3E"
+       TITLE="[Gpsd-dev] [PATCH] Don't lose the RPATH when building gpsd.">bbolli at ewanet.ch
+       </A><BR>
+    <I>Thu Apr  7 21:26:56 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009258.html">[Gpsd-dev] [PATCH] Initialize htmlbuilder.
+</A></li>
+        <LI>Next message: <A HREF="009263.html">[Gpsd-dev] [PATCH] Don't lose the RPATH when building gpsd.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9262">[ date ]</a>
+              <a href="thread.html#9262">[ thread ]</a>
+              <a href="subject.html#9262">[ subject ]</a>
+              <a href="author.html#9262">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>---
+ SConstruct |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/SConstruct b/SConstruct
+index cde51ed..c7bfb43 100644
+--- a/SConstruct
++++ b/SConstruct
+@@ -519,9 +519,11 @@ gpsmon_sources = [
+     ]
+ 
+ ## Production programs
+-gpsd = env.Program('gpsd', gpsd_sources,
+-                   LINKFLAGS = &quot;-pthread&quot;,
+-                   LIBS = gpsdlibs + rtlibs + dbus_xmit_libs)
++# Don't lose the RPATH when building gpsd
++gpsd_env = env.Clone()
++gpsd_env.MergeFlags(&quot;-pthread&quot;)
++gpsd = gpsd_env.Program('gpsd', gpsd_sources,
++                        LIBS = gpsdlibs + rtlibs + dbus_xmit_libs)
+ gpsdecode = env.Program('gpsdecode', ['gpsdecode.c'], LIBS=gpsdlibs+rtlibs)
+ gpsctl = env.Program('gpsctl', ['gpsctl.c'], LIBS=gpsdlibs+rtlibs)
+ gpsmon = env.Program('gpsmon', gpsmon_sources, LIBS=gpsdlibs + ncurseslibs)
+-- 
+1.7.4.1
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009258.html">[Gpsd-dev] [PATCH] Initialize htmlbuilder.
+</A></li>
+	<LI>Next message: <A HREF="009263.html">[Gpsd-dev] [PATCH] Don't lose the RPATH when building gpsd.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9262">[ date ]</a>
+              <a href="thread.html#9262">[ thread ]</a>
+              <a href="subject.html#9262">[ subject ]</a>
+              <a href="author.html#9262">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

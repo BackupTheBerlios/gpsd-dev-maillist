@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] byte ordering bug, and security bug in gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2008-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20byte%20ordering%20bug%2C%20and%20security%20bug%20in%20gpsd&In-Reply-To=%3C200810020924.00297.remco%40rvt.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006141.html">
+   <LINK REL="Next"  HREF="006145.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] byte ordering bug, and security bug in gpsd</H1>
+    <B>Remco Treffkorn</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20byte%20ordering%20bug%2C%20and%20security%20bug%20in%20gpsd&In-Reply-To=%3C200810020924.00297.remco%40rvt.com%3E"
+       TITLE="[Gpsd-dev] byte ordering bug, and security bug in gpsd">remco at rvt.com
+       </A><BR>
+    <I>Thu Oct  2 18:24:00 CEST 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006141.html">[Gpsd-dev] byte ordering bug, and security bug in gpsd
+</A></li>
+        <LI>Next message: <A HREF="006145.html">[Gpsd-dev] byte ordering bug, and security bug in gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6143">[ date ]</a>
+              <a href="thread.html#6143">[ thread ]</a>
+              <a href="subject.html#6143">[ subject ]</a>
+              <a href="author.html#6143">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Thursday 02 October 2008, Greg Troxel wrote:
+&gt;<i> I remembered from long ago that gpsd listened on INADDR_ANY, which is
+</I>&gt;<i> obviously bad for many people from a security viewpoint and desired
+</I>&gt;<i> behavior for some.  I thought there was a &quot;-A&quot; option to set the
+</I>&gt;<i> listening address but I can find no sign of it.
+</I>&gt;<i>
+</I>&gt;<i> The following diff sets the default to something safe, and adds a
+</I>&gt;<i> missing htonl, the lack of which didn't matter with INADDR_ANY.
+</I>&gt;<i>
+</I>&gt;<i> I realize this is likely controversial, and in any case gpsd needs a
+</I>&gt;<i> switch to control the listening behavior.  I would propose
+</I>&gt;<i>
+</I>&gt;<i>   -A address
+</I>&gt;<i>
+</I>&gt;<i> where address is something one passes to inet_aton (or a more
+</I>&gt;<i> v6-friendly alternative), and multiple -A options can be given.
+</I>&gt;<i>
+</I>&gt;<i> There still remains the question of the default; I think the default
+</I>&gt;<i> should be localhost only and that exposing the position of one's
+</I>&gt;<i> computer to the world should only happen if explicitly requested.
+</I>&gt;<i>
+</I>&gt;<i> It might be simpler to have a '-G' (for global) option to use
+</I>&gt;<i> INADDR_ANY, defaulting to INADDR_LOOPBACK.
+</I>&gt;<i>
+</I>&gt;<i> I'm curious what gpsd users think - do people want their computer to
+</I>&gt;<i> provide this service to anyone?  Do people realize?  The SECURITY
+</I>&gt;<i> section of the man page does not discuss this.  Has anyone ever scanned
+</I>&gt;<i> the net to find gpsd instances and found anything interesting?
+</I>&gt;<i>
+</I>&gt;<i> Index: gpsd.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- gpsd.c	(revision 4808)
+</I>&gt;<i> +++ gpsd.c	(working copy)
+</I>&gt;<i> @@ -230,7 +230,7 @@
+</I>&gt;<i>      /*@ -mustfreefresh @*/
+</I>&gt;<i>      memset((char *) &amp;sin, 0, sizeof(sin));
+</I>&gt;<i>      sin.sin_family = (sa_family_t)AF_INET;
+</I>&gt;<i> -    sin.sin_addr.s_addr = INADDR_ANY;
+</I>&gt;<i> +    sin.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+</I>&gt;<i>
+</I>&gt;<i>      if ((pse = getservbyname(service, protocol)))
+</I>&gt;<i>  	sin.sin_port = htons(ntohs((in_port_t)pse-&gt;s_port));
+</I>
+This is not so much controversial, as it is incomplete. Add the switch, and I 
+would say 'why not'.
+
+As to the history: Yes, that was what I wanted at the time. Gpsd was not so 
+much an application as it was a template from which to roll your own.
+
+As to your security concerns: Why is your firewall allowing access to the gpsd 
+port? All major distributions have the firewall restricting access.
+
+Or is your paranoia of the &quot;belt and suspenders&quot; type ? :-)
+
+Cheers,
+Remco
+
+-- 
+Remco Treffkorn (RT445)
+HAM DC2XT
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006141.html">[Gpsd-dev] byte ordering bug, and security bug in gpsd
+</A></li>
+	<LI>Next message: <A HREF="006145.html">[Gpsd-dev] byte ordering bug, and security bug in gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6143">[ date ]</a>
+              <a href="thread.html#6143">[ thread ]</a>
+              <a href="subject.html#6143">[ subject ]</a>
+              <a href="author.html#6143">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,629 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] cgps issues
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20cgps%20issues&In-Reply-To=%3C20060908172442.GD9845%40www.gritch.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004259.html">
+   <LINK REL="Next"  HREF="004263.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] cgps issues</H1>
+    <B>Jeff Francis</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20cgps%20issues&In-Reply-To=%3C20060908172442.GD9845%40www.gritch.org%3E"
+       TITLE="[Gpsd-dev] cgps issues">jeff at gritch.org
+       </A><BR>
+    <I>Fri Sep  8 19:24:42 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004259.html">[Gpsd-dev] cgps issues
+</A></li>
+        <LI>Next message: <A HREF="004263.html">[Gpsd-dev] cgps issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4260">[ date ]</a>
+              <a href="thread.html#4260">[ thread ]</a>
+              <a href="subject.html#4260">[ subject ]</a>
+              <a href="author.html#4260">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>  Odd that the patch doesn't apply.  I've attached the entire file,
+instead.
+
+
+On Fri, Sep 08, 2006 at 11:15:36AM -0600, Chris Kuethe wrote:
+&gt;<i> On 9/8/06, Jeff Francis &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>&gt; wrote:
+</I>&gt;<i> &gt;   Ok, I hammered it out early (it sounded like more fun than most of
+</I>&gt;<i> &gt; my to-do list, so it got pushed to #1).  This patch does the
+</I>&gt;<i> &gt; following ...
+</I>&gt;<i> 
+</I>&gt;<i> Totally finicky, but maybe make the limit 80x19, and if it's only 19
+</I>&gt;<i> high, don't print &quot;CGPS Test Client&quot;?
+</I>&gt;<i> 
+</I>&gt;<i> As for improvements, cgps doesn't seem to cope with terminal size
+</I>&gt;<i> changes. I guess that can be handled later.
+</I>&gt;<i> 
+</I>&gt;<i> This introduces no regressions on my system, though the second patch
+</I>&gt;<i> doesn't apply properly.
+</I>&gt;<i> 
+</I>&gt;<i> CK
+</I>&gt;<i> 
+</I>&gt;<i> -- 
+</I>&gt;<i> GDB has a 'break' feature; why doesn't it have 'fix' too?
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>
+-- 
++--------------------------+------------------------------------------+
+|<i>   Jeff Francis - N0GQ    | Calvin:  How come you know so much?      |
+</I>|<i> Snohomish, WA USA, Earth |                                          |
+</I>|<i>     <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>      | Calvin's Dad:  It's all in the book you  |
+</I>|<i>  <A HREF="http://blog.gritch.org">http://blog.gritch.org</A>  | get when you become a father.            |
+</I>+--------------------------+------------------------------------------+
+-------------- next part --------------
+/*
+ * Copyright (c) 2005 Jeff Francis &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>&gt;
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED &quot;AS IS&quot; AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+/*
+  Jeff Francis
+  <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>
+  $Id: cgps.c 3446 2006-09-04 17:54:47Z ckuethe $
+
+  Kind of a curses version of xgps for use with gpsd.
+*/
+
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;ctype.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;math.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;sys/select.h&gt;
+#include &lt;sys/socket.h&gt;
+
+#include &lt;ncurses.h&gt;                                                         
+#include &lt;signal.h&gt;
+
+#include &quot;config.h&quot;
+#include &quot;gps.h&quot;
+
+/* Macro for declaring function arguments unused. */
+#if defined(__GNUC__)
+#  define UNUSED __attribute__((unused)) /* Flag variable as unused */
+#else /* not __GNUC__ */
+#  define UNUSED
+#endif
+
+static struct gps_data_t *gpsdata;
+static time_t timer;    /* time of last state change */
+static int state = 0;   /* or MODE_NO_FIX=1, MODE_2D=2, MODE_3D=3 */
+static float altfactor = METERS_TO_FEET;
+static float speedfactor = MPS_TO_MPH;
+static char *altunits = &quot;ft&quot;;
+static char *speedunits = &quot;mph&quot;;
+
+static WINDOW *datawin, *satellites, *messages, *command, *status;
+
+int silent_flag=0;
+int fixclear_flag=0;
+
+int bigger;
+
+/* Function to call when we're all done.  Does a bit of clean-up. */
+static void die(int sig UNUSED) 
+{
+  /* Ignore signals. */
+  (void)signal(SIGINT,SIG_IGN);
+  (void)signal(SIGHUP,SIG_IGN);
+
+  /* Move the cursor to the bottom left corner. */
+  (void)mvcur(0,COLS-1,LINES-1,0);
+
+  /* Put input attributes back the way they were. */
+  (void)echo();
+
+  /* Done with curses. */
+  (void)endwin();
+
+  /* We're done talking to gpsd. */
+  (void)gps_close(gpsdata);
+
+  /* Bye! */
+  exit(0);
+}
+
+
+static enum deg_str_type deg_type = deg_dd;
+
+/* This gets called once for each new sentence. */
+static void update_panel(struct gps_data_t *gpsdata, 
+                         char *message,
+                         size_t len, 
+                         int level UNUSED)
+{
+  int i;
+  int newstate;
+  char *s;
+
+  /* This is for the satellite status display.  Lifted almost
+     verbatim from xgps.c.  Note that the satellite list may be
+     truncated based on available screen size.  */
+  if (gpsdata-&gt;satellites) {
+    for (i = 0; i &lt; (bigger + 12); i++) {
+      (void)wmove(satellites, i+2, 1);
+      if (i &lt; gpsdata-&gt;satellites) {
+        (void)wprintw(satellites,&quot; %3d    %02d    %03d    %02d      %c  &quot;,
+                      gpsdata-&gt;PRN[i],
+                      gpsdata-&gt;elevation[i], gpsdata-&gt;azimuth[i], 
+                      gpsdata-&gt;ss[i],   gpsdata-&gt;used[i] ? 'Y' : 'N');
+      } else {
+        (void)wprintw(satellites,&quot;                              &quot;);
+      }
+    }
+  }
+  
+  /* Print time/date. */
+  (void)wmove(datawin, 1,17);
+  if (isnan(gpsdata-&gt;fix.time)==0) {
+    char scr[128];
+    (void)wprintw(datawin,&quot;%s&quot;,unix_to_iso8601(gpsdata-&gt;fix.time, scr, (int)sizeof(s)));
+  } else
+    (void)wprintw(datawin,&quot;n/a         &quot;);
+
+  /* Fill in the latitude. */
+  (void)wmove(datawin, 2,17);
+  if (gpsdata-&gt;fix.mode &gt;= MODE_2D) {
+    s = deg_to_str(deg_type,  fabs(gpsdata-&gt;fix.latitude));
+    (void)wprintw(datawin,&quot;%s %c     &quot;, s, (gpsdata-&gt;fix.latitude &lt; 0) ? 'S' : 'N');
+  } else
+    (void)wprintw(datawin,&quot;n/a         &quot;);
+
+  /* Fill in the longitude. */
+  (void)wmove(datawin, 3,17);
+  if (gpsdata-&gt;fix.mode &gt;= MODE_2D) {
+    s = deg_to_str(deg_type,  fabs(gpsdata-&gt;fix.longitude));
+    (void)wprintw(datawin,&quot;%s %c     &quot;, s, (gpsdata-&gt;fix.longitude &lt; 0) ? 'W' : 'E');
+  } else
+    (void)wprintw(datawin,&quot;n/a         &quot;);
+
+  /* Fill in the altitude. */
+  (void)wmove(datawin, 4,17);
+  if (gpsdata-&gt;fix.mode == MODE_3D)
+    (void)wprintw(datawin,&quot;%.1f %s     &quot;,gpsdata-&gt;fix.altitude*altfactor, altunits);
+  else
+    (void)wprintw(datawin,&quot;n/a         &quot;);
+
+  /* Fill in the speed */
+  (void)wmove(datawin, 5,17);
+  if (gpsdata-&gt;fix.mode &gt;= MODE_2D &amp;&amp; isnan(gpsdata-&gt;fix.track)==0)
+    (void)wprintw(datawin,&quot;%.1f %s     &quot;, gpsdata-&gt;fix.speed*speedfactor, speedunits);
+  else
+    (void)wprintw(datawin,&quot;n/a         &quot;);
+
+  /* Fill in the heading. */
+  (void)wmove(datawin, 6,17);
+  if (gpsdata-&gt;fix.mode &gt;= MODE_2D &amp;&amp; isnan(gpsdata-&gt;fix.track)==0)
+    (void)wprintw(datawin,&quot;%.1f degrees     &quot;, gpsdata-&gt;fix.track);
+  else
+    (void)wprintw(datawin,&quot;n/a         &quot;);
+
+  /* Fill in the rate of climb. */
+  (void)wmove(datawin, 7,17);
+  if (gpsdata-&gt;fix.mode == MODE_3D &amp;&amp; isnan(gpsdata-&gt;fix.climb)==0)
+    (void)wprintw(datawin,&quot;%.1f %s/min     &quot;
+                  , gpsdata-&gt;fix.climb * altfactor * 60, altunits);
+  else
+    (void)wprintw(datawin,&quot;n/a         &quot;);
+  
+  /* Fill in the estimated horizontal position error. */
+  (void)wmove(datawin, 9,22);
+  if (isnan(gpsdata-&gt;fix.eph)==0)
+    (void)wprintw(datawin,&quot;+/- %d %s     &quot;, (int) (gpsdata-&gt;fix.eph * altfactor), altunits);
+  else
+    (void)wprintw(datawin,&quot;n/a         &quot;);
+
+  /* Fill in the estimated vertical position error. */
+  (void)wmove(datawin, 10,22);
+  if (isnan(gpsdata-&gt;fix.epv)==0)
+    (void)wprintw(datawin,&quot;+/- %d %s     &quot;, (int)(gpsdata-&gt;fix.epv * altfactor), altunits);
+  else
+    (void)wprintw(datawin,&quot;n/a         &quot;);
+
+  /* Fill in the estimated track error. */
+  (void)wmove(datawin, 11,22);
+  if (isnan(gpsdata-&gt;fix.epd)==0)
+    (void)wprintw(datawin,&quot;+/- %.1f deg     &quot;, (gpsdata-&gt;fix.epd));
+  else
+    (void)wprintw(datawin,&quot;n/a          &quot;);
+  
+  /* Fill in the estimated speed error. */
+  (void)wmove(datawin, 12,22);
+  if (isnan(gpsdata-&gt;fix.eps)==0)
+    (void)wprintw(datawin,&quot;+/- %d %s     &quot;, (int)(gpsdata-&gt;fix.eps * speedfactor), speedunits);
+  else
+    (void)wprintw(datawin,&quot;n/a            &quot;);
+
+  /* Fill in the GPS status and the time since the last state change. */
+  (void)wmove(status, 1,10);
+  if (gpsdata-&gt;online == 0) {
+    newstate = 0;
+    (void)wprintw(status,&quot;OFFLINE          &quot;);
+  } else {
+    newstate = gpsdata-&gt;fix.mode;
+    switch (gpsdata-&gt;fix.mode) {
+    case MODE_2D:
+      (void)wprintw(status,&quot;2D %sFIX (%d secs)   &quot;,(gpsdata-&gt;status==STATUS_DGPS_FIX)?&quot;DIFF &quot;:&quot;&quot;, (int) (time(NULL) - timer));
+      break;
+    case MODE_3D:
+      (void)wprintw(status,&quot;3D %sFIX (%d secs)   &quot;,(gpsdata-&gt;status==STATUS_DGPS_FIX)?&quot;DIFF &quot;:&quot;&quot;, (int) (time(NULL) - timer));
+      break;
+    default:
+      (void)wprintw(status,&quot;NO FIX (%d secs)     &quot;, (int) (time(NULL) - timer));
+      break;
+    }
+  }
+
+  /* Be quiet if the user requests silence. */
+  if(silent_flag==0) {
+    (void)wprintw(messages, &quot;%s\n&quot;, message);
+  }
+
+  /* Reset the timer if the state has changed. */
+  if (newstate != state) {
+    timer = time(NULL);
+    state = newstate;
+  }
+
+  (void)wrefresh(datawin);
+  (void)wrefresh(status);
+  (void)wrefresh(satellites);
+  (void)wrefresh(messages);
+  (void)wrefresh(command);
+}
+
+static void usage( char *prog) 
+{
+  (void)fprintf(stderr, 
+                &quot;Usage: %s [-h] [-V] [-l {d|m|s}] [server[:port:[device]]]\n\n&quot;
+                &quot;  -h          Show this help, then exit\n&quot;
+                &quot;  -V          Show version, then exit\n&quot;
+                &quot;  -s          Be silent (don't print raw dgps data)\n&quot;
+                &quot;  -o          Fix screen flash for NMEA (experimental)\n&quot;
+                &quot;  -l {d|m|s}  Select lat/lon format\n&quot;
+                &quot;                d = DD.dddddd\n&quot;
+                &quot;                m = DD MM.mmmm'\n&quot;
+                &quot;                s = DD MM' SS.sss\&quot;\n&quot;
+                , prog);
+
+  exit(1);
+}
+
+int main(int argc, char *argv[])
+{
+  int option;
+  char *arg = NULL, *colon1, *colon2, *device = NULL, *server = NULL, *port = DEFAULT_GPSD_PORT;
+  char *err_str = NULL;
+  int c;
+
+  int xsize, ysize;
+
+  struct timeval timeout;
+  fd_set rfds;
+  int data;
+
+  /* Process the options.  Print help if requested. */
+  while ((option = getopt(argc, argv, &quot;hVl:sj&quot;)) != -1) {
+    switch (option) {
+    case 's':
+      silent_flag=1;
+      break;
+    case 'j':
+      fixclear_flag=1;
+      break;
+    case 'V':
+      (void)fprintf(stderr, &quot;SVN ID: $Id: cgps.c 3446 2006-09-04 17:54:47Z ckuethe $ \n&quot;);
+      exit(0);
+    case 'l':
+      switch ( optarg[0] ) {
+      case 'd':
+        deg_type = deg_dd;
+        continue;
+      case 'm':
+        deg_type = deg_ddmm;
+        continue;
+      case 's':
+        deg_type = deg_ddmmss;
+        continue;
+      default:
+        (void)fprintf(stderr, &quot;Unknown -l argument: %s\n&quot;, optarg);
+        /*@ -casebreak @*/
+      }
+    case 'h': default:
+      usage(argv[0]);
+      break;
+    }
+  }
+
+  /* Grok the server, port, and device. */
+  /*@ -branchstate @*/
+  if (optind &lt; argc) {
+    arg = strdup(argv[optind]);
+    /*@i@*/colon1 = strchr(arg, ':');
+    server = arg;
+    if (colon1 != NULL) {
+      if (colon1 == arg)
+        server = NULL;
+      else
+        *colon1 = '\0';
+      port = colon1 + 1;
+      colon2 = strchr(port, ':');
+      if (colon2 != NULL) {
+        if (colon2 == port)
+          port = NULL;
+        else
+          *colon2 = '\0';
+        device = colon2 + 1;
+      }
+    }
+    colon1 = colon2 = NULL;
+  }
+  /*@ +branchstate @*/
+
+  /*@ -observertrans @*/
+  switch (gpsd_units())
+    {
+    case imperial:
+      altfactor = METERS_TO_FEET;
+      altunits = &quot;ft&quot;;
+      speedfactor = MPS_TO_MPH;
+      speedunits = &quot;mph&quot;;
+      break;
+    case nautical:
+      altfactor = METERS_TO_FEET;
+      altunits = &quot;ft&quot;;
+      speedfactor = MPS_TO_KNOTS;
+      speedunits = &quot;knots&quot;;
+      break;
+    case metric:
+      altfactor = 1;
+      altunits = &quot;m&quot;;
+      speedfactor = MPS_TO_KPH;
+      speedunits = &quot;kph&quot;;
+      break;
+    default:
+      /* leave the default alone */
+      break;
+    }
+  /*@ +observertrans @*/
+
+  /* Open the stream to gpsd. */
+  /*@i@*/gpsdata = gps_open(server, port);
+  if (!gpsdata) {
+    switch ( errno ) {
+    case NL_NOSERVICE:  err_str = &quot;can't get service entry&quot;; break;
+    case NL_NOHOST:     err_str = &quot;can't get host entry&quot;; break;
+    case NL_NOPROTO:    err_str = &quot;can't get protocol entry&quot;; break;
+    case NL_NOSOCK:     err_str = &quot;can't create socket&quot;; break;
+    case NL_NOSOCKOPT:  err_str = &quot;error SETSOCKOPT SO_REUSEADDR&quot;; break;
+    case NL_NOCONNECT:  err_str = &quot;can't connect to host&quot;; break;
+    default:                    err_str = &quot;Unknown&quot;; break;
+    }
+    (void)fprintf( stderr, 
+                   &quot;cgps: no gpsd running or network error: %d, %s\n&quot;, 
+                   errno, err_str);
+    exit(2);
+  }
+
+  /* If the user has requested the 'j' option (buffering), make the
+     request of gpsd before we continue. */
+  if(fixclear_flag==1) {
+    (void)gps_query(gpsdata, &quot;j1\n&quot;);
+  }
+
+  /* Update the timestamp (used to keep track of time since last state
+     change). */
+  timer = time(NULL);
+
+  /* Set up the curses screen (if using curses). */
+  (void)initscr();
+  (void)noecho();
+  (void)signal(SIGINT,die);
+  (void)signal(SIGHUP,die);
+
+  /* See if the screen is big enough to show more than 12 sats. */
+  (void)getmaxyx(stdscr,ysize,xsize);
+
+  /* If the user's screen is too small, exit gracefully.  At some
+     point, it might be reasonable to drop certain fields or even
+     entire windows to at least make the attempt to &quot;do the right
+     thing&quot; for small screens.  For now, we just bail.  We do run at
+     80x20, but we force the raw gpsd data scrolling flag off. */
+  if((ysize &gt;= 20) &amp;&amp; (ysize &lt; 24) &amp;&amp; (xsize &gt;= 80)) {
+    silent_flag=1;
+  } else if((ysize &lt; 24) || (xsize &lt; 80)) {
+    (void)mvprintw(0, 0, &quot;Your screen must be at least 80x20 to run cgps.&quot;);
+    (void)refresh();
+    sleep(5);
+    die(0);
+  }
+
+  /* Grow the windows based on screen size, but not more than the
+     maximum allowed number of sats.  Always leave at least four
+     lines at the bottom of the screen to scroll gpsd raw data. */
+  bigger=ysize-24;
+
+  if(bigger&lt;0) {
+    bigger=0;
+  }
+
+  if(bigger &gt; (MAXCHANNELS - 2 - 12)) {
+    bigger = MAXCHANNELS - 2 - 12;
+  }
+
+  /*@ -onlytrans @*/
+  datawin    = newwin(15+bigger, 45, 1, 0);
+  satellites = newwin(15+bigger, 35, 1, 45);
+  command    = newwin(3,  45,  16+bigger, 0);
+  status     = newwin(3,  35,  16+bigger, 45);
+  messages   = newwin(0,  0,  19+bigger, 0);
+  /*@ +onlytrans @*/
+  (void)scrollok(messages, true);
+  (void)wsetscrreg(messages, 0, LINES-13);
+  (void)nodelay(messages,(bool)TRUE);
+
+  (void)mvprintw(0, 31, &quot;CGPS Test Client&quot;);
+  (void)refresh();
+
+  /* Do the initial field label setup. */
+  (void)mvwprintw(datawin, 1,5, &quot;Time:&quot;);
+  (void)mvwprintw(datawin, 2,5, &quot;Latitude:&quot;);
+  (void)mvwprintw(datawin, 3,5, &quot;Longitude:&quot;);
+  (void)mvwprintw(datawin, 4,5, &quot;Altitude:&quot;);
+  (void)mvwprintw(datawin, 5,5, &quot;Speed:&quot;);
+  (void)mvwprintw(datawin, 6,5, &quot;Heading:&quot;);
+  (void)mvwprintw(datawin, 7,5, &quot;Climb:&quot;);
+  (void)mvwprintw(datawin, 9,5, &quot;Horizontal Err:&quot;);
+  (void)mvwprintw(datawin, 10,5, &quot;Vertical Err:&quot;);
+  (void)mvwprintw(datawin, 11,5, &quot;Course Err:&quot;);
+  (void)mvwprintw(datawin, 12,5, &quot;Speed Err:&quot;);
+  (void)mvwprintw(status, 1,1, &quot;Status:&quot;);
+  (void)wborder(datawin, 0, 0, 0, 0, 0, 0, 0, 0);
+  (void)mvwprintw(satellites, 1,1, &quot;PRN:   Elev:  Azim:  SNR:  Used:&quot;);
+  (void)wborder(satellites, 0, 0, 0, 0, 0, 0, 0, 0);
+  (void)mvwprintw(command, 1,1, &quot;Command:  &quot;);
+  (void)wborder(command, 0, 0, 0, 0, 0, 0, 0, 0);
+  (void)wborder(status, 0, 0, 0, 0, 0, 0, 0, 0);
+
+  /* Here's where updates go. */
+  gps_set_raw_hook(gpsdata, update_panel);
+
+  /* If the user requested a specific device, try to change to it. */
+  if (device) {
+    char *channelcmd;
+    size_t l;
+    l = strlen(device)+4;
+
+    if ((channelcmd = (char *)malloc(l)) != NULL){
+      /*@ -compdef @*/
+      /*@i@*/(void)strlcpy(channelcmd, &quot;F=&quot;, l);
+      (void)strlcpy(channelcmd+2, device, l);
+      (void)gps_query(gpsdata, channelcmd);
+      (void)free(channelcmd);
+      /*@ +compdef @*/
+    }
+  }
+
+  /* Request &quot;w+x&quot; data from gpsd. */
+  (void)gps_query(gpsdata, &quot;w+x\n&quot;);
+
+  for (;;) { /* heart of the client */
+    
+    /* watch to see when it has input */
+    FD_ZERO(&amp;rfds);
+    FD_SET(gpsdata-&gt;gps_fd, &amp;rfds);
+
+    /* wait up to five seconds. */
+    timeout.tv_sec = 5;
+    timeout.tv_usec = 0;
+
+    /* check if we have new information */
+    data = select(gpsdata-&gt;gps_fd + 1, &amp;rfds, NULL, NULL, &amp;timeout);
+        
+    if (data == -1) {
+      fprintf( stderr, &quot;cgps: socket error\n&quot;);
+      exit(2);
+    }
+    else if( data ) {
+      /* code that calls gps_poll(gpsdata) */
+      if (gps_poll(gpsdata) != 0)
+        die(1);
+    }
+
+    /* Check for user input. */
+    c=wgetch(messages);
+        
+    switch ( c ) {
+      /* Quit */
+    case 'q':
+      die(0);
+      break;
+
+      /* Toggle spewage of raw gpsd data. */
+    case 's':
+      if(silent_flag==0) {
+        silent_flag=1;
+      } else {
+        silent_flag=0;
+      }
+      break;
+
+      /* Toggle fix clear. */
+    case 'j':
+      if(fixclear_flag==0) {
+        fixclear_flag=1;
+        (void)gps_query(gpsdata, &quot;j1\n&quot;);
+      } else {
+        fixclear_flag=0;
+        (void)gps_query(gpsdata, &quot;j0\n&quot;);
+      }
+      break;
+
+      /* Clear the spewage area. */
+    case 'c':
+      (void)werase(messages);
+      break;
+
+    default:
+      break;
+    }
+
+  }
+ 
+}
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004259.html">[Gpsd-dev] cgps issues
+</A></li>
+	<LI>Next message: <A HREF="004263.html">[Gpsd-dev] cgps issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4260">[ date ]</a>
+              <a href="thread.html#4260">[ thread ]</a>
+              <a href="subject.html#4260">[ subject ]</a>
+              <a href="author.html#4260">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

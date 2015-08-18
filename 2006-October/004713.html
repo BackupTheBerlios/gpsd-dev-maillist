@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] $PGRME message
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%24PGRME%20message&In-Reply-To=%3C012kJCLcP8504S07.1162119795%40uwdvg007.cms.usa.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004712.html">
+   <LINK REL="Next"  HREF="004714.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] $PGRME message</H1>
+    <B>Petr Slansky</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%24PGRME%20message&In-Reply-To=%3C012kJCLcP8504S07.1162119795%40uwdvg007.cms.usa.net%3E"
+       TITLE="[Gpsd-dev] $PGRME message">slansky at usa.net
+       </A><BR>
+    <I>Sun Oct 29 12:03:15 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004712.html">[Gpsd-dev] packet.c cleanup
+</A></li>
+        <LI>Next message: <A HREF="004714.html">[Gpsd-dev] I've looked at the *ctl utilities
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4713">[ date ]</a>
+              <a href="thread.html#4713">[ thread ]</a>
+              <a href="subject.html#4713">[ subject ]</a>
+              <a href="author.html#4713">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> Petr Slansky &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">slansky at usa.net</A>&gt;:
+</I>&gt;<i> &gt; Gentlemen,
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; could you, please, check code that generates PGRME message (for example
+</I>use in
+&gt;<i> &gt; gpspipe -r output), example from SIRF GPS:
+</I>&gt;<i> &gt; $PGRME,0.00,M,0.00,M,2.92,M*17
+</I>&gt;<i> &gt; Example from EVERMORE GPS:
+</I>&gt;<i> &gt; $PGRME,0.00,M,0.00,M,0.00,M*1E
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; This is not correct output, I think there is a bug in the gpsd code.
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; This is output from sirf gps, when I connect with telnet:
+</I>&gt;<i> &gt; e
+</I>&gt;<i> &gt; GPSD,E=NaN 1.60 1.52
+</I>&gt;<i> &gt; e
+</I>&gt;<i> &gt; GPSD,E=2.92 1.60 1.53
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; But when I use gpspipe, I receive results similar as described at the
+</I>&gt;<i> &gt; beginning (too many 0.00 values), too different, has to be a bug.
+</I>&gt;<i> 
+</I>&gt;<i> Hm.  I found *a* bug in the PGRME output; I'm not sure if it explains
+</I>&gt;<i> this, though.  The scaling was wrong -- we were converting from 50% CEP
+</I>&gt;<i> units on input to 95% confidence, then nor converting back when the PGRME 
+</I>&gt;<i> was generated.  
+</I>&gt;<i> 
+</I>&gt;<i> Please pull svn head and see if you get better behavior.
+</I>
+This is still not fixed. I see too many 0.00 values at the output. This is
+Evermore driver in 3D mode:
+
+GPSD
+me
+GPSD,M=3,E=60.00 11.20 52.80
+
+$ ./gpspipe -r | grep -e PGRME 
+$PGRME,0.00,M,0.00,M,28.90,M*2D
+
+PGRME value is not changing...
+
+And this is result from other GPS:
+
+GPSD
+me
+GPSD,M=3,E=3.52 1.60 1.42
+
+$ ./gpspipe -r gpsd.mainframe.cx | grep PGRME
+$PGRME,0.00,M,0.00,M,3.52,M*1A
+
+Similar result, little bit better as compatred with my evermore but still too
+many 0.00 valus in the PGRME answer. Is it correct?
+
+With regards,
+Petr
+
+
+---------------------------------
+  Petr Slansky, <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">slansky at usa.net</A>
+---------------------------------
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004712.html">[Gpsd-dev] packet.c cleanup
+</A></li>
+	<LI>Next message: <A HREF="004714.html">[Gpsd-dev] I've looked at the *ctl utilities
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4713">[ date ]</a>
+              <a href="thread.html#4713">[ thread ]</a>
+              <a href="subject.html#4713">[ subject ]</a>
+              <a href="author.html#4713">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

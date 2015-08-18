@@ -1,0 +1,147 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] make distcheck - works for anyone?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20make%20distcheck%20-%20works%20for%20anyone%3F&In-Reply-To=%3Crmi3a3tl6kz.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007174.html">
+   <LINK REL="Next"  HREF="007194.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] make distcheck - works for anyone?</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20make%20distcheck%20-%20works%20for%20anyone%3F&In-Reply-To=%3Crmi3a3tl6kz.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] make distcheck - works for anyone?">gdt at ir.bbn.com
+       </A><BR>
+    <I>Wed Dec  2 16:49:00 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007174.html">[Gpsd-dev] make distcheck - works for anyone?
+</A></li>
+        <LI>Next message: <A HREF="007194.html">[Gpsd-dev] make distcheck - works for anyone?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7179">[ date ]</a>
+              <a href="thread.html#7179">[ thread ]</a>
+              <a href="subject.html#7179">[ subject ]</a>
+              <a href="author.html#7179">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+&quot;Eric S. Raymond&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; writes:
+
+&gt;<i> Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;:
+</I>&gt;&gt;<i> I ran 'gmake distcheck' and ran into enough problems that I suspected it
+</I>&gt;&gt;<i> wasn't a local platform issue.  So
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 1) Does 'make distcheck' work for anyone, on any platform?
+</I>&gt;<i>
+</I>&gt;<i> It never has for me.  I tried to make it work once but FSF's
+</I>&gt;<i> documentation of the prerequisites sucks.  I can't make &quot;make check&quot;
+</I>&gt;<i> work either; same reason.
+</I>
+make check works for me, but it just builds the test drivers instead of
+calling what 'make testregress' does like it should.  I just fixed that,
+but it was of little consequence, and that's not what I'm taling about.
+
+What make distcheck is suppposed to do is
+
+  make a distribution tarball (presumably the tarballs that are
+  distributed are produced this way?)
+
+  unpack it
+
+  create a build directory
+
+  run configure from the unpacked dist in the build directory, to do an
+  out-of-src build
+
+  build
+
+  do 'make check' to verify that the previous build passes regression tests
+
+I think the problem is that out-of-srcdir builds fail.
+
+&gt;<i> What's supposed to happen with both of these (I think) is that you
+</I>&gt;<i> define some set of magic macros and helper productions and autofoo
+</I>&gt;<i> supplies sequencing logic to knit them into tests.  But I've never
+</I>&gt;<i> been able to figure out what I needed to do to make that happen, and
+</I>&gt;<i> I'm sufficiently fed up with the rest of autofoo to not want to
+</I>&gt;<i> invest more time in it.
+</I>
+Turns out it was not that hard, but that was not obvious up front...
+
+&gt;&gt;<i> 2) Has anyone done a cross build?  I have set up cross builds (linux
+</I>&gt;&gt;<i> i386 host, linux arm11 target) of earlier versions, but not tried
+</I>&gt;&gt;<i> recently.  The addition of all the python stuff makes me nervous.
+</I>&gt;<i>
+</I>&gt;<i> I have not.  ckuethe has - he ran into some floating-pont toolchain issues
+</I>&gt;<i> and solved them, IIRC.
+</I>
+I will try that next.
+
+&gt;&gt;<i> 3) Where is it written down what the expectations are for what works, in
+</I>&gt;&gt;<i> terms of builds with and without optional components, passing 'make
+</I>&gt;&gt;<i> check', and 'make distcheck', and the list of platforms which are
+</I>&gt;&gt;<i> believed to be in good shape?  I think this belongs in or referenced
+</I>&gt;&gt;<i> From HACKING.
+</I>&gt;<i>
+</I>&gt;<i> Do you mean the Hacking Guide on the website or something else?  There
+</I>&gt;<i> was a plain text file called HACKING in the distant past that the web
+</I>&gt;<i> page was derived from, but it's way obsolete.  The color codes and the
+</I>&gt;<i> re,lease procedure are on the webpage.
+</I>
+Given that one of the advantages talked about for distributed VCS is
+working off the net, I think that belongs in the source tree, not on the
+web, but that's not important.
+
+&gt;<i> It is expected that 'make testegress' pass without errors.  We have a script,
+</I>&gt;<i> devtools/regress-builder, that random samples the space of possible configs
+</I>&gt;<i> amd test-builds to see if the compile breaks.  Since you seem to have
+</I>&gt;<i> appointed yourself master of the build process, you should probably get
+</I>&gt;<i> familiar with it and run it.
+</I>
+I am getting some test failures, on both NetBSD and linux, but most are
+ok.  So I suspect there is either something wrong, or bad tests.
+
+&gt;<i> That's correct, we're now in bug-fix only mode.
+</I>
+ok
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091202/95734201/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091202/95734201/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007174.html">[Gpsd-dev] make distcheck - works for anyone?
+</A></li>
+	<LI>Next message: <A HREF="007194.html">[Gpsd-dev] make distcheck - works for anyone?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7179">[ date ]</a>
+              <a href="thread.html#7179">[ thread ]</a>
+              <a href="subject.html#7179">[ subject ]</a>
+              <a href="author.html#7179">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

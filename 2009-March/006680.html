@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Is manual configuration still needed for Bluetooth?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Is%20manual%20configuration%20still%20needed%20for%20Bluetooth%3F&In-Reply-To=%3C20090325091323.GA32276%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006667.html">
+   <LINK REL="Next"  HREF="006693.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Is manual configuration still needed for Bluetooth?</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Is%20manual%20configuration%20still%20needed%20for%20Bluetooth%3F&In-Reply-To=%3C20090325091323.GA32276%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Is manual configuration still needed for Bluetooth?">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Mar 25 10:13:23 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006667.html">[Gpsd-dev] Is manual configuration still needed for Bluetooth?
+</A></li>
+        <LI>Next message: <A HREF="006693.html">[Gpsd-dev] Is manual configuration still needed for Bluetooth?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6680">[ date ]</a>
+              <a href="thread.html#6680">[ thread ]</a>
+              <a href="subject.html#6680">[ subject ]</a>
+              <a href="author.html#6680">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Lukasz Stelmach &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">stlman at poczta.fm</A>&gt;:
+&gt;<i> &gt; We have a set of rather old Bluetooth configuaration directions at
+</I>&gt;<i> &gt; &lt;<A HREF="http://gpsd.berlios.de/bt.html">http://gpsd.berlios.de/bt.html</A>&gt;.  Are these still necessary with
+</I>&gt;<i> &gt; newer Linuxes, or do we autoconfigure properly now?
+</I>&gt;<i> 
+</I>&gt;<i> No. Most of those steps are (and probably will be) required, except of maybe
+</I>&gt;<i> 1 through 4 as those steps are most often in the system init scripts.
+</I>
+Right, I'll add a note to that effect to the Bluetooth page.
+ 
+&gt;<i> Ad. 5 You have to learn the MAC of *your* device somehow, since
+</I>&gt;<i> there is no act of plugging in like in with USB.[*]
+</I>
+How is this handled under Mac OS X?  I'm certain they don't make 
+Bluetooth users write down MACs...
+
+&gt;<i> [*] Since there is no act of putting a plug into a socket with BT
+</I>&gt;<i> devices it is not possible to run automatic detection. It is *always*
+</I>&gt;<i> a computer that initiates a connection to such simple devices like
+</I>&gt;<i> GPS receivers. So it has to know what it is trying to connect to.
+</I>&gt;<i> All the PDAs I have seen have some interface to find and select
+</I>&gt;<i> the device you would use later on.
+</I>
+That means, I think, that we need to write some little tool that
+starts gpsd (if necessary) and pokes a command down its control 
+port to tell it that it has a Bluetooth device in its pool.  For
+the sake of discussion let's call it &quot;gpsattach&quot;.
+
+&gt;<i> Ad. 6. This one seems like the hardest to overcome. And it is possible
+</I>&gt;<i> not to do it if gpsd uses gnome-bluetooth or some other *heavy* GUI/dbus
+</I>&gt;<i> tools.
+</I>&gt;<i> 
+</I>&gt;<i> Ad. 7,8 You still have to declare which device you'd like to talk to, and
+</I>&gt;<i> it seems inevitable for Bluetooth devices. We could this
+</I>&gt;<i> if gpsd would open an AF_BLUETOOTH socket and connect to the
+</I>&gt;<i> *selected* receiver instead of using /dev/rfcomm0. Using GUI/dbus
+</I>&gt;<i> etc. could help but I am not a fan of those.
+</I>
+What is meant by the &quot;selected&quot; receiver?  I'd rather not tangle
+gpsd itself up with Bluetooth implemenation details, but maybe
+gpsattach could know about it.
+
+&gt;<i> The other aspect of BT operation is that a GPS receiver is not
+</I>&gt;<i> necessarily on when an OS boots and the gpsd starts. That is why
+</I>&gt;<i> I suggested completely to fully delay the detection step until
+</I>&gt;<i> the first client connects. When some client is started that
+</I>&gt;<i> is probably when a user wants to use a receiver so, in case
+</I>&gt;<i> of BT, this is the moment when the receiver is probably turned on.
+</I>
+When you first suggested this, I thought the device type sniffing had
+to be done in a separate (and previous) pass.  After thinking about it
+for a while I figured out how to do it safely at client-session
+allocation time.  This is now implemented in trunk.
+
+This has the additional advantage that if the user never opens a
+client session, the daemon may be activated by hotplug events 
+for USB devices that might be GPSes, but will never read from them.
+ 
+&gt;<i> I suggested the auto-configuration tool as a means of caching
+</I>&gt;<i> what would be detected, which makes sense especially if gpsd
+</I>&gt;<i> is able to connect via BT socket itself, because the cached
+</I>&gt;<i> configuration can be assigned to a device by its MAC which
+</I>&gt;<i> gpsd uses to connect. (but I won't insist on this caching
+</I>&gt;<i> schema)
+</I>
+I didn't undestand this, sorry.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006667.html">[Gpsd-dev] Is manual configuration still needed for Bluetooth?
+</A></li>
+	<LI>Next message: <A HREF="006693.html">[Gpsd-dev] Is manual configuration still needed for Bluetooth?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6680">[ date ]</a>
+              <a href="thread.html#6680">[ thread ]</a>
+              <a href="subject.html#6680">[ subject ]</a>
+              <a href="author.html#6680">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

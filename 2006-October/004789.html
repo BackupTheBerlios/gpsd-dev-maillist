@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] State of the J mystery
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20State%20of%20the%20J%20mystery&In-Reply-To=%3C20061030224927.GA22325%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004787.html">
+   <LINK REL="Next"  HREF="004792.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] State of the J mystery</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20State%20of%20the%20J%20mystery&In-Reply-To=%3C20061030224927.GA22325%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] State of the J mystery">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Oct 30 23:49:27 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004787.html">[Gpsd-dev] [Gpsd-commit-watch] r3731 - trunk (fwd)
+</A></li>
+        <LI>Next message: <A HREF="004792.html">[Gpsd-dev] State of the J mystery
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4789">[ date ]</a>
+              <a href="thread.html#4789">[ thread ]</a>
+              <a href="subject.html#4789">[ subject ]</a>
+              <a href="author.html#4789">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Jeff Francis &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>&gt;:
+&gt;<i> &gt; Your implementation of -j in gpspipe was completely broken, BTW.
+</I>&gt;<i> &gt; Now that I've fixed it, it's showing de-flickered data coming 
+</I>&gt;<i> &gt; from gpsd.rellim.com.
+</I>&gt;<i>
+</I>&gt;<i>   That was my fault.  I'm not sure what I was smoking that day.  Good
+</I>&gt;<i> thing I don't try to claim extreme compentence as a C programmer...
+</I>
+Ah,  That explains much.  It didn't seem like a Gary sort of mistake; 
+usually the only broken thing about his code is his strange use of
+whitespace :-).
+
+Here's the current state of play:
+
+1. We know that the daemon at gpsd.rellim.com is honoring J=1 requests.
+   To see this, pull svn HEAD, rebuild gpspipe, and do this:
+
+	gpspipe -w -n 20 -j gpsd.rellim.com
+
+   Notice that altitude is being held across cycles.  For comparison,
+   do
+
+	gpspipe -w -n 20 gpsd.rellim.com
+
+   and note the clear-at-start-of-cycle behavior.  In both cases mode
+   still flickers.
+
+2. I have implemented a check in the gpsd.c merge logic that should prevent
+   mode flicker When J=1 it ensures that mode is never decreased when
+   a fix is merged in.
+
+3. I now know why xgps wasn't showing me flicker.  I had implemented, 
+   documented, and then forgotten a client-side smoothing hack independent
+   of J.  I have disabled this by default, and am now seeing consistent flicker
+   behavior from xgps and cgps.
+
+4, *Why* both are flickering remains a mystery.  Given the gpspipe results,
+   it looks as though the J=1 setting is getting dropped on the floor 
+   somehow, but only from those two clients.  I'm investigating.
+
+Gary, it would be useful if you could pull, build, and run the HEAD 
+version of the daemon.  At the very least that would test the new
+guard against mode flicker.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004787.html">[Gpsd-dev] [Gpsd-commit-watch] r3731 - trunk (fwd)
+</A></li>
+	<LI>Next message: <A HREF="004792.html">[Gpsd-dev] State of the J mystery
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4789">[ date ]</a>
+              <a href="thread.html#4789">[ thread ]</a>
+              <a href="subject.html#4789">[ subject ]</a>
+              <a href="author.html#4789">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

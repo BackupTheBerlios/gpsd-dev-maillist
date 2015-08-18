@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [ntp:hackers] ntpd shm changes
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20ntpd%20shm%20changes&In-Reply-To=%3CAANLkTikVNRA_oUE%2B7ZuN9Orw6yE_xoss0e_deEyngq%2BE%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008887.html">
+   <LINK REL="Next"  HREF="008878.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [ntp:hackers] ntpd shm changes</H1>
+    <B>Dave Hart</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20ntpd%20shm%20changes&In-Reply-To=%3CAANLkTikVNRA_oUE%2B7ZuN9Orw6yE_xoss0e_deEyngq%2BE%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [ntp:hackers] ntpd shm changes">davehart at gmail.com
+       </A><BR>
+    <I>Sat Mar 19 06:24:49 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008887.html">[Gpsd-dev] [ntp:hackers] ntpd shm changes
+</A></li>
+        <LI>Next message: <A HREF="008878.html">[Gpsd-dev] Test time; release Monday
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8888">[ date ]</a>
+              <a href="thread.html#8888">[ thread ]</a>
+              <a href="subject.html#8888">[ subject ]</a>
+              <a href="author.html#8888">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sat, Mar 19, 2011 at 03:38 UTC, tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt; wrote:
+&gt;<i> 2011/3/18 Dave Hart &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">hart at ntp.org</A>&gt;:
+</I>&gt;&gt;<i> I am not suggesting changing the interpretation or protocol of mode 0
+</I>&gt;&gt;<i> or mode 1, but in an imaginary mode 2 with volatile keywords on all
+</I>&gt;&gt;<i> the shm members, I think we can safely share the memory relying only
+</I>&gt;&gt;<i> on 32-bit operations on count being atomic.
+</I>&gt;<i>
+</I>&gt;<i> Does this fix the problem on a multicore machine?
+</I>&gt;<i>
+</I>&gt;<i> NTPD - reads valid as 1
+</I>&gt;<i> &#160; &#160; &#160; &#160; &#160; sets valid to 0 - GPSD
+</I>&gt;<i> NTPD - reads count once.
+</I>&gt;<i> &#160; &#160; &#160; &#160; &#160; some other work - GPSD
+</I>&gt;<i> NTPD - reads count again, (are equal)
+</I>&gt;<i> &#160; &#160; &#160; &#160; &#160; increment count - GPSD
+</I>&gt;<i> NTPD - housekeeping
+</I>&gt;<i> &#160; &#160; &#160; &#160; &#160; begins update writing - GPSD
+</I>&gt;<i> NTPD - reads half-changed values.
+</I>&gt;<i> ...
+</I>
+That's not the current protocol and I don't think it's been proposed,
+and you show why it doesn't work.  The two reads of count are before
+and after reading the timestamps, not both before.
+
+To answer Harlan's query, yes, volatile restricts the compiler from
+reordering accesses (reads and writes) amongst volatile variables,
+which is why I suggest every member of the structs (or the struct
+types) be volatile.  See for example [1].
+
+To play it extra safe, we could retain valid (though I'd argue for
+only the producer modifying it) and use a memory-barrier-producing
+construct where available, such as __sync_syncrohronize [2].  Lacking
+compiler support for memory barriers, the arguably redundant use of
+valid and count-checking might keep us out of trouble with reordering
+processors.
+
+I've not heard of problems with the newer protocol (mode 1 in shared
+memory struct) despite it lacking volatile qualifiers and memory
+barriers.  Adding volatile (and where available a full memory barrier)
+certainly shouldn't make things worse.
+
+If this discussion is not a good fit for gpsd-dev@ we can conduct it
+on <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">hackers at lists.ntp.org</A> if interested gpsd folks would subscribe, or
+Harlan has offered to host a shm-specific list at lists.ntp.org if
+people would prefer that.
+
+Cheers,
+Dave Hart
+
+[1] <A HREF="http://gcc.gnu.org/onlinedocs/gcc-4.1.2/gcc/Volatiles.html">http://gcc.gnu.org/onlinedocs/gcc-4.1.2/gcc/Volatiles.html</A>
+[2] <A HREF="http://gcc.gnu.org/onlinedocs/gcc-4.3.0/gcc/Atomic-Builtins.html">http://gcc.gnu.org/onlinedocs/gcc-4.3.0/gcc/Atomic-Builtins.html</A>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008887.html">[Gpsd-dev] [ntp:hackers] ntpd shm changes
+</A></li>
+	<LI>Next message: <A HREF="008878.html">[Gpsd-dev] Test time; release Monday
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8888">[ date ]</a>
+              <a href="thread.html#8888">[ thread ]</a>
+              <a href="subject.html#8888">[ subject ]</a>
+              <a href="author.html#8888">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

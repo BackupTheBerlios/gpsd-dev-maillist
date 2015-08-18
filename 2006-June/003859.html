@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] connection problems with Garmin eTrex
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20connection%20problems%20with%20Garmin%20eTrex&In-Reply-To=%3C20060614121927.GA3073%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003853.html">
+   <LINK REL="Next"  HREF="003862.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] connection problems with Garmin eTrex</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20connection%20problems%20with%20Garmin%20eTrex&In-Reply-To=%3C20060614121927.GA3073%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] connection problems with Garmin eTrex">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Jun 14 14:19:27 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003853.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+        <LI>Next message: <A HREF="003862.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3859">[ date ]</a>
+              <a href="thread.html#3859">[ thread ]</a>
+              <a href="subject.html#3859">[ subject ]</a>
+              <a href="author.html#3859">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Marr &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">marr at flex.com</A>&gt;:
+&gt;<i> Huh? Why 16? Try 96:
+</I>
+Sorry, I thinkoed.
+ 
+&gt;<i> (1,000,000 / 4,800) * 10 * 96 = 200,000
+</I>&gt;<i> 
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Not too far from 200000, I suppose.
+</I>&gt;<i> 
+</I>&gt;<i> Not too far at all! ;^)
+</I>
+Suggests Til might want to try this delay:
+
+Index: serial.c
+===================================================================
+--- serial.c	(revision 3335)
++++ serial.c	(working copy)
+@@ -4,6 +4,7 @@
+ #include &lt;fcntl.h&gt;
+ #include &lt;errno.h&gt;
+ #include &lt;ctype.h&gt;
++#include &lt;math.h&gt;
+ #if defined(HAVE_SYS_MODEM_H)
+ #include &lt;sys/modem.h&gt;
+ #endif /* HAVE_SYS_MODEM_H */
+@@ -50,7 +51,7 @@
+ void gpsd_set_speed(struct gps_device_t *session, 
+ 		   speed_t speed, unsigned char parity, unsigned int stopbits)
+ {
+-    speed_t	rate;
++    speed_t	rate, oldrate = cfgetispeed(&amp;session-&gt;ttyset);
+ 
+     if (speed &lt; 300)
+ 	rate = B0;
+@@ -73,7 +74,7 @@
+     else
+       rate =  B115200;
+ 
+-    if (rate!=cfgetispeed(&amp;session-&gt;ttyset) || (unsigned int)parity!=session-&gt;gpsdata.parity || stopbits!=session-&gt;gpsdata.stopbits) {
++    if (rate!=oldrate || (unsigned int)parity!=session-&gt;gpsdata.parity || stopbits!=session-&gt;gpsdata.stopbits) {
+ 
+ 	/*@ignore@*/
+ 	(void)cfsetispeed(&amp;session-&gt;ttyset, rate);
+@@ -145,10 +146,13 @@
+ 	 * flush followed by a 200-millisecond delay followed by flush has
+ 	 * been found to work reliably on the pl2303.  It is also known
+ 	 * from testing that a 100-millisec delay is too short, allowing
+-	 * occasional failure to lock.
++	 * occasional failure to lock.  A straight delay of 500 milliseconds
++	 * without a following flush also seems to work; we don't know 
++	 * whether the second flush is doing something real to the state of 
++	 * the system or merely acting as an additional delay.
+ 	 */
+ 	(void)tcflush(session-&gt;gpsdata.gps_fd, TCIOFLUSH);
+-	(void)usleep(200000);
++	(void)usleep((1e6 / min(rate, oldrate)) * 10 * 96));
+ 	(void)tcflush(session-&gt;gpsdata.gps_fd, TCIOFLUSH);
+     }
+     gpsd_report(1, &quot;speed %d, %d%c%d\n&quot;, speed, 9-stopbits, parity, stopbits);
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003853.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+	<LI>Next message: <A HREF="003862.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3859">[ date ]</a>
+              <a href="thread.html#3859">[ thread ]</a>
+              <a href="subject.html#3859">[ subject ]</a>
+              <a href="author.html#3859">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

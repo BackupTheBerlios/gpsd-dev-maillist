@@ -1,0 +1,104 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] multipacket fix: ublox works
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20multipacket%20fix%3A%20ublox%20works&In-Reply-To=%3Crmibpbnd52r.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007875.html">
+   <LINK REL="Next"  HREF="007876.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] multipacket fix: ublox works</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20multipacket%20fix%3A%20ublox%20works&In-Reply-To=%3Crmibpbnd52r.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] multipacket fix: ublox works">gdt at ir.bbn.com
+       </A><BR>
+    <I>Mon Jun  7 03:06:20 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007875.html">[Gpsd-dev] multipacket fix: ublox works
+</A></li>
+        <LI>Next message: <A HREF="007876.html">[Gpsd-dev] [PATCH] regress-driver fixes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7880">[ date ]</a>
+              <a href="thread.html#7880">[ thread ]</a>
+              <a href="subject.html#7880">[ subject ]</a>
+              <a href="author.html#7880">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; writes:
+
+&gt;<i> Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;:
+</I>&gt;&gt;<i> So I think Eric's multipacket fix in
+</I>&gt;&gt;<i> 2e58d371d3aad74c8a609749733329c00a6a5f63 is good.
+</I>&gt;<i>
+</I>&gt;<i> Thanks for the confirmation.
+</I>&gt;<i>
+</I>&gt;<i> Your previous report makes it look, however, like the write padding I
+</I>&gt;<i> put in gps/fake.py to address the symptoms of the multipacket bug has
+</I>&gt;<i> been masking some other problem.  We need to characterize and fix that.
+</I>
+Indeed.  Unfortunately my theory is wrong.  Theory: the check in
+packet_get that discards the entire buffer when full can false and is
+the cause of the missing output.  Reality: the full/discard check is
+after a packet is removed, so if the parser finds anything to consume,
+the buffer cannot be full.  I addeed an abort() in the discard check
+consequent, and it just doesn't happen.
+
+Next step: put ktrace around the gpsd and gpsfake invocations.
+
+&gt;<i> The practical reason to care about this is that with write padding 
+</I>&gt;<i> eliminated and CLOSE_DELAY cut to 0.1, time to run the regression
+</I>&gt;<i> tests drops from over 9 minutes to less than 2!
+</I>
+Sure.  But with WRITE_PAD 0.001, the tests pass on my system in about
+145s.
+
+&gt;<i> Possibly related: entirely removing the CLOSE_DELAY when a fake source
+</I>&gt;<i> is exhausted breaks the tests for me.  I can drop it to 0.1 and get
+</I>&gt;<i> success, but sanooj can't; he got good results with 0.5 and means to
+</I>&gt;<i> test with 0.3.  Someone else (I think Jon Schlueter) reports success
+</I>&gt;<i> with 0.3.  I think this is related to processor speed somehow.
+</I>
+All of this indicates that our tests have races, and really they
+shouldn't.  But obviously this is hard to debug.
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100606/f7e32a4c/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100606/f7e32a4c/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007875.html">[Gpsd-dev] multipacket fix: ublox works
+</A></li>
+	<LI>Next message: <A HREF="007876.html">[Gpsd-dev] [PATCH] regress-driver fixes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7880">[ date ]</a>
+              <a href="thread.html#7880">[ thread ]</a>
+              <a href="subject.html#7880">[ subject ]</a>
+              <a href="author.html#7880">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

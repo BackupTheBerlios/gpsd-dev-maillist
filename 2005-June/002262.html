@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Big change -- FIONREAD is no longer used
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Big%20change%20--%20FIONREAD%20is%20no%20longer%20used&In-Reply-To=%3C23406.213.84.187.156.1119987138.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002259.html">
+   <LINK REL="Next"  HREF="002274.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Big change -- FIONREAD is no longer used</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Big%20change%20--%20FIONREAD%20is%20no%20longer%20used&In-Reply-To=%3C23406.213.84.187.156.1119987138.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] Big change -- FIONREAD is no longer used">gpsd at xs4all.nl
+       </A><BR>
+    <I>Tue Jun 28 21:32:18 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002259.html">[Gpsd-dev] Big change -- FIONREAD is no longer used
+</A></li>
+        <LI>Next message: <A HREF="002274.html">[Gpsd-dev] Big change -- FIONREAD is no longer used
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2262">[ date ]</a>
+              <a href="thread.html#2262">[ thread ]</a>
+              <a href="subject.html#2262">[ subject ]</a>
+              <a href="author.html#2262">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+</I>&gt;&gt;<i> Ah, I see you use O_NONBLOCK.
+</I>&gt;<i>
+</I>&gt;<i> Only on the DGPS socket.  The serial-device read is guarded by the
+</I>&gt;<i> select(2)
+</I>&gt;<i> call in the main loop, so it can still use blocking I/O.
+</I>&gt;<i>
+</I>&gt;&gt;<i> For serial devices, there also is the possibility of using VMIN and
+</I>&gt;&gt;<i> VTIME.
+</I>&gt;&gt;<i> When c_cc[VMIN]==0 and c_cc[VTIME]==0 a read call will return
+</I>&gt;&gt;<i> immediately
+</I>&gt;&gt;<i> even with 0 bytes, without causing the extra complications that
+</I>&gt;&gt;<i> O_NONBLOCK
+</I>&gt;&gt;<i> could cause.
+</I>&gt;<i>
+</I>&gt;<i> I know about this facility, but when I've tried to use it in the past
+</I>&gt;<i> I have found it to be chronically flaky.
+</I>
+Hmmm, I have written many programs driving serial ports (there are 10
+serial ports in this machine) and I have never found problems in this.
+Maybe the problem is the not completely intuitive behaviour?
+
+Anyway, the VMIN and VTIME fields are not set to defined values in the
+gpsd_open routine.  This may explain random behaviour, as the previous
+config is read before and so the final setting is depending on what a
+previous program did to these fields.
+In my programs I usually zero out the entire c_cc array and then set
+c_cc[VMIN] to 1.  This yields blocking reads that return at least 1
+character.
+
+
+&gt;<i> gpsd_poll() is written that way in an attempt to encapsulate the
+</I>&gt;<i> querying operation.  The idea is that the DGPS socket associated with
+</I>&gt;<i> a GPS is considered part of the session state for the abstract machine
+</I>&gt;<i> that is offering location info to the daemon's main loop through the
+</I>&gt;<i> libgpsd interface
+</I>&gt;<i>
+</I>&gt;<i> This may be a design error -- in fact, I have considered changing it
+</I>&gt;<i> before.  If we expect that all of the GPSes associated with a gpsd
+</I>&gt;<i> instance are at the same place (e.g within the length of a USB cable)
+</I>&gt;<i> then I guess it would be reasonable to consider the DGPS socket part of
+</I>&gt;<i> shared context of the entire group of GPSes.
+</I>
+Probably it should be handled as just another receiver which should be
+polled just like the others.
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002259.html">[Gpsd-dev] Big change -- FIONREAD is no longer used
+</A></li>
+	<LI>Next message: <A HREF="002274.html">[Gpsd-dev] Big change -- FIONREAD is no longer used
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2262">[ date ]</a>
+              <a href="thread.html#2262">[ thread ]</a>
+              <a href="subject.html#2262">[ subject ]</a>
+              <a href="author.html#2262">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

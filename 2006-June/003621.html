@@ -1,0 +1,95 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Re%3A%20accuracy%20in%20conversion%20from%20meters/sec%20to%20knots&In-Reply-To=%3C20060608035757.GA10159%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003620.html">
+   <LINK REL="Next"  HREF="003624.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Re%3A%20accuracy%20in%20conversion%20from%20meters/sec%20to%20knots&In-Reply-To=%3C20060608035757.GA10159%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Jun  8 05:57:57 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003620.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+        <LI>Next message: <A HREF="003624.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3621">[ date ]</a>
+              <a href="thread.html#3621">[ thread ]</a>
+              <a href="subject.html#3621">[ subject ]</a>
+              <a href="author.html#3621">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Robin L Darroch &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>&gt;:
+&gt;<i> I hate to reopen the case, but there has to be an appeal process: and 
+</I>&gt;<i> here's why.  GPSd supports more than just the W command.  If it 
+</I>&gt;<i> supported nothing but Watcher mode clients, I'd accept your argument. 
+</I>&gt;<i> However, one of the best things about GPSd is it allows clients to 
+</I>&gt;<i> ASK for data.  By keeping &quot;clear at start of cycle&quot; logic, we kill 
+</I>&gt;<i> all such attempts to use query-based clients, because they can never 
+</I>&gt;<i> know whether they'll be unlucky enough to query just after the start 
+</I>&gt;<i> of the cycle or not.  Only PUSHED data delivered under policy 1 can 
+</I>&gt;<i> be used to simulate PUSHED data delivered under policy 2 (although it 
+</I>&gt;<i> can be a right pain to do so) - but PULLED data delivered under 
+</I>&gt;<i> policy 1 is useless.
+</I>
+I don't buy it.
+
+If the client is lucky (which will always be the case for the 80% of
+SiRF devices out there) no problem.
+
+If the client is &quot;unlucky&quot;, this just means they get a response saying
+there is no data.  This is the *correct* response, because gpsd cannot
+yet deliver valid data in the current cycle.  Holding over data from
+the last cycle would be worse than useless, it would be actively
+misleading.  The fact that asking half a second later might give
+you a response with the same valid data as the previous cycle doesn't
+meean it's OK to pretend gpsd knows that before it happens.
+
+Push vs. pull is pretty much irrelevant here.  In either case, if you want to 
+hold old data, you can do so in the client -- whereas, if the daemon were
+to hold data by default, it would be impossible to tell when it was stale.
+
+You are still free to submit a patch that implements selection of a 
+no-clear policy.  But that will not be the default.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003620.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+	<LI>Next message: <A HREF="003624.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3621">[ date ]</a>
+              <a href="thread.html#3621">[ thread ]</a>
+              <a href="subject.html#3621">[ subject ]</a>
+              <a href="author.html#3621">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

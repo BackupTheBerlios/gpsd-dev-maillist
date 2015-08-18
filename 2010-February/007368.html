@@ -1,0 +1,208 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] ship board navigational software and gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ship%20board%20navigational%20software%20and%20gpsd&In-Reply-To=%3C20100219135506.GA19291%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007367.html">
+   <LINK REL="Next"  HREF="007372.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] ship board navigational software and gpsd</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ship%20board%20navigational%20software%20and%20gpsd&In-Reply-To=%3C20100219135506.GA19291%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] ship board navigational software and gpsd">esr at thyrsus.com
+       </A><BR>
+    <I>Fri Feb 19 14:55:06 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007367.html">[Gpsd-dev] ship board navigational software and gpsd
+</A></li>
+        <LI>Next message: <A HREF="007372.html">[Gpsd-dev] ship board navigational software and gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7368">[ date ]</a>
+              <a href="thread.html#7368">[ thread ]</a>
+              <a href="subject.html#7368">[ subject ]</a>
+              <a href="author.html#7368">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Del &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">del at babel.com.au</A>&gt;:
+&gt;<i> I have really no idea where to start with this, so I'll start at the 
+</I>&gt;<i> beginning and work downwards.  Apologies in advance if this is overly long.
+</I>
+No apology required.  I found it extremely informative about important things
+in gpsd's application area.
+ 
+&gt;<i> Side note:  An &quot;II&quot; is an integrated instrumentation device which 
+</I>&gt;<i> usually has a GPS plugged in to it, hence the &quot;II&quot; used as a prefix in 
+</I>&gt;<i> the NMEA sentences.  ESR's document here: 
+</I>&gt;<i> <A HREF="http://gpsd.berlios.de/NMEA.html">http://gpsd.berlios.de/NMEA.html</A> incorrectly attributes this prefix to 
+</I>&gt;<i> the &quot;AutoHelm Seatalk system, made by Raytheon&quot; but in fact there are a 
+</I>&gt;<i> number of different makes and manufacturers of II devices, often 
+</I>&gt;<i> referred to as NMEA multiplexers, that use this prefix.  e.g. TackTick 
+</I>&gt;<i> which has been discussed extensively on the gpsd-users mailing list, 
+</I>&gt;<i> also Micromux as well as others.
+</I>
+I have just revised that 'graph to this:
+
+    II - II is emitted by the NMEA interfaces of several widely-used lines
+    of marine-navigation electronics. One is the AutoHelm system by
+    Raymarine; see also [SEATALK] for the native protocol of these
+    devices.
+
+Is that correct?  Is there more that should be said?
+
+&gt;<i> &quot;Seatalk&quot; is an integrated communication and power system for 
+</I>&gt;<i> instruments of various types, also developed by Raymarine.  AutoHelm 
+</I>&gt;<i> devices can use Seatalk to communicate amongst themselves, but Seatalk 
+</I>&gt;<i> might also be used to talk between a digital display device, an 
+</I>&gt;<i> anemometer, hull transducer, or a compass.  Seatalk is a proprietary 
+</I>&gt;<i> protocol and there are bidirectional NMEA to Seatalk gateways (except 
+</I>&gt;<i> that Seatalk also carries 12V to the instruments allowing them to be 
+</I>&gt;<i> powered over one 3 wire cable, and NMEA is essentially RS232).
+</I>
+Gotcha.  I skimmed [SEATALK] and now think I understand the protocol.
+It's out of scope for gpsd itself. But see below...
+
+&gt;<i> So, firstly, a couple of philosophical questions.  This is a quote from 
+</I>&gt;<i> Chris Kuethe on the gpsd-users mailing list a couple of years ago, when 
+</I>&gt;<i> NMEA data from the TackTick II was being discussed:
+</I>&gt;<i> 
+</I>&gt;<i> &quot;Getting agreement from me will be difficult. I don't see a clean way
+</I>&gt;<i> of extending the O message to handle these quantities. Our attempt at
+</I>&gt;<i> mapping the truenorth compass into our standard PVT format is ugly to
+</I>&gt;<i> say the least.
+</I>&gt;<i> 
+</I>&gt;<i> &quot;I'd argue that {wind,water} direction, velocity, temperature, pressure
+</I>&gt;<i> have no place in a navigation solution. They are utterly irrelevant to
+</I>&gt;<i> the position of the navigation set (or the phase center of its
+</I>&gt;<i> antenna). They are, relevant in the larger context of describing the
+</I>&gt;<i> environment when the plane crashed or the ship sank, but I consider
+</I>&gt;<i> mixing enviromental measurements and navigation solutions to be
+</I>&gt;<i> pollution.&quot;
+</I>
+Chris's response was appropriate at the time.  However, our wire protocol
+and our design philosophy have since widened the scope of gpsd significantly.
+
+&gt;<i> Then there's this statement in section VII.1 of the hackers' guide, when 
+</I>&gt;<i> discussing non-TPV data in the new JSON-based protocol:
+</I>&gt;<i> 
+</I>&gt;<i> &quot;A major virtue of JSON is its extensibility. There are lots of other 
+</I>&gt;<i> things a sensor wedded to a GPS might report that don't fit the 
+</I>&gt;<i> position-velocity-time model of the oldstyle O report. Depth of water. 
+</I>&gt;<i> Temperature of water. Compass heading. Roll. Pitch. Yaw. We've already 
+</I>&gt;<i> had requests to handle some of these for NMEA-emitting devices like 
+</I>&gt;<i> magnetic compasses (which report heading via a proprietary TNTHTM 
+</I>&gt;<i> sentence) and fish finders (which report water depth and temperature via 
+</I>&gt;<i> NMEA DPT and MTW sentences). JSON gives a natural way to add ad-hoc 
+</I>&gt;<i> fields, and we expect to explot that in the future.&quot;
+</I>&gt;<i> 
+</I>&gt;<i> So question 1, starter for 10 points: Are the current gpsd maintainers 
+</I>&gt;<i> interested in having support for non-TPV data added to gpsd in its 
+</I>&gt;<i> current incarnation or not?
+</I>
+We are now.  Our thinking is no longer constrained by the old protocol.
+You arrive at an opportune moment, as we have just gotten the JSON-vased
+protocol to an opportune state.
+
+The remaining constraint is this: because we target embedded systems, 
+we need it to be possible to condition out support for protocols that 
+a particular installation doesn't need.  Ths means the code to handle
+Seatalk sentences needs to live inside #ifdef SEATALK/#endif SEATALK.
+
+&gt;<i> In terms of the internal data structures, there appear to be a couple of 
+</I>&gt;<i> ways to go.  The data structure containing the session data is of type 
+</I>&gt;<i> gps_data_t defined in gps.h.  We can either extend this data structure 
+</I>&gt;<i> to contain the other non-TPV data (the TPV data is in the component fix 
+</I>&gt;<i> of type gps_fix_t), or we can squeeze the data in elsewhere.
+</I>&gt;<i> 
+</I>&gt;<i> What would be the best approach?
+</I>
+That depends on the number and size of the new data fields.  If they'll
+fit in the union area of the struct, which seems likely, we'll put them there.
+If not, that would break binary compatibility and they'd have to go in the 
+privdata area.
+ 
+&gt;<i> In terms of the code that extracting TPV data from NMEA sentences, there 
+</I>&gt;<i> are about half a dozen sentences that are applicable.  Each different 
+</I>&gt;<i> sentence type contains a separate function in driver_nmea.c to extract 
+</I>&gt;<i> the data.  For extracting non-TPV data, there are probably 20 - 30 
+</I>&gt;<i> sentences that are applicable.  It bothers me a little that there isn't 
+</I>&gt;<i> a single function in driver_nmea.c to handle an arbitrary NMEA sentence, 
+</I>&gt;<i> which then looks at a director or lookup table to find a method of 
+</I>&gt;<i> handing each different data element.  Personally if I was designing it 
+</I>&gt;<i> from scratch I would have taken a different approach, but that might be 
+</I>&gt;<i> a change too far.  Thoughts?
+</I>
+I'm not quite sure what you're advocating.  Somethuing like what you describe
+lives near driver_nmea.c:877 in the function nmea_parse(). How would you
+organize it differently?
+
+&gt;<i> This latter issue is the one thing that's making me lean towards having 
+</I>&gt;<i> an external process that subscribes to the raw NMEA sentences from the 
+</I>&gt;<i> gpsd data feed, decodes them, and stores them as necessary.  (That and 
+</I>&gt;<i> because my java-fu and my PHP-fu are both stronger than my C-fu so I 
+</I>&gt;<i> could almost certainly implement that faster).
+</I>&gt;<i> 
+</I>&gt;<i> However that approach has already been discussed on the gpsd-users 
+</I>&gt;<i> mailing list, and was pointed to this: 
+</I>&gt;<i> <A HREF="http://gpsd.berlios.de/faq.html#why_not_parse_nmea.">http://gpsd.berlios.de/faq.html#why_not_parse_nmea.</A>  That's an 
+</I>&gt;<i> appropriate answer if gpsd parses all known NMEA sentences, but not if not.
+</I>&gt;<i> 
+</I>&gt;<i> (Reference: <A HREF="http://marc.info/?l=gpsd-users&amp;m=117851046304732&amp;w=2">http://marc.info/?l=gpsd-users&amp;m=117851046304732&amp;w=2</A>).
+</I>
+The sentences you describe are in scope for the NMEA driver.  They're all 
+NMEA 0183.  Thus, by having support for them in gpsd itself, it is likely
+that we will effectively support a wider range of systems than just Seatalk.
+It would be nice if no one ever had to solve that problem again.
+
+&gt;<i> As far as the sentences that I need to have data extracted from, here is 
+</I>&gt;<i> a non-exhaustive set of samples.  The speeds are all zero because the 
+</I>&gt;<i> vessel was stationary at the time:
+</I>
+Yes, these all look like NMEA 0183.
+
+&gt;<i> So, in summary, where I'm at is a crossroads between two different 
+</I>&gt;<i> solutions involving some up front design decisions:
+</I>&gt;<i> 
+</I>&gt;<i> 1. Major hacking on gpsd.
+</I>&gt;<i> 2. External gpsd client to interpret and make available the NMEA data 
+</I>&gt;<i> that gpsd does not currently provide.
+</I>
+I invite you to do major hacking.  You may think of it as making Seatalk
+work, but I think of it as extending our support for generic NMEA 0183.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007367.html">[Gpsd-dev] ship board navigational software and gpsd
+</A></li>
+	<LI>Next message: <A HREF="007372.html">[Gpsd-dev] ship board navigational software and gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7368">[ date ]</a>
+              <a href="thread.html#7368">[ thread ]</a>
+              <a href="subject.html#7368">[ subject ]</a>
+              <a href="author.html#7368">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

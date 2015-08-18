@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Single-writer/many-reader consistency
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3C4D8E03DC.8050206%40tmsw.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009089.html">
+   <LINK REL="Next"  HREF="009090.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Single-writer/many-reader consistency</H1>
+    <B>Terje Mathisen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3C4D8E03DC.8050206%40tmsw.no%3E"
+       TITLE="[Gpsd-dev] Single-writer/many-reader consistency">terje at tmsw.no
+       </A><BR>
+    <I>Sat Mar 26 16:18:52 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009089.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+        <LI>Next message: <A HREF="009090.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9095">[ date ]</a>
+              <a href="thread.html#9095">[ thread ]</a>
+              <a href="subject.html#9095">[ subject ]</a>
+              <a href="author.html#9095">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>tz wrote:
+&gt;<i> On Sat, Mar 26, 2011 at 8:12 AM, tz&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;  wrote:
+</I>&gt;&gt;<i> On Sat, Mar 26, 2011 at 1:34 AM, Eric Raymond&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at snark.thyrsus.com</A>&gt;  wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Only one process (the single writer) would ever change the semaphore
+</I>&gt;&gt;&gt;<i> state; the readers would just block or spin until it goes to zero.  In
+</I>&gt;&gt;&gt;<i> GPSD writes are infrequent, now normally 1 per second and highly
+</I>&gt;&gt;&gt;<i> unlikely to exceed 100 per second even with survey-grade GPSes we
+</I>&gt;&gt;&gt;<i> don't support yet.  Writes are also small, less than 8K.
+</I>&gt;<i>
+</I>&gt;<i> If you want to get really fancy, you can append a reed-solomon ECC
+</I>&gt;<i> block so that even if the writer starts messing with the data, the
+</I>&gt;<i> reader could recover the old version until the writer updated the ECC
+</I>&gt;<i> block.
+</I>&gt;<i>
+</I>&gt;<i> And it would detect a rare case when half the ecc block was updated so
+</I>&gt;<i> it could not validate or correct the payload.
+</I>
+This is indeed fancy, and it would be fun to implement.
+Fun but also quite stupid: :-(
+
+As soon as we start considering anything even close to this complex, 
+then we should rather use a regular OS-level api to transfer the needed 
+24-byte timestamp block.
+
+If we really care about the performance of this interface (used two 
+times per second, once to write+once to read?) then we must consider 
+cache behaviour:
+
+With N clients, each client can have a read-only copy of the first cache 
+line, the one containing the count, mode and other header information, 
+but as soon as a  new second rolls around, the MESI protocol (which is 
+used on most x86 cpus and many other architectures) will force the 
+writer (gpsd) to do a cache line read-for-ownership.
+
+This sends an invalidate to all the clients, changing their copies from 
+S(hared) to I(nvalid).
+
+At this point gpsd can start the actual store operations, including a 
+memory barrier operation at the end, before marking the entire block 
+valid by updating the count.
+
+Since the cache line is Write Back/Write Coalescing, the individual 
+store operations will collect in the L1 cache and the cpu write buffer, 
+so when the memory barrier operation occurs, the cache line is flushed 
+to RAM immediately.
+
+At this point any currently waiting client, which has been trying to 
+read the count variable, will get a S(hared) copy of the cache line, 
+while the writes goes on to update the count.
+
+(Depending upon the exact timing, the client might or might not be able 
+to do that read before the final gpsd store of count yanks the line 
+back. This does not matter because it is only the count update which 
+allows the client to retrieve the new timestamp.)
+
+Terje
+-- 
+- &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Terje at tmsw.no</A>&gt;
+&quot;almost all programming can be viewed as an exercise in caching&quot;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009089.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+	<LI>Next message: <A HREF="009090.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9095">[ date ]</a>
+              <a href="thread.html#9095">[ thread ]</a>
+              <a href="subject.html#9095">[ subject ]</a>
+              <a href="author.html#9095">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] PPS patch
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS%20patch&In-Reply-To=%3C20710.213.84.187.156.1114960497.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001514.html">
+   <LINK REL="Next"  HREF="001521.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] PPS patch</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS%20patch&In-Reply-To=%3C20710.213.84.187.156.1114960497.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] PPS patch">gpsd at xs4all.nl
+       </A><BR>
+    <I>Sun May  1 17:14:57 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001514.html">[Gpsd-dev] More fixes...
+</A></li>
+        <LI>Next message: <A HREF="001521.html">[Gpsd-dev] PPS patch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1518">[ date ]</a>
+              <a href="thread.html#1518">[ thread ]</a>
+              <a href="subject.html#1518">[ subject ]</a>
+              <a href="author.html#1518">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Here is my first cut at a PPS synchronisation for NTP.
+It actually is simpler than I thought before.
+
+When the device is activated, a thread is started that waits for DCD line
+changes.  It autodetects the polarity and syncs the clock when the
+detected edge is 'close enough' to the system time.  This means the normal
+message-based timing has to pull the clock to within 100ms first.
+This is necessary to avoid false locks (a second ahead or behind), but it
+may  cause trouble when accuracy of the timing info is not good enough.
+I have considered using two separate NTP SHM segments for the two
+different sync sources, but for now they share one.  This means you cannot
+use NTP fudge time to move them around independently, that will have to be
+done inside gpsd.
+We will have to see if this is practical.
+
+The thread gets blocked when there is no PPS info but it neatly exits when
+the device is closed.  Not a real problem, I think.  It could be forced to
+exit after some timeout with an alarm call.
+
+To have this working, you need a GPS that pulses the DCD line at each
+seconds mark.  This probably does not happen with USB devices, but you can
+always try...   When using -D 5 it should print a message each second:
+
+gpsd: ntpshm_pps: precision -16
+
+This means the pps time offset from system time is 2^-16 s at that moment.
+
+Open issues:
+
+- it should probably be a configuration option to include this code
+- it uses an ioctl that probably only exists in Linux
+- it requires the pthreads library, so that should be added to the linking
+- it would work better when scheduling options are set
+
+Right now it calls nice(-10) but I have also experimented with other
+scheduler settings.  Unfortunately it turns out that gpsd eats all
+processor time during startup (hunting for the correct speed) so that has
+to change, or else the entire system hangs for a while when gpsd is
+started.
+
+I also found that there seems to be no strict separation between client
+and server side routines and libraries.  For some reason the code in
+libgpsd_core.c gets pulled in by xgps as well, requiring a -lpthread there
+as well.  That is not correct, I think.  Clients should get linked only
+with the routines required at their side of the TCP connection, not with
+stuff that is internal to gpsd.
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: patch.gz
+Type: application/x-gzip
+Size: 2243 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20050501/3698b95e/attachment.bin">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20050501/3698b95e/attachment.bin</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001514.html">[Gpsd-dev] More fixes...
+</A></li>
+	<LI>Next message: <A HREF="001521.html">[Gpsd-dev] PPS patch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1518">[ date ]</a>
+              <a href="thread.html#1518">[ thread ]</a>
+              <a href="subject.html#1518">[ subject ]</a>
+              <a href="author.html#1518">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,92 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] ntp-pps
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntp-pps&In-Reply-To=%3C14556.213.84.187.156.1158250816.squirrel%40webmail.xs4all.nl%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004316.html">
+   <LINK REL="Next"  HREF="004329.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] ntp-pps</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntp-pps&In-Reply-To=%3C14556.213.84.187.156.1158250816.squirrel%40webmail.xs4all.nl%3E"
+       TITLE="[Gpsd-dev] ntp-pps">gpsd at xs4all.nl
+       </A><BR>
+    <I>Thu Sep 14 18:20:16 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004316.html">[Gpsd-dev] ntp-pps
+</A></li>
+        <LI>Next message: <A HREF="004329.html">[Gpsd-dev] ntp-pps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4327">[ date ]</a>
+              <a href="thread.html#4327">[ thread ]</a>
+              <a href="subject.html#4327">[ subject ]</a>
+              <a href="author.html#4327">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i>
+</I>&gt;<i> Agreed.  I also see anothre problem in the saniuty checks in the ntp-pps
+</I>&gt;<i> code that makes assumptions about the relationship between fix time and
+</I>&gt;<i> pps time.  After we get this I'll work on those.
+</I>&gt;<i>
+</I>
+I hope you don't mind that I mention that it was designed this way, and
+that I prefer you to lay down and discuss the &quot;problems&quot; you find in it
+over abusing your commit privileges and modifying the code to relax the
+designed checks (as you did before).
+
+The code was written with the intention to first have the NTP daemon lock
+to the message-based time and be well within a second (I chose 400ms
+because I feel it should stay far away from possible plus-or-minus one
+second confusion), and after that lock to the nearest second using the PPS
+pulse.
+
+When you allow NTP to lock onto PPS and at the same time allow the
+message-based time to be 800ms off (for example), it is very likely that
+the system clock locks off-by-one-second.
+
+There are hardcoded offsets from message time to real time in the code.  I
+am not too happy with that, because the offsets are not the same for every
+receiver.  But additional offset can be added in the ntp config file using
+fudge, when required.
+Maybe there should be a survey to determine the optimal offset hardwired
+in the code for every protocol supported (the median value for all offsets
+reported for different receivers).
+
+Rob
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004316.html">[Gpsd-dev] ntp-pps
+</A></li>
+	<LI>Next message: <A HREF="004329.html">[Gpsd-dev] ntp-pps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4327">[ date ]</a>
+              <a href="thread.html#4327">[ thread ]</a>
+              <a href="subject.html#4327">[ subject ]</a>
+              <a href="author.html#4327">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

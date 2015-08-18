@@ -1,0 +1,94 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Strange error estimates in marginal signal conditions
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Strange%20error%20estimates%20in%20marginal%20signal%20conditions&In-Reply-To=%3C200712150713.52447.mick.durkin%40saunalahti.fi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005850.html">
+   <LINK REL="Next"  HREF="005855.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Strange error estimates in marginal signal conditions</H1>
+    <B>Mick Durkin</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Strange%20error%20estimates%20in%20marginal%20signal%20conditions&In-Reply-To=%3C200712150713.52447.mick.durkin%40saunalahti.fi%3E"
+       TITLE="[Gpsd-dev] Strange error estimates in marginal signal conditions">mick.durkin at saunalahti.fi
+       </A><BR>
+    <I>Sat Dec 15 06:13:52 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005850.html">[Gpsd-dev] Strange error estimates in marginal signal	conditions
+</A></li>
+        <LI>Next message: <A HREF="005855.html">[Gpsd-dev] Strange error estimates in marginal signal conditions
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5854">[ date ]</a>
+              <a href="thread.html#5854">[ thread ]</a>
+              <a href="subject.html#5854">[ subject ]</a>
+              <a href="author.html#5854">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>esr said
+
+&gt;<i>This is a classic case of floating point rounding error.  What we
+</I>&gt;<i>probably need to do is clamp the determinant values to zero if they're
+</I>&gt;<i>absolute value less than epsilon, for properly chosen epsilon.  I
+</I>&gt;<i>think that's what a numeric analyst would recommend.
+</I>
+&gt;<i>The zero deteminant would get interpreted as &quot;can't calculate DOPs&quot; and 
+</I>result
+&gt;<i>in a NaN in that field.
+</I>
+
+Eric/Chris,
+
+That is the way I was thinking. I did a simple mod to the matrix code so that 
+when the determinant was less then some value it is set to zero.
+
+I changed the code from :
+
+  if (fabs(det) == 0.0)
+
+to :
+
+  if (fabs(det) &lt; 0.0001)
+
+This cleared up the &quot;noise&quot; nicely; question is what epsilon should we set? I 
+could experiment, but if anyone could give a reasonable way to figure it 
+out...
+
+
+BR
+
+Mick Durkin
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005850.html">[Gpsd-dev] Strange error estimates in marginal signal	conditions
+</A></li>
+	<LI>Next message: <A HREF="005855.html">[Gpsd-dev] Strange error estimates in marginal signal conditions
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5854">[ date ]</a>
+              <a href="thread.html#5854">[ thread ]</a>
+              <a href="subject.html#5854">[ subject ]</a>
+              <a href="author.html#5854">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

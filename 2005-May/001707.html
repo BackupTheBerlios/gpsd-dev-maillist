@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] endless loop, 100% cpu
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20endless%20loop%2C%20100%25%20cpu&In-Reply-To=%3C6441.213.84.187.156.1116315326.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001702.html">
+   <LINK REL="Next"  HREF="001708.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] endless loop, 100% cpu</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20endless%20loop%2C%20100%25%20cpu&In-Reply-To=%3C6441.213.84.187.156.1116315326.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] endless loop, 100% cpu">gpsd at xs4all.nl
+       </A><BR>
+    <I>Tue May 17 09:35:26 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001702.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+        <LI>Next message: <A HREF="001708.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1707">[ date ]</a>
+              <a href="thread.html#1707">[ thread ]</a>
+              <a href="subject.html#1707">[ subject ]</a>
+              <a href="author.html#1707">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;&gt;<i> The newest version in svn has some fixes but I don't think they will
+</I>&gt;&gt;<i> solve
+</I>&gt;&gt;<i> your problem.
+</I>&gt;&gt;<i> (they are extra checks to avoid setting the time from the receiver when
+</I>&gt;&gt;<i> it
+</I>&gt;&gt;<i> does not have a fix)
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Here is what I can do:
+</I>&gt;<i>
+</I>&gt;<i> Print the values from the packet which will be used to compute the time,
+</I>&gt;<i> together with local time (ntp synced, so it's close). This way some body
+</I>&gt;<i> who
+</I>&gt;<i> knows sirf could blame the gps or gpsd.
+</I>&gt;<i>
+</I>&gt;<i> Is there anything else I should print?
+</I>
+I don't think printing values is going to solve much.  The result will be
+that it prints times that are 10 seconds off.
+I also looked in the -D dump that you posted on a website, and the entire
+packet contents are printed there.
+
+It looks like your receiver is not outputting either GPS time or UTC time...
+The message 0x29 time, which is supposed to be UTC, is all zeroes on your
+receiver.  This is consistent with the comments in the code that say that
+this does not work before version 232 (and yours is 231).
+So, the program uses messages 0x02 and 0x04.
+
+The time fields there are supposed to be GPS time.  sirfmon prints them
+unmodified.  You report that they are &quot;a second or two ahead of UTC&quot; but
+they should have been 13 seconds ahead.
+gpsd subtracts the leap_seconds from that, which should be 13.  That is
+how you get your &quot;10 seconds behind UTC&quot; time.
+
+It sort of looks like this particular receiver attempts some GPS-&gt;UTC
+correction of its own, by subtracting a fixed 10 or 11 seconds (that may
+have been valid at the time it was built).
+We will have to find some way to turn that off, or to identify the actual
+offset and an indication that it is being applied.
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001702.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+	<LI>Next message: <A HREF="001708.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1707">[ date ]</a>
+              <a href="thread.html#1707">[ thread ]</a>
+              <a href="subject.html#1707">[ subject ]</a>
+              <a href="author.html#1707">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

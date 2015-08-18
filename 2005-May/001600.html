@@ -1,0 +1,95 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Other Strange things...
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Other%20Strange%20things...&In-Reply-To=%3C20050508215338.GA27195%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001597.html">
+   <LINK REL="Next"  HREF="001601.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Other Strange things...</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Other%20Strange%20things...&In-Reply-To=%3C20050508215338.GA27195%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Other Strange things...">esr at thyrsus.com
+       </A><BR>
+    <I>Sun May  8 23:53:38 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001597.html">[Gpsd-dev] Other Strange things...
+</A></li>
+        <LI>Next message: <A HREF="001601.html">[Gpsd-dev] Other Strange things...
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1600">[ date ]</a>
+              <a href="thread.html#1600">[ thread ]</a>
+              <a href="subject.html#1600">[ subject ]</a>
+              <a href="author.html#1600">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Andreas Brauchli &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">a.brauchli at elementarea.net</A>&gt;:
+&gt;<i> found it:
+</I>&gt;<i> it's between revision 2392 and 2393, file packet.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- packet.c    (revision 2392)
+</I>&gt;<i> +++ packet.c    (working copy)
+</I>&gt;<i> @@ -509,7 +509,16 @@
+</I>&gt;<i>         count = 0;
+</I>&gt;<i>         if (ioctl(session-&gt;gpsdata.gps_fd, FIONREAD, &amp;count) &lt; 0)
+</I>&gt;<i>             return BAD_PACKET;
+</I>&gt;<i> -       if (count &amp;&amp; packet_get(session, count)) {
+</I>&gt;<i> +       if (count == 0)
+</I>&gt;<i> +           /*
+</I>&gt;<i> +            * Wait 4 character times at 9 bits per character, in usec.
+</I>&gt;<i> +            * This keeps us from eating the processor if we're running
+</I>&gt;<i> +            * at high priority.  Wait 4 chars because a 16550 normally
+</I>&gt;<i> +            * sends through characters in 7- or 8-character bursts, so
+</I>&gt;<i> +            * Nyquist's Theorem tells us this is optimal.
+</I>&gt;<i> +            */
+</I>&gt;<i> +           usleep(36000000.0 / session-&gt;gpsdata.baudrate);
+</I>&gt;<i> +       else if (packet_get(session, count)) {
+</I>&gt;<i>             /* push back the last packet grabbed */
+</I>&gt;<i>             if (session-&gt;outbuflen + session-&gt;inbuflen &lt;
+</I>&gt;<i> MAX_PACKET_LENGTH) {
+</I>&gt;<i>                 memmove(session-&gt;inbuffer+session-&gt;outbuflen,
+</I>&gt;<i> 
+</I>&gt;<i> i also applied this patch against current svn and it worked..
+</I>
+OK, so now we need to figure out why this patch messes up autobauding
+with your BU-303 and not with mine.  Hm...I think I'll add some 
+instrumentation here.  It looks as though the longest delay this can ever
+give us is 36 seconds.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001597.html">[Gpsd-dev] Other Strange things...
+</A></li>
+	<LI>Next message: <A HREF="001601.html">[Gpsd-dev] Other Strange things...
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1600">[ date ]</a>
+              <a href="thread.html#1600">[ thread ]</a>
+              <a href="subject.html#1600">[ subject ]</a>
+              <a href="author.html#1600">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

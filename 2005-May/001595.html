@@ -1,0 +1,90 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Other Strange things...
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Other%20Strange%20things...&In-Reply-To=%3C20050508183237.GA25590%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001594.html">
+   <LINK REL="Next"  HREF="001596.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Other Strange things...</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Other%20Strange%20things...&In-Reply-To=%3C20050508183237.GA25590%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Other Strange things...">esr at thyrsus.com
+       </A><BR>
+    <I>Sun May  8 20:32:37 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001594.html">[Gpsd-dev] Other Strange things...
+</A></li>
+        <LI>Next message: <A HREF="001596.html">[Gpsd-dev] Other Strange things...
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1595">[ date ]</a>
+              <a href="thread.html#1595">[ thread ]</a>
+              <a href="subject.html#1595">[ subject ]</a>
+              <a href="author.html#1595">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Andreas Brauchli &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">a.brauchli at elementarea.net</A>&gt;:
+&gt;<i> well i recompiled the release version 2.22 and 2.23 and 2.22 worked but
+</I>&gt;<i> not 2.23, the error has therefore to be somewhere in between..
+</I>
+Do you know how to pull diffs out of Subversion?  The next logical thing
+to do is start applying the ladder of commits between 2.22 and 2.23 and
+seeing where it breaks.
+ 
+&gt;<i> i think it's strange that gpsd reports &quot;no probe matched&quot; right before
+</I>&gt;<i> the packet_sniff - same with GPS in NMEA or SiRF mode
+</I>
+That's actually normal.  It just means the autoconfiguration code
+doesn't see the Garmin driver active.
+
+&gt;<i> interesting is the fact that when gpsd is waiting for the packets i can
+</I>&gt;<i> run sirfmon (which isn't supposed to work while gpsd is active).
+</I>
+Yes, this is causing me to suspect that your gpsd instance is never 
+actually opening the device properly.  I suspect what we're seeing is
+some sort of bad interaction between the privilege-dropping code and
+your local configuration.
+
+Try this first: go to gpsd.c first and condition out the
+privilege-dropping code.  It's just after line 901, look for the
+string &quot;Drop privileges.&quot;
+
+If that doesn't work, we'll start on the commits after 2.22.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001594.html">[Gpsd-dev] Other Strange things...
+</A></li>
+	<LI>Next message: <A HREF="001596.html">[Gpsd-dev] Other Strange things...
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1595">[ date ]</a>
+              <a href="thread.html#1595">[ thread ]</a>
+              <a href="subject.html#1595">[ subject ]</a>
+              <a href="author.html#1595">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

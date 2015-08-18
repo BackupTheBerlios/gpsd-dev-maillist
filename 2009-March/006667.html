@@ -1,0 +1,133 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Is manual configuration still needed for Bluetooth?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Is%20manual%20configuration%20still%20needed%20for%20Bluetooth%3F&In-Reply-To=%3C49C92C39.10903%40poczta.fm%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006665.html">
+   <LINK REL="Next"  HREF="006680.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Is manual configuration still needed for Bluetooth?</H1>
+    <B>Lukasz Stelmach</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Is%20manual%20configuration%20still%20needed%20for%20Bluetooth%3F&In-Reply-To=%3C49C92C39.10903%40poczta.fm%3E"
+       TITLE="[Gpsd-dev] Is manual configuration still needed for Bluetooth?">stlman at poczta.fm
+       </A><BR>
+    <I>Tue Mar 24 19:53:45 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006665.html">[Gpsd-dev] Is manual configuration still needed for Bluetooth?
+</A></li>
+        <LI>Next message: <A HREF="006680.html">[Gpsd-dev] Is manual configuration still needed for Bluetooth?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6667">[ date ]</a>
+              <a href="thread.html#6667">[ thread ]</a>
+              <a href="subject.html#6667">[ subject ]</a>
+              <a href="author.html#6667">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Eric S. Raymond pisze:
+&gt;<i> This question is meant for Lukasz Stelmach, but anyone else with
+</I>&gt;<i> Bluetooth knowledge should feel free to chime un.
+</I>&gt;<i> 
+</I>&gt;<i> We have a set of rather old Bluetooth configuaration directions at
+</I>&gt;<i> &lt;<A HREF="http://gpsd.berlios.de/bt.html">http://gpsd.berlios.de/bt.html</A>&gt;.  Are these still necessary with
+</I>&gt;<i> newer Linuxes, or do we autoconfigure properly now?
+</I>
+No. Most of those steps are (and probably will be) required, except of maybe
+1 through 4 as those steps are most often in the system init scripts.
+
+Ad. 5 You have to learn the MAC of *your* device somehow, since
+there is no act of plugging in like in with USB.[*]
+
+Ad. 6. This one seems like the hardest to overcome. And it is possible
+not to do it if gpsd uses gnome-bluetooth or some other *heavy* GUI/dbus
+tools.
+
+Ad. 7,8 You still have to declare which device you'd like to talk to, and
+it seems inevitable for Bluetooth devices. We could this
+if gpsd would open an AF_BLUETOOTH socket and connect to the
+*selected* receiver instead of using /dev/rfcomm0. Using GUI/dbus
+etc. could help but I am not a fan of those.
+
+[*] Since there is no act of putting a plug into a socket with BT
+devices it is not possible to run automatic detection. It is *always*
+a computer that initiates a connection to such simple devices like
+GPS receivers. So it has to know what it is trying to connect to.
+All the PDAs I have seen have some interface to find and select
+the device you would use later on.
+
+The other aspect of BT operation is that a GPS receiver is not
+necessarily on when an OS boots and the gpsd starts. That is why
+I suggested completely to fully delay the detection step until
+the first client connects. When some client is started that
+is probably when a user wants to use a receiver so, in case
+of BT, this is the moment when the receiver is probably turned on.
+
+I suggested the auto-configuration tool as a means of caching
+what would be detected, which makes sense especially if gpsd
+is able to connect via BT socket itself, because the cached
+configuration can be assigned to a device by its MAC which
+gpsd uses to connect. (but I won't insist on this caching
+schema)
+
+To sum everything up. Use cases for Bluetooth devices are completely
+different that for any other wired devices.
+
+- --
+By&#322;o mi bardzo mi&#322;o.               Czwarta pospolita kl&#281;ska, [...]
+&gt;<i>&#321;ukasz&lt;                 Ju&#380; nie katolicka lecz z&#322;odziejska.  (c)PP
+</I>-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.9 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - <A HREF="http://enigmail.mozdev.org">http://enigmail.mozdev.org</A>
+
+iEYEARECAAYFAknJLDkACgkQNdzY8sm9K9yAVQCdGFXPz+bjr3jzPTSs3pZ0KmYP
+h7MAoJn+L1a7uhxjy2axWKaBrrGXCGp/
+=P0dS
+-----END PGP SIGNATURE-----
+
+
+----------------------------------------------------------------------
+Szukasz pracy? Sprawdz tutaj: <A HREF="http://link.interia.pl/f20b8">http://link.interia.pl/f20b8</A>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: stlman.vcf
+Type: text/x-vcard
+Size: 176 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090324/3d2805cf/attachment.vcf">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090324/3d2805cf/attachment.vcf</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006665.html">[Gpsd-dev] Is manual configuration still needed for Bluetooth?
+</A></li>
+	<LI>Next message: <A HREF="006680.html">[Gpsd-dev] Is manual configuration still needed for Bluetooth?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6667">[ date ]</a>
+              <a href="thread.html#6667">[ thread ]</a>
+              <a href="subject.html#6667">[ subject ]</a>
+              <a href="author.html#6667">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

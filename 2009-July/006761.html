@@ -1,0 +1,191 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Thinking about raw data
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Thinking%20about%20raw%20data&In-Reply-To=%3C91981b3e0907031222k9774cd8of6df0dfafad2c743%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006760.html">
+   <LINK REL="Next"  HREF="006787.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Thinking about raw data</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Thinking%20about%20raw%20data&In-Reply-To=%3C91981b3e0907031222k9774cd8of6df0dfafad2c743%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Thinking about raw data">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Fri Jul  3 21:22:06 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006760.html">[Gpsd-dev] Thinking about raw data
+</A></li>
+        <LI>Next message: <A HREF="006787.html">[Gpsd-dev] new gps report
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6761">[ date ]</a>
+              <a href="thread.html#6761">[ thread ]</a>
+              <a href="subject.html#6761">[ subject ]</a>
+              <a href="author.html#6761">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>And this is why I start these threads on the lists... because I always
+miss something in the first draft :)
+
+On Fri, Jul 3, 2009 at 4:41 AM, Michael Tandy&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">m.j.tandy at warwick.ac.uk</A>&gt; wrote:
+&gt;<i> Note that some receivers will also give you measurements to
+</I>&gt;<i> geostationary correction satellites (WAAS, EGNOS, etc) if those are in
+</I>&gt;<i> view, and the PRNs will be from 120 to 138. Needless to say, assigning
+</I>&gt;<i> a 138-element array with only 12 lines populated isn't the most
+</I>&gt;<i> space-efficient approach :)
+</I>
+Yeah, I forgot that at least my ublox receiver will allow ranging with
+SBAS PRNS. My other receivers don't - they just use SBAS as a source
+of corrections.
+
+&gt;<i> There's several data structures you could use, as I'm sure you're
+</I>&gt;<i> aware. IMHO a good choice is to just list the measurements in an array
+</I>&gt;<i> sorted by PRN. The software that reads in your information will
+</I>&gt;<i> probably immediately convert the data into its own internal data
+</I>&gt;<i> structures.
+</I>
+I was thinking about sorting by PRN... I guess I could do that
+provided I store which receiver channel reported it. It could be
+useful to detect a misbehaving channel or to detect when a receiver
+decides to switch channels for tracking a PRN - I hear these things
+happen, and they can introduce jumps into navigation solutions.
+
+I guess I could have a list of MAXCHANNELS measurements, protected by
+--enable-raw. Waitaminnit - that could be trouble when someone hooks
+me up with a 216 channels Javad Triumph receiver.
+<A HREF="http://www.javad.com/jgnss/products/triumph.html">http://www.javad.com/jgnss/products/triumph.html</A>
+
+&gt;<i> Unless you're planning to do any raw-measurement
+</I>&gt;<i> calculations within GPSD?
+</I>
+Not within gpsd itself. Validation (DOP checks, error estimation) is
+within gpsd's scope, actually doing navigation solutions is not. I'd
+rather find a protocol I can use to stream out raw measurements and
+let something else handle the solutions. I'm thinking either BINEX or
+RT-IGS as the output format, and then use that to feed GPSTK, GNSSTK,
+Sweetgps, Kinetic, ...
+
+&gt;<i> Or you could just throw away data for SV PRNs above 32 - not sure many
+</I>&gt;<i> people use that data :)
+</I>
+Take two aspirin and remain where you are - my power stapler and I are
+coming to visit. :) Just kidding. But I really don't like the idea of
+throwing away data.
+
+&gt;<i> Perhaps I'm being dense, but what is pseudorange, as opposed to being
+</I>&gt;<i> either code phase or carrier phase?
+</I>
+Pseudorange is a magical approximation of distance between you and the
+SV. Code and carrier phase are the actual observables used to get
+there. I know that sounded a little snarky, but some receivers give
+you only one of code, carrier or (maybe carrier-smoothed) pseudorange.
+I'm trying to come up with a format that stores, with maximal
+fidelity, any receiver's output. I guess I don't need to worry about
+being able to convert UBX into SiRF, so we can do some conversion in
+each driver.
+
+&gt;&gt;<i> &#160; double deltarange[MAXCHANNELS]; &#160; &#160; /* meters/sec */
+</I>&gt;&gt;<i> &#160; double doppler[MAXCHANNELS]; &#160; &#160; &#160; &#160;/* Hz */
+</I>&gt;<i>
+</I>&gt;<i> Again, aren't those the same measurements? Just with different units?
+</I>
+For now, I'm just extracting whatever the receiver said. I can be
+convinced to convert into one or the other - which would make more
+sense?
+
+&gt;<i> Also, on the Doppler I would consider not just the comment &quot;Hz&quot; but
+</I>&gt;<i> also &quot;positive for approaching satellites&quot;; likewise on the deltarange
+</I>&gt;<i> &quot;negative for approaching satellites&quot;.
+</I>
+Good call.
+
+&gt;&gt;<i> &#160; double mtime[MAXCHANNELS]; &#160; &#160; &#160; &#160; &#160;/* sec */
+</I>&gt;<i> GPS time or UTC time?
+</I>
+hardware dependent, but probably never UTC.
+- In SiRF hardware, it's &quot;an internal millisecond counter which has no
+direct relationship to GPS time&quot;.
+- Itrax also seems to use an internal clock: &quot;The reference TOW with
+respect to which the pseudoranges are computed. This time is not
+necessarily a good indication of the receiver or satellite TOW.&quot;
+- Ashtech/Thales/Magellan is another internal clock: &quot;Sequence ID
+number in units of 50 ms, modulo 30 minutes&quot;
+- Ublox says &quot;Measurement integer millisecond GPS time of week&quot;.
+- Superstar2 uses &quot;Predicted GPS time. This is the time when the
+measurement samples have been taken at the receiver.&quot;
+- Trimble seems to be GPS time: &quot;The time of measurement (Byte 17) is
+the center of the sample interval adjusted by adding the receiver
+supplied codephase (module mS) to a user determined integer number of
+mS between user and satellite.&quot;
+
+&gt;<i> Some more properties you might consider including:
+</I>&gt;<i> a. Possible cycle slip between last measurement and this one. (i.e. Rinex LLI)
+</I>&gt;<i> b. Whether ambiguities are full-cycle or half-cycle (such as from a
+</I>&gt;<i> squaring receiver); u-blox antaris receivers give half-cycle-ambiguous
+</I>&gt;<i> information out when they first acquire a signal, before switching to
+</I>&gt;<i> full-cycle. (i.e. Rinex LLI)
+</I>
+yep. i figured there'd be a bunch of other flags and such to throw in.
+that's why i estimated 64B of state per PRN.
+
+&gt;<i> c. Time in seconds since last (suspected) cycle slip. (this is only
+</I>&gt;<i> useful if you're sending the data over a lossy channel)
+</I>
+you mean something like time-in-track? some receivers give us this,
+some don't. i guess we can compute it.
+
+&gt;<i> d. You could include the signal-to-noise ratio, usually measured in dB-Hz.
+</I>
+We use that in the non-raw case so it's not inside the #ifdef. See
+&quot;float ss[MAXCHANNELS]&quot; further up.
+
+&gt;<i> If you check out this file in u-center you should observe the presence
+</I>&gt;<i> of EGNOS satellites, and occasional half-cycle ambiguities and
+</I>&gt;<i> similar: <A HREF="http://www2.warwick.ac.uk/fac/sci/wimrc/about/people/tandy/ubx-rxm-raw_log_file.ubx">http://www2.warwick.ac.uk/fac/sci/wimrc/about/people/tandy/ubx-rxm-raw_log_file.ubx</A>
+</I>&gt;<i>
+</I>&gt;<i> Michael
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>
+
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006760.html">[Gpsd-dev] Thinking about raw data
+</A></li>
+	<LI>Next message: <A HREF="006787.html">[Gpsd-dev] new gps report
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6761">[ date ]</a>
+              <a href="thread.html#6761">[ thread ]</a>
+              <a href="subject.html#6761">[ subject ]</a>
+              <a href="author.html#6761">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

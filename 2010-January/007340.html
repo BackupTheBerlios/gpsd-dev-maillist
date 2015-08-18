@@ -1,0 +1,105 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] odd code in name lookup for v4/v6
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20odd%20code%20in%20name%20lookup%20for%20v4/v6&In-Reply-To=%3Crmihbq7f2el.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007339.html">
+   <LINK REL="Next"  HREF="007341.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] odd code in name lookup for v4/v6</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20odd%20code%20in%20name%20lookup%20for%20v4/v6&In-Reply-To=%3Crmihbq7f2el.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] odd code in name lookup for v4/v6">gdt at ir.bbn.com
+       </A><BR>
+    <I>Thu Jan 28 02:23:30 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007339.html">[Gpsd-dev] Trimble Thunderbolt-E
+</A></li>
+        <LI>Next message: <A HREF="007341.html">[Gpsd-dev] odd code in name lookup for v4/v6
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7340">[ date ]</a>
+              <a href="thread.html#7340">[ thread ]</a>
+              <a href="subject.html#7340">[ subject ]</a>
+              <a href="author.html#7340">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+I found that 
+
+$ cgps name.example.com
+
+would not fine the v6 address of name, and fail if name had v6 and not
+v4.  I traced this to the following code which I don't understand at
+all.  I think it's an attempt to recognize address literals, but normal
+domain names have to be looked up in both address families.
+
+With this patch, doing the above (for a name that has both v6 and v4
+records) results in SYN packets and then resets (no gpsd is running)
+From the remote host, first for v6 and then for v4.  That seems like the
+right behavior.
+
+I tested with both &quot;cgps '[2001:blah blah]'&quot; and 'cgps 10.1.2.3' and
+they both tried only one AF.
+
+Should I commit this, or does someone want to tell me not to (after
+adding a comment explaining this!)?
+
+
+
+Index: libgps_core.c
+===================================================================
+--- libgps_core.c	(revision 6946)
++++ libgps_core.c	(working copy)
+@@ -94,10 +94,6 @@
+ 
+     libgps_debug_trace((1, &quot;gps_open_r(%s, %s)\n&quot;, host, port));    
+ 
+-    if (strchr(host, ':') != NULL)
+-	proto = AF_INET6;
+-    else if (strchr(host, '.') != NULL)
+-	proto = AF_INET;
+     if ((gpsdata-&gt;gps_fd = netlib_connectsock(proto, host, port, &quot;tcp&quot;)) &lt; 0) {
+ 	errno = gpsdata-&gt;gps_fd;
+ 	return -1;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100127/934c385d/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100127/934c385d/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007339.html">[Gpsd-dev] Trimble Thunderbolt-E
+</A></li>
+	<LI>Next message: <A HREF="007341.html">[Gpsd-dev] odd code in name lookup for v4/v6
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7340">[ date ]</a>
+              <a href="thread.html#7340">[ thread ]</a>
+              <a href="subject.html#7340">[ subject ]</a>
+              <a href="author.html#7340">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

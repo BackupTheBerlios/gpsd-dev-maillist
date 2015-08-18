@@ -1,0 +1,211 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Time to ship?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Time%20to%20ship%3F&In-Reply-To=%3C20110803155913.GF12174%40localhost%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009403.html">
+   <LINK REL="Next"  HREF="009400.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Time to ship?</H1>
+    <B>Miroslav Lichvar</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Time%20to%20ship%3F&In-Reply-To=%3C20110803155913.GF12174%40localhost%3E"
+       TITLE="[Gpsd-dev] Time to ship?">mlichvar at redhat.com
+       </A><BR>
+    <I>Wed Aug  3 17:59:13 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009403.html">[Gpsd-dev] Time to ship?
+</A></li>
+        <LI>Next message: <A HREF="009400.html">[Gpsd-dev] Time to ship?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9394">[ date ]</a>
+              <a href="thread.html#9394">[ thread ]</a>
+              <a href="subject.html#9394">[ subject ]</a>
+              <a href="author.html#9394">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sun, Jul 31, 2011 at 05:08:38PM -0700, Michael R. Davis wrote:
+&gt;<i> 2) python_lib_dir WTF
+</I>&gt;<i> 
+</I>&gt;<i> -python_lib_dir = sysconfig.get_python_lib(
+</I>&gt;<i> -&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160; plat_specific=1,
+</I>&gt;<i> -&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160; standard_lib=0,
+</I>&gt;<i> -&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160; prefix=env['prefix']
+</I>&gt;<i> -&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160; )
+</I>&gt;<i> +python_lib_dir = sysconfig.get_python_lib(1)
+</I>&gt;<i> 
+</I>&gt;<i> BSD uses the&#160;key value pair versoin; Fedora&#160;uses the &quot;1&quot; version. I
+</I>&gt;<i> have no idea why.&#160; Should we put a switch in there?&#160; What is the LSB
+</I>&gt;<i> say?
+</I>
+In addition to the python_lib_dir and prefix issues I noticed these
+problems while trying to build and install from a recent git snapshot
+created by git archive:
+
+- PATH is not honored, this avoids ccache 
+- gpsd.h is not installed
+- man pages for python programs are not installed
+- building in a git snapshot fails as git commands don't work
+- gegps doesn't have executable permissions
+- libgps.so and libgpsd.so symlinks are not created on installation
+  (not sure how to do it in SConstruct)
+
+Thanks,
+
+-- 
+Miroslav Lichvar
+-------------- next part --------------
+&gt;<i>From bfd8ab5925f9e5da42e108981635580b02c1b42c Mon Sep 17 00:00:00 2001
+</I>From: Miroslav Lichvar &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mlichvar at redhat.com</A>&gt;
+Date: Wed, 3 Aug 2011 17:37:33 +0200
+Subject: [PATCH 1/5] include PATH from external environment
+
+---
+ SConstruct |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/SConstruct b/SConstruct
+index 333e9b7..321667d 100644
+--- a/SConstruct
++++ b/SConstruct
+@@ -138,7 +138,7 @@ for (name, default, help) in pathopts:
+ # Environment creation
+ #
+ 
+-env = Environment(tools=[&quot;default&quot;, &quot;tar&quot;, &quot;textfile&quot;], options=opts)
++env = Environment(tools=[&quot;default&quot;, &quot;tar&quot;, &quot;textfile&quot;], options=opts, ENV = {'PATH' : os.environ['PATH']})
+ opts.Save('.scons-option-cache', env)
+ env.SConsignFile(&quot;.sconsign.dblite&quot;)
+ 
+-- 
+1.7.6
+
+-------------- next part --------------
+&gt;<i>From 5ead7f8c33ce2212eb7d209029fc2efeba85e931 Mon Sep 17 00:00:00 2001
+</I>From: Miroslav Lichvar &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mlichvar at redhat.com</A>&gt;
+Date: Wed, 3 Aug 2011 17:37:42 +0200
+Subject: [PATCH 2/5] install gpsd.h
+
+---
+ SConstruct |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/SConstruct b/SConstruct
+index 321667d..e078bd9 100644
+--- a/SConstruct
++++ b/SConstruct
+@@ -918,7 +918,7 @@ python_env.Default(*build_python)
+ for (name, help, default) in pathopts:
+     exec name + &quot; = DESTDIR + env['prefix'] + env['%s']&quot; % name
+ 
+-headerinstall = [ env.Install(includedir, x) for x in (&quot;libgpsmm.h&quot;, &quot;gps.h&quot;)]
++headerinstall = [ env.Install(includedir, x) for x in (&quot;libgpsmm.h&quot;, &quot;gps.h&quot;, &quot;gpsd.h&quot;)]
+ 
+ binaryinstall = []
+ binaryinstall.append(env.Install(sbindir, [gpsd, gpsdctl]))
+-- 
+1.7.6
+
+-------------- next part --------------
+&gt;<i>From acf219ca4f324789957ce5843ca6c7a76eda9e39 Mon Sep 17 00:00:00 2001
+</I>From: Miroslav Lichvar &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mlichvar at redhat.com</A>&gt;
+Date: Wed, 3 Aug 2011 17:37:59 +0200
+Subject: [PATCH 3/5] install man pages for python programs
+
+---
+ SConstruct |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/SConstruct b/SConstruct
+index e078bd9..4bc8c12 100644
+--- a/SConstruct
++++ b/SConstruct
+@@ -962,7 +962,7 @@ pkgconfigdir = libdir + os.sep + 'pkgconfig'
+ pc_install = [ env.Install(pkgconfigdir, &quot;libgps.pc&quot;) ]
+ 
+ maninstall = []
+-for manpage in base_manpages:
++for manpage in base_manpages.keys() + python_manpages.keys():
+     section = manpage.split(&quot;.&quot;)[1]
+     dest = os.path.join(mandir, &quot;man&quot;+section, manpage)
+     maninstall.append(env.InstallAs(source=manpage, target=dest))
+-- 
+1.7.6
+
+-------------- next part --------------
+&gt;<i>From f982915fc8d21e32b96fa84ea7af71d6c17106f2 Mon Sep 17 00:00:00 2001
+</I>From: Miroslav Lichvar &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mlichvar at redhat.com</A>&gt;
+Date: Wed, 3 Aug 2011 17:38:21 +0200
+Subject: [PATCH 4/5] fix building in git snapshot
+
+---
+ SConstruct |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/SConstruct b/SConstruct
+index 4bc8c12..fff2a07 100644
+--- a/SConstruct
++++ b/SConstruct
+@@ -1269,7 +1269,8 @@ Utility('udev-test', '', [
+ 
+ if os.path.exists(&quot;gpsd.c&quot;) and os.path.exists(&quot;.gitignore&quot;):
+     distfiles = commands.getoutput(r&quot;git ls-files&quot;).split()
+-    distfiles.remove(&quot;.gitignore&quot;)
++    if &quot;.gitignore&quot; in distfiles:
++        distfiles.remove(&quot;.gitignore&quot;)
+     distfiles += generated_sources
+     distfiles += base_manpages.keys() + python_manpages.keys()
+     if &quot;packaging/rpm/gpsd.spec&quot; not in distfiles:
+-- 
+1.7.6
+
+-------------- next part --------------
+&gt;<i>From d40c1ad9ffb1920634d63f6b4afdbc658414c1a7 Mon Sep 17 00:00:00 2001
+</I>From: Miroslav Lichvar &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mlichvar at redhat.com</A>&gt;
+Date: Wed, 3 Aug 2011 17:54:54 +0200
+Subject: [PATCH 5/5] make gegps executable
+
+---
+ 0 files changed, 0 insertions(+), 0 deletions(-)
+ mode change 100644 =&gt; 100755 gegps
+
+diff --git a/gegps b/gegps
+old mode 100644
+new mode 100755
+-- 
+1.7.6
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009403.html">[Gpsd-dev] Time to ship?
+</A></li>
+	<LI>Next message: <A HREF="009400.html">[Gpsd-dev] Time to ship?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9394">[ date ]</a>
+              <a href="thread.html#9394">[ thread ]</a>
+              <a href="subject.html#9394">[ subject ]</a>
+              <a href="author.html#9394">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

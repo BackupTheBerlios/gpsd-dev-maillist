@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Evermore binary detection failed
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Evermore%20binary%20detection%20failed&In-Reply-To=%3C20050714155956.GB5066%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002502.html">
+   <LINK REL="Next"  HREF="002506.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Evermore binary detection failed</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Evermore%20binary%20detection%20failed&In-Reply-To=%3C20050714155956.GB5066%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Evermore binary detection failed">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Jul 14 17:59:56 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002502.html">[Gpsd-dev] Evermore binary detection failed
+</A></li>
+        <LI>Next message: <A HREF="002506.html">[Gpsd-dev] Evermore binary detection failed
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2505">[ date ]</a>
+              <a href="thread.html#2505">[ thread ]</a>
+              <a href="subject.html#2505">[ subject ]</a>
+              <a href="author.html#2505">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+&gt;<i> I find it hard to believe that it will improve things...
+</I>
+We already know it does from Petr's report.
+ 
+&gt;<i> The problem we had was that an Evermore packet was recognized as a TSIP
+</I>&gt;<i> packet (which could happen when reading starts at the second DLE of a
+</I>&gt;<i> doubled-DLE halfway a packet) and the daemon switched to TSIP mode,
+</I>
+That's OK. The state machine has been told to go to state DLE_LEADER,
+not TSIP_LEADER, at the end of a TSIP packet -- so it will pick up the
+Evermore leader on the next one.  Outcome: the TSIP driver will see
+one garbaged packet, but gpsd will recover after that and correctly 
+sync up to the Evermore.  
+
+After which, by the way, it will *not* detect TSIP again unless there
+is garbage in the byte stream -- the state after EVERMORE_REGOGNIZED
+is normally EVERMORE_LEADER_1, not DLE leader (I distinguished those
+states precisely to accomplish this).
+
+I recognize that there is still a problem in that the TSIP initializer
+changes the link parity.  We do have to deal with that.
+
+You suggest alternative strategies of (a) sampling more packets before
+locking on to a packet type, or (b) allowing the driver to kick the
+packet getter back to ground state.  I'm resisting (a) because it
+would increase first-fix latency, and (b) because of the design
+heuristic that single things should be done in a single place. I think
+it's the packet-getter's job to validate packets -- having some tests
+in the driver itself could be a maintainance headache down the road.
+
+How about this instead; let's strengthen the driver model with a new
+rule.  I am about to check in a change that will cause the driver wrap
+function (if any) to get called whenever you change out of a driver,
+not just when you close the associated device. (Presently only the iTrax and
+Earthmate GPSes have wrapup hooks, and calling either should be quite
+safe.)
+
+You write a trivial wrap function that resets parity to 'N', If you
+want to be an especially good citizen, extract the start parity from
+the ttyset structure at initializer call time, save that in the TSIP
+driver's piece of the private-storage union, and restore it in the
+wrap function.  It is unlikely this will come up in practice, as I
+know of only one other GPS that uses parity, but you never know
+about the future.
+
+This way of solving the problem is better than waiting for several packets
+at start because it means that *any* time the packet machine gets fooled 
+into falsely recognizing a TSIP, it can recover cleanly.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002502.html">[Gpsd-dev] Evermore binary detection failed
+</A></li>
+	<LI>Next message: <A HREF="002506.html">[Gpsd-dev] Evermore binary detection failed
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2505">[ date ]</a>
+              <a href="thread.html#2505">[ thread ]</a>
+              <a href="subject.html#2505">[ subject ]</a>
+              <a href="author.html#2505">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

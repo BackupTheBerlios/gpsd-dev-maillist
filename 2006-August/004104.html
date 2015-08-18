@@ -1,0 +1,143 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Reducing memory requirements
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Reducing%20memory%20requirements&In-Reply-To=%3C87odulxh6i.fsf%40obelix.mork.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004091.html">
+   <LINK REL="Next"  HREF="004105.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Reducing memory requirements</H1>
+    <B>Bj&#248;rn Mork</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Reducing%20memory%20requirements&In-Reply-To=%3C87odulxh6i.fsf%40obelix.mork.no%3E"
+       TITLE="[Gpsd-dev] Reducing memory requirements">bjorn at mork.no
+       </A><BR>
+    <I>Wed Aug 16 09:39:49 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004091.html">[Gpsd-dev] Holux GPSlim 236 notes and observations
+</A></li>
+        <LI>Next message: <A HREF="004105.html">[Gpsd-dev] Reducing memory requirements
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4104">[ date ]</a>
+              <a href="thread.html#4104">[ thread ]</a>
+              <a href="subject.html#4104">[ subject ]</a>
+              <a href="author.html#4104">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hello,
+
+I'm currently trying to get gpsd version 2.33 running on an embedded
+MIPS platform with only 16 MB RAM (small &quot;router&quot; running OpenWRT). 
+
+By default, gpsd will not run on this box (ENOMEM).  It will run if I
+add swap, but since there is no harddrive (only flash) I'd really like
+to avoid doing so.  A workaround seems to be
+
+ swapon
+ start gpsd
+ swapoff
+
+but that looks really ugly to me...
+
+So I started looking for other solutions and found this in gpsd.c:
+
+/*
+ * Multi-session support requires us to have two arrays, one of GPS 
+ * devices currently available and one of client sessions.  The number
+ * of slots in each array is limited by the maximum number of client
+ * sessions we can have open.
+ */
+#define MAXDEVICES FD_SETSIZE	
+
+static struct gps_device_t channels[MAXDEVICES];
+#define allocated_channel(chp)	((chp)-&gt;gpsdata.gps_device[0] != '\0')
+#define free_channel(chp)	(chp)-&gt;gpsdata.gps_device[0] = '\0'
+#define syncing(chp)	(chp-&gt;gpsdata.gps_fd&gt;-1&amp;&amp; chp-&gt;packet_type==BAD_PACKET)
+
+static struct subscriber_t {
+    double active;			/* when subscriber last polled for data */
+    bool tied;				/* client set device with F */
+    bool watcher;			/* is client in watcher mode? */
+    int raw;				/* is client in raw mode? */
+    enum {GPS,RTCM104,ANY} requires;	/* type of device requested */
+    /*@relnull@*/struct gps_device_t *device;	/* device subscriber listens to */
+} subscribers[FD_SETSIZE];		/* indexed by client file descriptor */
+
+
+I can see why you'd want to support a large number of subscribers and
+indexing them by their fd, but I really cannot see the argument for a
+FD_SETSIZE sized list of GPS devices.  I would assume (yeah, I know...) 
+that most people will do pretty fine with only one device.  
+
+Now, this wouldn't have mattered much if the structure was small, like
+struct subscriber_t.  With FD_SETSIZE = 1024, the &quot;subscribers&quot; array
+is still only 24576 bytes.
+
+But the gps_device_t structure is 14588 bytes, making the &quot;channels&quot;
+array a whopping 14938112 bytes! No wonder I get ENOMEM...
+
+Now, I have been reading HACKING and this section in particular:
+
+&lt;quote&gt;
+*** Don't use malloc!
+
+The best way to avoid having dynamic-memory allocation problems is
+not to use malloc/free at all.  The gpsd daemon doesn't (though the
+client-side code does).  Thus, even the longest-running instance 
+can't have memory leaks.  The only cost for this turned out to be
+embedding a PATH_MAX-sized buffer in the gpsd.h structure.
+
+Don't undo this by using malloc/free in a driver or anywhere else.
+&lt;/quote&gt;
+
+
+Which makes a lot of sense to me.  
+
+But I believe such a policy should be followed by a really strict
+&quot;don't allocate unneeded memory&quot; rule.
+
+I guess there is a reason for the 14588 bytes each GPS device will
+occupy.  But is there really any reason to support more than, say, 
+4 devices by default? Could the size of the &quot;channels&quot; be reduced to
+something more acceptable?  At least the MAXDEVICES should be a
+compile-time option, making it adjustable without patching.
+
+
+Bj&#248;rn
+
+ 
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004091.html">[Gpsd-dev] Holux GPSlim 236 notes and observations
+</A></li>
+	<LI>Next message: <A HREF="004105.html">[Gpsd-dev] Reducing memory requirements
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4104">[ date ]</a>
+              <a href="thread.html#4104">[ thread ]</a>
+              <a href="subject.html#4104">[ subject ]</a>
+              <a href="author.html#4104">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

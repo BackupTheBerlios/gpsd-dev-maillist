@@ -1,0 +1,111 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] Use current udev rule syntax
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Use%20current%20udev%20rule%20syntax&In-Reply-To=%3C20091208124845.F2AB44EEFA%40gw.bolli%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007291.html">
+   <LINK REL="Next"  HREF="007274.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] Use current udev rule syntax</H1>
+    <B>Beat Bolli</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Use%20current%20udev%20rule%20syntax&In-Reply-To=%3C20091208124845.F2AB44EEFA%40gw.bolli%3E"
+       TITLE="[Gpsd-dev] [PATCH] Use current udev rule syntax">bbolli at ewanet.ch
+       </A><BR>
+    <I>Tue Dec  8 12:17:47 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007291.html">[Gpsd-dev] oncore pps delay
+</A></li>
+        <LI>Next message: <A HREF="007274.html">[Gpsd-dev] [PATCH] Use current udev rule syntax
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7273">[ date ]</a>
+              <a href="thread.html#7273">[ thread ]</a>
+              <a href="subject.html#7273">[ subject ]</a>
+              <a href="author.html#7273">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Starting with udev version around 148, the SYSFS{} rule is deprecated:
+
+Dec  8 09:33:48 gw udevd[27833]: SYSFS{}= will be removed in a future udev version,
+    please use ATTR{}= to match the event device, or ATTRS{}= to match a parent device,
+    in /lib/udev/rules.d/60-gpsd.rules:25
+
+This changes the rules to use ATTR{}= instead.
+---
+ gpsd.rules |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/gpsd.rules b/gpsd.rules
+index f2a4eed..839531b 100644
+--- a/gpsd.rules
++++ b/gpsd.rules
+@@ -22,23 +22,23 @@
+ SUBSYSTEM!=&quot;tty&quot;, GOTO=&quot;gpsd_rules_end&quot;
+ 
+ # Prolific Technology, Inc. PL2303 Serial Port
+-SYSFS{idVendor}==&quot;067b&quot;, SYSFS{idProduct}==&quot;2303&quot;, SYMLINK+=&quot;gps%n&quot;, RUN+=&quot;/lib/udev/gpsd.hotplug.wrapper&quot;
++ATTR{idVendor}==&quot;067b&quot;, ATTR{idProduct}==&quot;2303&quot;, SYMLINK+=&quot;gps%n&quot;, RUN+=&quot;/lib/udev/gpsd.hotplug.wrapper&quot;
+ # ATEN International Co., Ltd UC-232A Serial Port [pl2303]
+-SYSFS{idVendor}==&quot;0557&quot;, SYSFS{idProduct}==&quot;2008&quot;, SYMLINK+=&quot;gps%n&quot;, RUN+=&quot;/lib/udev/gpsd.hotplug.wrapper&quot;
++ATTR{idVendor}==&quot;0557&quot;, ATTR{idProduct}==&quot;2008&quot;, SYMLINK+=&quot;gps%n&quot;, RUN+=&quot;/lib/udev/gpsd.hotplug.wrapper&quot;
+ # FTDI 8U232AM
+-SYSFS{idVendor}==&quot;0403&quot;, SYSFS{idProduct}==&quot;6001&quot;, SYMLINK+=&quot;gps%n&quot;, RUN+=&quot;/lib/udev/gpsd.hotplug.wrapper&quot;
++ATTR{idVendor}==&quot;0403&quot;, ATTR{idProduct}==&quot;6001&quot;, SYMLINK+=&quot;gps%n&quot;, RUN+=&quot;/lib/udev/gpsd.hotplug.wrapper&quot;
+ # Cypress M8/CY7C64013 (DeLorme uses these)
+-SYSFS{idVendor}==&quot;1163&quot;, SYSFS{idProduct}==&quot;0100&quot;, SYMLINK+=&quot;gps%n&quot;, RUN+=&quot;/lib/udev/gpsd.hotplug.wrapper&quot;
++ATTR{idVendor}==&quot;1163&quot;, ATTR{idProduct}==&quot;0100&quot;, SYMLINK+=&quot;gps%n&quot;, RUN+=&quot;/lib/udev/gpsd.hotplug.wrapper&quot;
+ # PS-360 OEM (Microsoft GPS sold with Street and Trips 2005)
+-SYSFS{idVendor}==&quot;067b&quot;, SYSFS{idProduct}==&quot;aaa0&quot;, SYMLINK+=&quot;gps%n&quot;, RUN+=&quot;/lib/udev/gpsd.hotplug.wrapper&quot;
++ATTR{idVendor}==&quot;067b&quot;, ATTR{idProduct}==&quot;aaa0&quot;, SYMLINK+=&quot;gps%n&quot;, RUN+=&quot;/lib/udev/gpsd.hotplug.wrapper&quot;
+ # Garmin International GPSmap, various models (tested with Garmin GPS 18 USB)
+-SYSFS{idVendor}==&quot;091e&quot;, SYSFS{idProduct}==&quot;0003&quot;, SYMLINK+=&quot;gps%n&quot;, RUN+=&quot;/lib/udev/gpsd.hotplug.wrapper&quot;
++ATTR{idVendor}==&quot;091e&quot;, ATTR{idProduct}==&quot;0003&quot;, SYMLINK+=&quot;gps%n&quot;, RUN+=&quot;/lib/udev/gpsd.hotplug.wrapper&quot;
+ # Cygnal Integrated Products, Inc. CP210x Composite Device (Used by Holux m241)
+-SYSFS{idVendor}==&quot;10c4&quot;, SYSFS{idProduct}==&quot;ea60&quot;, SYMLINK+=&quot;gps%n&quot;, RUN+=&quot;/lib/udev/gpsd.hotplug.wrapper&quot;
++ATTR{idVendor}==&quot;10c4&quot;, ATTR{idProduct}==&quot;ea60&quot;, SYMLINK+=&quot;gps%n&quot;, RUN+=&quot;/lib/udev/gpsd.hotplug.wrapper&quot;
+ # u-blox AG, u-blox 5 (tested with Navilock NL-402U)
+-SYSFS{idVendor}==&quot;1546&quot;, SYSFS{idProduct}==&quot;01a5&quot;, SYMLINK=&quot;gps%n&quot;, RUN+=&quot;/lib/udev/gpsd.hotplug.wrapper&quot;
++ATTR{idVendor}==&quot;1546&quot;, ATTR{idProduct}==&quot;01a5&quot;, SYMLINK=&quot;gps%n&quot;, RUN+=&quot;/lib/udev/gpsd.hotplug.wrapper&quot;
+ # FTDI FT232
+-SYSFS{idVendor}==&quot;0403&quot;, SYSFS{idProduct}==&quot;6001&quot;, SYMLINK=&quot;gps%n&quot;, RUN+=&quot;/lib/udev/gpsd.hotplug.wrapper&quot;
++ATTR{idVendor}==&quot;0403&quot;, ATTR{idProduct}==&quot;6001&quot;, SYMLINK=&quot;gps%n&quot;, RUN+=&quot;/lib/udev/gpsd.hotplug.wrapper&quot;
+ 
+ ACTION==&quot;remove&quot;, RUN+=&quot;/lib/udev/gpsd.hotplug.wrapper&quot;
+ 
+-- 
+1.6.5.4
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007291.html">[Gpsd-dev] oncore pps delay
+</A></li>
+	<LI>Next message: <A HREF="007274.html">[Gpsd-dev] [PATCH] Use current udev rule syntax
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7273">[ date ]</a>
+              <a href="thread.html#7273">[ thread ]</a>
+              <a href="subject.html#7273">[ subject ]</a>
+              <a href="author.html#7273">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

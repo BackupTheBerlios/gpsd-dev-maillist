@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Host-To-GPS Commands
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Host-To-GPS%20Commands&In-Reply-To=%3C20060519204143.GE13394%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003514.html">
+   <LINK REL="Next"  HREF="003519.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Host-To-GPS Commands</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Host-To-GPS%20Commands&In-Reply-To=%3C20060519204143.GE13394%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Host-To-GPS Commands">esr at thyrsus.com
+       </A><BR>
+    <I>Fri May 19 22:41:43 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003514.html">[Gpsd-dev] Host-To-GPS Commands
+</A></li>
+        <LI>Next message: <A HREF="003519.html">[Gpsd-dev] Host-To-GPS Commands
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3517">[ date ]</a>
+              <a href="thread.html#3517">[ thread ]</a>
+              <a href="subject.html#3517">[ subject ]</a>
+              <a href="author.html#3517">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Marr &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">marr at flex.com</A>&gt;:
+&gt;<i> But let me work through a couple examples. If a client application
+</I>&gt;<i> wants the &quot;leap second&quot; count, how should this work? Client sends
+</I>&gt;<i> newly-defined command ('h' or 'j' -- there's nothing else left!)
+</I>&gt;<i> which means 'report leap seconds'.
+</I>
+We're going to have to define an escape soon.  Any suggestions?
+ 
+&gt;<i> 'gpsd' realizes that the NMEA sentence to get that information ('$PGRMF' in 
+</I>&gt;<i> this case) is not enabled. Does it enable it permanently? Temporarily? Then 
+</I>&gt;<i> 'gpsd' reports the information to the client.
+</I>
+In this case I'd say it's a one-shot.  The client sends 'j', at some later
+point there's a single GPSD;J=33\r\n response, and that's it.  Internally,
+gpsd ships $PGRMF and sets a &quot;waiting&quot; bit in the driver structure; when
+the $PGRMF response arrives, it send the $PGRMF-off message and clears 
+the wait bit.
+
+&gt;<i> But it gets a bit stickier.... Now the client wants GPS (internal)
+</I>&gt;<i> temperature ('$PGRMT'). But '$PGRMT' is a once-per-minute (not
+</I>&gt;<i> per-second!) NMEA sentence.
+</I>
+No problemo.  Let's suppose our escape is % and the extended temperature 
+command is %temp.  We ship %temp=1.  Thereafter, we receive %t responses on
+each $PGRMT until we say %temp=0.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003514.html">[Gpsd-dev] Host-To-GPS Commands
+</A></li>
+	<LI>Next message: <A HREF="003519.html">[Gpsd-dev] Host-To-GPS Commands
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3517">[ date ]</a>
+              <a href="thread.html#3517">[ thread ]</a>
+              <a href="subject.html#3517">[ subject ]</a>
+              <a href="author.html#3517">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

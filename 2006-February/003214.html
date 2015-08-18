@@ -1,0 +1,90 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] PATCH: Fix Minor Memory Leak In 'xgps' App
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PATCH%3A%20Fix%20Minor%20Memory%20Leak%20In%20%27xgps%27%20App&In-Reply-To=%3C200602191724.18743.marr%40flex.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003259.html">
+   <LINK REL="Next"  HREF="003216.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] PATCH: Fix Minor Memory Leak In 'xgps' App</H1>
+    <B>Marr</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PATCH%3A%20Fix%20Minor%20Memory%20Leak%20In%20%27xgps%27%20App&In-Reply-To=%3C200602191724.18743.marr%40flex.com%3E"
+       TITLE="[Gpsd-dev] PATCH: Fix Minor Memory Leak In 'xgps' App">marr at flex.com
+       </A><BR>
+    <I>Sun Feb 19 23:24:18 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003259.html">[Gpsd-dev] Question for Rob Jansseen
+</A></li>
+        <LI>Next message: <A HREF="003216.html">[Gpsd-dev] PATCH: Fix Minor Memory Leak In 'xgps' App
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3214">[ date ]</a>
+              <a href="thread.html#3214">[ thread ]</a>
+              <a href="subject.html#3214">[ subject ]</a>
+              <a href="author.html#3214">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Fellow GPSD Devs,
+
+A perusal of the 'xgps' code shows a minor memory leak, which is fixed by the 
+attached patch (to be applied against version 2.30 of 'gpsd'). It has been 
+compiled and tested.
+
+Someone with SVN write access, please review/apply. Thanks!
+
+Suggested changelog entry:
+
+Memory is allocated for the header string in the table of GPS satellite status 
+information with each display update, but is erroneously not released if the 
+satellite count is zero.
+
+Bill Marr
+-------------- next part --------------
+--- ../xgps.c	2006-02-19 12:24:18.000000000 -0500
++++ ./xgps.c	2006-02-19 16:45:40.000000000 -0500
+@@ -287,9 +287,10 @@
+ 	    string[i+1] = XmStringCreateSimple(s);
+ 	}
+ 	XmListReplaceItemsPos(satellite_list, string, (int)sizeof(string), 1);
+-	for (i = 0; i &lt; (unsigned int)(sizeof(string)/sizeof(string[0])); i++)
++	for (i = 1; i &lt; (unsigned int)(sizeof(string)/sizeof(string[0])); i++)
+ 	    XmStringFree(string[i]);
+     }
++    XmStringFree(string[0]);
+     /* here are the value fields */
+     if (isnan(gpsdata-&gt;fix.time)==0) {
+ 	    (void)unix_to_iso8601(gpsdata-&gt;fix.time, s, (int)sizeof(s));
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003259.html">[Gpsd-dev] Question for Rob Jansseen
+</A></li>
+	<LI>Next message: <A HREF="003216.html">[Gpsd-dev] PATCH: Fix Minor Memory Leak In 'xgps' App
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3214">[ date ]</a>
+              <a href="thread.html#3214">[ thread ]</a>
+              <a href="subject.html#3214">[ subject ]</a>
+              <a href="author.html#3214">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

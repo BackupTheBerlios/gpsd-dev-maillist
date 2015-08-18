@@ -1,0 +1,87 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Bug in driver_sirf.c
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Bug%20in%20driver_sirf.c&In-Reply-To=%3C49CCB8F6.8030707%40kite.hu%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006689.html">
+   <LINK REL="Next"  HREF="006692.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Bug in driver_sirf.c</H1>
+    <B>Bartos-Elekes Zsolt</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Bug%20in%20driver_sirf.c&In-Reply-To=%3C49CCB8F6.8030707%40kite.hu%3E"
+       TITLE="[Gpsd-dev] Bug in driver_sirf.c">muszi at kite.hu
+       </A><BR>
+    <I>Fri Mar 27 12:31:02 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006689.html">[Gpsd-dev] Next-generation GPSD protocol
+</A></li>
+        <LI>Next message: <A HREF="006692.html">[Gpsd-dev] ntp interface,	another problem with my fixes and further experience
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6691">[ date ]</a>
+              <a href="thread.html#6691">[ thread ]</a>
+              <a href="subject.html#6691">[ subject ]</a>
+              <a href="author.html#6691">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi all!
+
+I found a bug in driver_sirf.c: it interprets speed and course as signed 
+2-byte ints in Geodetic Navigation Data (ID 0x29) messages (according to 
+documentation, they are unsigned), so courses between 327.68&#176; and 360&#176; 
+and speeds over 327.68 m/s are reported as negative.
+
+Here is a patch against 2.39:
+
+--- driver_sirf.c.orig	2009-03-07 16:30:58.000000000 +0100
++++ driver_sirf.c	2009-03-27 10:47:28.000000000 +0100
+@@ -566,8 +566,8 @@
+  	/* skip 4 bytes of satellite map */
+  	session-&gt;gpsdata.fix.altitude = getbesl(buf, 35)*1e-2;
+  	/* skip 1 byte of map datum */
+-	session-&gt;gpsdata.fix.speed = getbesw(buf, 40)*1e-2;
+-	session-&gt;gpsdata.fix.track = getbesw(buf, 42)*1e-2;
++	session-&gt;gpsdata.fix.speed = getbeuw(buf, 40)*1e-2;
++	session-&gt;gpsdata.fix.track = getbeuw(buf, 42)*1e-2;
+  	/* skip 2 bytes of magnetic variation */
+  	session-&gt;gpsdata.fix.climb = getbesw(buf, 46)*1e-2;
+  	mask |= TIME_SET | SPEED_SET | TRACK_SET;
+
+-- 
+Zsolt
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006689.html">[Gpsd-dev] Next-generation GPSD protocol
+</A></li>
+	<LI>Next message: <A HREF="006692.html">[Gpsd-dev] ntp interface,	another problem with my fixes and further experience
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6691">[ date ]</a>
+              <a href="thread.html#6691">[ thread ]</a>
+              <a href="subject.html#6691">[ subject ]</a>
+              <a href="author.html#6691">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

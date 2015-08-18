@@ -1,0 +1,167 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: Time lag and speed problems on SiRFs
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20Time%20lag%20and%20speed%20problems%20on%20SiRFs&In-Reply-To=%3C42C6BF21.90307%40afoyi.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002296.html">
+   <LINK REL="Next"  HREF="002313.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: Time lag and speed problems on SiRFs</H1>
+    <B>Darryl Ross</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20Time%20lag%20and%20speed%20problems%20on%20SiRFs&In-Reply-To=%3C42C6BF21.90307%40afoyi.com%3E"
+       TITLE="[Gpsd-dev] Re: Time lag and speed problems on SiRFs">spam at afoyi.com
+       </A><BR>
+    <I>Sat Jul  2 18:21:53 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002296.html">[Gpsd-dev] More woes
+</A></li>
+        <LI>Next message: <A HREF="002313.html">[Gpsd-dev] Re: Time lag and speed problems on SiRFs
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2297">[ date ]</a>
+              <a href="thread.html#2297">[ thread ]</a>
+              <a href="subject.html#2297">[ subject ]</a>
+              <a href="author.html#2297">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Note: Not subscribed to -dev so please CC me in any replies.
+
+Eric S. Raymond wrote:
+&gt;<i> But there are a couple of other possible issues.  Daryl Ross &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">spam at afoyi.com</A>&gt;
+</I>&gt;<i> has reported some problems with his SiRF-based GPSes under 2.26.  These are
+</I>&gt;<i> as follows:
+</I>&gt;<i> 
+</I>&gt;<i> * Approximately 10-second lag in reporting fixes in binary mode only
+</I>&gt;<i> 
+</I>&gt;<i> I can't duplicate this.  I tried watching both my cellphone clock and
+</I>&gt;<i> the GPS timestamps through xgps; they seem to be perfectly in sync. 
+</I>&gt;<i> We've had reports like this before which generally had to do with
+</I>&gt;<i> leap-second correction or lack of same; I wonder if this one just
+</I>&gt;<i> means Darryl's GPS hasn't picked up its first leap correction yet.
+</I>
+Hmm, I forget that the gps reports it's time. I'll grab a trace of a few
+sentences in binary mode along with the system time tomorrow (today).
+
+The problem happens even when the GPS has been running for 35 minutes
+(about the time it takes me to drive home from work). Isn't the UTC
+correction information sent every 10-15 minutes?
+
+&gt;<i> * Speed reports cap at about 30MPH even when he's doing 60.
+</I>
+Minor correction: kph not mph. Also, it's not a 'cap' as in its normal
+below the threshold and then just stops increasing as the car's speed
+increases, it's wrong for all speeds.
+
+And I've just realised, thinking about it, the speeds I'm getting after
+converting the m/s value from the 'o' command to km/h seem to
+numerically still be in m/s.
+
+Eg: at 100kph I was getting a reading just shy of 30.
+
+100kph * 3600 / 1000 = 27.8 m/s
+
+Looking at the logs I've attached, I can't see any significant
+difference in the speeds being reported in NMEA mode versus sirf -- it's
+within 1 or 2m/s which taking into account the car changing speed
+slightly going through pot-holes and the like would be about right.
+
+&gt;<i> I can't duplicate this either.  Can anybody?  He's using a BU303.
+</I>&gt;<i> 
+</I>&gt;<i> * gpsd fails to reconnect to a GPS after the first time it's released.
+</I>&gt;<i> 
+</I>&gt;<i> This one really puzzles me.  I use a BU303 as one of my primary test
+</I>&gt;<i> devices and I have *never* seen this.  Can anyone come up with any
+</I>&gt;<i> theory about a site- or OS-specific bug that could produce this?
+</I>
+OS is Fedora 4 on x86 (Celeron-M laptop to be precise).
+
+When I get time (it's almost 2am now) I'll grab some output from gpsd
+with debugging enabled. What debugging level would be useful?
+
+&gt;<i> I've asked Darryl for a packet log exhibiting the speed problem,
+</I>&gt;<i> but received no reply.
+</I>
+Sorry about the delay in supplying this, been a murderous week at work.
+
+Attached are log files from 2 tests using a simple telnet client I wrote
+in python, which I've also attached. My client connects, enables watcher
+mode, forces gpsd to NMEA mode, catches 60 sentences and then switches
+to binary mode and catches 60 more sentences.
+
+One test was done while stationary and the other one was done while
+driving at 60kph down a straight road with cruise enabled.
+
+I did also capture the output from gpsd when run with '-N -D7', but
+silly me overwrote the 'moving' logfile by not removing tee from the
+command line the next time I ran it. :(
+
+I can send the stationary one if it'll help, or I can redo the moving
+test again easily enough.
+
+Hopefully this helps!
+
+Regards
+Darryl
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: test.py
+Type: text/x-python
+Size: 649 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20050703/26d8a299/attachment.py">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20050703/26d8a299/attachment.py</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: testscript_moving1.log.bz2
+Type: application/x-bzip
+Size: 2080 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20050703/26d8a299/attachment.bin">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20050703/26d8a299/attachment.bin</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: testscript_static1.log.bz2
+Type: application/x-bzip
+Size: 1438 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20050703/26d8a299/attachment-0001.bin">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20050703/26d8a299/attachment-0001.bin</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 189 bytes
+Desc: OpenPGP digital signature
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20050703/26d8a299/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20050703/26d8a299/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002296.html">[Gpsd-dev] More woes
+</A></li>
+	<LI>Next message: <A HREF="002313.html">[Gpsd-dev] Re: Time lag and speed problems on SiRFs
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2297">[ date ]</a>
+              <a href="thread.html#2297">[ thread ]</a>
+              <a href="subject.html#2297">[ subject ]</a>
+              <a href="author.html#2297">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

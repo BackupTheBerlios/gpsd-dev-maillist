@@ -1,0 +1,114 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-commit-watch] r2734 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r2734%20-%20trunk&In-Reply-To=%3CPine.LNX.4.63.0506281233520.28957%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002271.html">
+   <LINK REL="Next"  HREF="002264.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-commit-watch] r2734 - trunk</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r2734%20-%20trunk&In-Reply-To=%3CPine.LNX.4.63.0506281233520.28957%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-commit-watch] r2734 - trunk">gem at rellim.com
+       </A><BR>
+    <I>Tue Jun 28 21:40:29 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002271.html">[Gpsd-dev] Big change -- FIONREAD is no longer used
+</A></li>
+        <LI>Next message: <A HREF="002264.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2734 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2263">[ date ]</a>
+              <a href="thread.html#2263">[ thread ]</a>
+              <a href="subject.html#2263">[ subject ]</a>
+              <a href="author.html#2263">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Eric!
+
+On Tue, 28 Jun 2005, Eric S. Raymond at BerliOS wrote:
+
+&gt;<i> Log:
+</I>&gt;<i> Eliminate use of FIONREAD. This may fix the hanf-during-backups bug.
+</I>&gt;<i> It may break the Garmin druver and DGPS handking; this will have to be tested.
+</I>
+First pass, this seems to work.  There is one problem that will show
+up under load.  Get_packet used to return a 0 if a full packet was
+received.  Now it returns the current length of the input buffer which
+may not yet contain a full packet:
+
+
+- -    return 0;
++    return (ssize_t)session-&gt;GarminBufferLen;
+ }
+
+
+On a fast machine the packet comes in before it can be an issue.  On a
+slow, or loaded, machine, it will be an issue.  Here is a line that
+may be executed on less than a full packet and cause problems:
+
+- -       if ( 0 == GetPacket( session ) ) {
++       if (garmin_get_packet( session ) &gt; 0) {
+            (void)PrintPacket(session, thePacket);
+
+
+So this needs a bit of tweaking before it can ship.  Today is my daughters'
+B-day, so this is not the day I can work on it.
+
+Options are to:
+	1. put the logic back the way it was.
+	2. not return from GetPacket until a full packet is found.
+	3. pass a second flag back that alerts if a full packet is
+           in buffer.
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.1 (GNU/Linux)
+
+iD8DBQFCwaew8KZibdeR3qURAlT4AKCoi1c4+QG2XgktJ1u2s0jyViiKHwCgg+N9
+P0obg+B9pLpB0vB8jnu2Sdk=
+=8b3t
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002271.html">[Gpsd-dev] Big change -- FIONREAD is no longer used
+</A></li>
+	<LI>Next message: <A HREF="002264.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2734 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2263">[ date ]</a>
+              <a href="thread.html#2263">[ thread ]</a>
+              <a href="subject.html#2263">[ subject ]</a>
+              <a href="author.html#2263">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

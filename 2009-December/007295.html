@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] MinGW/Win32 port
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20MinGW/Win32%20port&In-Reply-To=%3C20091231160335.GA4430%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007294.html">
+   <LINK REL="Next"  HREF="007297.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] MinGW/Win32 port</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20MinGW/Win32%20port&In-Reply-To=%3C20091231160335.GA4430%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] MinGW/Win32 port">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Dec 31 17:03:35 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007294.html">[Gpsd-dev] MinGW/Win32 port
+</A></li>
+        <LI>Next message: <A HREF="007297.html">[Gpsd-dev] MinGW/Win32 port housekeeping patch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7295">[ date ]</a>
+              <a href="thread.html#7295">[ thread ]</a>
+              <a href="subject.html#7295">[ subject ]</a>
+              <a href="author.html#7295">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>David Ludlow &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">dave at adsllc.com</A>&gt;:
+&gt;<i> It only affects sirf_write() directly, and in a pretty limited
+</I>&gt;<i> fashion.  sirf_speed() and sirf_to_nmea() are affected because they
+</I>&gt;<i> call sirt_write().  That's it.
+</I>
+I think there are analogous functions in other drivers, though.  Have
+you checked?
+ 
+&gt;<i> &gt;&gt;G. The &quot;boolean&quot; token used by the JSON stuff is already defined in
+</I>&gt;<i> &gt;&gt;Win32.  Renamed to &quot;booleanval&quot;.
+</I>&gt;<i> &gt;Is it a macro or a typedef?  If a typedef, what Windows file supplies it?
+</I>&gt;<i> 
+</I>&gt;<i> rpcndr.h says &quot;typedef unsigned char boolean;&quot;, so a simple #ifdef
+</I>&gt;<i> trick won't work.  rpcndr.h is included by wtypes.h, which is
+</I>&gt;<i> required by winsock2.h.  I haven't looked to see if this is a
+</I>&gt;<i> MinGW-ism or if it's how the &quot;native&quot; includes handle it.  If it's
+</I>&gt;<i> MinGW specific, that would be the ideal place to fix it.
+</I>
+I think we can avoid the problem by being careful what includes are made where.
+My 'boolean' token is used only in JSON parser machinery, and that's pretty
+well separated from anywhere sockets are used.
+ 
+&gt;<i> &gt;The largest issue I see is that porting to Windows would significantly
+</I>&gt;<i> &gt;complicate our test regime.  If we mainline the code, would you be willing to
+</I>&gt;<i> &gt;own it and do tests before each release?
+</I>&gt;<i> 
+</I>&gt;<i> I haven't really looked into the testing aspect, which is obviously
+</I>&gt;<i> of huge importance.  The good news is that the whole build &amp;
+</I>&gt;<i> packaging process runs on Fedora, so much testing can be automated
+</I>&gt;<i> by normal means and without a lot of physical or logical
+</I>&gt;<i> infrastructure.  I'd like to know more about what sort of testing
+</I>&gt;<i> you're looking for before I overcommit, but I suspect that we can
+</I>&gt;<i> work it out.
+</I>
+The GPSD distribution contains a regression-test harness written in Python.
+Most of what you'd need to do is port that so it runs under Windows, then
+run it before each release so we can verify that nothing has come unstuck.
+ 
+&gt;<i> I know that you won't be surprised to hear that I didn't just wake
+</I>&gt;<i> up one morning and decide to do this.  I'm working on a MinGW port
+</I>&gt;<i> of an aviation charting program (vifir) with GPS support and this
+</I>&gt;<i> was better than reinventing the wheel, so client apps are my end
+</I>&gt;<i> goal.  The MinGW system built into Fedora makes this pretty trivial
+</I>&gt;<i> using normal autotools routines.  Since gpspipe.exe is already
+</I>&gt;<i> working as a dynamic executable, this is already solved by
+</I>&gt;<i> definition.
+</I>
+That's good.  You just raised the chances that we'll actually integrate
+this substantially.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007294.html">[Gpsd-dev] MinGW/Win32 port
+</A></li>
+	<LI>Next message: <A HREF="007297.html">[Gpsd-dev] MinGW/Win32 port housekeeping patch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7295">[ date ]</a>
+              <a href="thread.html#7295">[ thread ]</a>
+              <a href="subject.html#7295">[ subject ]</a>
+              <a href="author.html#7295">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

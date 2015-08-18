@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Single-writer/many-reader consistency
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3CAANLkTi%3DEt3YZw%2BtF7u1yq1FFYscOToZpk%2BoEQcN9RxHY%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009165.html">
+   <LINK REL="Next"  HREF="009117.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Single-writer/many-reader consistency</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3CAANLkTi%3DEt3YZw%2BtF7u1yq1FFYscOToZpk%2BoEQcN9RxHY%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Single-writer/many-reader consistency">thomas at mich.com
+       </A><BR>
+    <I>Sat Mar 26 22:21:42 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009165.html">[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified
+</A></li>
+        <LI>Next message: <A HREF="009117.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9107">[ date ]</a>
+              <a href="thread.html#9107">[ thread ]</a>
+              <a href="subject.html#9107">[ subject ]</a>
+              <a href="author.html#9107">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>One quick question - How large is this structure?  8k sounds extremely
+large.  Also what are the chances of a CRC32 collision?  I've also
+noted an ECC block could fixup unsynced areas.
+
+On Sat, Mar 26, 2011 at 3:36 PM, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+
+&gt;<i> It's the same painful tradeoff that tz and I and other discussants
+</I>&gt;<i> have been grappling with for the last week in one way or another. &#160;The
+</I>&gt;<i> methods that provably prevent corrupt data have nasty blocking failure
+</I>&gt;<i> modes; the methods that don't have scary worst-case behavior may
+</I>&gt;<i> produce intermittent data corruption in the *normal* case if the underlying
+</I>&gt;<i> hardware messes with operation order enough.
+</I>
+And as the token embedded guy, let me also note another tradeoff is
+resource usage.  If you write 32M the cache is all but guaranteed to
+be flushed.
+
+The one positive point is that the smaller processors don't have the
+complex problems since they usually don't have caches, and the larger
+ones have the resources to handle it.
+
+A big and perhaps strange problem is that all the tools we would need
+at a simple level are in the kernel(s).  The spinlocks and barriers
+and other lightweight things.
+
+It might almost pay to write a kernel module for synchronous shared memory.
+
+&gt;<i> I am by no means sure I know where to land. &#160;I have working seqlocks
+</I>&gt;<i> now and am oscillating back and forth about whether to scrap that and go
+</I>&gt;<i> with semaphores. &#160;I was almost ready to do it until two things happened:
+</I>&gt;<i>
+</I>&gt;<i> (a) tz pointed out correctly that in a semaphore-based approach, readers
+</I>&gt;<i> have to assert as well as writers - otherwise writer can start an update while
+</I>&gt;<i> reader is still reading.
+</I>
+Or put simply, there is no purpose in a single thread locking a semaphore.
+
+&gt;<i> (b) I then realized that under a correct semaphore implementation,
+</I>&gt;<i> anybody dying while semaphore is asserted starves everybody else
+</I>&gt;<i> (which we should have remembered from Operating Systems 101). &#160;This is
+</I>&gt;<i> a very practical problem because while we haven't had a crash bug in
+</I>&gt;<i> gpsd since something like 2005, I can't say the same thing about all
+</I>&gt;<i> the clients out there!
+</I>
+System semaphores are usually unlocked/destroyed/closed or whatever
+when a process closes (part of the close on exit or kill cleanup).
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009165.html">[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified
+</A></li>
+	<LI>Next message: <A HREF="009117.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9107">[ date ]</a>
+              <a href="thread.html#9107">[ thread ]</a>
+              <a href="subject.html#9107">[ subject ]</a>
+              <a href="author.html#9107">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

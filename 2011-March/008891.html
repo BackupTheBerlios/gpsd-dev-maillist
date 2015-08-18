@@ -1,0 +1,155 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPSD Protocol Inconsistencies
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3CAANLkTi%3DA-QO-eq%3DyL3nQ73%2BbRfChp1-UZGKTPnb%3D7%2Beq%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008880.html">
+   <LINK REL="Next"  HREF="008893.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPSD Protocol Inconsistencies</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3CAANLkTi%3DA-QO-eq%3DyL3nQ73%2BbRfChp1-UZGKTPnb%3D7%2Beq%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] GPSD Protocol Inconsistencies">thomas at mich.com
+       </A><BR>
+    <I>Sat Mar 19 15:27:52 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008880.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+        <LI>Next message: <A HREF="008893.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8891">[ date ]</a>
+              <a href="thread.html#8891">[ thread ]</a>
+              <a href="subject.html#8891">[ subject ]</a>
+              <a href="author.html#8891">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Thu, Mar 17, 2011 at 3:19 PM, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> Architecture/design discussion! &#160;Yeah!
+</I>&gt;<i>
+</I>&gt;<i> tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+</I>
+&gt;&gt;<i> Note that higher baud rates would help to reduce latency.
+</I>&gt;<i>
+</I>&gt;<i> Not by as much as you think. &#160;I profiled this; it turns out that for
+</I>&gt;<i> a typical NMEA device, 4800bs is a bit too slow, 9600 suffices, and
+</I>&gt;<i> more than that is overkill. &#160;White paper, with numbers and profile graphs,
+</I>&gt;<i> is on the website.
+</I>&gt;<i> --
+</I>&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+</I>
+I finally got around to looking at it.  I can do the math and it
+should only take 160 mS max at 4800 baud for the GPRMC sentence to
+come out.
+
+I think the latency figures you are showing are from your &quot;wait for
+the whole set then emit the fix&quot; algorithm.  It is counting to the
+GPRMC sentence almost a second at either baud rate.
+
+The whole thing might be an artifact of the particular GPS you use.
+
+First you should recheck your collection algorithm.  GPRMC is
+typically the first update in the set.  The way you described the
+algorithm, it should have found GPGGA as the last one and emitted the
+fix just after it got that sentence.  (Do you have the raw data from
+the study?).
+
+What appears to be happening is (brakets indicate sample):
+
+GPRMC/ [ GPGLL/GPGGA  pause till the next second GPRMC/ ] GPGLL/GPGGA
+
+instead of
+
+[ GPRMC/GPGLL/GPGGA ]  pause till the next second [GPRMC/GPGLL/GPGGA]
+
+&gt;<i>From my bluetooth (which has a serial port inside), this is a 10hz
+</I>dump from one of my kml logs:
+
+-83.357755,41.926793,0.000
+&lt;!-- :GPSB0:140:$GPGGA,210500.000,4155.6076,N,08321.4653,W,1,09,1.4,178.2,M,-33.8,M,,0000*63
+--&gt;
+&lt;!-- :GPSB0:156:$GPGSA,A,3,13,10,29,25,12,04,26,02,05,,,,2.9,1.4,2.5*30 --&gt;
+&lt;!-- :GPSB0:164:$GPGSV,3,1,12,15,02,184,,13,09,033,27,10,44,051,34,29,40,310,37*76
+--&gt;
+&lt;!-- :GPSB0:173:$GPGSV,3,2,12,25,29,258,38,12,20,218,34,04,20,088,29,26,20,158,30*7A
+--&gt;
+&lt;!-- :GPSB0:185:$GPGSV,3,3,12,30,19,303,,21,01,278,,02,53,074,42,05,85,211,41*70
+--&gt;
+&lt;!-- :GPSB0:195:$GPGRS,210500.00,1,-1.2,1.9,-1.8,1.0,2.1,-0.8,,,*41 --&gt;
+&lt;!-- :GPSB0:239:$GPRMC,210500.100,A,4155.6076,N,08321.4653,W,0.00,350.42,211110,,,A*77
+--&gt;
+-83.357755,41.926793,0.000
+&lt;!-- :GPSB0:242:$GPGGA,210500.100,4155.6076,N,08321.4653,W,1,09,1.4,178.2,M,-33.8,M,,0000*62
+--&gt;
+&lt;!-- :GPSB0:257:$GPGSA,A,3,13,10,29,25,12,04,26,02,05,,,,2.9,1.4,2.5*30 --&gt;
+&lt;!-- :GPSB0:267:$GPGSV,3,1,12,15,02,184,,13,09,033,27,10,44,051,33,29,40,310,37*71
+--&gt;
+&lt;!-- :GPSB0:275:$GPGSV,3,2,12,25,29,258,38,12,20,218,34,04,20,088,29,26,20,158,30*7A
+--&gt;
+&lt;!-- :GPSB0:290:$GPGSV,3,3,12,30,19,303,,21,01,278,,02,53,074,42,05,85,211,41*70
+--&gt;
+&lt;!-- :GPSB0:292:$GPGRS,210500.10,1,-1.2,1.8,-1.8,1.0,2.1,-0.8,,,*41 --&gt;
+&lt;!-- :GPSB0:335:$GPRMC,210500.200,A,4155.6076,N,08321.4653,W,0.00,350.42,211110,,,A*74
+--&gt;
+-83.357755,41.926793,0.000
+&lt;!-- :GPSB0:338:$GPGGA,210500.200,4155.6076,N,08321.4653,W,1,09,1.4,178.2,M,-33.8,M,,0000*61
+--&gt;
+&lt;!-- :GPSB0:354:$GPGSA,A,3,13,10,29,25,12,04,26,02,05,,,,2.9,1.4,2.5*30 --&gt;
+&lt;!-- :GPSB0:362:$GPGSV,3,1,12,15,02,184,,13,09,033,27,10,44,051,34,29,40,310,37*76
+--&gt;
+&lt;!-- :GPSB0:372:$GPGSV,3,2,12,25,29,258,38,12,20,218,34,04,20,088,29,26,20,158,30*7A
+--&gt;
+&lt;!-- :GPSB0:389:$GPGSV,3,3,12,30,19,303,,21,01,278,,02,53,074,42,05,85,211,41*70
+--&gt;
+&lt;!-- :GPSB0:390:$GPGRS,210500.20,1,-1.3,1.8,-1.8,1.0,2.0,-0.9,,,*43 --&gt;
+&lt;!-- :GPSB0:432:$GPRMC,210500.300,A,4155.6076,N,08321.4653,W,0.00,350.42,211110,,,A*75
+--&gt;
+-83.357755,41.926793,0.000
+
+(format inside the XML comment is source tag, millisecond timestamp, sentence
+
+The RMC to GGA time is about 3 milliseconds, but the GGA to RMC is
+about 100.  The two sentences for the entire fix would take up 10
+milliseconds in serial port latency.
+
+Since I don't have the other details, I can't duplicate the results,
+but you could try one of the newer GPS units that go from 4800 to
+115200 baud and repeat the test.  If there is still nearly one second
+of latency at 115200 (or if it gets worse the higher you go since the
+inter-fix pause will get longer) either the aggregation algorithm is
+broken or the profiling method.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008880.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+	<LI>Next message: <A HREF="008893.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8891">[ date ]</a>
+              <a href="thread.html#8891">[ thread ]</a>
+              <a href="subject.html#8891">[ subject ]</a>
+              <a href="author.html#8891">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,89 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%22bookend%20synchronization%22.%20does%20not%20%28always%29%20work&In-Reply-To=%3C20110325102502.GC19032%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009031.html">
+   <LINK REL="Next"  HREF="009046.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%22bookend%20synchronization%22.%20does%20not%20%28always%29%20work&In-Reply-To=%3C20110325102502.GC19032%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work">esr at thyrsus.com
+       </A><BR>
+    <I>Fri Mar 25 11:25:02 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009031.html">[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work
+</A></li>
+        <LI>Next message: <A HREF="009046.html">[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9037">[ date ]</a>
+              <a href="thread.html#9037">[ thread ]</a>
+              <a href="subject.html#9037">[ subject ]</a>
+              <a href="author.html#9037">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Terje Mathisen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">terje at tmsw.no</A>&gt;:
+&gt;<i> The problem is simply that it _does_ not work in the general case,
+</I>&gt;<i> even when written in asm in order to absolutely guarantee program
+</I>&gt;<i> write order:
+</I>&gt;<i> 
+</I>&gt;<i> The cpu memory interface is totally free to re-arrange the actual
+</I>&gt;<i> flushes to ram, meaning that absent a memory barrier type
+</I>&gt;<i> instruction, another physical cpu can read stale values for the
+</I>&gt;<i> bookend sentinels, and fresh data in between.
+</I>
+Right, this is the multicore cache coherency issue I mentioned in my
+original post. For a single processor, declaring the shared segment
+volatile should suffice.
+
+&gt;<i> The solution is therefore still to have a write barrier before the
+</I>&gt;<i> final update which makes the new record valid.
+</I>
+Curious.  This sounds like you want to put the barrier before the 
+write of the last sentinel.  Why?
+ 
+&gt;<i> On x86 I really like LOCK XADD, but for a single writer and a
+</I>&gt;<i> counter which is allowed to wrap around LOCK INC will work as well.
+</I>&gt;<i> 
+</I>&gt;<i> Both of them avoids OS calls.
+</I>
+Noted.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009031.html">[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work
+</A></li>
+	<LI>Next message: <A HREF="009046.html">[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9037">[ date ]</a>
+              <a href="thread.html#9037">[ thread ]</a>
+              <a href="subject.html#9037">[ subject ]</a>
+              <a href="author.html#9037">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

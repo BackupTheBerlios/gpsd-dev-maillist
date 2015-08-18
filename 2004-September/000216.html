@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] lib ttyproc
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20lib%20ttyproc&In-Reply-To=%3C006101c49772%241878eaa0%240200a8c0%40jedi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000215.html">
+   <LINK REL="Next"  HREF="000217.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] lib ttyproc</H1>
+    <B>Lonnie Mendez</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20lib%20ttyproc&In-Reply-To=%3C006101c49772%241878eaa0%240200a8c0%40jedi%3E"
+       TITLE="[Gpsd-dev] lib ttyproc">lmendez19 at austin.rr.com
+       </A><BR>
+    <I>Fri Sep 10 22:09:36 CEST 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000215.html">[Gpsd-dev] Re: Request for feature -- get Unix fd from udev
+</A></li>
+        <LI>Next message: <A HREF="000217.html">[Gpsd-dev] lib ttyproc
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#216">[ date ]</a>
+              <a href="thread.html#216">[ thread ]</a>
+              <a href="subject.html#216">[ subject ]</a>
+              <a href="author.html#216">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>  I'm working on a new lib to parse the information made available in:
+/proc/tty/driver/usbserial
+
+libusb might not be able to fulfill that request, since the information made 
+available to them with usbdevice_fs.h is rather limited, and would require 
+modifications to the linux kernel.
+
+It should be able to grab all the information that usbserial core makes 
+available via proc.  Which is a lot if you look at the format:
+
+&lt;minor int&gt;: module:&lt;str&gt; name:&lt;device name str&gt; vendor:&lt;int&gt; product:&lt;int&gt; 
+num_ports:&lt;int&gt; port:&lt;int&gt; path:&lt;bus address str&gt;
+
+The usage will be similiar to libusb, in respects that there will be an init 
+function to call first, ttyproc_init.  Parsing will be done with the call 
+ttyproc_scanlist, which will fill a linked
+node structure of type:
+
+struct serial_entry {
+    int        minor;
+    char    *module;
+    char    *devname;
+    int        pid, vid;
+    int        numports;
+    int        portid;
+    char    *buspath;
+};
+
+Then the programmer may traverse that linked list, until a null pointer is 
+hit, checking for the desired conditions.  The fact that the portid is made 
+available sounds like a big plus for
+being able to use devices of the same type.  That and being able to 
+differentiate which one should be used by the daemon.
+
+I guess my question is, does this sound good towards bringing the daemon one 
+step closing to being able to detect and open a usb gps device?  Granted 
+this is specific to the linux kernel / non-portable.
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000215.html">[Gpsd-dev] Re: Request for feature -- get Unix fd from udev
+</A></li>
+	<LI>Next message: <A HREF="000217.html">[Gpsd-dev] lib ttyproc
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#216">[ date ]</a>
+              <a href="thread.html#216">[ thread ]</a>
+              <a href="subject.html#216">[ subject ]</a>
+              <a href="author.html#216">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

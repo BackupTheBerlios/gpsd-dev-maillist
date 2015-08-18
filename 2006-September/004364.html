@@ -1,0 +1,149 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] ntp-pps
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntp-pps&In-Reply-To=%3C13472.213.84.187.156.1158770192.squirrel%40webmail.xs4all.nl%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004357.html">
+   <LINK REL="Next"  HREF="004366.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] ntp-pps</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntp-pps&In-Reply-To=%3C13472.213.84.187.156.1158770192.squirrel%40webmail.xs4all.nl%3E"
+       TITLE="[Gpsd-dev] ntp-pps">gpsd at xs4all.nl
+       </A><BR>
+    <I>Wed Sep 20 18:36:32 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004357.html">[Gpsd-dev] ntp-pps
+</A></li>
+        <LI>Next message: <A HREF="004366.html">[Gpsd-dev] ntp-pps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4364">[ date ]</a>
+              <a href="thread.html#4364">[ thread ]</a>
+              <a href="subject.html#4364">[ subject ]</a>
+              <a href="author.html#4364">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+&gt;&gt;<i> It is not broken.  You call it broken, but I think you are the only one
+</I>&gt;&gt;<i> having problems.  At least, problems have not been reported here by
+</I>&gt;&gt;<i> others.
+</I>&gt;<i>
+</I>&gt;<i> Check the archives.  Like today for instance.  I always assume that if
+</I>&gt;<i> two people report a problem then 20 must have the problem.  And the
+</I>&gt;<i> Garmin is not exactly a rare beast either.
+</I>
+I don't see any messages reporting problems here.  Where are they?
+
+&gt;&gt;<i> Then you can adjust the fudge to compensate.
+</I>&gt;<i>
+</I>&gt;<i> As I do, but that requires a recompile of drivers.c and that is a pain.
+</I>&gt;<i>
+</I>&gt;&gt;<i> As I wrote, the offset for NMEA is hard to get right because there are
+</I>&gt;&gt;<i> so
+</I>&gt;&gt;<i> many different implementations for NMEA.
+</I>&gt;&gt;<i> The offset should be settable inside gpsd but Eric does not want
+</I>&gt;&gt;<i> configuration so it has to be solved elsewhere.
+</I>&gt;<i>
+</I>&gt;<i> So, do we agree here?  Can I remove the gpsd fudge once and for all?
+</I>&gt;<i> ntpd already has a config file with its own fidge to do this and
+</I>&gt;<i> applying a second fudge seems pointless to me.
+</I>
+It is required to get within the sync window.  When you remove it
+entirely, others will get problems.  It would be better to lower it by so
+much that you get correct lock and still give users with other, slower,
+receivers a chance.
+
+&gt;<i> at least until the system is calibrated, that ntpd should
+</I>&gt;<i> always be run with multiple chimers.  That is ntpd best practice already,
+</I>&gt;<i> so problem solved.  Once the proper fudges are applied in ntp.conf this
+</I>&gt;<i> is not an issue.
+</I>
+I would not assume that everyone has suitable internet connectivity on
+their system.  Especially because one of the reasons for having a local
+time receiver is to cover the case of no internet connectivity.
+
+
+&gt;<i> Mine is only 125mS off.  The fudge in the gpsd code is the one that
+</I>&gt;<i> assumes
+</I>&gt;<i> 675mS off!   Remove the 675mS fudge in the gpsd code and my 125mS looks
+</I>&gt;<i> very good.  It even passes your +/- 400mS test nicely.
+</I>
+You keep assuring that 125ms offset is the norm, without providing any
+evidence.  All my testing always yielded in excess of 500ms offset.
+It looks like you are after solving your own problem, but do not care
+about other situations.
+
+
+&gt;&gt;<i> What do you mean, code from me??
+</I>&gt;<i>
+</I>&gt;<i> Well you certainly seem to defend it.  So at least for the point of this
+</I>&gt;<i> discussion it is &quot;your code&quot;.
+</I>
+The issue is not whether I wrote some code, but if new code is required to
+solve problems.
+
+&gt;<i>
+</I>&gt;&gt;<i> fudge is an ntpd option, a statement you put in your /etc/ntpd.conf
+</I>&gt;<i>
+</I>&gt;<i> Agreed  It is also in the gpsd code here:
+</I>&gt;<i>
+</I>&gt;<i> drivers.c, line 83:
+</I>&gt;<i>
+</I>&gt;<i>              /* this magic number is derived from observation */
+</I>&gt;<i>              (void)ntpshm_put(session, session-&gt;gpsdata.fix.time + 0.675);
+</I>&gt;<i>
+</I>&gt;<i> The fudge in gpsd and the fudge in ntpd are added.
+</I>
+So the suggestion is to adjust the one in ntpd.
+But when the difference added in ntpd is more than the allowed offset in
+the pps monitor, there will be no pps lock.  This is apparently the case
+with your receiver.  You can solve that by lowering the 0.675 to e.g.
+0.500.
+Setting it to zero will work in this case, but will cause problems for those
+that need more offset in that place.
+
+As I have said before, NMEA is unsuitable for time sync.  But people keep
+trying.
+
+The binary protocols have better defined messages and/or provide more
+predictable latency because the protocol is linked to a particular
+implementation.
+
+Rob
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004357.html">[Gpsd-dev] ntp-pps
+</A></li>
+	<LI>Next message: <A HREF="004366.html">[Gpsd-dev] ntp-pps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4364">[ date ]</a>
+              <a href="thread.html#4364">[ thread ]</a>
+              <a href="subject.html#4364">[ subject ]</a>
+              <a href="author.html#4364">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

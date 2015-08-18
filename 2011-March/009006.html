@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Shared-memory interface.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Shared-memory%20interface.&In-Reply-To=%3C20110324211633.GA30446%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009005.html">
+   <LINK REL="Next"  HREF="009041.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Shared-memory interface.</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Shared-memory%20interface.&In-Reply-To=%3C20110324211633.GA30446%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Shared-memory interface.">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Mar 24 22:16:33 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009005.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+        <LI>Next message: <A HREF="009041.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9006">[ date ]</a>
+              <a href="thread.html#9006">[ thread ]</a>
+              <a href="subject.html#9006">[ subject ]</a>
+              <a href="author.html#9006">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Dave Hart &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">davehart at gmail.com</A>&gt;:
+&gt;<i> That sort of reasoning about buffer overflow/truncation seems
+</I>&gt;<i> inconsistent to me with your stated goal of ensuring a gpsd bug
+</I>&gt;<i> doesn't kill someone.
+</I>
+Um, don't conflate two issues.  We are actually *extremely* careful about
+overruns.  That's why we consistently use strlcpy/strlcat and *snprintf.
+I don't think this particular overrun problem is worth worrying about
+*but we foreclose it anyway* - I should not have let myself sound as
+though we're being less careful than we are.
+
+My statement should really only be read as &quot;I'm not worried about
+device node truncation&quot;. And there's a reason for that specific to
+GPSD.  That device node truncation could map you from a serial device
+*to* any readable device or file is quite unlikely to begin with, but the
+daemon has another layer of protection in that it is very picky about
+what it accepts as input.
+
+For GPSD to be fooled or compromised by device-node truncation, the 
+node or file you read from would generally have to produce framed and
+checksummed packets.  The joint probability of &quot;you land on another readable
+device&quot; and &quot;it gives you well-formed packets&quot; and &quot;it's not a GPS itself&quot;
+is, I think, too low to worry about.
+
+I recognize that other programs with less ability to reject bogus input
+would be more vulnerable and the general problem is thus real.
+
+&gt;<i>                      Moreover, it's more thought than it's worth --
+</I>&gt;<i> just do the right thing every time.  It's an easy habit to get into,
+</I>&gt;<i> and it allows static analysis tools, for example, to flag questionable
+</I>&gt;<i> code without triggering &quot;false&quot; positives where you have convinced
+</I>&gt;<i> yourself a long input is impossible or harmless.
+</I>
+We use splint regularly.  It's a pain in the ass, but it tends to catch one
+or two real bugs per release cycle.
+
+&gt;<i> You will find very few strcpy() or strcat() or sprintf() remaining in
+</I>&gt;<i> the NTP reference implementation tarballs, though there were quite a
+</I>&gt;<i> few two years ago, because I've been hunting down and addressing
+</I>&gt;<i> potential buffer overruns.
+</I>
+Quite right. I'm careful about this, and Chris Keuthe prods me when I slip.
+
+&gt;<i> Coverity did not produce any scans of ntpd for nearly a year ending
+</I>&gt;<i> this January, and I've never been told why, and had to discover myself
+</I>&gt;<i> by logging into their site that they had finally picked up again,
+</I>&gt;<i> where a simple email would have let me react to the issues more than a
+</I>&gt;<i> month sooner.  Still, I appreciate every scrap of donated static
+</I>&gt;<i> analysis from them and others and I recognize they have paying
+</I>&gt;<i> customers which take priority over their open source activities.
+</I>
+I haven't been able to get Coverity to respond to requests for a 
+rescan since 2007.  What procedure did you use to successfully
+wake them up?
+
+&gt;<i> In over 10 years of NTP4 releases, there have been 4 security hotfixes
+</I>&gt;<i> issued [2].
+</I>
+We've never had one.  The last time we had a bug with known security 
+implications was in 2005, and I think that was our first.
+
+&gt;<i> If gpsd developers currently having access to Coverity Scan results do
+</I>&gt;<i> not have time to investigate, please ask <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">dmaxwell at coverity.com</A> to
+</I>&gt;<i> grant userid davehart access to gpsd scan results.
+</I>
+My last attempt to wake up Coverity was an email query to dmaxwell.  
+He didn't respond.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009005.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+	<LI>Next message: <A HREF="009041.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9006">[ date ]</a>
+              <a href="thread.html#9006">[ thread ]</a>
+              <a href="subject.html#9006">[ subject ]</a>
+              <a href="author.html#9006">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

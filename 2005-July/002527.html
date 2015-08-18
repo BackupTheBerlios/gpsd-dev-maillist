@@ -1,0 +1,549 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: RTCM decoding
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20RTCM%20decoding&In-Reply-To=%3C87fyueskl6.fsf%40bonnet.wsrcc.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002523.html">
+   <LINK REL="Next"  HREF="002490.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: RTCM decoding</H1>
+    <B>Wolfgang S. Rupprecht</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20RTCM%20decoding&In-Reply-To=%3C87fyueskl6.fsf%40bonnet.wsrcc.com%3E"
+       TITLE="[Gpsd-dev] Re: RTCM decoding">wolfgang+gnus20050716 at dailyplanet.dontspam.wsrcc.com
+       </A><BR>
+    <I>Sat Jul 16 19:54:13 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002523.html">[Gpsd-dev] Re: RTCM decoding
+</A></li>
+        <LI>Next message: <A HREF="002490.html">[Gpsd-dev] xgps &amp; nmea
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2527">[ date ]</a>
+              <a href="thread.html#2527">[ thread ]</a>
+              <a href="subject.html#2527">[ subject ]</a>
+              <a href="author.html#2527">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Here are some fixes for 2 bugs that a 24hr parser run uncovered.
+There is also some code to decode the rest of the msgs.  Unfortunately
+new svn code of this morning clobbered all my interface points.
+
+What this fixes: The code used an &quot;eager sync&quot; strategy that would
+reset the msg decoder's msg-sync logic whenever it saw a valid start
+of data pattern.  This pattern can occur in the data with very low
+probability.  Ironically at night and with SA off, this patter can be
+very stable for many 10's of seconds.  The eager syncing isn't needed
+so it was commented out to document the change.
+
+Another problem that turned up only at night with SA off was that
+there often isn't enough data to fill even the measly 200 baud tx
+queue.  With no data to xmit the reference gps sent NULL msgs.  There
+was a fence-post error which prevented these msgs from being accepted
+as &quot;big enough&quot; to be parsed.  The result was that the NULL and the
+first word of the subsequent msgs were glued together, causing trash
+to be decoded for the subsequent msg.  The system would lock back up,
+but it would miss some messages and might mis-read some of the msgs
+that were read starting from some non-initial word and that happened
+to have data that resembled a valid preamble pattern.
+
+I compared it to the output of the sager decoder (and finally got it
+to do as well in the tricky dead-of-night data).  The observed
+differences of my decoder when running a diff over the two 8-megabyte
+output files for ~24hrs data boil down to:
+
+* sync-locks one msg faster on startup.
+
+* parses all &quot;beacon almanac&quot; message sub-parts (not just the first)
+
+* parses the NULL MSG (msg-6) (the sager parser has code to print 
+	this msg, but it never gets called.)
+
+* correctly parses the first msg after a NULL msg.  (the sager 
+	parser sometimes drops the last two corrections in 
+	a 3-correction, 5-word msg)
+
+* loses lock 2 5-word messages sooner than the sager parser when a 
+	parity hit happens.  It isn't clear if it is losing 
+	valuable data or if the sager parser is outputting 
+	damaged info.
+
+(And just for the record, if it weren't for the sager parser, I would
+have been lost in tracking down the 2 bugs from above.)
+
+
+
+
+Index: rtcm.c
+===================================================================
+--- rtcm.c	(revision 2899)
++++ rtcm.c	(working copy)
+@@ -213,6 +213,8 @@
+ #define CNR_OFFSET	24	/* dB */
+ #define TU_SCALE	5	/* minutes */
+ 
++/* msg header - all msgs */
++
+ struct rtcm_msghw1 {			/* header word 1 */
+     uint            parity:6;
+     uint            refstaid:10;	/* reference station ID */
+@@ -230,6 +232,13 @@
+     uint            _pad:2;
+ };
+ 
++struct rtcm_msghdr {
++    struct rtcm_msghw1   w1;
++    struct rtcm_msghw2   w2;
++};
++
++/* msg 1 - differential gps corrections */
++
+ struct rtcm_msg1w3 {			/* msg 1 word 3 */
+     uint            parity:6;
+     int             pc1:16;
+@@ -275,11 +284,6 @@
+     uint            _pad:2;
+ };
+ 
+-struct rtcm_msghdr {
+-    struct rtcm_msghw1   w1;
+-    struct rtcm_msghw2   w2;
+-};
+-
+ struct rtcm_msg1 {
+     struct rtcm_msghw1   w1;
+     struct rtcm_msghw2   w2;
+@@ -303,6 +307,201 @@
+     struct rtcm_msg1w7   w17;
+ };
+ 
++/* msg 3 - reference station parameters */
++
++struct rtcm_msg3w3 {
++    uint            parity:6;
++    uint	    x_h:24;
++    uint            _pad:2;
++};
++
++struct rtcm_msg3w4 {
++    uint            parity:6;
++    uint	    y_h:16;
++    uint	    x_l:8;
++    uint            _pad:2;
++};
++
++struct rtcm_msg3w5 {
++    uint            parity:6;
++    uint	    z_h:8;
++    uint	    y_l:16;
++    uint            _pad:2;
++};
++
++struct rtcm_msg3w6 {
++    uint            parity:6;
++    uint	    z_l:24;
++    uint            _pad:2;
++};
++
++struct rtcm_msg3 {
++    struct rtcm_msghw1   w1;
++    struct rtcm_msghw2   w2;
++
++    struct rtcm_msg3w3   w3;
++    struct rtcm_msg3w4   w4;
++    struct rtcm_msg3w5   w5;
++    struct rtcm_msg3w6   w6;
++};
++
++/* msg 4 - reference station datum */
++
++struct rtcm_msg4w3 {
++    uint            parity:6;
++    uint	    datum_alpha_char2:8;
++    uint	    datum_alpha_char1:8;
++    uint	    spare:4;
++    uint	    dat:1;
++    uint	    dgnss:3;
++    uint            _pad:2;
++};
++
++struct rtcm_msg4w4 {
++    uint            parity:6;
++    uint	    datum_sub_div_char2:8;
++    uint	    datum_sub_div_char1:8;
++    uint	    datum_sub_div_char3:8;
++    uint            _pad:2;
++};
++
++struct rtcm_msg4w5 {
++    uint            parity:6;
++    uint	    dy_h:8;
++    uint	    dx:16;
++    uint            _pad:2;
++};
++
++struct rtcm_msg4w6 {
++    uint            parity:6;
++    uint	    dz:24;
++    uint	    dy_l:8;
++    uint            _pad:2;
++};
++
++struct rtcm_msg4 {
++    struct rtcm_msghw1   w1;
++    struct rtcm_msghw2   w2;
++
++    struct rtcm_msg4w3   w3;
++    struct rtcm_msg4w4   w4;
++    struct rtcm_msg4w5   w5;		/* optional */
++    struct rtcm_msg4w6   w6;		/* optional */
++};
++
++/* msg 5 - constellation health */
++
++struct rtcm_msg5w3 {
++    uint            parity:6;
++    uint	    unassigned:2;
++    uint	    time_unhealthy:4;
++    uint	    loss_warn:1;
++    uint	    new_nav_data:1;
++    uint	    health_enable:1;
++    uint	    cn0:5;
++    uint	    data_health:3;
++    uint	    issue_of_data_link:1;
++    uint	    sat_id:5;
++    uint	    reserved:1;
++    uint            _pad:2;
++};
++
++struct rtcm_msg5 {
++    struct rtcm_msghw1   w1;
++    struct rtcm_msghw2   w2;
++
++    struct rtcm_msg5w3   w3;
++};
++
++/* msg 6 */
++
++struct rtcm_msg6 {
++    struct rtcm_msghw1   w1;
++    struct rtcm_msghw2   w2;
++};
++
++/* msg 7 - beacon almanac */
++
++struct rtcm_msg7w3 {
++    uint            parity:6;
++    int	    	    lon_h:8;
++    int	            lat:16;
++    uint            _pad:2;
++};
++
++struct rtcm_msg7w4 {
++    uint            parity:6;
++    uint	    freq_h:6;
++    uint	    range:10;
++    uint	    lon_l:8;
++    uint            _pad:2;
++};
++
++struct rtcm_msg7w5 {
++    uint            parity:6;
++    uint	    encoding:1;
++    uint	    sync_type:1;
++    uint	    mod_mode:1;
++    uint	    bit_rate:3;
++    uint	    station_id:9;
++    uint	    health:3;
++    uint	    freq_l:6;
++    uint            _pad:2;
++};
++
++struct rtcm_msg7 {
++    struct rtcm_msghw1   w1;
++    struct rtcm_msghw2   w2;
++
++    struct rtcm_msg7w3   w3;
++    struct rtcm_msg7w4   w4;
++    struct rtcm_msg7w5   w5;
++
++    struct rtcm_msg7w3   w6;		/* optional 1 */
++    struct rtcm_msg7w4   w7;
++    struct rtcm_msg7w5   w8;
++
++    struct rtcm_msg7w3   w9;		/* optional 2 ... */
++    struct rtcm_msg7w4   w10;
++    struct rtcm_msg7w5   w11;
++};
++
++/* msg 16 - text msg */
++
++struct rtcm_msg16w3 {
++    uint            parity:6;
++    uint	    byte3:8;
++    uint	    byte2:8;
++    uint	    byte1:8;
++    uint            _pad:2;
++};
++
++struct rtcm_msg16 {
++    struct rtcm_msghw1   w1;
++    struct rtcm_msghw2   w2;
++
++    struct rtcm_msg16w3   w3;
++    struct rtcm_msg16w3   w4;	/* optional */
++    struct rtcm_msg16w3   w5;	/* optional */
++
++    struct rtcm_msg16w3   w6;	/* optional */
++    struct rtcm_msg16w3   w7;	/* optional */
++    struct rtcm_msg16w3   w8;	/* optional */
++
++    struct rtcm_msg16w3   w9;	/* optional */
++    struct rtcm_msg16w3   w10;	/* optional */
++    struct rtcm_msg16w3   w11;	/* optional ... */
++};
++
++/* msg unknown */
++
++struct rtcm_msgunk {
++    struct rtcm_msghw1   w1;
++    struct rtcm_msghw2   w2;
++
++    uint            w3;
++};
++
+ static void unpack(struct gps_device_t *session)
+ /* break out the raw bits into the content fields */
+ {
+@@ -423,6 +622,11 @@
+ 		session-&gt;rtcm.curr_word ^= W_DATA_MASK;
+ 
+ 	    if (rtcmparityok(session-&gt;rtcm.curr_word)) {
++#if 0
++		/*
++		 * Don't clobber the buffer just because we spot
++		 * another preamble pattern in the data stream. -wsr
++		 */
+ 		if (((struct rtcm_msghw1 *) &amp; session-&gt;rtcm.curr_word)-&gt;preamble ==
+ 		    PREAMBLE_PATTERN) {
+ 		    gpsd_report(RTCM_ERRLEVEL_BASE+2, 
+@@ -430,6 +634,7 @@
+ 				session-&gt;rtcm.bufindex);
+ 		    session-&gt;rtcm.bufindex = 0;
+ 		}
++#endif
+ 		gpsd_report(RTCM_ERRLEVEL_BASE+2,
+ 			    &quot;processing word %u (offset %d)\n&quot;,
+ 			    session-&gt;rtcm.bufindex, session-&gt;rtcm.curr_offset);
+@@ -442,6 +647,8 @@
+ 		     */
+ 		    if (session-&gt;rtcm.bufindex &gt;= RTCM_WORDS_MAX){
+ 			session-&gt;rtcm.bufindex = 0;
++			gpsd_report(RTCM_ERRLEVEL_BASE+1, 
++				    &quot;RTCM buffer overflowing -- resetting\n&quot;);
+ 			return RTCM_NO_SYNC;
+ 		    }
+ 
+@@ -456,7 +663,7 @@
+ 		    session-&gt;rtcm.bufindex++;
+ 		    /* rtcm_print_msg(msghdr); */
+ 
+-		    if (session-&gt;rtcm.bufindex &gt; 2) {	/* do we have the length yet? */
++		    if (session-&gt;rtcm.bufindex &gt;= 2) {	/* do we have the length yet? */
+ 			if (session-&gt;rtcm.bufindex &gt;= msghdr-&gt;w2.frmlen + 2) {
+ 			    /* jackpot, we have an RTCM packet*/
+ 			    res = RTCM_STRUCTURE;
+@@ -516,8 +723,144 @@
+ 			       session-&gt;rtcm.ranges[i].rangerr,
+ 			       session-&gt;rtcm.ranges[i].rangerate);
+ 	break;
++
++#if 0				/* I was too slow in getting these in. -wsr */
++
++    case 3:
++	{
++	    struct msg3    *m = (struct msg3 *) msghdr;
++
++	    if (len &gt;= 4) {
++		printf(&quot;R\t%.2f\t%.2f\t%.2f\n&quot;,
++		       ((m-&gt;w3.x_h &lt;&lt; 8) | (m-&gt;w4.x_l)) * XYZ_SCALE,
++		       ((m-&gt;w4.y_h &lt;&lt; 16) | (m-&gt;w5.y_l)) * XYZ_SCALE,
++		       ((m-&gt;w5.z_h &lt;&lt; 24) | (m-&gt;w6.z_l)) * XYZ_SCALE);
++	    }
++	}
++	break;
++
++    case 4:
++	{
++	    struct msg4    *m = (struct msg4 *) msghdr;
++
++	    if (len &gt;= 2){
++		printf(&quot;D\t%s\t%1d\t&quot;,
++		       (m-&gt;w3.dgnss==0)?&quot;GPS&quot;:((m-&gt;w3.dgnss==1)?
++					       &quot;GLONASS&quot;:&quot;???&quot;),
++		       m-&gt;w3.dat);
++		if (m-&gt;w3.datum_alpha_char1){
++		    putchar (m-&gt;w3.datum_alpha_char1);
++		}
++		if (m-&gt;w3.datum_alpha_char2){
++		    putchar (m-&gt;w3.datum_alpha_char2);
++		}
++		if (m-&gt;w4.datum_sub_div_char1){
++		    putchar (m-&gt;w4.datum_sub_div_char1);
++		}
++		if (m-&gt;w4.datum_sub_div_char2){
++		    putchar (m-&gt;w4.datum_sub_div_char2);
++		}
++		if (m-&gt;w4.datum_sub_div_char3){
++		    putchar (m-&gt;w4.datum_sub_div_char3);
++		}
++		if (len &gt;= 4){
++		    printf(&quot;\t%.1f\t%.1f\t%.1f&quot;,
++			   m-&gt;w5.dx * DXYZ_SCALE,
++			   ((m-&gt;w5.dy_h &lt;&lt; 8) | m-&gt;w6.dy_l) * DXYZ_SCALE,
++			   m-&gt;w6.dz * DXYZ_SCALE);
++		}
++		printf(&quot;\n&quot;);
++	    }
++
++
++	}
++	break;
++
++    case 5:
++	{
++	    struct msg5    *m = (struct msg5 *) msghdr;
++	    while (len &gt;= 1){
++	        printf(&quot;C\t%2d\t%1d  %1d\t%2d\t%1d  %1d  %1d\t%2d\n&quot;,
++		       m-&gt;w3.sat_id,
++		       m-&gt;w3.issue_of_data_link,
++		       m-&gt;w3.data_health,
++		       (m-&gt;w3.cn0?(m-&gt;w3.cn0+CNR_OFFSET):-1),
++		       m-&gt;w3.health_enable,
++		       m-&gt;w3.new_nav_data,
++		       m-&gt;w3.loss_warn,
++		       m-&gt;w3.time_unhealthy*TU_SCALE);
++		len--;
++		m = (struct msg5 *) (((RTCMWORD *) m) + 1);
++	    }
++	}
++	break;
++
++    case 6: 			/* NOP msg */
++	printf(&quot;N\n&quot;);
++	break;
++
++    case 7:
++	{
++	    struct msg7    *m = (struct msg7 *) msghdr;
++	    int tx_speed[] = { 25, 50, 100, 110, 150, 200, 250, 300 };
++
++	    while (len &gt;= 3) {
++		printf(&quot;A\t%.4f\t%.4f\t%d\t%.1f\t%d\t%d\t%d\n&quot;,
++		       m-&gt;w3.lat * LA_SCALE,
++		       ((m-&gt;w3.lon_h &lt;&lt; 8) | m-&gt;w4.lon_l) * LO_SCALE,
++		       m-&gt;w4.range,
++		       (((m-&gt;w4.freq_h &lt;&lt; 6) | m-&gt;w5.freq_l)
++			* FREQ_SCALE) + FREQ_OFFSET,
++		       m-&gt;w5.health,
++		       m-&gt;w5.station_id,
++		       tx_speed[m-&gt;w5.bit_rate]);
++		len -= 3;
++		m = (struct msg7 *) (((RTCMWORD *) m) + 3);
++	    }
++	}
++	break;
++
++    case 16:
++	{
++	    struct msg16    *m = (struct msg16 *) msghdr;
++
++	    printf(&quot;T\t\&quot;&quot;);	/* Note: text is now quoted in the output */
++	    while (len &gt;= 1){
++		if (!m-&gt;w3.byte1) {
++		    break;
++		}
++		putchar (m-&gt;w3.byte1);
++		if (!m-&gt;w3.byte2) {
++		    break;
++		}
++		putchar (m-&gt;w3.byte2);
++		if (!m-&gt;w3.byte3) {
++		    break;
++		}
++		putchar (m-&gt;w3.byte3);
++		len--;
++		m = (struct msg16 *) (((RTCMWORD *) m) + 1);
++	    }
++	    printf(&quot;\&quot;\n&quot;);
++	}
++	break;
++
+     default:
++	{
++	    struct msgunk    *m = (struct msgunk *) msghdr;
++
++	    printf (&quot;U\t*** Unknown msg type! (len %d) ***\n&quot;, len);
++	    while (len &gt;= 1){
++		printf (&quot;U\t0x%08x\n&quot;, m-&gt;w3);
++		len--;
++		m = (struct msgunk *) (((RTCMWORD *) m) + 1);
++	    }
++	}
+ 	break;
++#endif
++
++    default:
++	break;
+     }
+ 
+ }
+Index: rtcmdecode.c
+===================================================================
+--- rtcmdecode.c	(revision 2899)
++++ rtcmdecode.c	(working copy)
+@@ -21,7 +21,8 @@
+ 	(void)vsnprintf(buf + strlen(buf), sizeof(buf)-strlen(buf), fmt, ap);
+ 	va_end(ap);
+ 
+-	(void)fputs(buf, stderr);
++	//	(void)fputs(buf, stderr);
++	(void)fputs(buf, stdout);
+     }
+ }
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002523.html">[Gpsd-dev] Re: RTCM decoding
+</A></li>
+	<LI>Next message: <A HREF="002490.html">[Gpsd-dev] xgps &amp; nmea
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2527">[ date ]</a>
+              <a href="thread.html#2527">[ thread ]</a>
+              <a href="subject.html#2527">[ subject ]</a>
+              <a href="author.html#2527">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

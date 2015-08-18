@@ -1,0 +1,118 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%22bookend%20synchronization%22.%20does%20not%20%28always%29%20work&In-Reply-To=%3CAANLkTikVL7M4jhRjKerA1_Ym-7-8AUX6%3DfcLCi7pbT-O%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009049.html">
+   <LINK REL="Next"  HREF="009053.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%22bookend%20synchronization%22.%20does%20not%20%28always%29%20work&In-Reply-To=%3CAANLkTikVL7M4jhRjKerA1_Ym-7-8AUX6%3DfcLCi7pbT-O%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work">thomas at mich.com
+       </A><BR>
+    <I>Fri Mar 25 14:40:06 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009049.html">[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work
+</A></li>
+        <LI>Next message: <A HREF="009053.html">[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9051">[ date ]</a>
+              <a href="thread.html#9051">[ thread ]</a>
+              <a href="subject.html#9051">[ subject ]</a>
+              <a href="author.html#9051">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Looking further, they do have a point that it is memory CONSISTENCY,
+not merely coherency that is involved, but the question becomes
+whether string primitive operations the simple while(l--) *d++=*c++;
+that results in a rep prefix and movs or equivalent short RISC loop
+can be reordered.
+
+Most discussions on consistency involve instruction reordering.
+
+I do worry as this is an edge case, but to put it in terms of my
+generalized version:
+
+Writer:
+t1 - updates hi bookend
+t2 - updates payload
+t3 - updates lo bookend
+
+Could these be reordered where there is cache coherency such that:
+
+t1' - read lo bookend
+t2' - read payload
+t3' - read hi bookend
+
+t1' should get the t1 value, t3' should get the t3 value.
+
+could return invalid data.
+
+(and don't forget about interrupts to either the reader or writer)
+
+In general, the copy loop is so simple, the instructions can't be
+reordered or have other pipeline problems.  That is probably why it
+would work unless the memory subsystem is doing something really
+strange.
+
+If the &quot;rep movs&quot; or the &quot;load - increment pointer, store - increment
+pointer, decrement-branch-loop&quot; could be reordered, it would have the
+problems - including if the compiler had strange optimization that
+would reverse the direction from backwards to forwards.  I think
+merely unrolling the loops would not affect this.
+
+Another question would be where do you put the memory barrier
+instruction?  Before?  After? both? Inside the loop, i.e. while(l--)
+{*d++=*c++; memsync(); }?
+
+On Fri, Mar 25, 2011 at 8:59 AM, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+</I>&gt;&gt;<i> And if there were no cache coherency, then ordinary common instruction
+</I>&gt;&gt;<i> sequences would fail - consider a device driver that needs to set then
+</I>&gt;&gt;<i> reset a bit on a port - if it could occur in any order, the bit might
+</I>&gt;&gt;<i> not be set at all, or be stuck high. &#160;(Instruction reordering is also
+</I>&gt;&gt;<i> limited to insure coherency)
+</I>&gt;<i>
+</I>&gt;<i> Interesting point. &#160;I will note in my public description that *if* the
+</I>&gt;<i> hardware does not guarantee cache coherency, memory barriers around the
+</I>&gt;<i> writes and reads will be required.
+</I>&gt;<i> --
+</I>&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+</I>&gt;<i>
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009049.html">[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work
+</A></li>
+	<LI>Next message: <A HREF="009053.html">[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9051">[ date ]</a>
+              <a href="thread.html#9051">[ thread ]</a>
+              <a href="subject.html#9051">[ subject ]</a>
+              <a href="author.html#9051">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,136 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd 3.x successfully ported to embedded MIPS (Netgear wndr3700v2 router)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%203.x%20successfully%20ported%20to%20embedded%20MIPS%0A%20%28Netgear%20wndr3700v2%20router%29&In-Reply-To=%3C20110917191818.GA2559%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009525.html">
+   <LINK REL="Next"  HREF="009528.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd 3.x successfully ported to embedded MIPS (Netgear wndr3700v2 router)</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%203.x%20successfully%20ported%20to%20embedded%20MIPS%0A%20%28Netgear%20wndr3700v2%20router%29&In-Reply-To=%3C20110917191818.GA2559%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] gpsd 3.x successfully ported to embedded MIPS (Netgear wndr3700v2 router)">esr at thyrsus.com
+       </A><BR>
+    <I>Sat Sep 17 21:18:18 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009525.html">[Gpsd-dev] gpsd 3.x successfully ported to embedded MIPS	(Netgear wndr3700v2 router)
+</A></li>
+        <LI>Next message: <A HREF="009528.html">[Gpsd-dev] 3.2 and PPS old method
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9526">[ date ]</a>
+              <a href="thread.html#9526">[ thread ]</a>
+              <a href="subject.html#9526">[ subject ]</a>
+              <a href="author.html#9526">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Dave Taht &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">dave.taht at gmail.com</A>&gt;:
+&gt;<i> &gt; What counts as stable?  Changes since 3.0 have been minor, mostly tweaks
+</I>&gt;<i> &gt; to the build recipe.  The biggest change I'm expecting in 3.2 is a bug
+</I>&gt;<i> &gt; fix to the old (non-kernel) PPS code.
+</I>&gt;<i> &gt;
+</I>&gt;<i> 
+</I>&gt;<i> While there are several packages in openwrt head that pull directly from a
+</I>&gt;<i> git commit of a given package, I would personally prefer that gpsd 3.x baked 
+</I>&gt;<i> a little more
+</I>
+Dude, you *are* the testing on MIPS.  (We do have a couple or ARM devs.)
+
+I hope you're at least a little reassured by the fact that the port required
+exactly zero changes to C code.
+
+&gt;<i> &gt;  I note that you will have to install the right kmod-serial-* to
+</I>&gt;<i> &gt; get the right kernel support for your specific device,
+</I>&gt;<i> 
+</I>&gt;<i>  Bu &quot;your specific device&quot; you mean the router hardware?  When we use that
+</I>&gt;<i> &gt; phrase here we generally mean a make/model of GPS...
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; No, I meant the make/model of GPS that we tested, which required a
+</I>&gt;<i> 
+</I>&gt;<i> opkg install kmod-usb-serial-ftdi
+</I>&gt;<i> 
+</I>&gt;<i> in order for ttyUSB0 to be recognised by the openwrt/wndr3700v2 kernel. (I'm
+</I>&gt;<i> documenting this for your future builds)
+</I>
+Ahhhhh.  Light dawns.
+
+No, actually, it's not the GPS you have to worry about.  It's the USB-to-serial
+adapter.  The GPS chipsets actually speak RS-232 natively; to turn them into
+USB devices requires one of the adaptor chips.  FTDI is about the second
+most common of these, the most common being a PL2303.
+
+Sometimes the adaptor is inboard, sometimes it's outboard in a housing 
+inline of the cable. This is why you'll often see two-piece cables with
+the part coming out of the GPS ending in a mini-DIN connector; the mini-DIN
+cable end it plugs into may have either a DB9 or USB connector on the
+other end.
+
+&gt;<i> I note many openwrt based devices have real serial ports, too. The wndr
+</I>&gt;<i> actually has one inside it that can be hacked onto.
+</I>
+That's useful to know.
+ 
+&gt;<i> saving any and all space on precious flash is in large part what drives
+</I>&gt;<i> packaging for embedded firmware,
+</I>&gt;<i> which is why I'd like to nuke the gpsd libusb dependency as it's only for
+</I>&gt;<i> one rarely used device.
+</I>
+Reasonable. Just configure that driver out.
+
+&gt;<i> &gt; I've added a force_global configuration option to force -G on for
+</I>&gt;<i> &gt; deployments
+</I>&gt;<i> &gt; like CeroWrt where listening only on loopback is not a good idea.
+</I>&gt;<i> 
+</I>&gt;<i> Well... then it needs to be invertible somehow.
+</I>
+I could make that option invert the sence of -G, I suppose.
+
+&gt;<i>                                 And the gpsd openwrt package
+</I>&gt;<i> could merely have an option in the gpsd.config file to enable it where
+</I>&gt;<i> needed.
+</I>
+There is no runtime gpsd config file, by design.
+
+ I can certainly see cases where lo can be used by other apps on the
+&gt;<i> router and no other access is needed.
+</I>&gt;<i> 
+</I>&gt;<i> That said, full ipv6 support would be nice, too.
+</I>
+What does it need for IPv6 that it doesn't have? (-G support may be fixed now.)
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009525.html">[Gpsd-dev] gpsd 3.x successfully ported to embedded MIPS	(Netgear wndr3700v2 router)
+</A></li>
+	<LI>Next message: <A HREF="009528.html">[Gpsd-dev] 3.2 and PPS old method
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9526">[ date ]</a>
+              <a href="thread.html#9526">[ thread ]</a>
+              <a href="subject.html#9526">[ subject ]</a>
+              <a href="author.html#9526">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

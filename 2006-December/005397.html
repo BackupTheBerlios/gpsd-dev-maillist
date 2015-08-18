@@ -1,0 +1,91 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Looking for debugging help with Python binding
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Looking%20for%20debugging%20help%20with%20Python%20binding&In-Reply-To=%3C20061206215903.GA9439%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005395.html">
+   <LINK REL="Next"  HREF="005399.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Looking for debugging help with Python binding</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Looking%20for%20debugging%20help%20with%20Python%20binding&In-Reply-To=%3C20061206215903.GA9439%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Looking for debugging help with Python binding">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Dec  6 22:59:03 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005395.html">[Gpsd-dev] Looking for debugging help with Python binding
+</A></li>
+        <LI>Next message: <A HREF="005399.html">[Gpsd-dev] Looking for debugging help with Python binding
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5397">[ date ]</a>
+              <a href="thread.html#5397">[ thread ]</a>
+              <a href="subject.html#5397">[ subject ]</a>
+              <a href="author.html#5397">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Andreas Stricker &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">andy at knitter.ch</A>&gt;:
+&gt;<i> Instead of using the simple PyErr_SetString function we can append
+</I>&gt;<i> arbitrary objects to the exception. e.g:
+</I>&gt;<i> 
+</I>&gt;<i>      ...
+</I>&gt;<i>      PyObject *obj;
+</I>&gt;<i>      obj = Py_BuildValue(&quot;is&quot;, errorcode, &quot;message&quot;);
+</I>&gt;<i>      if (obj == NULL)
+</I>&gt;<i>          return NULL;      /* in case of no memory the error is set by BuildValue */
+</I>&gt;<i>      PyErr_SetObject(ErrorObject, obj);
+</I>&gt;<i>      return NULL;
+</I>&gt;<i>      ...
+</I>&gt;<i> 
+</I>&gt;<i> If we call a python function the exception delegation to the caller
+</I>&gt;<i> is very simple as we can see with the Py_BuildValue example above:
+</I>&gt;<i> If for some reason Py_BuildValue failed, the function itself set an
+</I>&gt;<i> exception and we have just to to return NULL if the test for
+</I>&gt;<i> obj == NULL is true.
+</I>
+That seems clear enough.  On looking into the semantics pf
+PyArgParseTuple further, I probably want to replace &quot;:get&quot; with
+&quot;;missing or invalid file descriptor argument to gpspacket.get&quot; rather
+than raising an exceotion of my own.
+
+Next, I want to set an error-reporting hook.  At the moment, errors
+are reported through the stub logger near the top of the module, which
+just writes to standard error.  What would be better would be to
+redirect gpsd_report to a Python hook function.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005395.html">[Gpsd-dev] Looking for debugging help with Python binding
+</A></li>
+	<LI>Next message: <A HREF="005399.html">[Gpsd-dev] Looking for debugging help with Python binding
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5397">[ date ]</a>
+              <a href="thread.html#5397">[ thread ]</a>
+              <a href="subject.html#5397">[ subject ]</a>
+              <a href="author.html#5397">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

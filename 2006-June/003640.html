@@ -1,0 +1,114 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Getting the leap-second offset
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Getting%20the%20leap-second%20offset&In-Reply-To=%3C200606081454.k58Es5dW017103%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003638.html">
+   <LINK REL="Next"  HREF="003650.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Getting the leap-second offset</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Getting%20the%20leap-second%20offset&In-Reply-To=%3C200606081454.k58Es5dW017103%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Getting the leap-second offset">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Jun  8 16:54:05 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003638.html">[Gpsd-dev] Is it time to depreciate the polled interface to GPSd?
+</A></li>
+        <LI>Next message: <A HREF="003650.html">[Gpsd-dev] Getting the leap-second offset
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3640">[ date ]</a>
+              <a href="thread.html#3640">[ thread ]</a>
+              <a href="subject.html#3640">[ subject ]</a>
+              <a href="author.html#3640">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I'm working on enabling gpsd to get the current leap-second offest from
+authoritative sources.  This will mainly be useful for SiRF and 
+Evermore chipsets in binary mode, which report uncorrected GPS time
+but don't have an easy way to get the leap-second correction.
+
+Evermore chips can't get the leap-second offset at all. They have to
+fall back to the fixed offset compiled into timebase.h; this could be
+trouble if the gpsd version is older than the last leap-second correction.
+
+SiRF chips have a painful way to get the leap-second offset by
+enabling reporting of subframe data. We don't enable this unless it
+has been more than six months since the last known-good date for the
+current compiled offset.
+
+I have a Python module leapsecond.py that looks at the current IERS
+Bulletin C and the U.S. Navy's history of the TAI-UTC on the Web.
+It seems to work.  Does anyone know of other sources?  In particular,
+is it possible to get this information from a local instance of ntpd?
+
+My intention is to implement a local cache for leap-second
+information at /var/run/leapsecond.  The rules for this cache would be:
+
+1. It contains the current offset and the Unix timestamp of the last
+offset change point (1 Jan or 1 Jul of the current year) for which the
+offset is known good.
+
+2. gpsd tries to read it when it needs the leap-second
+correction. e.g. when an Evermore or SiRF-binary chip is recognized.
+
+3. If it is six months after the last offset change point, the data
+is considered stale.
+
+4. If the cache data is fresh, get the offset from it. 
+
+5. If the cache data is stale or nonexistent and the chip is SiRF, enable
+subframe data to get the offset and write it into /var/run/leapsecond
+when it arrives.
+
+6. If the cache data is stale or nonexistent and the chip is Evermore,
+call out to leapsecond.py to get the current offset.
+
+7. If the call fails and the data is stale, use it anyway (it has
+to be newer than the compiled-in offset).
+
+8. If the call fails and the data is nonexistent, fall back to the
+compiled offset.
+
+Thoughts?  Comments?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+Live free or die; death is not the worst of evils.
+	-- General George Stark.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003638.html">[Gpsd-dev] Is it time to depreciate the polled interface to GPSd?
+</A></li>
+	<LI>Next message: <A HREF="003650.html">[Gpsd-dev] Getting the leap-second offset
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3640">[ date ]</a>
+              <a href="thread.html#3640">[ thread ]</a>
+              <a href="subject.html#3640">[ subject ]</a>
+              <a href="author.html#3640">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

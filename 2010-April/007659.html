@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-users]  Preparing for 2.93 point release
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-users%5D%20%20Preparing%20for%202.93%20point%20release&In-Reply-To=%3C20100412221900.GA24525%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007655.html">
+   <LINK REL="Next"  HREF="007664.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-users]  Preparing for 2.93 point release</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-users%5D%20%20Preparing%20for%202.93%20point%20release&In-Reply-To=%3C20100412221900.GA24525%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] [Gpsd-users]  Preparing for 2.93 point release">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Apr 13 00:19:00 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007655.html">[Gpsd-dev] [Gpsd-users]  Preparing for 2.93 point release
+</A></li>
+        <LI>Next message: <A HREF="007664.html">[Gpsd-dev] [Gpsd-users]  Preparing for 2.93 point release
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7659">[ date ]</a>
+              <a href="thread.html#7659">[ thread ]</a>
+              <a href="subject.html#7659">[ subject ]</a>
+              <a href="author.html#7659">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>H&#229;kan Johansson &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">f96hajo at chalmers.se</A>&gt;:
+&gt;<i> &gt;Your new bug is almost certainly caused by the analogous change in
+</I>&gt;<i> &gt;gpsmon.  The problem is that, the way select(2) works, we seem to be
+</I>&gt;<i> &gt;stuck with a choice between two bad behaviors.  Either we keep going
+</I>&gt;<i> &gt;on a 0-length read, in which case we're going to burn CPU, or we don't,
+</I>&gt;<i> &gt;in which case it's going to be hard to be tolerant in cases where
+</I>&gt;<i> &gt;gpsmon/gpsd gets 0-length reads from the underlying device.
+</I>&gt;<i> 
+</I>&gt;<i> Is this really true?  Shouldn't a zero-length read always indicte
+</I>&gt;<i> EOF and nothing else?  How otherwise to detect a socket that has
+</I>&gt;<i> been closed? (According to the select(2) man page, (under Linux)
+</I>&gt;<i> sockets have to be made non-blocking, as select may return that a
+</I>&gt;<i> socket is ready for reading, but in reality is not, which would make
+</I>&gt;<i> the app block in read. In non-blocking mode, this would lead to a
+</I>&gt;<i> error return of EAGAIN, and not a 0-length read.)
+</I>
+What you say should describe reality.  But somnewhere between the
+deviceand gpsmon, something believes it's seeing zero-length
+reads.
+
+&gt;<i> I have applied it, or rather:
+</I>&gt;<i> 
+</I>&gt;<i> diff --git a/gpsmon.c b/gpsmon.c
+</I>&gt;<i> index ff173c4..19f2fcc 100644
+</I>&gt;<i> --- a/gpsmon.c
+</I>&gt;<i> +++ b/gpsmon.c
+</I>&gt;<i> @@ -178,8 +178,6 @@ static ssize_t readpkt(void)
+</I>&gt;<i>         longjmp(terminate, TERM_SELECT_FAILED);
+</I>&gt;<i> 
+</I>&gt;<i>      changed = gpsd_poll(&amp;session);
+</I>&gt;<i> -    if (changed == 0)
+</I>&gt;<i> -       longjmp(terminate, TERM_EMPTY_READ);
+</I>&gt;<i> 
+</I>&gt;<i>      if ((changed &amp; ERROR_IS) != 0)
+</I>&gt;<i>         longjmp(terminate, TERM_READ_ERROR);
+</I>&gt;<i> 
+</I>&gt;<i> and now have the following:
+</I>&gt;<i> 
+</I>&gt;<i> NMEA mode (garmin serial or the EM406a) still break after about ~2 s
+</I>&gt;<i> with 'Read error from device'
+</I>
+And I think that means they're seeeing a zero-length read.
+ 
+&gt;<i> The non-breaking ones (oncore and sirf) do indeed go into 100 cpu load.
+</I>&gt;<i> 
+</I>&gt;<i> 'select(2) failed' still can happen on startup
+</I>
+Crap.  This is running gpsmon calling gpsd for raw output, right?
+Not gpsmon direct to the device?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007655.html">[Gpsd-dev] [Gpsd-users]  Preparing for 2.93 point release
+</A></li>
+	<LI>Next message: <A HREF="007664.html">[Gpsd-dev] [Gpsd-users]  Preparing for 2.93 point release
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7659">[ date ]</a>
+              <a href="thread.html#7659">[ thread ]</a>
+              <a href="subject.html#7659">[ subject ]</a>
+              <a href="author.html#7659">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

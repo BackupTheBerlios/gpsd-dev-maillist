@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] regression test report - recent code
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20regression%20test%20report%20-%20recent%20code&In-Reply-To=%3C20110218231358.GA29909%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008562.html">
+   <LINK REL="Next"  HREF="008570.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] regression test report - recent code</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20regression%20test%20report%20-%20recent%20code&In-Reply-To=%3C20110218231358.GA29909%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] regression test report - recent code">esr at thyrsus.com
+       </A><BR>
+    <I>Sat Feb 19 00:13:58 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008562.html">[Gpsd-dev] regression test report - recent code
+</A></li>
+        <LI>Next message: <A HREF="008570.html">[Gpsd-dev] regression test report - recent code
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8564">[ date ]</a>
+              <a href="thread.html#8564">[ thread ]</a>
+              <a href="subject.html#8564">[ subject ]</a>
+              <a href="author.html#8564">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;:
+&gt;<i> Bringing CLOSE_DELAY to 0.2s solved the problem.
+</I>
+I believe it. That's the one I was expecting you'd have to bump up
+when I heard your bug report.  Thanks.
+
+&gt;<i>                                             I've been looking at
+</I>&gt;<i> traces (ktrace -i, so I see timestamps for all the system calls of both
+</I>&gt;<i> gpsfake and gpsd), and I don't yet see what's wrong.
+</I>
+It's some sort of obscure buffering artifact, highly prone to flaky
+variations across platforms and kernels. Used to play all kinds of
+cross-platform hell with the regression-test suite, and then turned
+out to be masking a deep platform-independent bug in gpd's data
+management that produced *exactly the same symptoms*.  See my
+commit comment of Tue Jul 15 10:49:37 2008 +0000 for details.
+
+&gt;<i> Is CLOSE_DELAY supposed to be the delay from sending the last bit of
+</I>&gt;<i> fake input before telling gpsd to remove the source?
+</I>
+Exactly.  The idea is to give the buffers in the OS and Python
+userland time to flush.  Sigh...  yes, I know it's voodoo programming.
+
+&gt;<i> Is there supposed to be a delay between telling gpsd to remove the
+</I>&gt;<i> source (and getting the OK back) and sending the signal to kill gpsd?
+</I>&gt;<i> That seems to happen in mere microseconds.   But I think the
+</I>&gt;<i> input/remove delay is the one that matters.
+</I>
+I think so too.
+
+&gt;<i> I'm not clearly seeing the effects of CLOSE_DELAY in the trace.
+</I>
+Well, you wouldn't, necessarily.  There's some combination of OS-level 
+buffering, C-level buffering in the Python core, and Python-level buffering
+implicated here.  Only the first kind would tend to show up in a trace.
+
+&gt;<i> Also, I noticed that gpsd calls nanosleep for longish periods (333 ms?)
+</I>&gt;<i> due to the garmin driver.  It would seem that a) this is a problem in
+</I>&gt;<i> and of itself and b) one would have to wait for at least those delays to
+</I>&gt;<i> ensure that gpsd had time to finish.
+</I>
+Checking...yes, there are a couple of places we have to usleep() for
+hardware-interface reasons (the SiRF driver does it too).  I try to
+avoid them, but the infrastructure required to maintain state for
+delayed writes without blocking would be *hideously* complex and
+bug-prone.
+
+Good point about the cumulated writes.  That may behind the rare timing-
+dependent regression failures I still get.  I'll look into it a bit
+further.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 190 bytes
+Desc: Digital signature
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110218/a2b48da2/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110218/a2b48da2/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008562.html">[Gpsd-dev] regression test report - recent code
+</A></li>
+	<LI>Next message: <A HREF="008570.html">[Gpsd-dev] regression test report - recent code
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8564">[ date ]</a>
+              <a href="thread.html#8564">[ thread ]</a>
+              <a href="subject.html#8564">[ subject ]</a>
+              <a href="author.html#8564">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

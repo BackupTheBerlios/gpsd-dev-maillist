@@ -1,0 +1,111 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Status of interface to ntpd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Status%20of%20interface%20to%20ntpd&In-Reply-To=%3C200705151927.56360.mick.durkin%40saunalahti.fi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005631.html">
+   <LINK REL="Next"  HREF="005633.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Status of interface to ntpd</H1>
+    <B>Mick Durkin</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Status%20of%20interface%20to%20ntpd&In-Reply-To=%3C200705151927.56360.mick.durkin%40saunalahti.fi%3E"
+       TITLE="[Gpsd-dev] Status of interface to ntpd">mick.durkin at saunalahti.fi
+       </A><BR>
+    <I>Tue May 15 18:27:56 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005631.html">[Gpsd-dev] NMEA Commands
+</A></li>
+        <LI>Next message: <A HREF="005633.html">[Gpsd-dev] Status of interface to ntpd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5632">[ date ]</a>
+              <a href="thread.html#5632">[ thread ]</a>
+              <a href="subject.html#5632">[ subject ]</a>
+              <a href="author.html#5632">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Yo Gary,
+
+Now that the &quot;good&quot; weather has arrived in Finland (afternoon temperatures 
+above 16 degrees C/ 60 degrees F!!) I have been able to hang my gps antenna 
+out of my window and get some signal for my Jupiter-T to slurp.
+
+I am gathering some test data to submit with the code ready to put it in the 
+SVN tree, so maybe it can get into the next release?
+
+To the point of the subject line. I seem to remember you were not happy about 
+the behaviour of the ntpd interface, or am I wrong?
+
+Now I can get a good satellite signal and a solid 1PPS train, I looked at 
+firing up the ntpd interface and I seem to be getting good interaction now.
+
+In fact, my initial tests revealed a bug in my driver where I wrongly applied 
+a leap second correction. The 1PPS was seen by ntpd as the best quality 
+source and it was fighting with my public time server data. The difference 
+was a magical 14000 milliseconds, so that was a good clue.
+
+Once that was corrected, ntpd happily eats the 1PPS and gpsd-generated NMEA 
+produced from my binary driver data. Here is a snapshot of ntpq -p output:-
+
+[<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">root at linuxbox</A> ~]# ntpq -p
+     remote           refid      st t when poll reach   delay   offset  jitter
+==============================================================================
++SHM(0)          .GPS.            0 l   16   16  377    0.000    6.870   0.924
+*SHM(1)          .GPS1.           0 l   14   16  377    0.000   -0.060   0.004
+-ntp1.kolumbus.f 212.54.0.202     2 u   52   64  377    6.513    0.227   0.519
+-ntp2.kolumbus.f 212.54.0.202     2 u    3   64  377    6.401   -0.191   0.968
+-fartein.ifi.uio 195.220.94.163   2 u   64   64  377   22.390   -0.039   0.849
++nic.lth.se      131.188.3.222    2 u   58   64  377   22.581    1.021   0.811
+[<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">root at linuxbox</A> ~]#
+
+As you can see, SHM(1) is active and SHM(0) plus one public time server are 
+selected as alternates. I guess this is what we would expect? I am no expert 
+on ntpd, but it looks good from what I read in &quot;man ntpq&quot; with the possible 
+exception that SHM(1) has a &quot;*&quot; rather than a &quot;o&quot; which means it is seen as a 
+sys.peer instead of a pps.peer. Maybe pps.peer only happens if you have 
+a &quot;hardware&quot; 1PPS source rather than the output of gpsd?
+
+On the way to getting this to work, I did find a problem with the OS's 
+handling of the ntp.conf file under Fedora Core 6. It was being stomped on by 
+a script file (dhclient-script) and I had to mangle that file so that 
+the &quot;servers&quot; data in ntp.conf was not damaged. If you are using FC6, maybe 
+it was this behaviour that caused you problems?
+
+Best Regards
+
+Mick Durkin
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005631.html">[Gpsd-dev] NMEA Commands
+</A></li>
+	<LI>Next message: <A HREF="005633.html">[Gpsd-dev] Status of interface to ntpd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5632">[ date ]</a>
+              <a href="thread.html#5632">[ thread ]</a>
+              <a href="subject.html#5632">[ subject ]</a>
+              <a href="author.html#5632">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

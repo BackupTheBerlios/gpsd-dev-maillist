@@ -1,0 +1,118 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd default prefix bug
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20default%20prefix%20bug&In-Reply-To=%3Crmislfdgj6r.fsf_-_%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005470.html">
+   <LINK REL="Next"  HREF="005423.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd default prefix bug</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20default%20prefix%20bug&In-Reply-To=%3Crmislfdgj6r.fsf_-_%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] gpsd default prefix bug">gdt at ir.bbn.com
+       </A><BR>
+    <I>Mon Dec 18 19:20:12 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005470.html">[Gpsd-dev] Choosing the prototype device correctly
+</A></li>
+        <LI>Next message: <A HREF="005423.html">[Gpsd-dev] Imminent gpsd release warning
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5465">[ date ]</a>
+              <a href="thread.html#5465">[ thread ]</a>
+              <a href="subject.html#5465">[ subject ]</a>
+              <a href="author.html#5465">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I previously reported 3 things when the 2.34 release warning was
+given, and the other 2 are already fixed - thanks!  I'll start over on
+this one to avoid people having to refer back.
+
+Running configure like:
+
+	LDFLAGS=&quot;-L/usr/pkg/lib -R/usr/pkg/lib&quot; \
+	CPPFLAGS=&quot;-I/usr/pkg/include&quot; ./configure --enable-dbus
+
+installed into /usr.  autoconf documents the default prefix to be
+/usr/local, and I don't remember having encountered another package
+that uses other than /usr/local if --prefix is not given.  So this is
+a serious violation of the Principle of Least Astonishment.
+
+The prefix ends up /usr on my system (NetBSD 4.99.5) because gcc is
+/usr/bin, and autoconf contains &quot;AC_PREFIX_PROGRAM(gcc)&quot;.
+Autoconf docs say:
+
+  It may be convenient for users to have configure guess the
+  installation prefix from the location of a related program that they
+  have already installed.
+
+but gcc is not related to gpsd.  Having the gpsd prefix change because
+I also have a newer gcc installed as /usr/pkg/bin/gcc, or worse as
+/usr/gcc42 which I've put in my path, would be even more unsettling.
+
+/usr is a bad default on almost all systems.  First, note we are
+talking about by-hand builds that do not set a prefix explicitly,
+since all packaging systems have to set the prefix to the packaging
+system's natural prefix (/usr/pkg for pkgsrc, /opt/foo for some, and I
+realize it's /usr for many GNU/Linux systems) for the other N-1
+programs out there.
+
+After I did make install, I had to clean out 46 files from /usr to
+restore my base system to the proper state.  On NetBSD, only files
+installed by the base operating system belong in /usr.  It seems that
+on most Linux systems, the native packaging system manages files in
+/usr, so installing to /usr is also wrong on Linux, resulting in
+unmanaged files in a managed prefix.
+
+The following patch to configure.ac changes the behavior to match
+autoconf defaults and thus most people's expectations.
+
+    Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;
+
+
+Index: configure.ac
+===================================================================
+--- configure.ac	(revision 4178)
++++ configure.ac	(working copy)
+@@ -1,7 +1,6 @@
+ dnl $Id$
+ AC_INIT
+ AM_INIT_AUTOMAKE(gpsd, 2.35dev)
+-AC_PREFIX_PROGRAM(gcc)
+ AM_CONFIG_HEADER(gpsd_config.h)
+ AC_LANG([C])
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005470.html">[Gpsd-dev] Choosing the prototype device correctly
+</A></li>
+	<LI>Next message: <A HREF="005423.html">[Gpsd-dev] Imminent gpsd release warning
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5465">[ date ]</a>
+              <a href="thread.html#5465">[ thread ]</a>
+              <a href="subject.html#5465">[ subject ]</a>
+              <a href="author.html#5465">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

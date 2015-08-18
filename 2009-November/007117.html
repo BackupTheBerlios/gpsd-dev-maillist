@@ -1,0 +1,200 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] recent PPS
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20recent%20PPS&In-Reply-To=%3C20091120120841.GA15768%40localhost%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007114.html">
+   <LINK REL="Next"  HREF="007123.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] recent PPS</H1>
+    <B>Miroslav Lichvar</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20recent%20PPS&In-Reply-To=%3C20091120120841.GA15768%40localhost%3E"
+       TITLE="[Gpsd-dev] recent PPS">mlichvar at redhat.com
+       </A><BR>
+    <I>Fri Nov 20 13:08:41 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007114.html">[Gpsd-dev] recent PPS
+</A></li>
+        <LI>Next message: <A HREF="007123.html">[Gpsd-dev] recent PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7117">[ date ]</a>
+              <a href="thread.html#7117">[ thread ]</a>
+              <a href="subject.html#7117">[ subject ]</a>
+              <a href="author.html#7117">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Thu, Nov 19, 2009 at 12:01:52PM -0800, Gary E. Miller wrote:
+&gt;<i> &gt; Depends on how long does the slewing take. If it is long enough, the
+</I>&gt;<i> &gt; PPS source will disappear and chrony will have to temporarily switch
+</I>&gt;<i> &gt; to another (possibly much worse) source.
+</I>&gt;<i> 
+</I>&gt;<i> Cleary we are not gonna agree, how about you check out the git chrony,
+</I>&gt;<i> run some tests, and show me some real data.
+</I>
+Here is a log when chrony is slewing (SHM1 is PPS, SHM0 NMEA):
+
+sources.c:687:(SRC_SelectSource)[20-09:33:54] Selected source SHM1
+reference.c:284:(maybe_log_offset)[20-09:33:54] System clock wrong by 20.000367 seconds, adjustment started
+sources.c:687:(SRC_SelectSource)[20-09:34:39] Selected source SHM0
+sources.c:687:(SRC_SelectSource)[20-09:38:19] Selected source SHM1
+
+After few minutes:
+
+$ chronyc sourcestats
+210 Number of sources = 2
+Name/IP Address            NP  NR  Span  Frequency   Freq Skew   Std Dev
+========================================================================
+SHM0                       22  11   336     -85.727     208.840    25ms
+SHM1                       11   9    40      -0.001       0.094     1us
+
+&gt;<i> &gt; Yes, but if the clock is running 10% faster because chrony is fast
+</I>&gt;<i> &gt; slewing, the measured interval between pulses will be 10% longer.
+</I>&gt;<i> 
+</I>&gt;<i> Yah, I missed that, but if the clock is slewing that fast then the NMEA
+</I>&gt;<i> time stamp is more than accurate enough for the short term.  
+</I>
+NMEA from my GPS 18x LVC has about 10000 times worse jitter than PPS.
+Why switch to NMEA when PPS can still provide perfectly good timing?
+
+&gt;<i> So i do not
+</I>&gt;<i> see a problem that needs fixing.  Feel free to run some tests and send
+</I>&gt;<i> me the results if you have a patch that you can see (not just think)
+</I>&gt;<i> makes a difference.
+</I>
+Ok, how about increasing the tolerances to 10 percent and adding a
+check that the previous cycle doesn't differ by more than 1000 ppm?
+
+Chrony won't get the pulses when slewing starts or ends, but will be
+able to track time during slewing perfectly. And noise filtering will
+be as good as before.
+
+Attached is the patch and a log from patched gpsd while chrony is
+slewing 1 second. Getting offset down from one second to few
+microseconds in three minutes is nice.
+
+-- 
+Miroslav Lichvar
+-------------- next part --------------
+Index: libgpsd_core.c
+===================================================================
+--- libgpsd_core.c	(revision 6570)
++++ libgpsd_core.c	(working copy)
+@@ -120,7 +120,7 @@
+ static /*@null@*/void *gpsd_ppsmonitor(void *arg)
+ {
+     struct gps_device_t *session = (struct gps_device_t *)arg;
+-    int cycle,duration, state = 0, laststate = -1, unchanged = 0;
++    int cycle,duration, lastcycle = 0, state = 0, laststate = -1, unchanged = 0;
+     struct timeval tv;
+     struct timeval pulse[2] = {{0,0},{0,0}};
+ 
+@@ -215,21 +215,21 @@
+ 	     *
+ 	     */
+ 
+-	    if (199000 &gt; cycle) {
++	    if (180000 &gt; cycle) {
+ 		// too short to even be a 5Hz pulse
+ 		log = &quot;Too short for 5Hz\n&quot;;
+-	    } else if (201000 &gt; cycle) {
++	    } else if (220000 &gt; cycle) {
+ 		/* 5Hz cycle */
+ 		/* looks like 5hz PPS pulse */
+-		if (100000 &gt; duration) {
++		if (110000 &gt; duration) {
+ 		    /* BUG: how does the code know to tell ntpd
+ 		     * which 1/5 of a second to use?? */
+ 		    ok = 1;
+ 		    log = &quot;5Hz PPS pulse\n&quot;;
+ 		}
+-	    } else if (999000 &gt; cycle) {
++	    } else if (900000 &gt; cycle) {
+ 		    log = &quot;Too long for 5Hz, too short for 1Hz\n&quot;;
+-	    } else if (1001000 &gt; cycle) {
++	    } else if (1100000 &gt; cycle) {
+ 		/* looks like PPS pulse or square wave */
+ 
+ #if 0
+@@ -242,11 +242,11 @@
+ 		if (0 == duration) {
+ 		    ok = 1;
+ 		    log = &quot;PPS invisible pulse\n&quot;;
+-		} else if (499000 &gt; duration) {
++		} else if (450000 &gt; duration) {
+ 		    /* end of the short &quot;half&quot; of the cycle */
+ 		    /* aka the trailing edge */
+ 		    log = &quot;PPS 1Hz trailing edge\n&quot;;
+-		} else if (501000 &gt; duration) {
++		} else if (550000 &gt; duration) {
+ 		    /* looks like 1.0 Hz square wave, ignore trailing edge */
+ 		    if (state == 1) {
+ 			ok = 1;
+@@ -258,15 +258,24 @@
+ 		    ok = 1;
+ 		    log = &quot;PPS 1Hz leading edge\n&quot;;
+ 		}
+-	    } else if (1999000 &gt; cycle) {
++	    } else if (1800000 &gt; cycle) {
+ 		log = &quot;Too long for 1Hz, too short for 2Hz\n&quot;;
+-	    } else if (2001000 &gt; cycle) {
++	    } else if (2200000 &gt; cycle) {
+ 		/* looks like 0.5 Hz square wave */
+ 		ok = 1;
+ 		log = &quot;PPS square wave\n&quot;;
+ 	    } else {
+ 		log = &quot;Too long for 2Hz\n&quot;;
+ 	    }
++	    
++	    if (0 != ok) {
++		if ((lastcycle - cycle) &gt; cycle / 1000 ||
++		    (cycle - lastcycle) &gt; cycle / 1000) {
++		    ok = 0;
++		    log = &quot;PPS signal too noisy\n&quot;;
++		}
++		lastcycle = cycle;
++	    }
+ 	} else {
+ 	    /* not a good fix, but a test for an otherwise good PPS
+ 	     * would go here */
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: gpsd-chronyslew.log.gz
+Type: application/x-gzip
+Size: 4136 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091120/c473288a/attachment.bin">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091120/c473288a/attachment.bin</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007114.html">[Gpsd-dev] recent PPS
+</A></li>
+	<LI>Next message: <A HREF="007123.html">[Gpsd-dev] recent PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7117">[ date ]</a>
+              <a href="thread.html#7117">[ thread ]</a>
+              <a href="subject.html#7117">[ subject ]</a>
+              <a href="author.html#7117">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

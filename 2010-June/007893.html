@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] regression status
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20regression%20status&In-Reply-To=%3C20100610183535.GA10739%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007890.html">
+   <LINK REL="Next"  HREF="007894.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] regression status</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20regression%20status&In-Reply-To=%3C20100610183535.GA10739%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] regression status">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Jun 10 20:35:35 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007890.html">[Gpsd-dev] regression status
+</A></li>
+        <LI>Next message: <A HREF="007894.html">[Gpsd-dev] regression status
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7893">[ date ]</a>
+              <a href="thread.html#7893">[ thread ]</a>
+              <a href="subject.html#7893">[ subject ]</a>
+              <a href="author.html#7893">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;:
+&gt;<i> so I was confused about sub-second timing, sorry - I assumed that time()
+</I>&gt;<i> would act like time(3) just like it has since Sixth Edition.
+</I>
+Ah yes.  The hardware-option variability of float on the PDP-11 did
+some odd things to the Unix API and we're still living with the
+consequences.  I think internally Python time.time() is actually
+implemented with gettimeofday(), which was a later BSD invention now
+standardized.
+
+The Python call is time(3) as it should have been rather than as it
+actually was.  Guido also changed ctime(3) not to have a \n on the
+end, another case of fixing the core Unix API that can trip you up if
+you're not aware of the incompatibility.
+ 
+&gt;<i> My comment about how synchronization works in terms of the input to gpsd
+</I>&gt;<i> ending and when one expects output still stands.  I could search for the
+</I>&gt;<i> magic value, but really we want either a sound synchronization scheme
+</I>&gt;<i> with no arbitrary delays or a time that is long enough for any
+</I>&gt;<i> reasonable system.
+</I>
+You're right, of course.  The problem stems from the way gpsfake operates.
+
+First, it starts up a slave gpsd.
+
+It puts an object representing the fake GPS (and containing the test
+load) in a list of writers, associates it with a pty, then ships the
+slave gpsd a message telling it to listen to that pty.  In our
+regression tests there's only ever one fake GPS, and thus one sentence
+source on the writers list, but there could be more.
+
+Then it starts the test loop.  Each go-round through the loop steps to
+the (single) source in the writers list and checks to see if it has run
+to the end of its test load.
+
+If so, the (single) source is marked for removal from the writers list.
+If not, a sentence from the test load is shipped to gpsd over the pty.
+
+CLOSE_DELAY seconds after the sentence source is marked for removal, it
+is removed from the writers list.
+
+At the end of each iteration of the test loop, if the writers
+is empty the loop terminates and the gpsd instance is killed.
+
+The problem we're seeing arises when the test loop terminates before 
+ths slave gpsd has shipped the report on its last input sentence. This can
+happen if we get the following sequence of events:
+
+1. gpsfake ships the last test sentence
+2. CLOSE_DELAY goes by
+3. gpsd is killed *before having shipped the report on the last sentence*. 
+
+It used to be this could happen because a single read crammed multiple packets 
+into the input buffer and gpsd only popped them off and reported them one
+at a time.  That's fixed now, so this has t  be a pure racve condition in the
+processing of single packets.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 190 bytes
+Desc: Digital signature
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100610/53927f09/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100610/53927f09/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007890.html">[Gpsd-dev] regression status
+</A></li>
+	<LI>Next message: <A HREF="007894.html">[Gpsd-dev] regression status
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7893">[ date ]</a>
+              <a href="thread.html#7893">[ thread ]</a>
+              <a href="subject.html#7893">[ subject ]</a>
+              <a href="author.html#7893">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

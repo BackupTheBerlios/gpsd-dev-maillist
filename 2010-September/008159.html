@@ -1,0 +1,84 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd hangs with tcp:// device
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20hangs%20with%20tcp%3A//%20device&In-Reply-To=%3C20100915140107.GA23993%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008158.html">
+   <LINK REL="Next"  HREF="008160.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd hangs with tcp:// device</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20hangs%20with%20tcp%3A//%20device&In-Reply-To=%3C20100915140107.GA23993%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] gpsd hangs with tcp:// device">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Sep 15 16:01:08 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008158.html">[Gpsd-dev] linux pps support / NTPSHM update?
+</A></li>
+        <LI>Next message: <A HREF="008160.html">[Gpsd-dev] regression test status - ac12_binary not ok
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8159">[ date ]</a>
+              <a href="thread.html#8159">[ thread ]</a>
+              <a href="subject.html#8159">[ subject ]</a>
+              <a href="author.html#8159">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Christian Eddie Dost &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">ecd at brainaid.de</A>&gt;:
+&gt;<i> I just started playing with gpsd, great work!
+</I>&gt;<i> 
+</I>&gt;<i> However, gpsd hangs when used with a <A HREF="tcp://">tcp://</A> device, if you start the
+</I>&gt;<i> device without waiting for clients (-n option), there will never be
+</I>&gt;<i> a client connection accepted. If you start gpsd without -n option
+</I>&gt;<i> one client will be accepted and receive data, but when closing the
+</I>&gt;<i> client connection there will be no new connection possible.
+</I>&gt;<i> 
+</I>&gt;<i> The problem is gpsd hangs inside consume_packets() or more exactly
+</I>&gt;<i> inside a blocking read() on the tcp socket a few functions further
+</I>&gt;<i> down. consume_packets() never returns to the main select() loop.
+</I>&gt;<i> 
+</I>&gt;<i> The following patch configures sockets to non blocking, this fixes
+</I>&gt;<i> the problem and gpsd works fine for me with <A HREF="tcp://">tcp://</A> devices. Using
+</I>&gt;<i> this patch should allow the special udp handling at the end of the
+</I>&gt;<i> function consume_packets() to be removed.
+</I>
+Thanks.  I was able to verify that this patch works, and that the special UDP
+logic can in fact be removed.  This is a good code cleanup, as well as
+a bug fix,
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008158.html">[Gpsd-dev] linux pps support / NTPSHM update?
+</A></li>
+	<LI>Next message: <A HREF="008160.html">[Gpsd-dev] regression test status - ac12_binary not ok
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8159">[ date ]</a>
+              <a href="thread.html#8159">[ thread ]</a>
+              <a href="subject.html#8159">[ subject ]</a>
+              <a href="author.html#8159">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

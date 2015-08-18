@@ -1,0 +1,131 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH 2/2] Fix the build without xsltproc and xmlto in scons.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%202/2%5D%20Fix%20the%20build%20without%20xsltproc%20and%20xmlto%0A%20in%20scons.&In-Reply-To=%3C4D99B13B.3000006%40ewanet.ch%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009211.html">
+   <LINK REL="Next"  HREF="009225.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH 2/2] Fix the build without xsltproc and xmlto in scons.</H1>
+    <B>Beat Bolli</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%202/2%5D%20Fix%20the%20build%20without%20xsltproc%20and%20xmlto%0A%20in%20scons.&In-Reply-To=%3C4D99B13B.3000006%40ewanet.ch%3E"
+       TITLE="[Gpsd-dev] [PATCH 2/2] Fix the build without xsltproc and xmlto in scons.">bbolli at ewanet.ch
+       </A><BR>
+    <I>Mon Apr  4 13:53:31 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009211.html">[Gpsd-dev] [PATCH 2/2] Fix the build without xsltproc and xmlto in scons.
+</A></li>
+        <LI>Next message: <A HREF="009225.html">[Gpsd-dev] [PATCH 2/2] Fix the build without xsltproc and xmlto in scons.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9215">[ date ]</a>
+              <a href="thread.html#9215">[ thread ]</a>
+              <a href="subject.html#9215">[ subject ]</a>
+              <a href="author.html#9215">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE> SConstruct |   30 ++++++++++++++++--------------
+ 1 files changed, 16 insertions(+), 14 deletions(-)
+
+diff --git a/SConstruct b/SConstruct
+index 10d7c52..5125707 100644
+--- a/SConstruct
++++ b/SConstruct
+@@ -291,6 +291,7 @@ size_t strlcpy(/*@out@*/char *dst, /*@in@*/const
+char *src, size_t size);
+ with open(&quot;gpsd_config.h&quot;, &quot;w&quot;) as ofp:
+     ofp.writelines(confdefs)
+
++manbuilder = None
+ if WhereIs(&quot;xsltproc&quot;):
+     docbook_url_stem =
+'<A HREF="http://docbook.sourceforge.net/release/xsl/current/">http://docbook.sourceforge.net/release/xsl/current/</A>'
+     docbook_man_uri = docbook_url_stem + 'manpages/docbook.xsl'
+@@ -304,16 +305,16 @@ if WhereIs(&quot;xsltproc&quot;):
+         build = &quot;xsltproc --nonet %s $SOURCE&quot;
+         htmlbuilder = build % docbook_html_uri
+         manbuilder = build % docbook_man_uri
+-    elif WhereIs(&quot;xmlto&quot;):
+-        print &quot;xmlto is available&quot;
+-        htmlbuilder = &quot;xmlto html-nochunks $SOURCE&quot;
+-        manbuilder = &quot;xmlto man $SOURCE&quot;
+-    else:
+-        print &quot;Neither xsltproc nor xmlto found, documentation cannot
+be built.&quot;
+-        sys.exit(0)
+-env['BUILDERS'][&quot;Man&quot;] = Builder(action=manbuilder)
+-env['BUILDERS'][&quot;HTML&quot;] = Builder(action=htmlbuilder,
+-                                  src_suffix=&quot;.xml&quot;, suffix=&quot;.html&quot;)
++elif WhereIs(&quot;xmlto&quot;):
++    print &quot;xmlto is available&quot;
++    htmlbuilder = &quot;xmlto html-nochunks $SOURCE&quot;
++    manbuilder = &quot;xmlto man $SOURCE&quot;
++else:
++    print &quot;Neither xsltproc nor xmlto found, documentation cannot be
+built.&quot;
++if manbuilder is not None:
++    env['BUILDERS'][&quot;Man&quot;] = Builder(action=manbuilder)
++    env['BUILDERS'][&quot;HTML&quot;] = Builder(action=htmlbuilder,
++                                      src_suffix=&quot;.xml&quot;, suffix=&quot;.html&quot;)
+
+ # Gentoo systems can have a problem with the Python path
+ if os.path.exists(&quot;/etc/gentoo-release&quot;):
+@@ -545,10 +546,11 @@ python_manpages = {
+     &quot;xgps.1&quot; : &quot;gps.xml&quot;,
+     }
+
+-manpage_targets = []
+-for (man, xml) in base_manpages.items():
+-    manpage_targets.append(env.Man(source=xml, target=man))
+-env.Default(*manpage_targets)
++if manbuilder is not None:
++    manpage_targets = []
++    for (man, xml) in base_manpages.items():
++        manpage_targets.append(env.Man(source=xml, target=man))
++    env.Default(*manpage_targets)
+
+ # Utility productions
+
+-- 
+mail: echo '&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">bNbolOli at ewaSPnetAM.ch</A>&gt;' | tr -d '[A-S]'
+pgp: 0x506A903A; 49D5 794A EA77 F907 764F  D89E 304B 93CF 506A 903A
+gsm: 4.7.7.6.0.7.7.9.7.1.4.e164.arpa
+icbm: 47.0452 N, 7.2715 E
+http: www.drbeat.li
+
+&quot;It takes love over gold, and mind over matter&quot; -- Dire Straits
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009211.html">[Gpsd-dev] [PATCH 2/2] Fix the build without xsltproc and xmlto in scons.
+</A></li>
+	<LI>Next message: <A HREF="009225.html">[Gpsd-dev] [PATCH 2/2] Fix the build without xsltproc and xmlto in scons.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9215">[ date ]</a>
+              <a href="thread.html#9215">[ thread ]</a>
+              <a href="subject.html#9215">[ subject ]</a>
+              <a href="author.html#9215">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

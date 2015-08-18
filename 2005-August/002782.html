@@ -1,0 +1,255 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] PPS
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS&In-Reply-To=%3C19353.213.84.187.156.1123181637.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002771.html">
+   <LINK REL="Next"  HREF="002783.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] PPS</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS&In-Reply-To=%3C19353.213.84.187.156.1123181637.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] PPS">gpsd at xs4all.nl
+       </A><BR>
+    <I>Thu Aug  4 20:53:57 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002771.html">[Gpsd-dev] PPS
+</A></li>
+        <LI>Next message: <A HREF="002783.html">[Gpsd-dev] PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2782">[ date ]</a>
+              <a href="thread.html#2782">[ thread ]</a>
+              <a href="subject.html#2782">[ subject ]</a>
+              <a href="author.html#2782">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;&gt;<i> The precision is set for message-based time.  In my experience this
+</I>&gt;&gt;<i> is bad.  Precision is not better than the order of .5 second for
+</I>&gt;&gt;<i> message-based time, it should only be set for PPS time where we have
+</I>&gt;&gt;<i> more
+</I>&gt;&gt;<i> assurance of accuracy.
+</I>&gt;<i>
+</I>&gt;<i> I can see both sides to this.  On my serial GPS the 400mS offset is not
+</I>&gt;<i> so good, just enough to get the right second for the PPS.  However, on
+</I>&gt;<i> my native USB GPS, the offset is only 35mS and the long term accuracy is
+</I>&gt;<i> about +/- 10mS.
+</I>
+Sometimes the precision can be good, but in my experience it is often
+wobbly and wanders around over at least 250ms on most receivers.
+This does not warrant a precision of better than .5 second even when short
+time jitter is low.
+
+
+&gt;<i> I am trying to tweak the precision so that my ntpd makes better
+</I>&gt;<i> decisions.  For some reason it still prefers a network based time to the
+</I>&gt;<i> local GPS time even thought the accuracy and jitter of the local time is
+</I>&gt;<i> 3x better.  Somewhere around 4x ntp will start to prefer the local time.
+</I>&gt;<i> I suspect the precision is involved.
+</I>
+This is a losing battle.  I have 3 GPS receivers connected, one using PPS
+and the other 3 message-based time, plus a DCF receiver (longwave), two
+Internet timesources and a time peer at work that is also locked to DCF.
+And *still* I see NTP make unwise decisions.
+
+About 15 minutes ago I had this state:
+     remote           refid      st t when poll reach   delay   offset 
+jitter
+==============================================================================
+ LOCAL(0)        LOCAL(0)        10 l    9   64  377    0.000    0.000  
+0.004
+xGENERIC(0)      .DCFa.           0 l   42   64  377    0.000    0.255  
+0.221
+xSHM(0)          .GPS0.           0 l    9   64  377    0.000   70.031  
+1.744
+*SHM(1)          .GPS1.           0 l    -   16  377    0.000   -0.007  
+0.004
+xSHM(2)          .GPS2.           0 l   14   64  377    0.000   32.911 
+26.108
+xSHM(3)          .GPS3.           0 l    6   64  377    0.000  -101.44 
+98.381
+ internet.uw     172.31.32.241    2 u  635 1024  276   28.091   -4.680  
+3.334
+xauth1.xs4all.nl 131.188.3.220    2 u   29   64  377    8.186    1.498  
+0.443
+xe.uribl.com     193.67.79.202    2 u   42   64  377   10.348    2.139  
+0.201
+
+SHM(1) is the PPS clock, and the system is tightly locked to it.  All
+other sources are marked falseticker, even when they are off by as little
+as 0.25ms.
+
+And now it suddenly has decided to go to:
+     remote           refid      st t when poll reach   delay   offset 
+jitter
+==============================================================================
+*LOCAL(0)        LOCAL(0)        10 l    3   64  377    0.000    0.000  
+0.004
+ GENERIC(0)      .DCFa.           0 l   45   64  377    0.000    0.110
+2643.37
+xSHM(0)          .GPS0.           0 l    6   64  377    0.000   69.465  
+0.416
+xSHM(1)          .GPS1.           0 l    8   16  377    0.000   -0.021  
+0.004
+xSHM(2)          .GPS2.           0 l   19   64  377    0.000   28.430  
+4.602
+xSHM(3)          .GPS3.           0 l    4   64  377    0.000  -38.202 
+25.573
+ internet.uw     172.31.32.241    2 u  965 1024  176   17.958    0.729  
+5.409
+xauth1.xs4all.nl 193.67.79.202    2 u   90  128  377    8.246    1.586  
+0.760
+xe.uribl.com     193.67.79.202    2 u   99  128  377   10.526    2.426  
+0.188
+
+The ntp log says:
+ 4 Aug 20:29:00 ntpd[6126]: synchronized to LOCAL(0), stratum 10
+ 4 Aug 20:30:49 ntpd[6126]: synchronized to SHM(1), stratum 0
+ 4 Aug 20:33:59 ntpd[6126]: synchronized to LOCAL(0), stratum 10
+ 4 Aug 20:35:02 ntpd[6126]: synchronized to SHM(1), stratum 0
+ 4 Aug 20:36:08 ntpd[6126]: synchronized to LOCAL(0), stratum 10
+ 4 Aug 20:36:30 ntpd[6126]: synchronized to SHM(1), stratum 0
+
+I really don't understand why it suddenly locks to LOCAL with so many good
+sources available...   This happens once every few hours, and then it
+remains quiet again and locked to SHM(1).
+I can only guess it is somehow caused by a misdecode on the DCF receiver
+(see the high jitter figure there) which seems to upset the decision
+algorithm even when the DCF source was already marked a falseticker before
+that.
+
+I don't think you can convince ntpd to lock to a source by telling it is
+high precision.  When locked to PPS we have something like -16 on SHM(1),
+the other SHMs are at -1, DCF is at -6 or so and still it flips away.
+
+After I typed the above paragraph it has again stabilized:
+     remote           refid      st t when poll reach   delay   offset 
+jitter
+==============================================================================
+ LOCAL(0)        LOCAL(0)        10 l   20   64  377    0.000    0.000  
+0.004
++GENERIC(0)      .DCFa.           0 l    -   64  377    0.000    0.333  
+0.143
+xSHM(0)          .GPS0.           0 l   22   64  377    0.000   69.152  
+0.373
+*SHM(1)          .GPS1.           0 l    7   16  377    0.000    0.020  
+0.059
+xSHM(2)          .GPS2.           0 l   32   64  377    0.000   12.637 
+18.852
+xSHM(3)          .GPS3.           0 l   20   64  377    0.000  -37.543 
+14.044
+ internet.uw     172.31.32.241    2 u  340 1024  376   18.521    0.920  
+0.191
+xauth1.xs4all.nl 193.67.79.202    2 u   40   64  377    8.499    1.686  
+0.718
+xe.uribl.com     193.67.79.202    2 u   48   64  377   10.290    2.370  
+0.146
+
+You can see that the PPS precision is now a bit worse, and DCF is again
+considered a candidate.   It will now again slowly lock to PPS.
+
+
+&gt;&gt;<i> Furthermore, the 400ms capture limit of PPS should not be increased too
+</I>&gt;&gt;<i> much because of the risk of false lock.  If your messages would have
+</I>&gt;&gt;<i> been
+</I>&gt;&gt;<i> 520 ms off the 500 ms limit would mean the PPS would lock you to the
+</I>&gt;&gt;<i> wrong
+</I>&gt;&gt;<i> second.
+</I>&gt;<i>
+</I>&gt;<i> Well, the capture limit is not really a capture limit.  My system clock
+</I>&gt;<i> is already stable to +/-20mS with network and GPS ntp sources.  It is
+</I>&gt;<i> really a capture limit plus a fixed offset.
+</I>&gt;<i>
+</I>&gt;<i> The ntpshm_pps() seems to be comparing the PPS to the raw NMEA time,
+</I>&gt;<i> instead of
+</I>&gt;<i> to a corrected time, or the sytem time, or ntpd time.
+</I>
+The reason I do this, is that a system with only gpsd as a reference might
+lock one-second-off when we would take the capture range relative to the
+system clock.  It would first lock to the GPS, drifting towards the time
+decoded from the messages, and when the time crosses a PPS pulse close to
+correct time it would lock on to that, even when it is wrong.
+When ntpd has no other references (like Internet) it has no way of knowing
+about the problem and it will remain locked at the wrong time.
+
+With the current code it at least will not lock at all.
+
+&gt;&gt;<i> This is the proper way to compensate for your 420ms offset, not
+</I>&gt;&gt;<i> increasing
+</I>&gt;&gt;<i> the capture range.
+</I>&gt;<i>
+</I>&gt;<i> Apples and Oranges.  I had to do BOTH.  The fudge time is used by the
+</I>&gt;<i> ntpd program, NOT by gpsd.  So with just the fudge, and not the 2nd
+</I>&gt;<i> change, the PPS signal is in exactly the right place, but ntpshm_pps
+</I>&gt;<i> still thinks it is 420mS off.
+</I>
+You are right, I applied the method of compensating for small errors (like
+100 ms) to your case, which is incorrect because of the abovementioned
+logic.
+
+The way to fix this is to add a fixed offset to the ntpshm_put value.
+Right now, the code is full of empirically determined fixed offsets that
+worked well because each protocol normally has only few implementations,
+and  so a fixed offset will compensate for the delays particular to that
+protocol.
+
+But you use NMEA and there exist so many NMEA receivers that the fixed
+0.675 second offset determined for one receiver is off by .42 seconds for
+your receiver!
+I think wat we need, at least in the case of NMEA, is some configuration
+method to determine the value of this offset.
+E.g., a lookup table inside the program.
+(simpler would be a commandline option, but Eric would never allow that)
+
+&gt;&gt;<i> What message protocol are you running?
+</I>&gt;<i>
+</I>&gt;<i> NMEA 2.0 over serial.  Not sure is 2.3 would do this better since the
+</I>&gt;<i> messages are longer.
+</I>
+For reliable timekeeping you better avoid NMEA.
+Doesn't this receiver support some binary protocol?
+
+
+&gt;&gt;<i> Is there already a fixed offset in the code?
+</I>&gt;<i>
+</I>&gt;<i> Nope.  ntpshm_pps() just looks at the raw offset between NMEA and PPS
+</I>&gt;<i> time.
+</I>
+What I meant is the fixed offset when calling ntpshm_put, as described above.
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002771.html">[Gpsd-dev] PPS
+</A></li>
+	<LI>Next message: <A HREF="002783.html">[Gpsd-dev] PPS
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2782">[ date ]</a>
+              <a href="thread.html#2782">[ thread ]</a>
+              <a href="subject.html#2782">[ subject ]</a>
+              <a href="author.html#2782">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

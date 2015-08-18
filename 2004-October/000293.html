@@ -1,0 +1,176 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Magellan GPS (4000 XL) support
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Magellan%20GPS%20%284000%20XL%29%20support&In-Reply-To=%3C416CD35E.4010701%40futurewest.ca%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000294.html">
+   <LINK REL="Next"  HREF="000295.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Magellan GPS (4000 XL) support</H1>
+    <B>Daniel Tarbuck</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Magellan%20GPS%20%284000%20XL%29%20support&In-Reply-To=%3C416CD35E.4010701%40futurewest.ca%3E"
+       TITLE="[Gpsd-dev] Magellan GPS (4000 XL) support">junk at futurewest.ca
+       </A><BR>
+    <I>Wed Oct 13 09:03:58 CEST 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000294.html">[Gpsd-dev] gpsd: low-level data?
+</A></li>
+        <LI>Next message: <A HREF="000295.html">[Gpsd-dev] Fw: [Pkg-grass-general] Re: GPS + GIS software for Debian
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#293">[ date ]</a>
+              <a href="thread.html#293">[ thread ]</a>
+              <a href="subject.html#293">[ subject ]</a>
+              <a href="author.html#293">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hello all,
+
+I was just playing around with my Magellan GPS 4000 XL and it looks like 
+it's version
+of NMEA 0183 is not properly supported (only time is read properly). It 
+appears to be a
+slightly older version (missing a few columns from the right). It has 
+three settings (0813A,
+0183B and 0183C) and uses different sentences in each. It seems (from 
+the docs), that the
+differences from the standard protocol are very minor and it should be 
+relatively easy to add
+support (see samples below).
+
+I suppose I could do it myself, but I'm hoping that someone familiar 
+with the code will say
+&quot;Hey, that's simple now that I know the differences&quot; and do it for me.
+
+Also, I was able to build on my mac (pb-Al, G4, OSX 10.3.5) with only a 
+little trouble:
+libgpsd_core.c -&gt; add #include &lt;stdlib.h&gt;
+gpsd.c -&gt; add #include &lt;tcpd.h&gt;
+
+The autogen.sh borked on automake version 1.6.3 and libtool, but 
+./configure --mandir=/usr/share/man
+provided sensible values.
+
+
+Here is some sample data (## prevents you from coming to my door to say 
+hi :):
+
+0183A:
+gpsd: launching (Version 2.1)
+gpsd: listening on port gpsd
+gpsd: Selecting Generic NMEA driver...
+gpsd: opening GPS data source at /dev/tty.USB Serial
+gpsd: setting speed 19200, 8 bits, no parity
+gpsd: gpsd_activate: opened GPS (5)
+gpsd: &lt;= GPS: ???6?????T__t?????T?_?&lt;= GPS: $GPGLL,4915.##,N,12307.##,W
+gpsd: &lt;= GPS: $GPVTG,000.,T,000.,M,00.0,N,00.0,K
+gpsd: &lt;= GPS: $GPGLL,4915.##,N,12307.##,W
+gpsd: &lt;= GPS: $GPVTG,000.,T,000.,M,00.0,N,00.0,K
+gpsd: &lt;= GPS: $GPGLL,4915.##,N,12307.##,W
+gpsd: &lt;= GPS: $GPVTG,000.,T,000.,M,00.0,N,00.0,K
+^Cgpsd: closed GPS
+
+0183B:
+gpsd -s 19200 -n -p /dev/tty.USB\ Serial -D 3
+gpsd: launching (Version 2.1)
+gpsd: listening on port gpsd
+gpsd: Selecting Generic NMEA driver...
+gpsd: opening GPS data source at /dev/tty.USB Serial
+gpsd: setting speed 19200, 8 bits, no parity
+gpsd: gpsd_activate: opened GPS (5)
+gpsd: &lt;= GPS: 
+TA?Y??p?$GPRMC,062932,A,4915.##,N,12307.##,W,00.0,000.0,131004,21.,E*58
+gpsd: unknown exception: 
+&quot;TA?Y??p?$GPRMC,062932,A,4915.##,N,12307.##,W,00.0,000.0,131004,21.,E*58&quot;
+gpsd: &lt;= GPS: 
+$GPRMC,062934,A,4915.##,N,12307.##,W,00.0,000.0,131004,21.,E*5E
+gpsd: &lt;= GPS: 
+$GPRMC,062936,A,4915.##,N,12307.##,W,00.0,000.0,131004,21.,E*5C
+gpsd: &lt;= GPS: 
+$GPRMC,062938,A,4915.##,N,12307.##,W,00.0,000.0,131004,21.,E*52
+gpsd: &lt;= GPS: 
+$GPRMC,062940,A,4915.##,N,12307.##,W,00.0,000.0,131004,21.,E*5D
+^Cgpsd: closed GPS
+
+0183C:
+gpsd -s 19200 -n -p /dev/tty.USB\ Serial -D 3
+gpsd: launching (Version 2.1)
+gpsd: listening on port gpsd
+gpsd: Selecting Generic NMEA driver...
+gpsd: opening GPS data source at /dev/tty.USB Serial
+gpsd: setting speed 19200, 8 bits, no paritygpsd: gpsd_activate: opened 
+GPS (5)
+gpsd: &lt;= GPS: 
+?V???PV?T?TW??K&#759;K??.??A???V5w?I?RI??6$GPGLL,4915.###,N,12307.###,W,063132.438,A
+gpsd: unknown exception: 
+&quot;?V???PV?T?TW??K&#759;K??.??A???V5w?I?RI??6$GPGLL,4915.###,N,12307.###,W,063132.438,A&quot;
+gpsd: &lt;= GPS: $GPGGA,063132.44,4915.##,N,12307.##,W,1,07,2.6,00014,M,,,,
+gpsd: &lt;= GPS: $GPVTG,0.0,T,338.8,M,0.0,N,0.0,K
+gpsd: &lt;= GPS: $GPGLL,4915.###,N,12307.###,W,063134.844,A
+gpsd: &lt;= GPS: $GPGGA,063134.84,4915.##,N,12307.##,W,1,07,2.7,00014,M,,,,
+gpsd: &lt;= GPS: $GPVTG,0.0,T,338.8,M,0.0,N,0.0,K
+gpsd: &lt;= GPS: $GPGLL,4915.###,N,12307.###,W,063136.390,A
+gpsd: &lt;= GPS: $GPGGA,063136.39,4915.##,N,12307.##,W,1,07,2.2,00014,M,,,,
+gpsd: &lt;= GPS: $GPVTG,0.0,T,338.8,M,0.0,N,0.0,K
+^Cgpsd: closed GPS
+gpsd: Received signal 2. Exiting...
+
+setting watch mode on a client gives this:
+0183A:
+GPSD,P=?,D=2004-10-13T06:37:24Z
+GPSD,T=?,V=?
+GPSD,P=?,D=2004-10-13T06:37:24Z
+GPSD,T=?,V=?
+GPSD,P=?,D=2004-10-13T06:37:24Z
+
+
+0183B;
+GPSD,P=?,D=2004-10-13T06:36:36Z,T=?,V=?,S=0
+GPSD,P=?,D=2004-10-13T06:36:38Z,T=?,V=?,S=0
+GPSD,P=?,D=2004-10-13T06:36:40Z,T=?,V=?,S=0
+
+
+0183C:
+GPSD,P=?,D=?
+GPSD,P=?,D=?,A=?,S=0
+GPSD,T=?,V=?
+GPSD,P=?,D=?
+GPSD,P=?,D=?,A=?,S=0
+
+The GPS is actually hooked up through a Belkin USB serial dongle (hence 
+/dev/tty.USB serial).
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000294.html">[Gpsd-dev] gpsd: low-level data?
+</A></li>
+	<LI>Next message: <A HREF="000295.html">[Gpsd-dev] Fw: [Pkg-grass-general] Re: GPS + GIS software for Debian
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#293">[ date ]</a>
+              <a href="thread.html#293">[ thread ]</a>
+              <a href="subject.html#293">[ subject ]</a>
+              <a href="author.html#293">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

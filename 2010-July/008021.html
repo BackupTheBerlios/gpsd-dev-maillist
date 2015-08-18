@@ -1,0 +1,183 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] fix configure test for libusb
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20fix%20configure%20test%20for%20libusb&In-Reply-To=%3C4C327D12.1010008%40gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008017.html">
+   <LINK REL="Next"  HREF="008025.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] fix configure test for libusb</H1>
+    <B>Graham Gower</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20fix%20configure%20test%20for%20libusb&In-Reply-To=%3C4C327D12.1010008%40gmail.com%3E"
+       TITLE="[Gpsd-dev] [PATCH] fix configure test for libusb">graham.gower at gmail.com
+       </A><BR>
+    <I>Tue Jul  6 02:47:14 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008017.html">[Gpsd-dev] Re-align RPM Packages
+</A></li>
+        <LI>Next message: <A HREF="008025.html">[Gpsd-dev] [PATCH] fix configure test for libusb
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8021">[ date ]</a>
+              <a href="thread.html#8021">[ thread ]</a>
+              <a href="subject.html#8021">[ subject ]</a>
+              <a href="author.html#8021">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>The configure test for libusb fails on systems where libusb is
+not in /usr/include and /usr/lib (e.g. 64 bit systems have
+/usr/lib64 or e.g. when cross compiling).
+
+Use pkg-config instead.
+
+diff -ru gpsd-2.94-orig/Makefile.am gpsd-2.94/Makefile.am
+--- gpsd-2.94-orig/Makefile.am	2010-04-20 19:07:21.000000000 +0930
++++ gpsd-2.94/Makefile.am	2010-07-06 10:03:02.000000000 +0930
+@@ -42,7 +42,7 @@
+ endif
+ 
+ # Conditional includes.
+-INCLUDES = $(INCUSB)
++INCLUDES = $(LIBUSB_CFLAGS)
+ if HAVE_DBUS
+ INCLUDES += $(DBUS_CFLAGS) $(DBUS_GLIB_CFLAGS) -DDBUS_API_SUBJECT_TO_CHANGE=1
+ endif
+@@ -105,13 +105,13 @@
+ #
+ gpsd_c_sources = gpsd_dbus.c gpsd.c
+ gpsd_SOURCES = $(gpsd_c_sources) gpsd_dbus.h
+-gpsd_LDADD = $(DBUS_LIBS) $(LIBM) libgpsd.la libgps.la -lm $(LIBPTHREAD) $(LIBUSB)
++gpsd_LDADD = $(DBUS_LIBS) $(LIBM) libgpsd.la libgps.la -lm $(LIBPTHREAD) $(LIBUSB_LIBS)
+ 
+ #
+ # Build gpsctl
+ #
+ gpsctl_SOURCES = gpsctl.c
+-gpsctl_LDADD = $(LIBM) libgpsd.la libgps.la -lm $(LIBPTHREAD) $(LIBUSB)
++gpsctl_LDADD = $(LIBM) libgpsd.la libgps.la -lm $(LIBPTHREAD) $(LIBUSB_LIBS)
+ 
+ #
+ # Build gpspipe
+@@ -131,13 +131,13 @@
+ gpsmon_SOURCES = gpsmon.c monitor_nmea.c monitor_sirf.c \
+ 	monitor_italk.c monitor_ubx.c monitor_superstar2.c \
+ 	monitor_oncore.c monitor_tnt.c
+-gpsmon_LDADD = $(LIBM) $(NCURSES_LIBS) libgpsd.la libgps.la -lm $(LIBPTHREAD)  $(LIBUSB)
++gpsmon_LDADD = $(LIBM) $(NCURSES_LIBS) libgpsd.la libgps.la -lm $(LIBPTHREAD)  $(LIBUSB_LIBS)
+ 
+ #
+ # Build gpsdecode
+ #
+ gpsdecode_SOURCES = gpsdecode.c
+-gpsdecode_LDADD = $(LIBM) libgpsd.la libgps.la -lm $(LIBPTHREAD)  $(LIBUSB)
++gpsdecode_LDADD = $(LIBM) libgpsd.la libgps.la -lm $(LIBPTHREAD)  $(LIBUSB_LIBS)
+ 
+ #
+ # Build shared libraries
+@@ -309,20 +309,20 @@
+ # Build test_gpsmm
+ #
+ test_gpsmm_SOURCES = test_gpsmm.cpp
+-test_gpsmm_LDADD = $(LIBC) libgps.la -lm  $(LIBUSB)
++test_gpsmm_LDADD = $(LIBC) libgps.la -lm  $(LIBUSB_LIBS)
+ endif
+ 
+ #
+ # Build test_bits tester
+ #
+ test_bits_SOURCES = test_bits.c
+-test_bits_LDADD = $(LIBC) libgpsd.la libgps.la  $(LIBUSB)
++test_bits_LDADD = $(LIBC) libgpsd.la libgps.la  $(LIBUSB_LIBS)
+ 
+ #
+ # Build packets tester
+ #
+ test_packet_SOURCES = test_packet.c
+-test_packet_LDADD = $(LIBC) libgpsd.la libgps.la -lm  $(LIBUSB)
++test_packet_LDADD = $(LIBC) libgpsd.la libgps.la -lm  $(LIBUSB_LIBS)
+ 
+ #
+ # Build geoid model tester
+@@ -495,7 +495,7 @@
+ 	$(CC) $(CFLAGS) -o libgps -lm -DTESTMAIN $(LIBPTHREAD) -g libgps_core.c .libs/libgps.a
+ 
+ # Report splint warnings
+-SPLINTOPTS = -I/usr/include/dbus-1.0/ $(INCUSB) +quiet
++SPLINTOPTS = -I/usr/include/dbus-1.0/ $(LIBUSB_CFLAGS) +quiet
+ splint: gpsd.h packet_names.h
+ 	@echo &quot;Running splint on daemon and libraries...&quot;
+ 	-splint $(SPLINTOPTS) -exportlocal -redef $(gpsd_c_sources) $(libgpsd_c_sources) $(libgps_c_sources)
+diff -ru gpsd-2.94-orig/configure.ac gpsd-2.94/configure.ac
+--- gpsd-2.94-orig/configure.ac	2010-04-21 03:25:08.000000000 +0930
++++ gpsd-2.94/configure.ac	2010-07-06 10:03:09.000000000 +0930
+@@ -233,30 +233,12 @@
+ 	AC_DEFINE([HAVE_LIBPTHREAD], [], [pthread libraries are present])])
+ AC_SUBST(LIBPTHREAD)
+ 
+-#
+-# We want libusb-1.x or later.  Checking for this is messy in 2010
+-# since many Linux systems ship with .0,1.x versions and that's 
+-# what you get if you check naively for -lusb.  
+-#
+-# We use the fact that the obsolete versions put their include file in
+-# /usr/include/usb.h, while the newer ones have it in 
+-# /usr/include/libusb-*/libusb.h
+-#
+-AC_MSG_CHECKING([for libusb version &gt;= 1.0.0])
+-if test -f /usr/include/libusb-*/libusb.h ;
+-then
+-    usb=$(basename /usr/lib/libusb-*.so | sed -e s/\.so// -e s/^lib//)
+-    AC_DEFINE([HAVE_LIBUSB], [], [will link with -l$usb; ])
+-    LIBUSB=-l${usb}
+-    INCUSB=-I/usr/include/lib${usb}
+-    ac_libusb=yes
+-    AC_MSG_RESULT([found.])
+-else
+-    ac_libusb=yes
+-    AC_MSG_RESULT([not found.])
++PKG_CHECK_MODULES(LIBUSB, libusb-1.0 &gt;= 1.0.0, [ac_libusb=yes], [ac_libusb=no])
++AC_SUBST(LIBUSB_LIBS)
++AC_SUBST(LIBUSB_CFLAGS)
++if test x&quot;$ac_libusb&quot; = x&quot;yes&quot; ; then
++	AC_DEFINE([HAVE_LIBUSB], 1, [libusb support])
+ fi
+-AC_SUBST(LIBUSB)
+-AC_SUBST(INCUSB)
+ 
+ AH_VERBATIM([_GNU_SOURCE],
+ 	  [/* Some libc's don't have strlcat/strlcpy. Local copies are provided */
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008017.html">[Gpsd-dev] Re-align RPM Packages
+</A></li>
+	<LI>Next message: <A HREF="008025.html">[Gpsd-dev] [PATCH] fix configure test for libusb
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8021">[ date ]</a>
+              <a href="thread.html#8021">[ thread ]</a>
+              <a href="subject.html#8021">[ subject ]</a>
+              <a href="author.html#8021">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

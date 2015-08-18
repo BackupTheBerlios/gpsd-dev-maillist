@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] connection problems with Garmin eTrex
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20connection%20problems%20with%20Garmin%20eTrex&In-Reply-To=%3C8741FAE7-82D4-4B3D-8FCC-ED2F546F3C3A%40qwest.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003859.html">
+   <LINK REL="Next"  HREF="003865.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] connection problems with Garmin eTrex</H1>
+    <B>Dan Oetting</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20connection%20problems%20with%20Garmin%20eTrex&In-Reply-To=%3C8741FAE7-82D4-4B3D-8FCC-ED2F546F3C3A%40qwest.net%3E"
+       TITLE="[Gpsd-dev] connection problems with Garmin eTrex">dan_oetting at qwest.net
+       </A><BR>
+    <I>Thu Jun 15 04:08:22 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003859.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+        <LI>Next message: <A HREF="003865.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3862">[ date ]</a>
+              <a href="thread.html#3862">[ thread ]</a>
+              <a href="subject.html#3862">[ subject ]</a>
+              <a href="author.html#3862">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Jun 14, 2006, at 6:19 AM, Eric S. Raymond wrote:
+
+&gt;<i> Marr &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">marr at flex.com</A>&gt;:
+</I>&gt;&gt;<i> Huh? Why 16? Try 96:
+</I>&gt;<i>
+</I>&gt;<i> Sorry, I thinkoed.
+</I>&gt;<i>
+</I>&gt;&gt;<i> (1,000,000 / 4,800) * 10 * 96 = 200,000
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Not too far from 200000, I suppose.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Not too far at all! ;^)
+</I>&gt;<i>
+</I>&gt;<i> Suggests Til might want to try this delay:
+</I>
+
+This whole line of thinking smells of numerology. Just because your  
+formula arrives at a number that happens to match one experimental  
+result doesn't mean that the formula is correct.
+
+To start with, what does the baud rate have to do with the time  
+required to flush the input after a speed change? Assuming that the  
+on-chip buffer is full of garbage at the time the speed is changed it  
+should take all of:
+
+	96 bytes * 11 bits/char / (1.5Mb/s) = 0.704ms
+
+to transfer the data over a slow USB.
+
+
+Then maybe it's not. It could be that the particular USB driver is  
+adding a delay to allow all previously transmitted data to be sent  
+before issuing the change speed command (not that GPSd is sending any  
+data at this time). The use of TCIOFLUSH in the tcflush() command may  
+also insert such a delay because the driver has no way of actually  
+flushing the output buffers in the chip. Trying the experiment with  
+TCIFLUSH may have better results.
+
+-- Dan Oetting
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003859.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+	<LI>Next message: <A HREF="003865.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3862">[ date ]</a>
+              <a href="thread.html#3862">[ thread ]</a>
+              <a href="subject.html#3862">[ subject ]</a>
+              <a href="author.html#3862">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

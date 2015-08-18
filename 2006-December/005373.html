@@ -1,0 +1,97 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] IPv6 Support / RTCM104_SERVICE
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20IPv6%20Support%20/%20RTCM104_SERVICE&In-Reply-To=%3Crmiy7pnr88u.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005372.html">
+   <LINK REL="Next"  HREF="005391.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] IPv6 Support / RTCM104_SERVICE</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20IPv6%20Support%20/%20RTCM104_SERVICE&In-Reply-To=%3Crmiy7pnr88u.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] IPv6 Support / RTCM104_SERVICE">gdt at ir.bbn.com
+       </A><BR>
+    <I>Mon Dec  4 16:28:01 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005372.html">[Gpsd-dev] Ran regress-builder on version 4046, fine
+</A></li>
+        <LI>Next message: <A HREF="005391.html">[Gpsd-dev] IPv6 Support / RTCM104_SERVICE
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5373">[ date ]</a>
+              <a href="thread.html#5373">[ thread ]</a>
+              <a href="subject.html#5373">[ subject ]</a>
+              <a href="author.html#5373">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>  As well as RTCM104_SERVICE where RTCM data from a DGPS device is available 
+  from gpsd on port 2101 from a serial port.  Has anybody tested or worked on 
+  this recently?
+
+  There's a new feature I'd like to see and that's the broadcast and listening 
+  of RTCM data on port 2101 over UDP.  RTCM data is from a serial port or 
+  another gpsd server.
+
+  I have written my own rtcmd which does this, but it does not parse or check 
+  the data.  It just forwards the bytes around to and from serial devices, 
+  stdin/stdout, TCP client server and UDP broadcast/listener.
+
+At BBN we're doing something similar, currently with homegrown code
+and I would like to migrate it in to gpsd.  Our GPS hw is Novatel
+Flexpak dual-frequency receivers with &quot;RT20&quot; corrections being
+generated at one node and sent around to the other 4.  I'm not sure
+this is pure RTCM-104 (it's hex encoded in something that's NMEA
+like), but it might be.
+
+We'll also need to add support for telling the reference station the
+surveyed coordinates, and support for the novatel protocol; we need to
+use a proprietary (but documented) format to get accurate output - the
+RT20 differential corrections claim 20 cm.
+
+Responding to another comment in the thread, local differential is
+much more accurate than WAAS, because the unmodeled ionospheric and
+tropospheric delays are far closer between reference and mobile.
+Plus, on the US east coast, WAAS is very hard to hear in any
+non-trivial terrain (other than airplane, completely open field).
+
+The curious can see our reference station and mobile nodes:
+  <A HREF="http://www.lexort.com/gallery/random-geek">http://www.lexort.com/gallery/random-geek</A>
+
+
+So, it would be helpful to post a design for how all this would work -
+I'd be happy to review it and comment.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005372.html">[Gpsd-dev] Ran regress-builder on version 4046, fine
+</A></li>
+	<LI>Next message: <A HREF="005391.html">[Gpsd-dev] IPv6 Support / RTCM104_SERVICE
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5373">[ date ]</a>
+              <a href="thread.html#5373">[ thread ]</a>
+              <a href="subject.html#5373">[ subject ]</a>
+              <a href="author.html#5373">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

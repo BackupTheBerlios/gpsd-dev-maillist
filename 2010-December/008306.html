@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] PPS serial port support lost... ioctl-related change?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS%20serial%20port%20support%20lost...%20ioctl-related%20change%3F&In-Reply-To=%3C4D0AAAA0.8070706%40radagast.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008304.html">
+   <LINK REL="Next"  HREF="008307.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] PPS serial port support lost... ioctl-related change?</H1>
+    <B>Dave Platt</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS%20serial%20port%20support%20lost...%20ioctl-related%20change%3F&In-Reply-To=%3C4D0AAAA0.8070706%40radagast.org%3E"
+       TITLE="[Gpsd-dev] PPS serial port support lost... ioctl-related change?">dplatt at radagast.org
+       </A><BR>
+    <I>Fri Dec 17 01:11:12 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008304.html">[Gpsd-dev] [PATCH 2/2] A better logging via syslog(3).
+</A></li>
+        <LI>Next message: <A HREF="008307.html">[Gpsd-dev] PPS serial port support lost... ioctl-related change?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8306">[ date ]</a>
+              <a href="thread.html#8306">[ thread ]</a>
+              <a href="subject.html#8306">[ subject ]</a>
+              <a href="author.html#8306">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi, folks.  I've just cloned the git tree for the current
+development version of gpsd, and have been trying to get it
+working... there are some PPS enhancements I'd find it
+helpful to have, and some support for early (6-channel) Oncore
+VP receivers I'd like to contribute.
+
+It's working for me, except that the serial-port PPS
+feature is completely nonfunctional (where 2.92 and 2.95
+release versions both work).  ntpd never sees any data in
+the PPS shared memory areas, and running gpsd with debugging
+turned on shows that PPS events are simply not occurring.
+
+By adding debug printouts I think I've pinned down the cause
+of the problem, to a code change made a couple of days ago
+to libgpsd_core.c:  cf0546b12c91cb0121a4a643e0c4eef8a27e6997
+seems to be the culprit.
+
+This change had the effect of completely eliminating the
+following lines:
+
+#ifdef HAVE_SYS_IOCTL_H
+#include &lt;sys/ioctl.h&gt;
+#endif /* HAVE_SYS_IOCTL_H */
+
+As a result, the TIOCMIWAIT symbol is never defined,
+and all of the code which is conditionally compiled
+based on the presence of this symbol simply doesn't
+get built... the init_kernel_pps and gpsd_ppsmonitor
+functions are gone, and the PPS-monitoring thread is not
+started.
+
+It looks as if the HAVE_SYS_IOCTL_H flag is no longer
+being determined by the configuration script... so just
+putting these three lines back into libgpsd_core.c doesn't
+fix the problem.  Always including &lt;sys/ioctl.h&gt; does fix
+it for me, but I suspect that this might break compatibility
+on some other systems.
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008304.html">[Gpsd-dev] [PATCH 2/2] A better logging via syslog(3).
+</A></li>
+	<LI>Next message: <A HREF="008307.html">[Gpsd-dev] PPS serial port support lost... ioctl-related change?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8306">[ date ]</a>
+              <a href="thread.html#8306">[ thread ]</a>
+              <a href="subject.html#8306">[ subject ]</a>
+              <a href="author.html#8306">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

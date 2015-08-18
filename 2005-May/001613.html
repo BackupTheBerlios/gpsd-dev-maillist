@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Other Strange things...
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Other%20Strange%20things...&In-Reply-To=%3C1115647952.4407.15.camel%40localhost.localdomain%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001606.html">
+   <LINK REL="Next"  HREF="001590.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Other Strange things...</H1>
+    <B>Andreas Brauchli</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Other%20Strange%20things...&In-Reply-To=%3C1115647952.4407.15.camel%40localhost.localdomain%3E"
+       TITLE="[Gpsd-dev] Other Strange things...">a.brauchli at elementarea.net
+       </A><BR>
+    <I>Mon May  9 16:12:32 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001606.html">[Gpsd-dev] Other Strange things...
+</A></li>
+        <LI>Next message: <A HREF="001590.html">[Gpsd-dev] Zodiac driver?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1613">[ date ]</a>
+              <a href="thread.html#1613">[ thread ]</a>
+              <a href="subject.html#1613">[ subject ]</a>
+              <a href="author.html#1613">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> gpsd: hunting at speed 38400, 8N1
+</I>&gt;<i> gpsd: packet_sniff begins
+</I>&gt;<i> gpsd: usleep(2147483647)
+</I>
+i've been in a hurry this morning so some more details:
+the speed is now shown as 9600 which looks good to me, but the
+usleep-print is still the same.
+
+in order to get this number by the division &quot;36,000,000 /
+gpsdata-&gt;baudrate&quot;, the baudrate has to be roughly 0.017 which is the
+unprecise version of 0 (the baudrate is an integer). usualy one should
+get a division by zero error, which obviously isn't the case (don't ask
+me why)
+
+2147483647 microsecs are nearly 36 minutes - i'm a patiant man, but
+that's beyond my limit ;)
+
+i slightly changed the source to 
+1. print out the baudrate (prints out 0 in my case)
+2. remove the decimal from the delay which makes it an integer
+(typecasting it to (int) would have the same effect.)
+that makes it work again
+
+Index: packet.c
+===================================================================
+--- packet.c    (revision 2418)
++++ packet.c    (working copy)
+@@ -521,7 +521,8 @@
+             * sends through characters in 7- or 8-character bursts, so
+             * Nyquist's Theorem tells us this is optimal.
+             */
+-           int delay = 36000000.0 / session-&gt;gpsdata.baudrate;
++           gpsd_report(5, &quot;baudrate: %d\n&quot;, session-&gt;gpsdata.baudrate);
++           int delay = 36000000 / session-&gt;gpsdata.baudrate;
+            gpsd_report(5, &quot;usleep(%d)\n&quot;, delay);
+            usleep(delay);
+        } else if (packet_get(session, count)) {
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001606.html">[Gpsd-dev] Other Strange things...
+</A></li>
+	<LI>Next message: <A HREF="001590.html">[Gpsd-dev] Zodiac driver?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1613">[ date ]</a>
+              <a href="thread.html#1613">[ thread ]</a>
+              <a href="subject.html#1613">[ subject ]</a>
+              <a href="author.html#1613">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

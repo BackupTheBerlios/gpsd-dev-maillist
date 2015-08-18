@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Paranoia pays
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Paranoia%20pays&In-Reply-To=%3CPine.LNX.4.64.0606111358440.29497%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003795.html">
+   <LINK REL="Next"  HREF="003808.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Paranoia pays</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Paranoia%20pays&In-Reply-To=%3CPine.LNX.4.64.0606111358440.29497%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] Paranoia pays">gem at rellim.com
+       </A><BR>
+    <I>Sun Jun 11 23:07:57 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003795.html">[Gpsd-dev] Paranoia pays
+</A></li>
+        <LI>Next message: <A HREF="003808.html">[Gpsd-dev] Paranoia pays
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3803">[ date ]</a>
+              <a href="thread.html#3803">[ thread ]</a>
+              <a href="subject.html#3803">[ subject ]</a>
+              <a href="author.html#3803">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Eric!
+
+On Sun, 11 Jun 2006, Eric S. Raymond wrote:
+
+&gt;<i> As a separate issue, gpsfake still seems to be occasionally triggering
+</I>&gt;<i> a subtle hang bug in gpsd even now that we've addressed the fuser
+</I>&gt;<i> problem; see my exchanges with Gary Miller on his strace outputs.
+</I>&gt;<i> That probably ought to be next on the target list after Til's bug.
+</I>
+I just pulled the SVN, and now it fails a different way.
+
+Here is the strace:
+
+/gpsd/trunk/test# gpsfake -b -v -p  bu303-climbing.log
+
+ioctl(4, TIOCSPTLCK, [0])               = 0
+ioctl(4, SNDCTL_TMR_TIMEBASE or TCGETS, {B38400 opost isig icanon echo ...}) = 0
+ioctl(4, TIOCGPTN, [25])                = 0
+stat64(&quot;/dev/pts/25&quot;, {st_mode=S_IFCHR|0620, st_rdev=makedev(136, 25), ...}) = 0
+open(&quot;/dev/pts/25&quot;, O_RDWR|O_NOCTTY)    = 5
+ioctl(5, SNDCTL_TMR_TIMEBASE or TCGETS, {B38400 opost isig icanon echo ...}) = 0
+readlink(&quot;/proc/self/fd/5&quot;, &quot;/dev/pts/25&quot;, 4095) = 11
+open(&quot;/dev/pts/25&quot;, O_RDONLY|O_LARGEFILE) = 6
+fstat64(6, {st_mode=S_IFCHR|0620, st_rdev=makedev(136, 25), ...}) = 0
+ioctl(6, SNDCTL_TMR_TIMEBASE or TCGETS, {B38400 opost isig icanon echo ...}) = 0
+ioctl(6, SNDCTL_TMR_TIMEBASE or TCGETS, {B38400 opost isig icanon echo ...}) = 0
+ioctl(6, SNDCTL_TMR_START or TCSETS, {B4800 -opost -isig -icanon -echo ...}) = 0
+close(6)                                = 0
+stat64(&quot;/tmp/gpsfake-2050.sock&quot;, {st_mode=S_IFSOCK|0755, st_size=0, ...}) = 0
+socket(PF_FILE, SOCK_STREAM, 0)         = 6
+connect(6, {sa_family=AF_FILE, path=&quot;/tmp/gpsfake-2050.sock&quot;}, 24) = 0
+send(6, &quot;+/dev/pts/25\r\n&quot;, 14, 0)      = 14
+recv(6,
+
+
+Not sure what bringing up the gdb would tell us.  Especially since
+Pythin is not my thing.  It is clear that gpsfake is hung in recv().
+Is there anythine more you can add to the '-v' in gpsfake to shed some
+light?  At a minimum a timeout on the recv() would be nice.
+
+Looks like the normal gpsd and the gpsd for gpsfake are running fine:
+
+gpsd/trunk# pstree -paul | fgrep gps
+  |  |       |-fgrep,2061 gps
+  |  |       `-strace,2049 gpsfake -b -v -p bu303-climbing.log
+  |  |           `-python,2050 /usr/bin/gpsfake -b -v -p bu303-climbing.log
+  |-gpsd,2052 -N -S 12000 -F /tmp/gpsfake-2050.sock -P /tmp/gpsfake_pid-2050
+  |-gpsd,1351,nobody -n /dev/ttyUSB0
+
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.2.1 (GNU/Linux)
+
+iD8DBQFEjIYw8KZibdeR3qURAmhvAKCTAhob6lSX4zjMpgXI6AF9weZKOACdHYtT
+ABijG/5BP7USkN/p3y3zPTI=
+=HTSB
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003795.html">[Gpsd-dev] Paranoia pays
+</A></li>
+	<LI>Next message: <A HREF="003808.html">[Gpsd-dev] Paranoia pays
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3803">[ date ]</a>
+              <a href="thread.html#3803">[ thread ]</a>
+              <a href="subject.html#3803">[ subject ]</a>
+              <a href="author.html#3803">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

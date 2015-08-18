@@ -1,0 +1,87 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] PATCH: getdtablesize()
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PATCH%3A%20getdtablesize%28%29&In-Reply-To=%3C1105580469.41e5d1b541ece%40209.63.57.145%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000525.html">
+   <LINK REL="Next"  HREF="000524.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] PATCH: getdtablesize()</H1>
+    <B>dalen.kruse at blacklion.org</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PATCH%3A%20getdtablesize%28%29&In-Reply-To=%3C1105580469.41e5d1b541ece%40209.63.57.145%3E"
+       TITLE="[Gpsd-dev] PATCH: getdtablesize()">dalen.kruse at blacklion.org
+       </A><BR>
+    <I>Thu Jan 13 02:41:09 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000525.html">[Gpsd-dev] Draft for more NMEA parser improvements
+</A></li>
+        <LI>Next message: <A HREF="000524.html">[Gpsd-dev] [PATCH] Add test code for the NMEA parser
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#523">[ date ]</a>
+              <a href="thread.html#523">[ thread ]</a>
+              <a href="subject.html#523">[ subject ]</a>
+              <a href="author.html#523">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>While using Wallace Owen's patch earlier today (changing getdtablesize() to
+FD_SETSIZE), I came across another issue.  It looks like a for loop in gpsd.c
+was also calling getdtablesize().  Unless I'm missing something, I think this
+should be using the variable nfds since it's already set to the result of
+getdtablesize().  Needless to say, when I changed nfds from getdtablesize() to
+FD_SETSIZE, this for loop cause quite a few problems until I found it.
+
+Anyway, a patch is included below.
+
+Thanks to the developers for a great program.
+
+Dalen Kruse
+
+--- gpsd-2.6/gpsd.c	Fri Dec 31 12:40:34 2004
++++ gpsd-2.6-mod/gpsd.c	Wed Jan 12 19:35:27 2005
+@@ -569,7 +569,7 @@
+
+ 	/* accept and execute commands for all clients */
+ 	need_gps = 0;
+-	for (fd = 0; fd &lt; getdtablesize(); fd++) {
++	for (fd = 0; fd &lt; nfds; fd++) {
+ 	    if (fd == msock || fd == session-&gt;gNMEAdata.gps_fd)
+ 		continue;
+ 	    /*
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000525.html">[Gpsd-dev] Draft for more NMEA parser improvements
+</A></li>
+	<LI>Next message: <A HREF="000524.html">[Gpsd-dev] [PATCH] Add test code for the NMEA parser
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#523">[ date ]</a>
+              <a href="thread.html#523">[ thread ]</a>
+              <a href="subject.html#523">[ subject ]</a>
+              <a href="author.html#523">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

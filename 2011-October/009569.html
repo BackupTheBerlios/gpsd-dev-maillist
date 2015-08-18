@@ -1,0 +1,213 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Pardon the interruption
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Pardon%20the%20interruption&In-Reply-To=%3C20111005040923.GA10153%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009568.html">
+   <LINK REL="Next"  HREF="009571.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Pardon the interruption</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Pardon%20the%20interruption&In-Reply-To=%3C20111005040923.GA10153%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Pardon the interruption">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Oct  5 06:09:23 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009568.html">[Gpsd-dev] Pardon the interruption
+</A></li>
+        <LI>Next message: <A HREF="009571.html">[Gpsd-dev] Pardon the interruption
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9569">[ date ]</a>
+              <a href="thread.html#9569">[ thread ]</a>
+              <a href="subject.html#9569">[ subject ]</a>
+              <a href="author.html#9569">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Bill Dailey &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">docdailey at gmail.com</A>&gt;:
+&gt;<i> Trying to get up to speed on gpsd...I am interfacing a jackson labs fury
+</I>&gt;<i> with the eventual goal of having a precision stratum 1 server (for fun).
+</I>
+Interesting device.  What does it actually cost?  I can't find a price 
+on the site, and I'd have a use for one.
+
+We have this entry in our database:
+
+[Firefly-1a]
+type = device
+engine = UBLOX NEO-5Q
+firmware = 0.918
+interfaces = RS-232
+packaging = OEM module
+rating = excellent
+submitter = Don Weeks &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">don.l.weeks.jr at gmail.com</A>&gt;, 
+            Said Jackson &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">saidjack at aol.com</A>&gt;
+techdoc = <A HREF="http://jackson-labs.com/docs/FireFly_quickstart.pdf">http://jackson-labs.com/docs/FireFly_quickstart.pdf</A>
+vendor = Jackson Labs
+notes = Only outputs GGA and RMC NMEA strings. There are other proprietary 
+        commands. See the gpsd-dev list for patches. GPSD works as far back 
+        as the 0.914 version, which emitted \r\r\n terminations. All the 
+        FireFly units are OCXO drive, so the 1PPS output stays accurate even 
+        if GPS reception is lost.
+
+This makes me pretty sure the device will work.
+
+&gt;<i> I am getting the feeling that since I am using a serial interface I need to
+</I>&gt;<i> somehow invoke a driver to tell it what it is talking to.  Searching but not
+</I>&gt;<i> knowing what to look for led me here... I respectfully ask for any help.. I
+</I>&gt;<i> am piss poor at linux.  here is a dump of what I get when running gpsd, what
+</I>&gt;<i> am I missing?
+</I>
+Nothing, AFAIK.  Looks like it's working as expected, but your Firefly isn't
+emitting anything, or it got a false lock while trying to autoconfigure.
+ 
+&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">willy at shuttle</A>:~$ gpsd -D 5 -N -n /dev/ttyS1
+</I>&gt;<i> gpsd: launching (Version 2.95)
+</I>&gt;<i> gpsd: opening IPv4 socket
+</I>&gt;<i> gpsd: opening IPv6 socket
+</I>&gt;<i> gpsd: listening on port gpsd
+</I>&gt;<i> gpsd: NTPD shmat(2129980,0,0) succeeded, segment 2
+</I>&gt;<i> gpsd: NTPD shmat(2162749,0,0) succeeded, segment 3
+</I>&gt;<i> gpsd: successfully connected to the DBUS system bus
+</I>&gt;<i> gpsd: running with effective group ID 1000
+</I>&gt;<i> gpsd: running with effective user ID 1000
+</I>&gt;<i> gpsd: opening GPS data source type 2 at '/dev/ttyS1'
+</I>&gt;<i> gpsd: speed 115200, 8N1
+</I>
+Here the daemon thinks it found your baud rate.  Next, it writes
+probes to the device to try to figure out what it's looking at.
+
+&gt;<i> gpsd: =&gt; GPS: 2450415348512c5249442a32380d0a
+</I>&gt;<i> gpsd: =&gt; GPS: @F0.3=1*67\x0d\x0a
+</I>&gt;<i> gpsd: =&gt; GPS: @F2.2=1*64\x0d\x0a
+</I>&gt;<i> gpsd: writing oncore control type Cj:4040436a290d0a
+</I>&gt;<i> gpsd: =&gt; GPS: 4040436a290d0a
+</I>&gt;<i> gpsd: =&gt; GPS: 0299661c0800040200001203
+</I>&gt;<i> gpsd: Navcom: sent command 0x1c (Test Support Block)
+</I>&gt;<i> gpsd: Navcom: command 0x1c mode = 02, length = 0
+</I>&gt;<i> gpsd: =&gt; GPS: 029966200e000001ae020000710000
+</I>&gt;<i> 00f203
+</I>&gt;<i> gpsd: Navcom: sent command 0x20 (Data Request) - data block id = ae at rate
+</I>&gt;<i> 00
+</I>&gt;<i> gpsd: =&gt; GPS: 029966200e00000186020a0071000000d003
+</I>&gt;<i> gpsd: Navcom: sent command 0x20 (Data Request) - data block id = 86 at rate
+</I>&gt;<i> 0a
+</I>&gt;<i> gpsd: writing superstar2 control type 63 len 14:013fc008554750532d3030300304
+</I>&gt;<i> gpsd: =&gt; GPS: 013fc008554750532d3030300304
+</I>&gt;<i> gpsd: writing superstar2 control type 45 len 6:012dd2000100
+</I>&gt;<i> gpsd: =&gt; GPS: 012dd2000100
+</I>&gt;<i> gpsd: Probing TSIP
+</I>&gt;<i> gpsd: speed 9600, 8O1
+</I>&gt;<i> gpsd: =&gt; GPS: 2450415348512c5249442a32380d0a
+</I>&gt;<i> gpsd: =&gt; GPS: @F0.3=1*67\x0d\x0a
+</I>&gt;<i> gpsd: =&gt; GPS: @F2.2=1*64\x0d\x0a
+</I>&gt;<i> gpsd: writing oncore control type Cj:4040436a290d0a
+</I>&gt;<i> gpsd: =&gt; GPS: 4040436a290d0a
+</I>&gt;<i> gpsd: =&gt; GPS: 0299661c0800040200001203
+</I>&gt;<i> gpsd: Navcom: sent command 0x1c (Test Support Block)
+</I>&gt;<i> gpsd: Navcom: command 0x1c mode = 02, length = 0
+</I>&gt;<i> gpsd: =&gt; GPS: 029966200e000001ae02000071000000f203
+</I>&gt;<i> gpsd: Navcom: sent command 0x20 (Data Request) - data block id = ae at rate
+</I>&gt;<i> 00
+</I>&gt;<i> gpsd: =&gt; GPS: 029966200e00000186020a0071000000d003
+</I>&gt;<i> gpsd: Navcom: sent command 0x20 (Data Request) - data block id = 86 at rate
+</I>&gt;<i> 0a
+</I>&gt;<i> gpsd: writing superstar2 control type 63 len 14:013fc008554750532d3030300304
+</I>&gt;<i> gpsd: =&gt; GPS: 013fc008554750532d3030300304
+</I>&gt;<i> gpsd: writing superstar2 control type 45 len 6:012dd2000100
+</I>&gt;<i> gpsd: =&gt; GPS: 012dd2000100
+</I>&gt;<i> gpsd: speed 115200, 8N1
+</I>&gt;<i> gpsd: =&gt; GPS: 2450415348512c5249442a32380d0a
+</I>&gt;<i> gpsd: =&gt; GPS: @F0.3=1*67\x0d\x0a
+</I>&gt;<i> gpsd: =&gt; GPS: @F2.2=1*64\x0d\x0a
+</I>&gt;<i> gpsd: writing oncore control type Cj:4040436a290d0a
+</I>&gt;<i> gpsd: =&gt; GPS: 4040436a290d0a
+</I>&gt;<i> gpsd: =&gt; GPS: 0299661c0800040200001203
+</I>&gt;<i> gpsd: Navcom: sent command 0x1c (Test Support Block)
+</I>&gt;<i> gpsd: Navcom: command 0x1c mode = 02, length = 0
+</I>&gt;<i> gpsd: =&gt; GPS: 029966200e000001ae02000071000000f203
+</I>&gt;<i> gpsd: Navcom: sent command 0x20 (Data Request) - data block id = ae at rate
+</I>&gt;<i> 00
+</I>&gt;<i> gpsd: =&gt; GPS: 029966200e00000186020a0071000000d003
+</I>&gt;<i> gpsd: Navcom: sent command 0x20 (Data Request) - data block id = 86 at rate
+</I>&gt;<i> 0a
+</I>&gt;<i> gpsd: writing superstar2 control type 63 len 14:013fc008554750532d3030300304
+</I>&gt;<i> gpsd: =&gt; GPS: 013fc008554750532d3030300304
+</I>&gt;<i> gpsd: writing superstar2 control type 45 len 6:012dd2000100
+</I>&gt;<i> gpsd: =&gt; GPS: 012dd2000100
+</I>&gt;<i> gpsd: no probe matched...
+</I>
+So far all this looks normal.  The daemon has shipped a bunch of probe strings
+and not gotten a response to any of them.
+
+This looks a bit odd, though.
+
+&gt;<i> gpsd: gpsd_activate(): opened GPS (fd 6)
+</I>&gt;<i> gpsd: SuperStarII pkt dump: type 63 len 14:
+</I>&gt;<i> gpsd: REJECT SuperStarII packet type 0x3f14 bad checksum 0x02cc, expecting
+</I>&gt;<i> 0x3030
+</I>
+The daemon thinks it sees a Superstar packet with a bad checksum.  My
+guess it got fooled by random binary garbage.  You might even have
+locked on to the wrong baud rate, which can happen once in a blue moon.
+
+&gt;<i> gpsd: modeling errors: mode=0, masks={ONLINE|PACKET}
+</I>&gt;<i> gpsd: packet from /dev/ttyS1 with {ONLINE|PACKET}
+</I>&gt;<i> gpsd: GPS on /dev/ttyS1 is offline (0.000075 sec since data)
+</I>&gt;<i> gpsd: SuperStarII pkt dump: type 45 len 6:
+</I>&gt;<i> gpsd: REJECT SuperStarII packet type 0x2d6 bad checksum 0x0100, expecting
+</I>&gt;<i> 0x0001
+</I>&gt;<i> gpsd: modeling errors: mode=0, masks={ONLINE|PACKET}
+</I>&gt;<i> gpsd: packet from /dev/ttyS1 with {ONLINE|PACKET}
+</I>&gt;<i> gpsd: GPS on /dev/ttyS1 is offline (0.000068 sec since data)
+</I>&gt;<i> gpsd: SuperStarII pkt dump: type 45 len 6:
+</I>&gt;<i> gpsd: REJECT SuperStarII packet type 0x2d6 bad checksum 0x0100, expecting
+</I>&gt;<i> 0x0001
+</I>&gt;<i> gpsd: modeling errors: mode=0, masks={ONLINE|PACKET}
+</I>&gt;<i> gpsd: packet from /dev/ttyS1 with {ONLINE|PACKET}
+</I>&gt;<i> gpsd: GPS on /dev/ttyS1 is offline (0.000073 sec since data)
+</I>&gt;<i> ^Cgpsd: received terminating signal 2.
+</I>
+OK.  First thing to try is running gpsmon on the device - &quot;gsmon /dev/ttyUSB0&quot;
+or whatever your device is.  If all goes well it should show you GGA and RMC
+packets streaming by. Your gpsd just hiccupped.  Try running it again.
+
+If gpsmon can't figure out what it's looking at, something more basic
+is wrong. Have you ever seen good data out of the device?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009568.html">[Gpsd-dev] Pardon the interruption
+</A></li>
+	<LI>Next message: <A HREF="009571.html">[Gpsd-dev] Pardon the interruption
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9569">[ date ]</a>
+              <a href="thread.html#9569">[ thread ]</a>
+              <a href="subject.html#9569">[ subject ]</a>
+              <a href="author.html#9569">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

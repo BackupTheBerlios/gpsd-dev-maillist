@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Bug in serial.c
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Bug%20in%20serial.c&In-Reply-To=%3C19777.213.84.187.156.1115803164.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001623.html">
+   <LINK REL="Next"  HREF="001625.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Bug in serial.c</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Bug%20in%20serial.c&In-Reply-To=%3C19777.213.84.187.156.1115803164.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] Bug in serial.c">gpsd at xs4all.nl
+       </A><BR>
+    <I>Wed May 11 11:19:24 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001623.html">[Gpsd-dev] Bug in serial.c
+</A></li>
+        <LI>Next message: <A HREF="001625.html">[Gpsd-dev] Bug in serial.c
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1624">[ date ]</a>
+              <a href="thread.html#1624">[ thread ]</a>
+              <a href="subject.html#1624">[ subject ]</a>
+              <a href="author.html#1624">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> That's a damn good question.  Now that you've pointed it out, it's
+</I>&gt;<i> obvious why this was failing for Rob Janssen -- what's not obvious
+</I>&gt;<i> is why it *wasn't* failing for me.
+</I>
+It was Andreas who had these problems.  I just checked why it worked here
+and it turns out to be because I am not completely synchronized with svn,
+because I have local changes that are not in there.
+After some manual editing to get in sync I have the same trouble.
+It is because of the change to &quot;first try the current baudrate&quot; which
+cause gpsd_set_speed not to be called and thus the baudrate field to be
+set to zero.
+
+To hopefully remain better in sync, have included a patch that adds my PPS
+changes when configure is called with --enable-pps.  It is switched off by
+default.
+I do not completely understand the configure process.  There is a
+modification to the makefile required (-lpthread added to the link) but
+for now I manually edit the Makefile...  I also don't understand why
+-lpthread is required to build the clients, while the clients do not
+require the libgpsd_core module that calls pthreads.  When libgpsd_core is
+removed from the library and manually linked with gpsd it works ok.
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: patch.gz
+Type: application/x-gzip
+Size: 1146 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20050511/04ae0ed1/attachment.bin">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20050511/04ae0ed1/attachment.bin</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001623.html">[Gpsd-dev] Bug in serial.c
+</A></li>
+	<LI>Next message: <A HREF="001625.html">[Gpsd-dev] Bug in serial.c
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1624">[ date ]</a>
+              <a href="thread.html#1624">[ thread ]</a>
+              <a href="subject.html#1624">[ subject ]</a>
+              <a href="author.html#1624">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

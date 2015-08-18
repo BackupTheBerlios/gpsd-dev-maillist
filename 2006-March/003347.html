@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Altitude%20not%20always%20being%20reported&In-Reply-To=%3C15323.213.84.187.156.1143225040.squirrel%40webmail.xs4all.nl%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003344.html">
+   <LINK REL="Next"  HREF="003348.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Altitude%20not%20always%20being%20reported&In-Reply-To=%3C15323.213.84.187.156.1143225040.squirrel%40webmail.xs4all.nl%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported">gpsd at xs4all.nl
+       </A><BR>
+    <I>Fri Mar 24 19:30:40 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003344.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+        <LI>Next message: <A HREF="003348.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3347">[ date ]</a>
+              <a href="thread.html#3347">[ thread ]</a>
+              <a href="subject.html#3347">[ subject ]</a>
+              <a href="author.html#3347">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> Ok, the problem is here to see. Libgps is linked as a collection of .o
+</I>&gt;<i> files,
+</I>&gt;<i> not as a library. If you name an archive (library) on the command line,
+</I>&gt;<i> all
+</I>&gt;<i> the modules in it get linked in, needed or not. If you use the -l flag,
+</I>&gt;<i> only
+</I>&gt;<i> needed symbols are pulled from the archive.
+</I>
+I don;t think this is how the linker works.  Or at least, traditionally,
+worked.
+
+When you specify a .o file it is always linked.
+When you specify a .a file it is scanned as a library and only those
+modules that satisfy an unresolved external are linked.
+
+(in the first versions, this was even being done in a single pass only, so
+highlevel functions needed to be at the start of the .a file so they would
+pull in lowlevel functions from later .o files in the library.  later this
+was solved by adding a special file that serves as a toc, using ranlib)
+
+The -l flag basically does this:
+- it adds &quot;lib&quot; before and &quot;.a&quot; after the name specified, so -lc becomes
+libc.a
+- it adds support for a &quot;library search path&quot;: the library is looked for
+in a number of places, while normal .a files must be referenced exactly
+
+Other than this, there is nothing magic about -l.
+So, for a project with local libraries that are not necessarily installed
+in the wellknown system locations, it is quite normal for the local
+libraries to be explicitly named without -l, while the system libraries
+like libm, libncurses etc are linked using -lm, -lncurses etc.
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003344.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+	<LI>Next message: <A HREF="003348.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3347">[ date ]</a>
+              <a href="thread.html#3347">[ thread ]</a>
+              <a href="subject.html#3347">[ subject ]</a>
+              <a href="author.html#3347">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

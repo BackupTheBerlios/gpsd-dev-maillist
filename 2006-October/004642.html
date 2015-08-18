@@ -1,0 +1,111 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Time accuracy without fix
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Time%20accuracy%20without%20fix&In-Reply-To=%3C91981b3e0610241524o6f2d0675h2f08cad77342c18b%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004641.html">
+   <LINK REL="Next"  HREF="004643.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Time accuracy without fix</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Time%20accuracy%20without%20fix&In-Reply-To=%3C91981b3e0610241524o6f2d0675h2f08cad77342c18b%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Time accuracy without fix">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Wed Oct 25 00:24:52 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004641.html">[Gpsd-dev] Time accuracy without fix
+</A></li>
+        <LI>Next message: <A HREF="004643.html">[Gpsd-dev] GPSD protocol extension
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4642">[ date ]</a>
+              <a href="thread.html#4642">[ thread ]</a>
+              <a href="subject.html#4642">[ subject ]</a>
+              <a href="author.html#4642">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 10/24/06, Petr Slansky &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">slansky at usa.net</A>&gt; wrote:
+&gt;<i> &gt; Probably +/- 2 seconds including communication latency, assuming they
+</I>&gt;<i> &gt; have code lock. But let's say the reported time of week is 000042. Is
+</I>&gt;<i> 2 seconds is more as I thought it could be.
+</I>
+Code lock should get you the right second, but there will be some delay.
+
+Assuming the satellite is right overhead, it's something like 2.0e7
+metres away - more if the satellite is at a lower elevation. Speed of
+light is about 3.0e8 metres per second. It takes at least 66
+milliseconds for the code word to get to you. Until you've calculated
+a valid 3D position, don't really have any way to tell how much more
+delay you are experiencing. If your constellation visibility is such
+that you can only track 1 PRN, I wouldn't trust that PRN to be free of
+multipath or &quot;evil waveform&quot; effects. I'm going to handwave and say
+&quot;this could add up to 1 second of uncertainy.&quot;
+
+The other &quot;second&quot; come from the fact that GPRMC comes after the start
+of the second. It tells you which second you are currently
+experiencing. How far into the second this happens is vendor
+dependent. I'm going to handwave again and say &quot;this could add up to 1
+second of uncertainy.&quot;
+
+I guess I should have phrased my original answer as &quot;I wouldn't be
+surprised if GPRMC was as much as 2 seconds slow until you have a
+valid 3D fix&quot;.
+
+&gt;<i> Anyway, I noticed that gpsd native protocol cannot answer question of time
+</I>&gt;<i> when gpsd has no fix. But when I use command 'gpspipe -r' I get time and date
+</I>&gt;<i> in GPRMC message. I know, it can be wrong but in the case that receiver was
+</I>&gt;<i> synchronised in the near past, it is probable that it is still usable.
+</I>
+Should we fake it with the server's clock? Nah, that's an extra
+syscall. And there are better protocols for time transfer.
+
+Should we copy the time as presented to us? Fairly reasonable, so long
+as it doesn't break NTPSHM. Who knows, maybe you do have a receiver in
+time-transfer mode. Still, reading the docs for various chipsets, many
+of them do not strobe the PPS line unless they have a valid 3D fix.
+
+Based on behaviour observed with SiRF and itrax receivers while
+tracking only 1 or 2 PRNs without a navigation solution, I would not
+oppose using the receiver's reported time as source for time. If
+you're that worried about not getting bad data, you should be checking
+fix mode and quality anyway.
+
+CK
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004641.html">[Gpsd-dev] Time accuracy without fix
+</A></li>
+	<LI>Next message: <A HREF="004643.html">[Gpsd-dev] GPSD protocol extension
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4642">[ date ]</a>
+              <a href="thread.html#4642">[ thread ]</a>
+              <a href="subject.html#4642">[ subject ]</a>
+              <a href="author.html#4642">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

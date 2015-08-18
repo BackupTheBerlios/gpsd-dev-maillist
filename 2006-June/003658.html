@@ -1,0 +1,127 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from              meters/sec to knots
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Re%3A%20accuracy%20in%20conversion%20from%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20meters/sec%20to%20knots&In-Reply-To=%3CPine.LNX.4.64.0606081220440.5751%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003659.html">
+   <LINK REL="Next"  HREF="003669.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from              meters/sec to knots</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Re%3A%20accuracy%20in%20conversion%20from%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20meters/sec%20to%20knots&In-Reply-To=%3CPine.LNX.4.64.0606081220440.5751%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from              meters/sec to knots">gem at rellim.com
+       </A><BR>
+    <I>Thu Jun  8 21:49:05 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003659.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+        <LI>Next message: <A HREF="003669.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from               meters/sec to knots
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3658">[ date ]</a>
+              <a href="thread.html#3658">[ thread ]</a>
+              <a href="subject.html#3658">[ subject ]</a>
+              <a href="author.html#3658">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Rob!
+
+On Thu, 8 Jun 2006, Rob Janssen wrote:
+
+&gt;<i> I think gpsd should not do any interpolation, averaging or similar, but it
+</I>&gt;<i> should be able to buffer the last consistent fix from the receiver and
+</I>&gt;<i> make it available on request.
+</I>
+I have no problem if there is a new way to request a full data snapshot.
+That makes a lot of sense and would enable a simple client to simply
+poll current data.  My problem is more with touching the streaming
+data or changing the current data flow in ways that will unexpectedly
+break existing apps.  Adding to the current framework is good, changing
+it in a way that will break existing apps should only be done very
+deliberately.
+
+If we add a new command, or option, to do this, then we need to be very
+explicit about what data we will cache, for how long, and under what
+conditions.  One big problem is when and how to expire data.  How long
+should an altitude be held before being tossed?  How long would sats be
+held before being tossed?  Clearly they can not be the same time since
+some NMEA only provides altitude ever few seconds and sats every minute.
+Depending on the application I see that some apps may want very short
+or very long timeouts so this should also be adjustable.
+
+Then we need to add the complexity of under what conditions would data
+be tossed early?  Like when the GPS is unplugged.
+
+I am most nervous about adding complexity to the core functions that we
+already know are hard to get just right.  IMHO gpsd should be as lean
+and mean as we can make it so we can be sure it is correct and robust.
+I hate to burden an embedded device with these new data processing
+overhead when they have limited CPU and RAM.  They already have us cut
+things for them and this would also need a cutout.  So what is the
+argument against putting these higher level smarts in libgps or another
+daemon?
+
+It seems to me that if someone is writing a really simple client then
+they would be using libgps or similar.  THey do not want to hassle with
+the already non-trvial gpsd protocol.  They just want to link in a nice
+library and pull what they need out of it.
+
+I also see a trend toward a very simple robust core daemon and then
+associated daemons to run more complex functions.  Just to name a few
+postfix, doveot and apache have gone this route.  So we should also
+consider a secondary daemon that could be used as a proxy cache for gpsd
+data.  As a standalone daemon it would be much easier to audit than
+mashing more into gpsd.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.2.1 (GNU/Linux)
+
+iD8DBQFEiH808KZibdeR3qURAr/BAJwNXusDNJoUiw32Gu1VbrAstXFmAgCfYMOm
+c5RTVrjjvBRX49u/3O+ecSQ=
+=iz9U
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003659.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+	<LI>Next message: <A HREF="003669.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from               meters/sec to knots
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3658">[ date ]</a>
+              <a href="thread.html#3658">[ thread ]</a>
+              <a href="subject.html#3658">[ subject ]</a>
+              <a href="author.html#3658">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

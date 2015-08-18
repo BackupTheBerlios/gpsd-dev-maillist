@@ -1,0 +1,103 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] rtcm.c: compiler warning with gcc 4.1
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20rtcm.c%3A%20compiler%20warning%20with%20gcc%204.1&In-Reply-To=%3C1149786474.20164.65.camel%40mother.subnetz.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003722.html">
+   <LINK REL="Next"  HREF="003657.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] rtcm.c: compiler warning with gcc 4.1</H1>
+    <B>Tilman Koschnick</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20rtcm.c%3A%20compiler%20warning%20with%20gcc%204.1&In-Reply-To=%3C1149786474.20164.65.camel%40mother.subnetz.org%3E"
+       TITLE="[Gpsd-dev] rtcm.c: compiler warning with gcc 4.1">til at subnetz.org
+       </A><BR>
+    <I>Thu Jun  8 19:07:54 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003722.html">[Gpsd-dev] Getting the leap-second offset
+</A></li>
+        <LI>Next message: <A HREF="003657.html">[Gpsd-dev] rtcm.c: compiler warning with gcc 4.1
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3653">[ date ]</a>
+              <a href="thread.html#3653">[ thread ]</a>
+              <a href="subject.html#3653">[ subject ]</a>
+              <a href="author.html#3653">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+I just switched to gcc 4.1, and got a new warning when compiling svn
+head:
+
+rtcm.c: In function 'rtcm_undump':
+rtcm.c:1076: warning: dereferencing type-punned pointer will break
+strict-aliasing rules
+rtcm.c:1080: warning: dereferencing type-punned pointer will break
+strict-aliasing rules
+rtcm.c:1081: warning: dereferencing type-punned pointer will break
+strict-aliasing rules
+
+The code that triggers the warning is:
+
+   1071             struct consat_t *csp = &amp;rtcmp-&gt;msg_data.conhealth.sat[rtcmp-&gt;msg_data.conhealth.nentries++];
+   1072
+   1073             fldcount = sscanf(buf,
+   1074                               &quot;C\t%2u\t%1u\t%1u\t%2d\t%1u\t%1u\t%1u\t%2u\n&quot;,
+   1075                               &amp;csp-&gt;ident,
+   1076                               (unsigned int *)&amp;csp-&gt;iodl,
+   1077                               &amp;csp-&gt;health,
+   1078                               &amp;csp-&gt;snr,
+   1079                               &amp;csp-&gt;health_en,
+   1080                               (unsigned int *)&amp;csp-&gt;new_data,
+   1081                               (unsigned int *)&amp;csp-&gt;los_warning,
+   1082                               &amp;csp-&gt;tou);
+
+iodl, new_data and los_warning are defined as bool in struct consat_t.
+
+Does this warning point to a real problem? FWIW, compiling with
+'-fno-strict-aliasing' makes gcc happy again.
+
+gcc is version 4.1.1 20060511 (prerelease) (Debian 4.1.0-4) on a 64-bit Opteron.
+
+Cheers, Til
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 307 bytes
+Desc: This is a digitally signed message part
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20060608/a1c53db0/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20060608/a1c53db0/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003722.html">[Gpsd-dev] Getting the leap-second offset
+</A></li>
+	<LI>Next message: <A HREF="003657.html">[Gpsd-dev] rtcm.c: compiler warning with gcc 4.1
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3653">[ date ]</a>
+              <a href="thread.html#3653">[ thread ]</a>
+              <a href="subject.html#3653">[ subject ]</a>
+              <a href="author.html#3653">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

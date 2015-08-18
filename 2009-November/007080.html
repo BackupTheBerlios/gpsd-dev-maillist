@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Cycle-changing for MTK-devices and others
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Cycle-changing%20for%20MTK-devices%20and%20others&In-Reply-To=%3C4B017B82.1010102%40gmx.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007149.html">
+   <LINK REL="Next"  HREF="007081.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Cycle-changing for MTK-devices and others</H1>
+    <B>Florian H&#228;nel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Cycle-changing%20for%20MTK-devices%20and%20others&In-Reply-To=%3C4B017B82.1010102%40gmx.de%3E"
+       TITLE="[Gpsd-dev] Cycle-changing for MTK-devices and others">heeen at gmx.de
+       </A><BR>
+    <I>Mon Nov 16 17:19:14 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007149.html">[Gpsd-dev] Need to monitor GPS fix status when callback stops
+</A></li>
+        <LI>Next message: <A HREF="007081.html">[Gpsd-dev] Cycle-changing for MTK-devices and others
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7080">[ date ]</a>
+              <a href="thread.html#7080">[ thread ]</a>
+              <a href="subject.html#7080">[ subject ]</a>
+              <a href="author.html#7080">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I've attached a patch to enable cycle rate changing for MTK devices.
+I've also found some bugs in gpsctl and gpsd that made me wonder if
+cycle rate changing was ever working?
+
+Annotations:
+
+old: &amp;&amp; isnan(devconf.cycle)!=0
+now: &amp;&amp; isnan(devconf.cycle)==0
+
+&quot;isnan(x) returns a non-zero value if (fpclassify(x) == FP_NAN)&quot;
+maybe change this to isnormal even
+How could this ever work if the cycle rate must be NaN to pass the test?
+
+Added test to check if driver provides mode switching (mtk doesn't)
+
+Assumed DEVDEFAULT_NATIVE means MODE_NMEA since mtk only has nmea as mode.
+
+added mtk3301_rate_switcher. should this return anything? can only
+return success after mtk001 success packet.
+
+gpsctl needs to have the -c option in the getopt format string.
+gpsctl uses a &quot;device&quot; key in JSON, which, it seems, got replaced by
+&quot;path&quot;. Also added double quotes around the value part of all
+&quot;path&quot;=&quot;%s&quot; sprintfs.
+
+
+
+
+
+-------------- next part --------------
+An embedded and charset-unspecified text was scrubbed...
+Name: ratecycle.diff
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091116/26f17401/attachment.ksh">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091116/26f17401/attachment.ksh</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007149.html">[Gpsd-dev] Need to monitor GPS fix status when callback stops
+</A></li>
+	<LI>Next message: <A HREF="007081.html">[Gpsd-dev] Cycle-changing for MTK-devices and others
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7080">[ date ]</a>
+              <a href="thread.html#7080">[ thread ]</a>
+              <a href="subject.html#7080">[ subject ]</a>
+              <a href="author.html#7080">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

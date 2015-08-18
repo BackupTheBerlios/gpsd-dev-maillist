@@ -1,0 +1,613 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] some portability issues with gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20some%20portability%20issues%20with%20gpsd&In-Reply-To=%3CE1CcMhP-0003hI-Tv%40diskless.uio.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000354.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] some portability issues with gpsd</H1>
+    <B>Petter Reinholdtsen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20some%20portability%20issues%20with%20gpsd&In-Reply-To=%3CE1CcMhP-0003hI-Tv%40diskless.uio.no%3E"
+       TITLE="[Gpsd-dev] [PATCH] some portability issues with gpsd">pere at hungry.com
+       </A><BR>
+    <I>Thu Dec  9 12:43:07 CET 2004</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000354.html">[Gpsd-dev] [PATCH] some portability issues with gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#353">[ date ]</a>
+              <a href="thread.html#353">[ thread ]</a>
+              <a href="subject.html#353">[ subject ]</a>
+              <a href="author.html#353">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I tried to compile the subversion version of gpsd on HP-UX 11.23 and
+Irix 6.5, and ran into some problems.  I fixed some of them (patches
+included), and got stuck on missing libraries.  I'll leave it there,
+but will include the compile warnings from HP-UX and Irix for you to
+consider.
+
+ - Only GCC understand -Wall and -Werror.  Wrap configure code inside
+   test. (You might want to consider adding -W to get more warnings).
+
+ - HP-UX is missing getopt.h.  Check for it in configure, and only use
+   if if it is present.
+
+ - HP-UX is missing CRTSCTS.  Found a workaround on the net.  I'm not
+   convinced this is the correct way to handle this.  Added configure
+   test for &lt;sys/modem.h&gt;.
+
+ - The xmlto binary have a different name/location at our site.  Make
+   it configurable what to use.
+
+Index: xgpsspeed.c
+===================================================================
+--- xgpsspeed.c	(revision 1110)
++++ xgpsspeed.c	(working copy)
+@@ -2,9 +2,13 @@
+  * - Derrick J Brashear &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">shadow at dementia.org</A>&gt;
+  * Tachometer widget from Kerberometer (xklife)
+  */
++#include &quot;config.h&quot;
++
+ #include &lt;unistd.h&gt;
+ #include &lt;stdlib.h&gt;
++#if defined(HAVE_GETOPT_H)
+ #include &lt;getopt.h&gt;
++#endif /* HAVE_GETOPT_H */
+ #include &lt;errno.h&gt;
+ #include &lt;stdio.h&gt;
+ #include &lt;math.h&gt;
+@@ -17,7 +21,6 @@
+ #include &lt;X11/Xaw/Paned.h&gt;
+ #include &lt;Tachometer.h&gt;
+ 
+-#include &quot;config.h&quot;
+ #include &quot;xgpsspeed.icon&quot;
+ #include &quot;gps.h&quot;
+ 
+Index: serial.c
+===================================================================
+--- serial.c	(revision 1110)
++++ serial.c	(working copy)
+@@ -2,6 +2,17 @@
+ #include &lt;unistd.h&gt;
+ #include &lt;string.h&gt;
+ #include &lt;fcntl.h&gt;
++#if defined(HAVE_SYS_MODEM_H)
++#include &lt;sys/modem.h&gt;
++#endif /* HAVE_SYS_MODEM_H */
++/* Workaround for HP-UX 11.23, which is missing CRTSCTS */
++#ifndef CRTSCTS
++#  ifdef CNEW_RTSCTS
++#    define CRTSCTS CNEW_RTSCTS
++#  else
++#    define CRTSCTS 0
++#  endif /* CNEW_RTSCTS */
++#endif /* !CRTSCTS */
+ 
+ #include &quot;gpsd.h&quot;
+ 
+Index: configure.in
+===================================================================
+--- configure.in	(revision 1110)
++++ configure.in	(working copy)
+@@ -10,9 +10,11 @@
+ AC_PROG_LIBTOOL
+ AC_C_BIGENDIAN
+ 
+-CFLAGS=&quot;$CFLAGS -Wall -Werror&quot;
++if eval &quot;test x$GCC = xyes&quot;; then
++	CFLAGS=&quot;$CFLAGS -Wall -Werror&quot;
++fi
+ 
+-AC_CHECK_HEADERS(termios.h sys/termios.h sys/select.h strings.h sys/filio.h sys/time.h X11/xpm.h xpm.h)
++AC_CHECK_HEADERS(termios.h sys/termios.h sys/select.h strings.h sys/filio.h sys/time.h X11/xpm.h xpm.h getopt.h sys/modem.h)
+ 
+ AC_CHECK_LIB(nsl, gethostbyname, LIBNSL=&quot;-lnsl&quot;)
+ AC_SUBST(LIBNSL)
+Index: Makefile.am
+===================================================================
+--- Makefile.am	(revision 1110)
++++ Makefile.am	(working copy)
+@@ -7,6 +7,8 @@
+ BUILD_PROGS = gps xgpsspeed
+ endif
+ 
++XMLTO = xmlto
++
+ bin_PROGRAMS = $(BUILD_PROGS)
+ bin_SCRIPTS = gpsprobe
+ 
+@@ -66,16 +68,16 @@
+ 	gpsprobe.1
+ 
+ gpsd.1 gps.1 xgpsspeed.1: gpsd.xml
+-	xmlto man gpsd.xml
++	$(XMLTO) man gpsd.xml
+ 
+ libgps.3: libgps.xml
+-	xmlto man libgps.xml
++	$(XMLTO) man libgps.xml
+ 
+ libgpsd.3: libgpsd.xml
+-	xmlto man libgpsd.xml
++	$(XMLTO) man libgpsd.xml
+ 
+ gpsprobe.1: gpsprobe.xml
+-	xmlto man gpsprobe.xml
++	$(XMLTO) man gpsprobe.xml
+ 
+ #
+ # Do a release with a tar.gz and a tar.bz2
+
+
+Then to the compile warnings.  First is the HP-UX warnings.  Lost of
+signed/unsigned problems in the code:
+
+
+Warning 942: &quot;drivers.c&quot;, line 52 # Types 'const char *' and 'unsigned char *' are not assignment-compatible.
+                if (strlen(buf)) {
+                           ^^^
+Warning 942: &quot;drivers.c&quot;, line 53 # Types 'char *' and 'unsigned char *' are not assignment-compatible.
+                    gpsd_NMEA_handle_message(session, buf);
+                                                      ^^^
+Warning 942: &quot;drivers.c&quot;, line 55 # Types 'char *' and 'unsigned char *' are not assignment-compatible.
+                    strcat(buf, &quot;\r\n&quot;);
+                           ^^^
+Warning 942: &quot;drivers.c&quot;, line 57 # Types 'char *' and 'unsigned char *' are not assignment-compatible.
+                        session-&gt;gNMEAdata.raw_hook(buf);
+                                                    ^^^
+Warning 942: &quot;zodiac.c&quot;, line 319 # Types 'char *' and 'unsigned char *' are not assignment-compatible.
+                    sprintf(bufp,
+                            ^^^^
+Warning 942: &quot;zodiac.c&quot;, line 328 # Types 'char *' and 'unsigned char *' are not assignment-compatible.
+                    nmea_add_checksum(bufp + 1);
+                                      ^^^^^^^^
+Warning 942: &quot;zodiac.c&quot;, line 329 # Types 'const char *' and 'unsigned char *' are not assignment-compatible.
+                    bufp = bufp + strlen(bufp);
+                                         ^^^^
+Warning 942: &quot;zodiac.c&quot;, line 331 # Types 'char *' and 'unsigned char *' are not assignment-compatible.
+                sprintf(bufp,
+                        ^^^^
+Warning 942: &quot;zodiac.c&quot;, line 341 # Types 'char *' and 'unsigned char *' are not assignment-compatible.
+                nmea_add_checksum(bufp + 1);
+                                  ^^^^^^^^
+Warning 942: &quot;zodiac.c&quot;, line 347 # Types 'char *' and 'unsigned char *' are not assignment-compatible.
+                sprintf(bufp, &quot;$GPGSA,%c,%d,&quot;, 'A', session-&gt;gNMEAdata.mode);
+                        ^^^^
+Warning 942: &quot;zodiac.c&quot;, line 351 # Types 'const char *' and 'unsigned char *' are not assignment-compatible.
+                        bufp = bufp + strlen(bufp);
+                                             ^^^^
+Warning 942: &quot;zodiac.c&quot;, line 352 # Types 'char *' and 'unsigned char *' are not assignment-compatible.
+                        sprintf(bufp, &quot;%02d,&quot;, session-&gt;gNMEAdata.PRN[i]);
+                                ^^^^
+Warning 942: &quot;zodiac.c&quot;, line 357 # Types 'const char *' and 'unsigned char *' are not assignment-compatible.
+                    bufp = bufp + strlen(bufp);
+                                         ^^^^
+Warning 942: &quot;zodiac.c&quot;, line 358 # Types 'char *' and 'unsigned char *' are not assignment-compatible.
+                    sprintf(bufp, &quot;,&quot;);
+                            ^^^^
+Warning 942: &quot;zodiac.c&quot;, line 360 # Types 'const char *' and 'unsigned char *' are not assignment-compatible.
+                bufp = bufp + strlen(bufp);
+                                     ^^^^
+Warning 942: &quot;zodiac.c&quot;, line 361 # Types 'char *' and 'unsigned char *' are not assignment-compatible.
+                sprintf(bufp, &quot;%.2f,%.2f,%.2f*&quot;, session-&gt;gNMEAdata.pdop, session-&gt;gNMEA
+                        ^^^^
+
+Warning 942: &quot;zodiac.c&quot;, line 363 # Types 'char *' and 'unsigned char *' are not assignment-compatible.
+                nmea_add_checksum(bufp2 + 1);
+                                  ^^^^^^^^^
+Warning 942: &quot;zodiac.c&quot;, line 364 # Types 'const char *' and 'unsigned char *' are not assignment-compatible.
+                bufp2 = bufp = bufp + strlen(bufp);
+                                             ^^^^
+Warning 942: &quot;zodiac.c&quot;, line 365 # Types 'char *' and 'unsigned char *' are not assignment-compatible.
+                sprintf(bufp, &quot;$PRWIZCH&quot;);
+                        ^^^^
+Warning 942: &quot;zodiac.c&quot;, line 366 # Types 'const char *' and 'unsigned char *' are not assignment-compatible.
+                bufp = bufp + strlen(bufp);
+                                     ^^^^
+Warning 942: &quot;zodiac.c&quot;, line 368 # Types 'char *' and 'unsigned char *' are not assignment-compatible.
+                    sprintf(bufp, &quot;,%02d,%X&quot;, session-&gt;Zs[i], session-&gt;Zv[i]);
+                            ^^^^
+Warning 942: &quot;zodiac.c&quot;, line 369 # Types 'const char *' and 'unsigned char *' are not assignment-compatible.
+                    bufp = bufp + strlen(bufp);
+                                         ^^^^
+Warning 942: &quot;zodiac.c&quot;, line 371 # Types 'char *' and 'unsigned char *' are not assignment-compatible.
+                sprintf(bufp, &quot;*&quot;);
+                        ^^^^
+Warning 942: &quot;zodiac.c&quot;, line 372 # Types 'const char *' and 'unsigned char *' are not assignment-compatible.
+                bufp = bufp + strlen(bufp);
+                                     ^^^^
+Warning 942: &quot;zodiac.c&quot;, line 373 # Types 'char *' and 'unsigned char *' are not assignment-compatible.
+                nmea_add_checksum(bufp2 + 1);
+                                  ^^^^^^^^^
+Warning 942: &quot;zodiac.c&quot;, line 382 # Types 'char *' and 'unsigned char *' are not assignment-compatible.
+                        sprintf(bufp, &quot;$GPGSV,%d,%d,%02d&quot;, j, (i / 4) + 1, session-&gt;gNMEAdata.sa
+                                ^^^^
+
+Warning 942: &quot;zodiac.c&quot;, line 383 # Types 'const char *' and 'unsigned char *' are not assignment-compatible.
+                    bufp += strlen(bufp);
+                                   ^^^^
+Warning 942: &quot;zodiac.c&quot;, line 385 # Types 'char *' and 'unsigned char *' are not assignment-compatible.
+                        sprintf(bufp, &quot;,%02d,%02d,%03d,%02d&quot;, session-&gt;gNMEAdata.PRN[i],
+                                ^^^^
+
+Warning 942: &quot;zodiac.c&quot;, line 388 # Types 'char *' and 'unsigned char *' are not assignment-compatible.
+                        sprintf(bufp, &quot;,%02d,00,000,%02d,&quot;, session-&gt;gNMEAdata.PRN[i],
+                                ^^^^
+
+Warning 942: &quot;zodiac.c&quot;, line 390 # Types 'const char *' and 'unsigned char *' are not assignment-compatible.
+                    bufp += strlen(bufp);
+                                   ^^^^
+Warning 942: &quot;zodiac.c&quot;, line 392 # Types 'char *' and 'unsigned char *' are not assignment-compatible.
+                        sprintf(bufp, &quot;*&quot;);
+                                ^^^^
+Warning 942: &quot;zodiac.c&quot;, line 393 # Types 'char *' and 'unsigned char *' are not assignment-compatible.
+                        nmea_add_checksum(bufp2 + 1);
+                                          ^^^^^^^^^
+Warning 942: &quot;zodiac.c&quot;, line 394 # Types 'const char *' and 'unsigned char *' are not assignment-compatible.
+                        bufp += strlen(bufp);
+                                       ^^^^
+Warning 942: &quot;zodiac.c&quot;, line 409 # Types 'char *' and 'unsigned char *' are not assignment-compatible.
+                session-&gt;gNMEAdata.raw_hook(buf);
+                                            ^^^
+Warning 942: &quot;gps.c&quot;, line 211 # Types 'void (*)(_WidgetRec *,void *,void *)' and 'void (*)()' are not assignment-compatible.
+        XtAddCallback(quitbutton, XmNactivateCallback, quit_cb, NULL);
+                                                       ^^^^^^^
+Warning 942: &quot;xgpsspeed.c&quot;, line 84 # Types 'const char *' and 'unsigned char *' are not assignment-compatible.
+        XtSetArg(args[0], XtNiconPixmap,
+        ^^^^^^^^
+
+
+Next are the Irix warnings.  Some of the same signed/unsigned
+problems, and in addition some unused variables are detected:
+
+
+cc-1164 cc: WARNING File = drivers.c, Line = 52
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;const char *&quot;.
+
+            if (strlen(buf)) {
+                       ^
+
+cc-1164 cc: WARNING File = drivers.c, Line = 53
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;char *&quot;.
+
+                gpsd_NMEA_handle_message(session, buf);
+                                                  ^
+
+cc-1164 cc: WARNING File = drivers.c, Line = 55
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;char *&quot;.
+
+                strcat(buf, &quot;\r\n&quot;);
+                       ^
+
+cc-1164 cc: WARNING File = drivers.c, Line = 57
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;char *&quot;.
+
+                    session-&gt;gNMEAdata.raw_hook(buf);
+                                                ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 319
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;char *&quot;.
+
+                sprintf(bufp,
+                        ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 328
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;char *&quot;.
+
+                nmea_add_checksum(bufp + 1);
+                                  ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 329
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;const char *&quot;.
+
+                bufp = bufp + strlen(bufp);
+                                     ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 331
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;char *&quot;.
+
+            sprintf(bufp,
+                    ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 341
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;char *&quot;.
+
+            nmea_add_checksum(bufp + 1);
+                              ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 347
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;char *&quot;.
+
+            sprintf(bufp, &quot;$GPGSA,%c,%d,&quot;, 'A', session-&gt;gNMEAdata.mode);
+                    ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 351
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;const char *&quot;.
+
+                    bufp = bufp + strlen(bufp);
+                                         ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 352
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;char *&quot;.
+
+                    sprintf(bufp, &quot;%02d,&quot;, session-&gt;gNMEAdata.PRN[i]);
+                            ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 357
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;const char *&quot;.
+
+                bufp = bufp + strlen(bufp);
+                                     ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 358
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;char *&quot;.
+
+                sprintf(bufp, &quot;,&quot;);
+                        ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 360
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;const char *&quot;.
+
+            bufp = bufp + strlen(bufp);
+                                 ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 361
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;char *&quot;.
+
+            sprintf(bufp, &quot;%.2f,%.2f,%.2f*&quot;, session-&gt;gNMEAdata.pdop, session-&gt;gNMEAdata.hdop,
+                    ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 363
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;char *&quot;.
+
+            nmea_add_checksum(bufp2 + 1);
+                              ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 364
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;const char *&quot;.
+
+            bufp2 = bufp = bufp + strlen(bufp);
+                                         ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 365
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;char *&quot;.
+
+            sprintf(bufp, &quot;$PRWIZCH&quot;);
+                    ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 366
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;const char *&quot;.
+
+            bufp = bufp + strlen(bufp);
+                                 ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 368
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;char *&quot;.
+
+                sprintf(bufp, &quot;,%02d,%X&quot;, session-&gt;Zs[i], session-&gt;Zv[i]);
+                        ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 369
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;const char *&quot;.
+
+                bufp = bufp + strlen(bufp);
+                                     ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 371
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;char *&quot;.
+
+            sprintf(bufp, &quot;*&quot;);
+                    ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 372
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;const char *&quot;.
+
+            bufp = bufp + strlen(bufp);
+                                 ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 373
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;char *&quot;.
+
+            nmea_add_checksum(bufp2 + 1);
+                              ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 382
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;char *&quot;.
+
+                    sprintf(bufp, &quot;$GPGSV,%d,%d,%02d&quot;, j, (i / 4) + 1, session-&gt;gNMEAdata.satellites);
+                            ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 383
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;const char *&quot;.
+
+                bufp += strlen(bufp);
+                               ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 385
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;char *&quot;.
+
+                    sprintf(bufp, &quot;,%02d,%02d,%03d,%02d&quot;, session-&gt;gNMEAdata.PRN[i],
+                            ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 388
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;char *&quot;.
+
+                    sprintf(bufp, &quot;,%02d,00,000,%02d,&quot;, session-&gt;gNMEAdata.PRN[i],
+                            ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 390
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;const char *&quot;.
+
+                bufp += strlen(bufp);
+                               ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 392
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;char *&quot;.
+
+                    sprintf(bufp, &quot;*&quot;);
+                            ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 393
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;char *&quot;.
+
+                    nmea_add_checksum(bufp2 + 1);
+                                      ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 394
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;const char *&quot;.
+
+                    bufp += strlen(bufp);
+                                   ^
+
+cc-1164 cc: WARNING File = zodiac.c, Line = 409
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;char *&quot;.
+
+            session-&gt;gNMEAdata.raw_hook(buf);
+                                        ^
+
+cc-1164 cc: WARNING File = gps.c, Line = 211
+  Argument of type &quot;void (*)()&quot; is incompatible with parameter of type
+          &quot;XtCallbackProc&quot;.
+
+      XtAddCallback(quitbutton, XmNactivateCallback, quit_cb, NULL);
+                                                     ^
+
+cc-1552 cc: WARNING File = gps.c, Line = 43
+  The variable &quot;label_1&quot; is set but never used.
+
+  static Widget label_1, label_2, label_3, label_4, label_5, label_6, label_7;
+                ^
+
+cc-1552 cc: WARNING File = gps.c, Line = 43
+  The variable &quot;label_2&quot; is set but never used.
+
+  static Widget label_1, label_2, label_3, label_4, label_5, label_6, label_7;
+                         ^
+
+cc-1552 cc: WARNING File = gps.c, Line = 43
+  The variable &quot;label_3&quot; is set but never used.
+
+  static Widget label_1, label_2, label_3, label_4, label_5, label_6, label_7;
+                                  ^
+
+cc-1552 cc: WARNING File = gps.c, Line = 43
+  The variable &quot;label_4&quot; is set but never used.
+
+  static Widget label_1, label_2, label_3, label_4, label_5, label_6, label_7;
+                                           ^
+
+cc-1552 cc: WARNING File = gps.c, Line = 43
+  The variable &quot;label_5&quot; is set but never used.
+
+  static Widget label_1, label_2, label_3, label_4, label_5, label_6, label_7;
+                                                    ^
+
+cc-1552 cc: WARNING File = gps.c, Line = 43
+  The variable &quot;label_6&quot; is set but never used.
+
+  static Widget label_1, label_2, label_3, label_4, label_5, label_6, label_7;
+                                                             ^
+
+cc-1552 cc: WARNING File = gps.c, Line = 43
+  The variable &quot;label_7&quot; is set but never used.
+
+  static Widget label_1, label_2, label_3, label_4, label_5, label_6, label_7;
+                                                                      ^
+
+cc-1164 cc: WARNING File = xgpsspeed.c, Line = 84
+  Argument of type &quot;unsigned char *&quot; is incompatible with parameter of type
+          &quot;const char *&quot;.
+
+      XtSetArg(args[0], XtNiconPixmap,
+      ^
+
+cc-1551 cc: WARNING File = xgpsspeed.c, Line = 87
+  The variable &quot;i&quot; is used before its value is set.
+
+                                   xgps_width, xgps_height)); i++;
+                                                              ^
+
+cc-1552 cc: WARNING File = xgpsspeed.c, Line = 60
+  The variable &quot;port&quot; is set but never used.
+
+      char *port = DEFAULT_GPSD_PORT;
+            ^
+
+cc-1552 cc: WARNING File = xgpsspeed.c, Line = 61
+  The variable &quot;label&quot; is set but never used.
+
+      Widget toplevel, base, label;
+                             ^
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000354.html">[Gpsd-dev] [PATCH] some portability issues with gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#353">[ date ]</a>
+              <a href="thread.html#353">[ thread ]</a>
+              <a href="subject.html#353">[ subject ]</a>
+              <a href="author.html#353">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

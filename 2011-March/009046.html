@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%22bookend%20synchronization%22.%20does%20not%20%28always%29%20work&In-Reply-To=%3CAANLkTi%3DYX-iC%2B8AkS75-%2BnY_Yj%2BsG7guscFRuJ-yiXfx%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009037.html">
+   <LINK REL="Next"  HREF="009048.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%22bookend%20synchronization%22.%20does%20not%20%28always%29%20work&In-Reply-To=%3CAANLkTi%3DYX-iC%2B8AkS75-%2BnY_Yj%2BsG7guscFRuJ-yiXfx%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work">thomas at mich.com
+       </A><BR>
+    <I>Fri Mar 25 13:33:15 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009037.html">[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work
+</A></li>
+        <LI>Next message: <A HREF="009048.html">[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9046">[ date ]</a>
+              <a href="thread.html#9046">[ thread ]</a>
+              <a href="subject.html#9046">[ subject ]</a>
+              <a href="author.html#9046">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>You are thinking DMA, not multiprocessor or multicore.
+
+If memcpy for the read is going to occur, it will occur on a separate
+core nearby and CPU caches normally have cross-processor cache
+coherency.  So the read will see the value of the last write to any
+location, including the bookends, and the read will read the first
+bookend first, and the last bookend last.
+
+<A HREF="http://en.wikipedia.org/wiki/Cache_coherence">http://en.wikipedia.org/wiki/Cache_coherence</A>
+
+Apple has no architecture, I think you mean Power PC (G5 dual) or ARM
+(iOS) - but all these have the same kind of mechanism.
+
+If you do a DMA of the memory image via firewire, it might not be
+coherent without the barrier.
+
+And if there were no cache coherency, then ordinary common instruction
+sequences would fail - consider a device driver that needs to set then
+reset a bit on a port - if it could occur in any order, the bit might
+not be set at all, or be stuck high.  (Instruction reordering is also
+limited to insure coherency)
+
+On Fri, Mar 25, 2011 at 6:25 AM, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> Terje Mathisen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">terje at tmsw.no</A>&gt;:
+</I>&gt;&gt;<i> The problem is simply that it _does_ not work in the general case,
+</I>&gt;&gt;<i> even when written in asm in order to absolutely guarantee program
+</I>&gt;&gt;<i> write order:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> The cpu memory interface is totally free to re-arrange the actual
+</I>&gt;&gt;<i> flushes to ram, meaning that absent a memory barrier type
+</I>&gt;&gt;<i> instruction, another physical cpu can read stale values for the
+</I>&gt;&gt;<i> bookend sentinels, and fresh data in between.
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009037.html">[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work
+</A></li>
+	<LI>Next message: <A HREF="009048.html">[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9046">[ date ]</a>
+              <a href="thread.html#9046">[ thread ]</a>
+              <a href="subject.html#9046">[ subject ]</a>
+              <a href="author.html#9046">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

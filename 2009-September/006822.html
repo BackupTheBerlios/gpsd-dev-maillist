@@ -1,0 +1,147 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPSD runs as wrong group when using serial	port	console
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20runs%20as%20wrong%20group%20when%20using%20serial%0A%09port%09console&In-Reply-To=%3C4AA16419.9070304%40wildgooses.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006821.html">
+   <LINK REL="Next"  HREF="006826.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPSD runs as wrong group when using serial	port	console</H1>
+    <B>Ed W</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20runs%20as%20wrong%20group%20when%20using%20serial%0A%09port%09console&In-Reply-To=%3C4AA16419.9070304%40wildgooses.com%3E"
+       TITLE="[Gpsd-dev] GPSD runs as wrong group when using serial	port	console">lists at wildgooses.com
+       </A><BR>
+    <I>Fri Sep  4 21:01:45 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006821.html">[Gpsd-dev] GPSD runs as wrong group when using serial port	console
+</A></li>
+        <LI>Next message: <A HREF="006826.html">[Gpsd-dev] GPSD runs as wrong group when using	serial	port	console
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6822">[ date ]</a>
+              <a href="thread.html#6822">[ thread ]</a>
+              <a href="subject.html#6822">[ subject ]</a>
+              <a href="author.html#6822">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Chris Kuethe wrote:
+&gt;<i> On Fri, Sep 4, 2009 at 10:56 AM, Ed W&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">lists at wildgooses.com</A>&gt; wrote:
+</I>&gt;<i>   
+</I>&gt;&gt;<i> Therefore the my options would seem to be (assuming I fix this for
+</I>&gt;&gt;<i> everyone, not just for me):
+</I>&gt;&gt;<i> - patch to allow a configurable device to test (ugly and error prone)
+</I>&gt;&gt;<i> - patch to allow a hard coded group (gpsd already has a &quot;run as user&quot;
+</I>&gt;&gt;<i> option)
+</I>&gt;&gt;<i> - patch to setup a new user with a known group and set this as the hardcoded
+</I>&gt;&gt;<i> user. This seems the most conventional route, but doesn't seem popular
+</I>&gt;&gt;<i> with one gentoo developer
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Does anyone else have any suggestions on how to fix this or other
+</I>&gt;&gt;<i> comments?  Would a patch to implement option 2) above (configurable
+</I>&gt;&gt;<i> group owner) be accepted?
+</I>&gt;&gt;<i>     
+</I>&gt;<i>
+</I>&gt;<i> <A HREF="http://svn.berlios.de/viewvc/gpsd/trunk/configure.ac?r1=5808&amp;r2=6048">http://svn.berlios.de/viewvc/gpsd/trunk/configure.ac?r1=5808&amp;r2=6048</A>
+</I>&gt;<i>
+</I>&gt;<i> This recent change to configure sounds like it might be what you need.
+</I>&gt;<i>
+</I>&gt;<i>   
+</I>
+I don't think so - the problem is that gpsd is starting up and assuming 
+perms based on the &quot;wrong&quot; reference.  ie my /dev/ttyS0 is sensibly 
+user/group root:root because it's got a getty attached to it and I'm 
+logged into it.
+
+Additionally I noticed that my idea 3) above doesn't work.  I created a 
+new user gpsd and assigned it group uucp, however, I still get perm 
+errors presumably because gpsd is forcing itself to run as group &quot;root&quot;, 
+user &quot;gpsd&quot;?
+
+Sep  4 18:52:16 localhost user.notice gpsd[4260]: gpsd: changing to group 0
+Sep  4 18:52:16 localhost user.notice gpsd[4260]: gpsd: running with 
+effective group ID 0
+Sep  4 18:52:16 localhost user.notice gpsd[4260]: gpsd: running with 
+effective user ID 102
+...
+Sep  4 18:52:42 localhost user.info kernel: [  571.294816] pl2303 
+1-2.2:1.0: pl2303 converter detected
+Sep  4 18:52:42 localhost user.info kernel: [  571.297020] usb 1-2.2: 
+pl2303 converter now attached to ttyUSB1
+Sep  4 18:52:42 localhost daemon.info gpsd.hotplug: 
+gpsd_control(action=add, arg=/dev/ttyUSB1)
+Sep  4 18:52:42 localhost user.notice gpsd[4260]: gpsd: control socket 
+connect on 6
+Sep  4 18:52:42 localhost daemon.info gpsd.hotplug: reached a running gpsd
+Sep  4 18:52:42 localhost user.notice gpsd[4260]: gpsd: &lt;= control(6): 
++/dev/ttyUSB1\x0d
+Sep  4 18:52:42 localhost user.notice gpsd[4260]: gpsd: &lt;= control(6): 
+adding /dev/ttyUSB1
+Sep  4 18:52:42 localhost user.notice gpsd[4260]: gpsd: opening GPS data 
+source at '/dev/ttyUSB1'
+Sep  4 18:52:42 localhost user.err gpsd[4260]: gpsd: device open failed: 
+Permission denied - retrying read-only
+Sep  4 18:52:42 localhost user.err gpsd[4260]: gpsd: read-only device 
+open failed: Permission denied
+
+
+Incidently this highlights some possibly unintended effects.  If the 
+user set at compile time does not exist at runtime then the fallback is 
+to run as root.  I should point out this is using uclibc
+
+Sep  4 18:58:09 localhost user.notice gpsd[4338]: gpsd: changing to group 0
+Sep  4 18:58:09 localhost user.notice gpsd[4338]: gpsd: running with 
+effective group ID 0
+Sep  4 18:58:09 localhost user.notice gpsd[4338]: gpsd: running with 
+effective user ID 0
+
+
+
+I'm actually out of ideas to fix this now short of adding a config flag 
+to allow the group to be forced?
+
+To recap:
+
+crw-------    1 root     root       4,  64 Sep  4 18:52 /dev/ttyS0
+crw-rw----    1 root     uucp     188,   0 Sep  4 18:42 /dev/ttyUSB0
+crw-rw----    1 root     uucp     188,   1 Sep  4 18:52 /dev/ttyUSB1
+
+(I'm logged in using ttyS0 and it's also my console)
+
+Any thoughts?
+
+Ed W
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006821.html">[Gpsd-dev] GPSD runs as wrong group when using serial port	console
+</A></li>
+	<LI>Next message: <A HREF="006826.html">[Gpsd-dev] GPSD runs as wrong group when using	serial	port	console
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6822">[ date ]</a>
+              <a href="thread.html#6822">[ thread ]</a>
+              <a href="subject.html#6822">[ subject ]</a>
+              <a href="author.html#6822">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

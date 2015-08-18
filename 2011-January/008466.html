@@ -1,0 +1,146 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Remaining work on subframe reporting
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Remaining%20work%20on%20subframe%20reporting&In-Reply-To=%3Calpine.LNX.1.00.1101061506100.1904%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008464.html">
+   <LINK REL="Next"  HREF="008469.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Remaining work on subframe reporting</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Remaining%20work%20on%20subframe%20reporting&In-Reply-To=%3Calpine.LNX.1.00.1101061506100.1904%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] Remaining work on subframe reporting">gem at rellim.com
+       </A><BR>
+    <I>Fri Jan  7 00:20:56 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008464.html">[Gpsd-dev] Remaining work on subframe reporting
+</A></li>
+        <LI>Next message: <A HREF="008469.html">[Gpsd-dev] Remaining work on subframe reporting
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8466">[ date ]</a>
+              <a href="thread.html#8466">[ thread ]</a>
+              <a href="subject.html#8466">[ subject ]</a>
+              <a href="author.html#8466">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Eric!
+
+On Thu, 6 Jan 2011, Eric Raymond wrote:
+
+&gt;<i> &gt; Yes, but probably not remotely in the final form and no guarantees of
+</I>&gt;<i> &gt; completeness, correctness, splint-ness, etc.
+</I>&gt;<i>
+</I>&gt;<i> I splint-cleaned it this norning.
+</I>
+Thank you, just be prepared for more reorganization.
+
+&gt;<i> The way I handle this is the AIS context is as follows:
+</I>&gt;<i>
+</I>&gt;<i> (1) Have a &quot;scaled&quot; property defaulting to false.
+</I>
+Perfect.  Can I piggy back on that flag and the way it gets handled?
+How does the client set/clear it and how do I check it?
+
+&gt;<i> Really answering &quot;how many places&quot; would take numerical analysis of the
+</I>&gt;<i> float ranges for each data item. I did this for AIS, which thankfully
+</I>&gt;<i> ships a lot fewer floats.
+</I>
+Yeah, just work to do that needs doing.
+
+&gt;<i> As for units, I think we should emit whatever native units IS-GPS-200E calls
+</I>&gt;<i> for so we have minimum loss of precision to unit conversions. It's the
+</I>&gt;<i> client's job to do interpretation.
+</I>
+Sadly IS-GPS-200E is in semi-cirlces and everyone expects radians.  Might
+be worth tweaking the 'scaled' property to be one of: none, semi-cirlces,
+radians.  FOr now I'll just document how to go from semi-circles to radians.
+
+&gt;<i> &gt; How do I encode arrays?
+</I>&gt;<i>
+</I>&gt;<i> I presume you've learned about JSON array notation by now.  If not,
+</I>&gt;<i> it's in the RFC.
+</I>
+Yeah, sadly arrays are not part of JSON at all, the closest thing is
+ordered lists with no indexing.  Those lists are useless for sparse
+arrays.
+
+&gt;<i> &gt; Should I encode arrays (a[0], a[1],...) instead of naming the varables
+</I>&gt;<i> &gt; as does the IS-GPS-200E (ERD1, ERD2,... ERD25)?
+</I>&gt;<i>
+</I>&gt;<i> That de[pends o the semantics of the data.  Do we expect that client
+</I>&gt;<i> apps will want to treat it as a unit?  If so, definitely as an array.
+</I>
+But sadly JSON has no arrays.
+
+&gt;<i> &gt; If sub classes are used, how would they look?
+</I>&gt;<i>
+</I>&gt;<i> I'm OK with the SUBFRAME class having a variable inventory, as long as
+</I>&gt;<i> the subtype field is always present and unambiguous.
+</I>
+The ambiguity is the issue.  Next step is I'm going to add a subclass for
+each data type.  Decoding will be much easier that way.
+
+So there will be the common part, and the variable part would be int
+the subclass.  So Instead of this:
+
+{&quot;class&quot;:&quot;SUBFRAME&quot;,&quot;tSV&quot;:18,&quot;TOW17&quot;:71578,&quot;frame&quot;:3,&quot;IODE&quot;: 11,&quot;IDOT&quot;:1.73668e-09,&quot;Cic&quot;:2.309680e-07,&quot;Omega0&quot;:8.60824618023e-01,&quot;Cis&quot;:-1.303852e-08,&quot;i0&quot;:2.97516063787e-01,&quot;Crc&quot;:222.0625,&quot;omega&quot;:-7.24956667516e-01,&quot;Omegad&quot;:1.904731e-06}
+
+I would have this:
+
+{&quot;class&quot;:&quot;SUBFRAME&quot;,&quot;tSV&quot;:18,&quot;TOW17&quot;:71578,&quot;frame&quot;:3,
+ &quot;EPHEM3&quot;:{&quot;IODE&quot;: 11,&quot;IDOT&quot;:1.73668e-09,&quot;Cic&quot;:2.309680e-07,&quot;Omega0&quot;:8.60824618023e-01,&quot;Cis&quot;:-1.303852e-08,&quot;i0&quot;:2.97516063787e-01,&quot;Crc&quot;:222.0625,&quot;omega&quot;:-7.24956667516e-01,&quot;Omegad&quot;:1.904731e-06}}
+
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 109 NW Wilmington Ave., Suite E, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFNJk5cBmnRqz71OvMRAvnuAJ9+C/OscuTIk8AB1qG2ChOvcVvvNQCfTE/X
++YCcN27LEeQKagSrq8O3b8I=
+=0FZr
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008464.html">[Gpsd-dev] Remaining work on subframe reporting
+</A></li>
+	<LI>Next message: <A HREF="008469.html">[Gpsd-dev] Remaining work on subframe reporting
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8466">[ date ]</a>
+              <a href="thread.html#8466">[ thread ]</a>
+              <a href="subject.html#8466">[ subject ]</a>
+              <a href="author.html#8466">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

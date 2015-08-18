@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Possible shm problem: Structure alignment?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Possible%20shm%20problem%3A%20Structure%20alignment%3F&In-Reply-To=%3C4D8CE3CC.2080409%40tmsw.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009076.html">
+   <LINK REL="Next"  HREF="009075.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Possible shm problem: Structure alignment?</H1>
+    <B>Terje Mathisen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Possible%20shm%20problem%3A%20Structure%20alignment%3F&In-Reply-To=%3C4D8CE3CC.2080409%40tmsw.no%3E"
+       TITLE="[Gpsd-dev] Possible shm problem: Structure alignment?">terje at tmsw.no
+       </A><BR>
+    <I>Fri Mar 25 19:49:48 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009076.html">[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work
+</A></li>
+        <LI>Next message: <A HREF="009075.html">[Gpsd-dev] Possible shm problem: Structure alignment?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9073">[ date ]</a>
+              <a href="thread.html#9073">[ thread ]</a>
+              <a href="subject.html#9073">[ subject ]</a>
+              <a href="author.html#9073">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I have started to look more closely at the shm driver, and one issue 
+that's quite obvious is in the shmTime{} struct:
+
+struct shmTime {
+	int    mode; /* 0 - if valid set
+		      *       use values,
+		      *       clear valid
+		      * 1 - if valid set
+		      *       if count before and after read of values is equal,
+		      *         use values
+		      *       clear valid
+		      */
+	int    count;
+	time_t clockTimeStampSec;
+	int    clockTimeStampUSec;
+	time_t receiveTimeStampSec;
+	int    receiveTimeStampUSec;
+	int    leap;
+	int    precision;
+	int    nsamples;
+	int    valid;
+	int    dummy[10];
+};
+
+Please notice that all the variables are of type 'int' except for the 
+time_t parts: On many platforms time_t and int will be the same size, 
+but on most 32-bit platforms that want to be able to handle the 32-bit 
+time_t rollower in another 25 years or so, time_t has been updated to be 
+64-bit right?
+
+Since the default alignment of 64-bit variables is to be on a 64-bit 
+boundary, the second time_t (receiveTimeStampSec) will be preceded by a 
+32-bit padding, but this is both compiler and optimization flags dependent.
+
+Another problem occurs if you have a mixed 64-bit/32-bit setup, where 
+some programs have been compiled for one and some for the other register 
+size: In that case this interface will not work at all.
+
+If we want ntpd and gpsd to be able to communicate we need to replace 
+all those 'int' definitions by something which is compiler flags 
+independent.
+
+My suggestion is therefore to change it like this:
+
+struct timeStamp {
+	int64_t clockTimeStampSec;
+	int64_t receiveTimeStampSec;
+	int32_t clockTimeStampUSec;
+	int32_t receiveTimeStampUSec;
+};
+
+#define TIMESTAMP_BUFFER_SIZE 4
+
+struct shmTime {
+	int32_t mode; /* 0, 1 or 2 */
+	int32_t	count;
+
+	int32_ tleap;
+	int32_t precision;
+	int32_t nsamples;
+	int32_t valid;
+
+	timestamp ts[TIMESTAMP_BUFFER_SIZE];
+};
+
+Even if you guys don't agree with my wish for a multi-sample buffer, we 
+should still reorder the layout this way but with a single buffer entry.
+
+Terje
+
+-- 
+- &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Terje at tmsw.no</A>&gt;
+&quot;almost all programming can be viewed as an exercise in caching&quot;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009076.html">[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work
+</A></li>
+	<LI>Next message: <A HREF="009075.html">[Gpsd-dev] Possible shm problem: Structure alignment?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9073">[ date ]</a>
+              <a href="thread.html#9073">[ thread ]</a>
+              <a href="subject.html#9073">[ subject ]</a>
+              <a href="author.html#9073">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

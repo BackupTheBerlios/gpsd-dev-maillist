@@ -1,0 +1,145 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] More fixes...
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20More%20fixes...&In-Reply-To=%3C200505010927.j419RcO13609%40alopias.GreenKey.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001515.html">
+   <LINK REL="Next"  HREF="001517.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] More fixes...</H1>
+    <B>Curtis Doty</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20More%20fixes...&In-Reply-To=%3C200505010927.j419RcO13609%40alopias.GreenKey.net%3E"
+       TITLE="[Gpsd-dev] More fixes...">Curtis at GreenKey.net
+       </A><BR>
+    <I>Sun May  1 11:27:38 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001515.html">[Gpsd-dev] More fixes...
+</A></li>
+        <LI>Next message: <A HREF="001517.html">[Gpsd-dev] More fixes...
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1516">[ date ]</a>
+              <a href="thread.html#1516">[ thread ]</a>
+              <a href="subject.html#1516">[ subject ]</a>
+              <a href="author.html#1516">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>10:19am Rob Janssen said:
+
+&gt;<i> &gt; Oh, never used that one.  Here are mine for comparison:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; # ntpq -p
+</I>&gt;<i> &gt;      remote           refid      st t when poll reach   delay   offset
+</I>&gt;<i> &gt; jitter
+</I>&gt;<i> &gt; ==============================================================================
+</I>&gt;<i> &gt; - -SHM(0)          .GPS.            0 l    7   16  377    0.000   11.177
+</I>&gt;<i> &gt; 3.060
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; So you are better by a factor of 1,000!
+</I>&gt;<i> 
+</I>&gt;<i> But you are probably using the current implementation that derives time
+</I>&gt;<i> from serial messages.  This is inaccurate because the messages are sent
+</I>&gt;<i> via some buffer queue, and are received in the system by buffering serial
+</I>&gt;<i> devices and device drivers.
+</I>&gt;<i> I have a second definition for my GPS that uses this method.  Compare:
+</I>&gt;<i> 
+</I>&gt;<i> +SHM(1)          .GPS1.           0 l   13   16  377    0.000  -19.330 
+</I>&gt;<i> 48.299
+</I>&gt;<i> 
+</I>&gt;<i> This is why I want to add PPS handling for those receivers that support it.
+</I>&gt;<i> 
+</I>&gt;<i> A major problem with serial message handling is also that there is a fixed
+</I>&gt;<i> offset between the time in the message and the actual time it is sent,
+</I>&gt;<i> which often is left undefined in the manual.  At some point in time the
+</I>&gt;<i> seconds mark ticks, the receiver does al its calculations, prepares
+</I>&gt;<i> messages, and sends them out.  Then there is the serial transfer time. 
+</I>&gt;<i> There can be hundreds of milliseconds between the time indicated in the
+</I>&gt;<i> message and the actual time it arrives in gpsd.
+</I>&gt;<i> You won't notice that when you use only gpsd to sync the clock, but add
+</I>&gt;<i> some external clocks to see it.
+</I>&gt;<i> I already added some &quot;tweak&quot; value to the received time to get them
+</I>&gt;<i> approximately OK on my system...
+</I>
+I'm not even sure the delay is fixed. Today, I built/test rev 2388 and 
+things look sweet for a usbserial device:
+
+     remote           refid      st t when poll reach   delay   offset  jitter
+==============================================================================
+-SHM(0)          SHM(0)           5 l    4   16  377    0.000   -1.301   1.069
+
+But thats after fudging time1 0.014. Yesterday I had to set it to 0.06 and 
+last week (on a different system and GPS) to 0.165.
+
+For the record, here's what I have right now in ntp.conf:
+
+# gpsd magic
+server  127.127.28.0    minpoll 4
+fudge   127.127.28.0    refid GPS       stratum 5       time1 0.014
+
+The reason the GPS is stratum 5 is because it is a mobile rig that 
+sometimes comes in contact with the whirled wide wonderweb and a few 
+stratum 1/2/3/4 peers. But when out wandering, it uses the GPS only.
+
+I would also like to suggest folks try and test this for better priviledge 
+separation:
+
+Index: ntpshm.c
+===================================================================
+--- ntpshm.c	(revision 2388)
++++ ntpshm.c	(working copy)
+@@ -20,7 +20,7 @@
+ #include &lt;sys/shm.h&gt;
+ 
+ #define NTPD_BASE	0x4e545030	/* &quot;NTP0&quot; */
+-#define SHM_UNIT	0		/* SHM driver unit number (0..3) */
++#define SHM_UNIT	2		/* SHM driver unit number (0..3) */
+ 
+ struct shmTime {
+     int    mode; /* 0 - if valid set
+
+Under the auspices that one with physical access to the system and the 
+ability to connect a gps can also adjust the system time. I expect this 
+will resolve the permissions race between ntpd and gpsd on the SHM 
+segment.
+
+Of course you will also need to change your ntp.conf to user the 
+127.127.28.2 driver. As defined here: 
+<A HREF="http://www.eecis.udel.edu/~mills/ntp/html/drivers/driver28.html">http://www.eecis.udel.edu/~mills/ntp/html/drivers/driver28.html</A>
+
+../C
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001515.html">[Gpsd-dev] More fixes...
+</A></li>
+	<LI>Next message: <A HREF="001517.html">[Gpsd-dev] More fixes...
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1516">[ date ]</a>
+              <a href="thread.html#1516">[ thread ]</a>
+              <a href="subject.html#1516">[ subject ]</a>
+              <a href="author.html#1516">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

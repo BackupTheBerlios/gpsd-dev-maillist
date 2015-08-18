@@ -1,0 +1,111 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] We're out of validity bits - incompatible change to API	may be needed
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20We%27re%20out%20of%20validity%20bits%20-%20incompatible%20change%20to%0A%20API%09may%20be%20needed&In-Reply-To=%3C4BBE19CD.2080605%40bzed.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007639.html">
+   <LINK REL="Next"  HREF="007641.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] We're out of validity bits - incompatible change to API	may be needed</H1>
+    <B>Bernd Zeimetz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20We%27re%20out%20of%20validity%20bits%20-%20incompatible%20change%20to%0A%20API%09may%20be%20needed&In-Reply-To=%3C4BBE19CD.2080605%40bzed.de%3E"
+       TITLE="[Gpsd-dev] We're out of validity bits - incompatible change to API	may be needed">bernd at bzed.de
+       </A><BR>
+    <I>Thu Apr  8 20:00:45 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007639.html">[Gpsd-dev] We're out of validity bits - incompatible change to API	may be needed
+</A></li>
+        <LI>Next message: <A HREF="007641.html">[Gpsd-dev] We're out of validity bits - incompatible change to API	may be needed
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7640">[ date ]</a>
+              <a href="thread.html#7640">[ thread ]</a>
+              <a href="subject.html#7640">[ subject ]</a>
+              <a href="author.html#7640">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+while I can understand that this is a major issue, in my opinion it would not be
+good to poke application developers yet again to change their code, at least not
+in a hurry.
+So in my opinion the old struct should be kept alive for some versions to give
+them enough time to migrate to whatever the resolution of this problem will be.
+As COMPASS_SET is not in the struct yet, chances are really good that no
+application wants to access it right now. So developers who want to use the
+information should switch to the new approach to access the data, and developers
+who are not interested in the data should be given enough time to switch. This
+would also make sure I could upload the latest shiniest gpsd version to Debian -
+we're too close to the freeze (yeah, its delayed, I know) to have yet another
+major transition. Remember that I need to get KDE rebuilt for a soname change of
+the library.
+
+On 04/08/2010 07:40 PM, Eric Raymond wrote:
+&gt;<i> 6. (BLOB) Suggestion by sanooj on IRC: Abandon having a gps_data_t
+</I>&gt;<i> that the app developers can see inside.  Instead, make struct
+</I>&gt;<i> gpsdata_t an opaque blob that can be copied but only unpacked by
+</I>&gt;<i> function accessors.  Requires at least one break in binary and source
+</I>&gt;<i> compatibility, but solves the problem forever. Or, at least, until a
+</I>&gt;<i> dev in a hurry peeks.
+</I>
+Out of the choices of how to fix the issue, I think that the blob with proper
+functions to access it is the best way, but probably I'm just too used to code
+in languages != c.
+
+&gt;<i> 7. (AUXDATA) Variant of approach 2 (builds on another suggestion by
+</I>&gt;<i> sanooj). In this one, we steal RAW_SET's 0x00020000u to indicate that
+</I>&gt;<i> there is extension data in a new struct that lives in the union.  The
+</I>&gt;<i> struct begins with a bitmask and has yet another union is the only
+</I>&gt;<i> other member.  Something like this: [...]
+</I>
+Before stealing a probably used member of the struct we should ensure its not
+used by any client program. I could imagine that some developers did weird
+things to parse NMEA on their own - yeah, ugly, but there is a lot of ugly code
+out there which tries to talk to gpsd. I can investigate for that within the
+known reverse dependencies of libgps in Debian, if it is of interest.
+
+
+Cheers,
+
+Bernd
+
+-- 
+ Bernd Zeimetz                            Debian GNU/Linux Developer
+ <A HREF="http://bzed.de">http://bzed.de</A>                                <A HREF="http://www.debian.org">http://www.debian.org</A>
+ GPG Fingerprints: 06C8 C9A2 EAAD E37E 5B2C BE93 067A AD04 C93B FF79
+                   ECA1 E3F2 8E11 2432 D485 DD95 EB36 171A 6FF9 435F
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007639.html">[Gpsd-dev] We're out of validity bits - incompatible change to API	may be needed
+</A></li>
+	<LI>Next message: <A HREF="007641.html">[Gpsd-dev] We're out of validity bits - incompatible change to API	may be needed
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7640">[ date ]</a>
+              <a href="thread.html#7640">[ thread ]</a>
+              <a href="subject.html#7640">[ subject ]</a>
+              <a href="author.html#7640">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

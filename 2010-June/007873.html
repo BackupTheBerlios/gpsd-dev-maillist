@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] multipacket fix: ublox works
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20multipacket%20fix%3A%20ublox%20works&In-Reply-To=%3Crmiljateewa.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007878.html">
+   <LINK REL="Next"  HREF="007875.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] multipacket fix: ublox works</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20multipacket%20fix%3A%20ublox%20works&In-Reply-To=%3Crmiljateewa.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] multipacket fix: ublox works">gdt at ir.bbn.com
+       </A><BR>
+    <I>Sat Jun  5 16:24:21 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007878.html">[Gpsd-dev] regression failures
+</A></li>
+        <LI>Next message: <A HREF="007875.html">[Gpsd-dev] multipacket fix: ublox works
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7873">[ date ]</a>
+              <a href="thread.html#7873">[ thread ]</a>
+              <a href="subject.html#7873">[ subject ]</a>
+              <a href="author.html#7873">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+I just tested
+
+  release-2.94-245-g972ab8c (plus messing with timing in gpsfake), which
+  is basically 247764899f232d2c30e1a9a77f8ddcfcc9b99592
+
+with a ublox antaris 4 on netbsd-5/i386, which previously exhibited the
+multipacket problem.  I see reads of up to 522 bytes - here's a
+count/nbytes of the read system call:
+
+   3 35
+  25 38
+  30 41
+  22 52
+  14 54
+   3 68
+  14 70
+  30 74
+  33 75
+   8 90
+  19 124
+  30 130
+   3 182
+   1 522
+
+I suspect that the device might be sending most sentences by themselves
+over USB, but before the fix once we got behind it got worse.  The code
+appears to correctly read out the additional packets/sentences from the
+buffer promptly.
+
+So I think Eric's multipacket fix in
+2e58d371d3aad74c8a609749733329c00a6a5f63 is good.
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100605/21f835ee/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100605/21f835ee/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007878.html">[Gpsd-dev] regression failures
+</A></li>
+	<LI>Next message: <A HREF="007875.html">[Gpsd-dev] multipacket fix: ublox works
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7873">[ date ]</a>
+              <a href="thread.html#7873">[ thread ]</a>
+              <a href="subject.html#7873">[ subject ]</a>
+              <a href="author.html#7873">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

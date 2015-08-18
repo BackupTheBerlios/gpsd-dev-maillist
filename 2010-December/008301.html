@@ -1,0 +1,156 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPS%20date%20fail%20due%20to%20week%20counter%20rollover%20%28not%20a%0A%20gpsd%20bug%29&In-Reply-To=%3C20101216084431.GA31410%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008300.html">
+   <LINK REL="Next"  HREF="008302.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPS%20date%20fail%20due%20to%20week%20counter%20rollover%20%28not%20a%0A%20gpsd%20bug%29&In-Reply-To=%3C20101216084431.GA31410%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Dec 16 09:44:31 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008300.html">[Gpsd-dev] JFYI: gpxloggerd
+</A></li>
+        <LI>Next message: <A HREF="008302.html">[Gpsd-dev] test_gpsmm.cpp broken
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8301">[ date ]</a>
+              <a href="thread.html#8301">[ thread ]</a>
+              <a href="subject.html#8301">[ subject ]</a>
+              <a href="author.html#8301">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE><A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">f4eru at free.fr</A> &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">f4eru at free.fr</A>&gt;:
+&gt;<i> This may be of interest to this list
+</I>
+It certainly is, yes.  Apologies for the delay in responding; I had been busy
+with other projects for a while, and while my lieutenants are very capable
+you've raised the sort of issue they (rightly, most of the time) tend to 
+leave to me.
+ 
+&gt;<i> I recently used a GPS module as a time and date reference in an
+</I>&gt;<i> embedded project.
+</I>&gt;<i> 
+</I>&gt;<i> As GPS has a Y2K style bug, the week counter rollover, which happens
+</I>&gt;<i> every 1024 weeks (roughly 20 years), i tried the receiver i use with
+</I>&gt;<i> a test generator capable of sending a GPS signal with a random
+</I>&gt;<i> timestamp.
+</I>
+Excellent.  That capability alone is enough to make me want you on our devteam;
+we don't have anyone else who can do this.
+
+&gt;<i> And guess what, my module handles this wrongly, and jumps back to
+</I>&gt;<i>  1999 if a cold boot is done after April 6, 2019
+</I>
+I fail to be in the least surprised by yet another report of crappy firmware
+that breaks on edge cases. I'm gathering you weren't either.
+
+&gt;<i> several issues with that :
+</I>&gt;<i> 
+</I>&gt;<i> - the date is invalid, obviously
+</I>&gt;<i> - UTC time is correct, but a local time calculated on this will sometimes be off +- 1hr, due to wrong DST calculation
+</I>&gt;<i> - some receivers may not get a position (mine was fixing correctly)
+</I>
+Right, it will be able to recover from this glitch if it thinks it has
+a reasonably current ephemeris.  If you were to leave it powered off
+for a week and then try this experiment, you'd probably find it didn't
+get a fix.
+
+&gt;<i> - Finally, gpsd (and other SW probably) interprets the date &quot;99&quot; in
+</I>&gt;<i>   GPRMC as 2099, which gives a 32bit overflow in unix time, gpsmon
+</I>&gt;<i>   reports an error &quot;negative date&quot; and a date in 1969 (probably a -1
+</I>&gt;<i>   returned from the unix time lib), if i enable the GPZDA frame on
+</I>&gt;<i>   the Rx, it reports &quot;correctly&quot; 1999. A 64 bit system will probably
+</I>&gt;<i>   report 2099
+</I>
+Right again, we're likely to see similar issues with any date after the
+32-bit time_t rollover point in 2038.
+
+&gt;<i> Some suggestions :
+</I>&gt;<i> 
+</I>&gt;<i> - correcting the GPRMC date detection to 20xx except 1999 for &quot;99&quot;
+</I>&gt;<i>   would perhaps be a good thing to do. At least gpsd will be
+</I>&gt;<i>   synchron to the GPS info, and no averflow will happen on 32 bit
+</I>&gt;<i>   time_t systems. Of course we loose one year before the 2100 bug,
+</I>&gt;<i>   but fair enough, that's an order of magnitude away from now than
+</I>&gt;<i>   2019
+</I>&gt;<i> 
+</I>&gt;<i> - trying to compensate the 20 year error can be dangerous coz based
+</I>&gt;<i>   on the machine time which can be corrupt also, and, for some
+</I>&gt;<i>   applications,will later be based on GPS, etc... but it's feasible
+</I>&gt;<i>   if the detection is based on a proper window (ex : machine_utc -
+</I>&gt;<i>   gps_utc = n*1024 weeks +- 1 month). The non-trivial part is
+</I>&gt;<i>   calculating offsets of exactly n*1024 weeks in UTC in seconds...
+</I>
+I agree with those suggestions.  I'd prefer you to implement them - I'd
+certainly be willing to put in the coding effort, but since I can't
+actually test the live edge cases the way you can it would be more 
+efficient for you to do it.  
+
+If you have C coding skills that is; if you don't, I'll do what I
+can based on the data logs you pointed us at.
+
+&gt;<i> - maintaining a list of tested devices and bad guys. Crappy GPS
+</I>&gt;<i>   chipsets exist, and will probaqbly still be in production in 2019
+</I>&gt;<i>   (and many systems in use will fail due to crappy design). People
+</I>&gt;<i>   need to test devices with test transmitters. I volunteer.
+</I>
+Accepted with gratitude.  Here's how to get started:
+
+1. Get a site membership at Berlios.  
+
+2. Apply to join the GPSD project as a dev.  I'll check you in.
+
+3. git pull the repository as a dev.
+
+4. Look at gpscap.ini.  This is the master capability database from 
+which we generate <A HREF="http://gpsd.berlios.de/hardware.html">http://gpsd.berlios.de/hardware.html</A> ; you'll
+be editing this to create craplist entries. You can hack it directly
+or go through the web form at <A HREF="https://www.mainframe.cx/cgi-bin/gps_report.cgi">https://www.mainframe.cx/cgi-bin/gps_report.cgi</A>
+
+5. Become familiar with the way the regression-test suite works.
+The relevant tools are gpsfake and the regression-test script 
+harness, regress_driver.
+
+I look forward to your followup. 
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008300.html">[Gpsd-dev] JFYI: gpxloggerd
+</A></li>
+	<LI>Next message: <A HREF="008302.html">[Gpsd-dev] test_gpsmm.cpp broken
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8301">[ date ]</a>
+              <a href="thread.html#8301">[ thread ]</a>
+              <a href="subject.html#8301">[ subject ]</a>
+              <a href="author.html#8301">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

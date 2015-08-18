@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Request for testing pf new serioal-mode features
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Request%20for%20testing%20pf%20new%20serioal-mode%20features&In-Reply-To=%3C20090302150240.2CBBC41C00A%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="006416.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Request for testing pf new serioal-mode features</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Request%20for%20testing%20pf%20new%20serioal-mode%20features&In-Reply-To=%3C20090302150240.2CBBC41C00A%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Request for testing pf new serioal-mode features">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Mon Mar  2 16:02:40 CET 2009</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="006416.html">[Gpsd-dev] Starting another release cycle
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6415">[ date ]</a>
+              <a href="thread.html#6415">[ thread ]</a>
+              <a href="subject.html#6415">[ subject ]</a>
+              <a href="author.html#6415">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>The GPSD suite now has theoretical support for setting serial modes
+other than 8N1, but I can't seem to actually test it here and am
+requesting help.
+
+Here's how this came about...
+
+A few nights ago I had an interesting IRC interaction on #gpsd with a
+guy trying to get data from a Trimble GPS board.  He was getting NMEA
+packets with tags that didn't, according to him, look like anything
+normal. When he sent me a log, what I saw was serial data that looked
+like it had been damaged at the UART level - lots of doubled
+characters.  He went off intending to check out his UART.
+
+I remembered that Trimble chips have been known to send in weird modes
+like 8O1 and decided it would be a good idea if the GPSD tools could
+be kicked into talking on those modes.  So I did the following:
+
+1. Extended the speed_switcher method in the driver layer to take
+parity and stop-bit arguments.
+
+2. Actually implemented parity and stop-bit setting in the SiRF, UBX, 
+and Evermore drivers, working from their technical references.  I
+modified all other speed-switcher methods to log a complaint and return
+false when they're handed a speed/parity/stopbits combination they
+can't handle.
+
+3. Enhanced the gpsd 'B' command to take three optional arguments
+setting wordlength, parity and stopbits in the same format as the
+4-field B response. 
+
+Note: Currently the word length argument is checked to make sure it's
+7 or 8 but otherwise ignored; the word length is actually set as 9 -
+stopbits.  I left it this way because actually storing a separate
+wordlength would change a structure size and break shared-library
+object compatibility on the client side.  That's not a big problem, but
+I'd rather not do it for an enhancement as relatively unimportant as
+this.
+
+4. Enhanced the gpsctl -s option so that it can take not just a speed
+(e.g. 4800, 9600) but a speed with optional colon-separated suffix
+describing a serial mode, eg 9600:8N1, 4800:7E2, and pass those
+downwards appropriately. As above, the word length argument is
+checked but ignored.
+
+5. Likewise enhanced the 's' command of gpsmon.
+
+6. Documented all this and added warnings about the bad things that
+can happen when you try to use this feature (e.g. Bluetooth and USB
+devices hanging).
+
+7. Used gdb to check that the right parameters gat passed to
+speed_switcher when these new features are invoked from the various
+upper levels.
+
+The one thing I gaven't been able to do is make these new features actually
+*work*.  All my test devices are SiRF/pl2303s, and they appear to get
+confused when you try to set a non-8N1 mode -- data stops coming
+from the device and gpsmon hangs.
+
+My code could be subtly buggy, of course, but my suspicion is that
+the pl2303/SiRF combination plain doesn't like non-8N1 modes.  So
+I'm requesting help from all developers.
+
+If you have a device with a SiRF, UBX, or Evermore chip in it, please
+pull Subversion head and test both ordinary baud-rate setting and
+setting baud with one or two non-standard modes - 8O1, 7E2, etc.
+
+Finally, if you have a TSIP chipset, the point of this exercise
+was to support their 8O1 mode.  Please enhance the driver and 
+test that.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+A nation or civilization that continues to produce soft-minded men
+purchases its own spiritual death on an installment plan.
+	--Martin Luther King, Jr. 
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="006416.html">[Gpsd-dev] Starting another release cycle
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6415">[ date ]</a>
+              <a href="thread.html#6415">[ thread ]</a>
+              <a href="subject.html#6415">[ subject ]</a>
+              <a href="author.html#6415">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

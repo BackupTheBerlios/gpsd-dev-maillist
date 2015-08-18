@@ -1,0 +1,94 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] Make sure gpsd_report() know its prototype
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Make%20sure%20gpsd_report%28%29%20know%20its%20prototype&In-Reply-To=%3CE1Chkr1-0004am-3e%40saruman.uio.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000368.html">
+   <LINK REL="Next"  HREF="000370.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] Make sure gpsd_report() know its prototype</H1>
+    <B>Petter Reinholdtsen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Make%20sure%20gpsd_report%28%29%20know%20its%20prototype&In-Reply-To=%3CE1Chkr1-0004am-3e%40saruman.uio.no%3E"
+       TITLE="[Gpsd-dev] [PATCH] Make sure gpsd_report() know its prototype">pere at hungry.com
+       </A><BR>
+    <I>Fri Dec 24 09:31:19 CET 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000368.html">[Gpsd-dev] Announcing release 2.5 of gpsd
+</A></li>
+        <LI>Next message: <A HREF="000370.html">[Gpsd-dev] How should the python bindings work?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#369">[ date ]</a>
+              <a href="thread.html#369">[ thread ]</a>
+              <a href="subject.html#369">[ subject ]</a>
+              <a href="author.html#369">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>This patch make sure &quot;gpsd.h&quot; is included in report.c.  This in turn
+make sure the prototype of gpsd_report() matches the one in gpsd.h.
+
+Please apply in a future version of gpsd.
+
+Index: report.c
+===================================================================
+--- report.c    (revision 1144)
++++ report.c    (working copy)
+@@ -1,5 +1,7 @@
++#include &quot;config.h&quot;
+ #include &lt;stdio.h&gt;
+ #include &lt;stdarg.h&gt;
++#include &quot;gpsd.h&quot;
+
+ void gpsd_report(int errlevel, const char *fmt, ... )
+ /* stub logger for clients that don't supply one */
+
+I discovered the problem while compiling using gcc with lots of
+warnings:
+
+Index: configure.in
+===================================================================
+--- configure.in        (revision 1144)
++++ configure.in        (working copy)
+@@ -11,7 +11,7 @@
+ AC_C_BIGENDIAN
+
+ if eval &quot;test x$GCC = xyes&quot;; then
+-       CFLAGS=&quot;$CFLAGS -Wall -Werror&quot;
++       CFLAGS=&quot;$CFLAGS -Wall -Werror -W -Wcast-align -Wcast-qual -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type&quot; fi
+
+ AC_CHECK_HEADERS(termios.h sys/termios.h sys/select.h strings.h sys/filio.h sys/time.h X11/xpm.h xpm.h getopt.h sys/modem.h)
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000368.html">[Gpsd-dev] Announcing release 2.5 of gpsd
+</A></li>
+	<LI>Next message: <A HREF="000370.html">[Gpsd-dev] How should the python bindings work?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#369">[ date ]</a>
+              <a href="thread.html#369">[ thread ]</a>
+              <a href="subject.html#369">[ subject ]</a>
+              <a href="author.html#369">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

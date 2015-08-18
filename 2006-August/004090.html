@@ -1,0 +1,98 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [1/2] Patches to avoid race conditions
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5B1/2%5D%20Patches%20to%20avoid%20race%20conditions&In-Reply-To=%3C20060814025512.GF19422%40curie-int.orbis-terrarum.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004101.html">
+   <LINK REL="Next"  HREF="004089.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [1/2] Patches to avoid race conditions</H1>
+    <B>Robin H. Johnson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5B1/2%5D%20Patches%20to%20avoid%20race%20conditions&In-Reply-To=%3C20060814025512.GF19422%40curie-int.orbis-terrarum.net%3E"
+       TITLE="[Gpsd-dev] [1/2] Patches to avoid race conditions">robbat2 at gentoo.org
+       </A><BR>
+    <I>Mon Aug 14 04:55:12 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004101.html">[Gpsd-dev] [0/2] Patches to avoid race conditions
+</A></li>
+        <LI>Next message: <A HREF="004089.html">[Gpsd-dev] [2/2] Patches to avoid race conditions
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4090">[ date ]</a>
+              <a href="thread.html#4090">[ thread ]</a>
+              <a href="subject.html#4090">[ subject ]</a>
+              <a href="author.html#4090">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>If you try to add the same device twice with the hotplug script, gpsd does not
+send any error back to the script, leading to it waiting forever on recv(), and
+blocking gpsd from progressing in it's select loop.
+
+This patch makes the daemon write back an error to the control socket (in
+addition the the normal debug output), so that the hotplug script does not
+block for the socket, and everything proceeds much better.
+
+Signed-off-by: Robin H. Johnson &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robbat2 at gentoo.org</A>&gt;
+
+diff -Nuar --exclude '*~' gpsd-2.33.orig/gpsd.c gpsd-2.33/gpsd.c
+--- gpsd-2.33.orig/gpsd.c	2006-06-09 05:34:09.000000000 -0700
++++ gpsd-2.33/gpsd.c	2006-08-13 15:42:25.152204904 -0700
+@@ -1048,9 +1048,10 @@
+ 	    (void)write(sfd, &quot;ERROR\n&quot;, 6);
+     } else if (buf[0] == '+') {
+ 	p = snarfline(buf+1, &amp;stash);
+-	if (find_device(stash))
++	if (find_device(stash)) {
+ 	    gpsd_report(1,&quot;&lt;= control(%d): %s already active \n&quot;, sfd, stash);
+-	else {
++		(void)write(sfd, &quot;ERROR\n&quot;, 6);
++	} else {
+ 	    gpsd_report(1,&quot;&lt;= control(%d): adding %s \n&quot;, sfd, stash);
+ 	    if (open_device(stash))
+ 		(void)write(sfd, &quot;OK\n&quot;, 3);
+
+-- 
+Robin Hugh Johnson
+E-Mail     : <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robbat2 at gentoo.org</A>
+GnuPG FP   : 11AC BA4F 4778 E3F6 E4ED  F38E B27B 944E 3488 4E85
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 232 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20060813/cb073a37/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20060813/cb073a37/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004101.html">[Gpsd-dev] [0/2] Patches to avoid race conditions
+</A></li>
+	<LI>Next message: <A HREF="004089.html">[Gpsd-dev] [2/2] Patches to avoid race conditions
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4090">[ date ]</a>
+              <a href="thread.html#4090">[ thread ]</a>
+              <a href="subject.html#4090">[ subject ]</a>
+              <a href="author.html#4090">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

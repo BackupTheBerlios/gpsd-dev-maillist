@@ -1,0 +1,117 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] State of make check
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20State%20of%20make%20check&In-Reply-To=%3Crmipr2kbn8v.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007552.html">
+   <LINK REL="Next"  HREF="007579.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] State of make check</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20State%20of%20make%20check&In-Reply-To=%3Crmipr2kbn8v.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] State of make check">gdt at ir.bbn.com
+       </A><BR>
+    <I>Wed Mar 31 16:05:04 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007552.html">[Gpsd-dev] State of make check
+</A></li>
+        <LI>Next message: <A HREF="007579.html">[Gpsd-dev] State of make check
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7559">[ date ]</a>
+              <a href="thread.html#7559">[ thread ]</a>
+              <a href="subject.html#7559">[ subject ]</a>
+              <a href="author.html#7559">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at snark.thyrsus.com</A>&gt; writes:
+
+&gt;<i> 2. Why does &quot;make check&quot; run the gps regressions twice?  And can you
+</I>&gt;<i> make it stop?
+</I>
+I'm really surprised that an auto* weenie couldn't figure this out.  It
+only took me 15 minutes.
+
+The problem is that automake expects tests to be programs, not make
+targets.  We work around that by using $(MAKE) as $(TEST_ENVIRONMENT),
+which turns
+
+  packet-regress
+
+into
+
+  $(MAKE) packet-regress
+
+That works fine.  However, the check-TESTS production in Makefile.in
+starts off:
+
+  check-TESTS: $(TESTS)
+          @failed=0; all=0; xfail=0; xpass=0; skip=0; \
+          srcdir=$(srcdir); export srcdir; \
+          list=' $(TESTS) '; \
+          $(am__tty_colors); \
+          if test -n &quot;$$list&quot;; then \
+            for tst in $$list; do \
+              if test -f ./$$tst; then dir=./; \
+              elif test -f $$tst; then dir=; \
+              else dir=&quot;$(srcdir)/&quot;; fi; \
+              if $(TESTS_ENVIRONMENT) $${dir}$$tst; then \
+                all=`expr $$all + 1`; \
+
+so what is does is first make sure that each TEST program is &quot;built&quot;,
+and then procedes to run them.  The 'building' is actually running, so
+it happens twice.
+
+The fix is to create a script that runs
+
+make testregress
+
+and then point TESTS at that script.
+
+
+An alternate fix is to enhance automake to have TEST_TARGETS in addition
+to TESTS, and for it to understand that they are make targets instead of
+programs.
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100331/15fdc97d/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100331/15fdc97d/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007552.html">[Gpsd-dev] State of make check
+</A></li>
+	<LI>Next message: <A HREF="007579.html">[Gpsd-dev] State of make check
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7559">[ date ]</a>
+              <a href="thread.html#7559">[ thread ]</a>
+              <a href="subject.html#7559">[ subject ]</a>
+              <a href="author.html#7559">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

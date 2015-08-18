@@ -1,0 +1,222 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Recent changes in the gpsd dispatcher layer
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Recent%20changes%20in%20the%20gpsd%20dispatcher%20layer&In-Reply-To=%3C20100325032754.BFBFD20CBBF%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007500.html">
+   <LINK REL="Next"  HREF="007468.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Recent changes in the gpsd dispatcher layer</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Recent%20changes%20in%20the%20gpsd%20dispatcher%20layer&In-Reply-To=%3C20100325032754.BFBFD20CBBF%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Recent changes in the gpsd dispatcher layer">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Mar 25 04:27:54 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007500.html">[Gpsd-dev] just git gpsd on Fedora 12
+</A></li>
+        <LI>Next message: <A HREF="007468.html">[Gpsd-dev] Recent changes in the gpsd dispatcher layer
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7440">[ date ]</a>
+              <a href="thread.html#7440">[ thread ]</a>
+              <a href="subject.html#7440">[ subject ]</a>
+              <a href="author.html#7440">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Those of you following the commit list will have noticed a flurry of
+changes to the gpsd core code recently.  It occurred to me this
+afternoon that I should explain what I'm doing, because it's not a
+good thing that I still seem to be the only person who really
+understands the part of the architecture I'm modifying.
+
+0. Prerequisites
+
+To understand what follows, you have to remember that GPSes have
+reporting cycles.  Start of cycle is when the firmware computer a fix.
+It then ships a burst of sentences reporting the fix.  Wait a bit -
+usually 1 second - and repeat.  This becomes an issue because when
+your device speaks NMEA 0183 you have to aggregate reports from all
+the sentences in a reporting cycle to get a complete fix.
+
+You also need to know that the part of the code I'm modifying is the
+dispatcher layer.  This is where the daemon's main select loop lives,
+waiting on input from client sessions, active GPSes, and the special
+control port.  The dispatcher allocates and deallocates sockets for
+the client sessions and the control port, and handles user commands. It
+calls the packet sniffer to accumulate traffic from the GPSes into
+packets that can be analyzes for fixes, applies some policy and error
+modeling, and ships treports to client sessions.
+
+To do these things, the dispatcher calls out to a core library that
+assembles packets and a bunch of drivers to analyze them once
+assembled.  The details of that level aren't important for this
+discussion.  What's mainly significant here is the fact that they're
+separated from the dispatcher logic by an API I was pretty careful
+about designing.
+
+1. The motivation: bring back polling
+
+The modifications I'm doing have been triggered by Chris Kuethe's
+request that I bring back support for client-initiated polling in the
+new JSON-based protocol.  At the moment, all clients are expected to
+set watcher mode, then poll their socket often enough to handle the bursts
+of time-position-velocity JSON that gpsd will send at them once per
+cycle.
+
+The original gpsd protocol was polling based, but had significant
+design defects. One of them was that it was normal to poll for a bunch
+of partial reports (latitude/longitude, altitude, speed, etc.) but
+they weren't timestamped, so it wasn't easy to tell when the data was
+stale.
+
+There were also some unpleasant edge cases arising from the fact that,
+in order to conserve power on battery-driven devices, the daemon
+didn't try to activate any attached device until you polled for
+position data.  Thus, you couldn't actually do a single-shot poll
+reliably under old protocol - first time you tried it would wake up
+some device but return no data, and you would probably start getting
+good data on the second or third poll (depending on the timning of the
+next cycle edge).
+
+There were other problems as well, and I eventually gave up on
+client-initiated polling entirely; when I redesigned the client API
+for use with the new protocol, I left it out.
+
+Chris has a decent use case for it, though, and I'm aiming towards
+bringing it back.  The way it will probably work is that the
+client starts by setting a ?WATCH that doesn't do the once-per-cycle
+JSON bursts, but just clues the daemon to activate devices.
+Thereafter the client will be able to poll for the state of the
+cache from the last fix(es) - that's more than one if there are
+multiple sensors attached.
+
+2. Clearing the way
+
+But there's major work needed to prepare the ground.  The good news is
+that it's entirely in the dispatcher layer and the core library, and
+won't destabilize the packet sniffer or the device drivers.  Changes
+in that lower layer are *messy* and I approach them with trepidation.
+
+Basically, before I can re-implement client polling in a clean way I
+need to clear away a lot of scar tissue and complexity.  I ripped out
+the command interpreter for old protocol weeks ago, but there's stuff
+underneath the new one that's pretty tangled.  Most (but not all) of
+it is a result of the infamous - and now dead - J command.
+
+Those of you who have been around for a while will remember that old
+protocol used to have a per-user-session policy switch controlling the
+circumstances under which old data was held over and merged into new
+data; you could have display-jitter reduction at the risk of
+occasionally seeing stale data from the previous reporting cycle, or
+you could guarantee fresh data only but pay for it with display
+jitter.  
+
+The reason J was needed was that the sentence mix shipped by
+NMEA devices is highly variable, and we didn't have a reliable way to
+pin down the end of cycle - users had to know about their devices
+and choose the right policy.  I was never happy with this, because
+zero configuration is one my goals, but that UI issue was nearly trivial
+compared to the complexifying effect on the dispatcher internals.
+
+Because the J policy switch was per user, you could have user sessions
+with opposite smoothing policies (minimize jitter vs. avoid
+staleness) getting data from the same underlying device.  Several
+steps of implication later, this meant the dispatcher layer had to
+maintain a pair of this-fix and last-fix buffers per client session,
+copy data up into them from the device-driver layer, and apply
+some policy-specific logic before emitting an actual report.
+
+Eventually I figured how to do automatic end-of-cycle detection and
+the J command went away. But the tricky buffer-shuffling used to
+implement it didn't!  I knew I'd have to clean that up someday, but
+didn't want to tackle that sooner than I had to.  I knew it would require
+major surgery on the dispatcher.
+
+When Chris made his request, though, I decided that it would be
+begging for obscure bugs to reimplement polling on top of the
+user-session-level buffering, and concluded that I needed to rip the
+latter out first.
+
+One of the hard parts is already done. There still needs to be a
+buffer pair (this fix and last fix) for things like computing speed
+and course if the GPS doesn't supply them.  But it can be per-device
+and live in the core library rather than per-user-session and in the
+dispatcher.  I successfully dropped those buffers down a level a
+couple of days ago; as a happy side effect, this has already reduced
+gpsd's memory footprint some.
+
+What I'm working on now is getting rid of the channel structure. Under
+old protocol client sessions listened to a specific list of devices;
+under new protocol they listen to everything unless they've selected
+a *single* device. The difference means that the channel structure array,
+which exists to manage (potentially multiple) subscriber-to-device
+links, isn't really needed anymore
+
+Once I abolish channels I'll have a clean, fairly simple dispatcher
+architecture that's matched to the way new protocol actually works.
+That will be a good base on which to re-implement polling.
+
+3. Removing code is good
+
+One very nice thing about the work I'm doing is that it's mostly
+ripping out chunks of code that aren't needed anymore, with some
+refactoring to separate out those chunks first.  While it's possible
+to introduce bugs during code removal, they tend to be the unsubtle
+kind that lead to immediate crashes or gross regression-test failures.
+It's thus relatively easy to have confidence in the results when I
+take a step forward in the process.
+
+The line count, memory usage, and overall complexity of the dispatcher
+is going to drop significantly even after I have re-implemented
+polling.  Polling will be handled by a relatively small, contiguous
+span of code in the command interpreter that raids the device-level
+buffers to generate a report; the removed code, by contrast, will have
+been from all through the dispatcher, especially the grottier parts
+that kept data tructures with different roles in proper synchrony.
+
+This is all good.  Decreased line count means increased
+maintainability, and given the high reliability requirements of
+something that's going to be used in navigational systems (and thus
+potentially life-critical) that's especially important for gpsd.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+The Constitution is not neutral. It was designed to take the
+government off the backs of the people.
+	-- Justice William O. Douglas 
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007500.html">[Gpsd-dev] just git gpsd on Fedora 12
+</A></li>
+	<LI>Next message: <A HREF="007468.html">[Gpsd-dev] Recent changes in the gpsd dispatcher layer
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7440">[ date ]</a>
+              <a href="thread.html#7440">[ thread ]</a>
+              <a href="subject.html#7440">[ subject ]</a>
+              <a href="author.html#7440">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

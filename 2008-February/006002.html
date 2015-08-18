@@ -1,0 +1,94 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] test gpsd-2.37 &quot;Connection closed by foreign host.&quot;
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2008-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20test%20gpsd-2.37%20%22Connection%20closed%20by%20foreign%20host.%22&In-Reply-To=%3C20080218045136.GA4287%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006001.html">
+   <LINK REL="Next"  HREF="005996.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] test gpsd-2.37 &quot;Connection closed by foreign host.&quot;</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20test%20gpsd-2.37%20%22Connection%20closed%20by%20foreign%20host.%22&In-Reply-To=%3C20080218045136.GA4287%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] test gpsd-2.37 &quot;Connection closed by foreign host.&quot;">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Feb 18 05:51:36 CET 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006001.html">[Gpsd-dev] test gpsd-2.37 &quot;Connection closed by foreign host.&quot;
+</A></li>
+        <LI>Next message: <A HREF="005996.html">[Gpsd-dev] [Gpsd-users] 1 week heads-up: test gpsd-2.37 now
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6002">[ date ]</a>
+              <a href="thread.html#6002">[ thread ]</a>
+              <a href="subject.html#6002">[ subject ]</a>
+              <a href="author.html#6002">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Chris Kuethe &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">chris.kuethe at gmail.com</A>&gt;:
+&gt;<i> And I get the same thing on my openbsd machines if I do the test as you did.
+</I>&gt;<i> 
+</I>&gt;<i> I think I know what it is:
+</I>&gt;<i> 
+</I>&gt;<i> gpsd.c:#define ASSIGNMENT_TIMEOUT       60
+</I>&gt;<i> 
+</I>&gt;<i> If you connect and say nothing, your client is waiting to be assigned
+</I>&gt;<i> a channel, thereby eating up one subscriber slot that could go to
+</I>&gt;<i> someone else. Or maybe you're port scanning. Either way, you're
+</I>&gt;<i> wasting cycles and we drop you. If you actually request some data,
+</I>&gt;<i> we'll do the channel assignment song and dance and you'll get the full
+</I>&gt;<i> 15 minutes.
+</I>&gt;<i> 
+</I>&gt;<i> &quot;svn blame gpsd.c&quot; says this:
+</I>&gt;<i>   2765        esr #define ASSIGNMENT_TIMEOUT    60
+</I>&gt;<i>   2765        esr #define POLLER_TIMEOUT        60*15
+</I>&gt;<i>   2770        esr #define NOREAD_TIMEOUT                60*3
+</I>&gt;<i> 
+</I>&gt;<i> so it's been like this for over 2.5 years.
+</I>
+Yup, I remember now that I did that very deliberately as an
+anti-DOSing measure, though I was thinking less of deliberate attacks
+than I was of buggy and mis-designed clients.  There is a comment
+above those definitions that explains the timeout policy.
+
+Design note: the traditional Unix reflex would have been to make each
+of the three timeouts a separately settable option.  I remember that
+I deliberately rejected this in favor of trying to pick bulletproof
+values.  Judging by the length of time it took someone to complain 
+about the short timeout I think I succeeded.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006001.html">[Gpsd-dev] test gpsd-2.37 &quot;Connection closed by foreign host.&quot;
+</A></li>
+	<LI>Next message: <A HREF="005996.html">[Gpsd-dev] [Gpsd-users] 1 week heads-up: test gpsd-2.37 now
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6002">[ date ]</a>
+              <a href="thread.html#6002">[ thread ]</a>
+              <a href="subject.html#6002">[ subject ]</a>
+              <a href="author.html#6002">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

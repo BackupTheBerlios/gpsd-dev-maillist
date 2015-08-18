@@ -1,0 +1,124 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH 1/2] Add JSON output to gpsd.php
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%201/2%5D%20Add%20JSON%20output%20to%20gpsd.php&In-Reply-To=%3C1271099412-28222-1-git-send-email-bbolli%40ewanet.ch%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007656.html">
+   <LINK REL="Next"  HREF="007658.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH 1/2] Add JSON output to gpsd.php</H1>
+    <B>Beat Bolli</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%201/2%5D%20Add%20JSON%20output%20to%20gpsd.php&In-Reply-To=%3C1271099412-28222-1-git-send-email-bbolli%40ewanet.ch%3E"
+       TITLE="[Gpsd-dev] [PATCH 1/2] Add JSON output to gpsd.php">bbolli at ewanet.ch
+       </A><BR>
+    <I>Mon Apr 12 21:10:11 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007656.html">[Gpsd-dev] [PATCH] update xgps screen shots
+</A></li>
+        <LI>Next message: <A HREF="007658.html">[Gpsd-dev] [PATCH 2/2] generate a JSON error if GPSd is unresponsive
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7657">[ date ]</a>
+              <a href="thread.html#7657">[ thread ]</a>
+              <a href="subject.html#7657">[ subject ]</a>
+              <a href="author.html#7657">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>---
+ gpsd.php |   23 ++++++++++++++++++-----
+ 1 files changed, 18 insertions(+), 5 deletions(-)
+
+diff --git a/gpsd.php b/gpsd.php
+index bfcd756..738d7f6 100644
+--- a/gpsd.php
++++ b/gpsd.php
+@@ -24,7 +24,10 @@ $testmode = 1; # leave this set to 1
+ #   host: host name or address where GPSd runs. Default: from config file
+ #   port: port of GPSd. Default: from config file
+ #   op=view: show just the skyview image instead of the whole HTML page
+-#   sz=small: used with op=view, display a small (240x240px) skyview
++#     sz=small: used with op=view, display a small (240x240px) skyview
++#   op=json: respond with the GPSd POLL JSON structure
++#     jsonp=prefix: used with op=json, wrap the POLL JSON in parentheses
++#                   and prepend prefix
+ 
+ # If you're running PHP with the Suhosin patch (like the Debian PHP5 package),
+ # it may be necessary to increase the value of the
+@@ -68,7 +71,8 @@ EOF;
+ 
+ 
+ # if we're passing in a query, let's unpack and use it
+-if (isset($_GET['imgdata']) &amp;&amp; isset($_GET['op']) &amp;&amp; ($_GET['op'] == 'view')){
++$op = isset($_GET['op']) ? $_GET['op'] : '';
++if (isset($_GET['imgdata']) &amp;&amp; $op == 'view'){
+ 	$resp = base64_decode($_GET['imgdata']);
+ 	if ($resp){
+ 		gen_image($resp);
+@@ -97,11 +101,12 @@ if (isset($_GET['imgdata']) &amp;&amp; isset($_GET['op']) &amp;&amp; ($_GET['op'] == 'view')){
+ 	}
+ }
+ 
+-if (isset($_GET['op']) &amp;&amp; ($_GET['op'] == 'view')){
++if ($op == 'view')
+ 	gen_image($resp);
+-} else {
++else if ($op == 'json')
++	write_json($resp);
++else
+ 	write_html($resp);
+-}
+ 
+ exit(0);
+ 
+@@ -468,6 +473,14 @@ print $part1 . $part2 . $part3 . $part4 . $part5;
+ 
+ }
+ 
++function write_json($resp){
++	header('Content-Type: text/javascript');
++	if (isset($_GET['jsonp']))
++		print &quot;{$_GET['jsonp']}({$resp})&quot;;
++	else
++		print $resp;
++}
++
+ function write_config(){
+ 	$f = fopen(&quot;gpsd_config.inc&quot;, &quot;a&quot;);
+ 	if (!$f)
+-- 
+1.7.0
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007656.html">[Gpsd-dev] [PATCH] update xgps screen shots
+</A></li>
+	<LI>Next message: <A HREF="007658.html">[Gpsd-dev] [PATCH 2/2] generate a JSON error if GPSd is unresponsive
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7657">[ date ]</a>
+              <a href="thread.html#7657">[ thread ]</a>
+              <a href="subject.html#7657">[ subject ]</a>
+              <a href="author.html#7657">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

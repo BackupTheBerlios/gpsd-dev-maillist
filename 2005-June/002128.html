@@ -1,0 +1,136 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Rob's second architecture bug
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Rob%27s%20second%20architecture%20bug&In-Reply-To=%3C20050614154612.GA25542%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002127.html">
+   <LINK REL="Next"  HREF="002138.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Rob's second architecture bug</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Rob%27s%20second%20architecture%20bug&In-Reply-To=%3C20050614154612.GA25542%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Rob's second architecture bug">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Jun 14 17:46:12 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002127.html">[Gpsd-dev] Rob's second architecture bug
+</A></li>
+        <LI>Next message: <A HREF="002138.html">[Gpsd-dev] Rob's second architecture bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2128">[ date ]</a>
+              <a href="thread.html#2128">[ thread ]</a>
+              <a href="subject.html#2128">[ subject ]</a>
+              <a href="author.html#2128">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+&gt;<i> &gt; No.  The outer check for LATLON_VALID is there because that code exists to
+</I>&gt;<i> &gt; interpolate certain values if we (a) now have a fix, and (b) had a fix
+</I>&gt;<i> &gt; last cycle.  The outer check ensures condition (a).
+</I>&gt;<i> 
+</I>&gt;<i> But that never worked, because LATLON_VALID does not indicate that we have
+</I>&gt;<i> a fix, it only indicates that this message includes a lat/lon (hopefully
+</I>&gt;<i> valid).
+</I>&gt;<i> For example, a TSIP message 4a or 84 gives you a lat/lon/alt but it does
+</I>&gt;<i> not tell you much about the status of the fix.  That info is passed in
+</I>&gt;<i> message 6d.
+</I>
+OK, fair enough.  I was being misled by my SiRF experience.  Changing
+the test to (session-&gt;gpsdata.fix.mode &gt;= MODE_2D) should fix that.  I will
+also add a note to the Hacker's Guide that driver writers need to
+ensure that gpsdata.fix.mode is set properly to indicate fix validity
+after each message.
+ 
+&gt;<i> So I changed it.  But now it was reported that the Garmin driver broke, so
+</I>&gt;<i> probably there is still a problem in this area.
+</I>
+I suspect that one is unrelated, actually.  Unfortunately, lacking a 
+Garmin regression test, there is little I can do to address it.  Gary,
+have you run a trace on this yet?
+
+&gt;<i> &gt; OK, the answer to these questions is that the code was poorly organized.
+</I>&gt;<i> &gt; I have now changed it so that the O response builder relies only on the
+</I>&gt;<i> &gt; the *_NOT_VALID out-of-band values.  Interpretation of the *_SET flags
+</I>&gt;<i> &gt; takes place in handle_packet() and sometimes pokes these out-of-band
+</I>&gt;<i> &gt; values into the gpsdata structure.
+</I>&gt;<i> 
+</I>&gt;<i> The new version is worse.  It clears data immediately when certain flags
+</I>&gt;<i> are not set.  But that should not happen because we want to accumulate
+</I>&gt;<i> data over a cycle.
+</I>
+Did you read the comment that says &quot;Thus, we never clear 2D or 3D
+position data here unless the mode has gone from 3D to 2D.&quot;?  I just
+added (or lower)&quot; to clarify it.  So position data does in fact 
+accumulate over a cycle, and is cleared only when a mode change 
+invalidates it.  If this is different than you intention, tell me how.
+
+In any case, the real purpose of that change was to make sure that the
+logic for any whole-cycle data aggregation we do is in only one place
+and can be understood and modified as a unit.  
+
+There is property of the current code that *I* am unhappy with.  I don't
+like having policy choices wired this deeply into libgpsd_core.c.  I'm
+looking for a way to fix that.
+
+&gt;<i> New data must be copied and calculated when flags are set, but it must
+</I>&gt;<i> only be reset to _NOT_VALID when indications arrive that the data is not
+</I>&gt;<i> valid (e.g. &quot;no fix&quot;), or when no updates arrive for some time (a cycle,
+</I>&gt;<i> or for some data even a longer period of several cycles).
+</I>
+I am open to argument about how the velocity data should be handled.
+I'm hostile to retaining data *between* cycles, though.  That strikes 
+me as lying about what the GPS is actually saying.
+
+&gt;<i> This is precisely the problem with the architecture that I try to explain,
+</I>&gt;<i> but now it has become more visible: the flags status of the last received
+</I>&gt;<i> messages is treated as describing the current data validity state, while
+</I>&gt;<i> in fact it only describes what was received in the last message.  This
+</I>&gt;<i> does not work in cases where data is received in cycles consisting of
+</I>&gt;<i> multiple messages.
+</I>
+You are right.  But what you consider a problem, I consider being honest
+about what the GPS is *actually saying*.  I'm vary wary of any design that
+might lead users to take stale data as authoritative.  Thus, whenever 
+anyone says &quot;timeouts&quot;, my hackles rise.
+
+I am glad we are having this discussion.  The outcome should be a set of
+well-defined, principled rules for data lifetimes that we can both
+embody in code and document.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002127.html">[Gpsd-dev] Rob's second architecture bug
+</A></li>
+	<LI>Next message: <A HREF="002138.html">[Gpsd-dev] Rob's second architecture bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2128">[ date ]</a>
+              <a href="thread.html#2128">[ thread ]</a>
+              <a href="subject.html#2128">[ subject ]</a>
+              <a href="author.html#2128">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

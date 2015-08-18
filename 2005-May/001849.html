@@ -1,0 +1,231 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] making gosdrive haoot
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20making%20gosdrive%20haoot&In-Reply-To=%3C11801.213.84.187.156.1116887266.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001848.html">
+   <LINK REL="Next"  HREF="001850.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] making gosdrive haoot</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20making%20gosdrive%20haoot&In-Reply-To=%3C11801.213.84.187.156.1116887266.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] making gosdrive haoot">gpsd at xs4all.nl
+       </A><BR>
+    <I>Tue May 24 00:27:46 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001848.html">[Gpsd-dev] making gosdrive haoot
+</A></li>
+        <LI>Next message: <A HREF="001850.html">[Gpsd-dev] making gosdrive haoot
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1849">[ date ]</a>
+              <a href="thread.html#1849">[ thread ]</a>
+              <a href="subject.html#1849">[ subject ]</a>
+              <a href="author.html#1849">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+</I>&gt;&gt;<i> Would it be possible to be a little more patient and allow people to
+</I>&gt;&gt;<i> send
+</I>&gt;&gt;<i> in reports and/or to find problems?
+</I>&gt;<i>
+</I>&gt;<i> What good would patience do?  That is, what do you believe we would
+</I>&gt;<i> accomplish by slowing the release tempo?
+</I>&gt;<i>
+</I>&gt;<i> Do you believe that this would somehow increase the amount or quality of
+</I>&gt;<i> bug reports and fixes we get?  If so, why do you believe that?
+</I>&gt;<i>
+</I>
+My experience is that when small bugs are found at a high rate, the
+density is high.  I.e. there is no reason to believe that after fixing 5
+small bugs in a week, the program is reasonably bugfree.  It is more of an
+indication that still many small bugs exist.
+
+Another experience is that you can often find bugs (especially of the type
+that we have seen recently) faster by carefully reading the source and
+asking yourself &quot;is it correct what is written here&quot; than by externally
+observing the behaviour of the blackbox.
+This is what makes open source so strong: others can find and fix bugs
+much easier.  But it also means one sometimes has to sitdown and take
+time, which is sometimes made difficult when there are &quot;final calls for
+fixes&quot; so often.
+
+Furthermore, it is dangerous to assume that fixes are forthcoming as a
+result of doing quick releases.  For example, after the previous release
+you wrote that as a result of the release a lot of fixes came in, while in
+reality my fixes were really sent to be included in that release but
+apparently came after you finalized it.  This is partly the result of the
+timezone difference.
+
+&gt;&gt;<i> I doubt that the audience is looking for a new version to install.
+</I>&gt;&gt;<i> When you want to have an easily accessed version for people to try the
+</I>&gt;&gt;<i> newest fixes, I think it is better to put a &quot;nightly build&quot; up for
+</I>&gt;&gt;<i> download.
+</I>&gt;<i>
+</I>&gt;<i> Well, we could tell people to pull svn head for the latest version.  But
+</I>&gt;<i> since I don't presently anticipate any benefit from slowing down the
+</I>&gt;<i> release tempo, I don't see why we should make testers jump through that
+</I>&gt;<i> extra hoop.  Perhaps you will change my mind, though.
+</I>
+I can understand not everyone wants to use svn.  It took me some study as
+well before I understood how to setup my system so I could work on my own
+copy of the code, retrieve recent svn versions, and submit patches that
+would not backout other people's changes.
+
+That is why I mention the &quot;nighly build&quot;, by which I mean a set of files
+like an official version, but built from the latest svn version.  This
+allows users to download recent sources and/or binaries without having to
+use svn or even to compile.
+
+
+&gt;&gt;<i> - validate that all received values are correctly scaled to the
+</I>&gt;&gt;<i> documented
+</I>&gt;&gt;<i> units.  I have been busy with this but then someone else still found an
+</I>&gt;&gt;<i> error (NMEA speed)
+</I>&gt;<i>
+</I>&gt;<i> I think that one is pretty well knocked on the head at this point.  There
+</I>&gt;<i> aren't that many values that get scaled, and we've walked through them
+</I>&gt;<i> all.
+</I>
+I went through the Zodiac driver and found many errors.  But maybe that
+was not indicative as it seemed to be orphaned.
+
+
+&gt;&gt;<i> - check that &quot;xxx_NOT_VALID&quot; values are outside the normal range for
+</I>&gt;&gt;<i> that
+</I>&gt;&gt;<i> value.
+</I>&gt;<i>
+</I>&gt;<i> OK.  grepping....
+</I>&gt;<i>
+</I>&gt;<i> gps.h:48:#define TIME_NOT_VALID	0
+</I>&gt;<i> gps.h:55:#define UNCERTAINTY_NOT_VALID	-1
+</I>&gt;<i> gps.h:57:#define LATITUDE_NOT_VALID	-1
+</I>&gt;<i> gps.h:59:#define LONGITUDE_NOT_VALID	-1
+</I>&gt;<i> gps.h:62:#define ALTITUDE_NOT_VALID	-999
+</I>&gt;<i> gps.h:65:#define TRACK_NOT_VALID	-1	/* No course data yet */
+</I>&gt;<i> gps.h:68:#define SPEED_NOT_VALID	-1	/* No speed data yet */
+</I>&gt;<i>
+</I>&gt;<i> There, that wasn't very hard, was it?  About the only subtle bit is
+</I>&gt;<i> noticing
+</I>&gt;<i> that it's OK to use 0 as a time value  because GPSes didn't exist in 1969.
+</I>
+I put up this point when I noticed that -1 is used for invalid latitude
+and longitude, yet -1 is a valid value for those.
+Maybe they are the only ones but I did not check yet.  From the above list
+the others seem OK.
+
+
+&gt;&gt;<i>       check if we could use magic values like &quot;nan&quot; instead of arbitrary
+</I>&gt;&gt;<i> constant values
+</I>&gt;<i>
+</I>&gt;<i> OK, I like that idea, but I have some portability reservations.  Do
+</I>&gt;<i> POSIX or X3J11 describe #defines for max or min values?
+</I>
+It needs investigation.  When it would be simple, I would have sent a patch.
+I noticed that printf with the %f format can print &quot;nan&quot; when a value is
+not a number.  What I don't know is if  scanf can scan the &quot;nan&quot; string
+and set the variable to not-a-number, and if #defines for this value
+exist.
+If all of these should be true or can be worked around, I would propose to
+use &quot;nan&quot; values for undefined values.
+
+
+&gt;&gt;<i> I think we either need to modify the
+</I>&gt;&gt;<i> packet_sniff code so that it becomes part of the main loop, or we change
+</I>&gt;&gt;<i> to multithreading and start a separate thread  for every receiver while
+</I>&gt;&gt;<i> the main loop concentrates on handling the clients.
+</I>&gt;<i>
+</I>&gt;<i> Hm.  This is a significant problem with the multi-session
+</I>&gt;<i> architecture.  I wish you had prought it to my attention sooner.
+</I>
+It only came to my attention during my work on the Trimble and plugging 3
+receivers between 2 ports.
+
+&gt;<i> I lean towards the former.  Threading makes me uncomfortable.  I don't
+</I>&gt;<i> mind the
+</I>&gt;<i> use of it we've made so far because it's for features that are, basically,
+</I>&gt;<i> optional.  I don't want to make it part of the normal organization of
+</I>&gt;<i> control
+</I>&gt;<i> if we can help it.
+</I>
+Ok, fine with me...   of course it requires a much wider change to bring
+the sniff into the mainloop than to separate the receiver drivers into
+separate threads, but on the other hand it could be less risky because
+there is no locking of data in the current implementation and it could be
+required when separate threads start to read and write into the same
+datastructure.
+
+&gt;&gt;<i> I have also noticed today that while the system is heavily loaded the
+</I>&gt;&gt;<i> program can be forced into such an error situation where it ends up
+</I>&gt;&gt;<i> doing
+</I>&gt;&gt;<i> packet_sniff all the time and not recovering.  Because the usleep in
+</I>&gt;&gt;<i> packet_sniff is very small, the CPU usage is high, and the heavy loading
+</I>&gt;&gt;<i> problem is worsened.
+</I>&gt;<i>
+</I>&gt;<i> I think increasing the usleep() would be an acceptable fix.
+</I>
+Yes, my feeling from the beginning was that the variable usleep was a bit
+over-engineered and could simply have been a fixed usleep for 20 or 30 ms.
+As long as it is above 10ms it will allow other tasks to be scheduled even
+when those are of lower priority.
+However, when this code is changed to be in the main select loop the
+FIONREAD ioctl can simply be dropped and the select will handle the
+timeout.
+
+What remains is &quot;why is it failing under high load&quot;?
+I have not found that yet.   I was simply copying a lot of disk data
+(which causes some buffermanagement trouble especially with Reiserfs, and
+thus causes swapping) and suddenly gpsd started using much more CPU, and I
+saw that only the PPS threads were still functioning normally but the
+packet handler was stuck hunting for valid packets.  No idea yet why it
+got an error and why it would not recover.
+
+&gt;&gt;<i> At the moment I am working on a driver for my Trimble receiver.  It
+</I>&gt;&gt;<i> handles a few received packets, but I need to decode more and also
+</I>&gt;&gt;<i> handle
+</I>&gt;&gt;<i> the sending of control packets (to enable sending of other messages).  I
+</I>&gt;&gt;<i> will require a day or two to finish it.
+</I>&gt;<i>
+</I>&gt;<i> OK.  Is this a reason not to release?  Doesn't seem so to me.  Releases
+</I>&gt;<i> aren't expensive.
+</I>
+Not so much for the developer, but we must also think about the user.
+When releases are once or twice per week, those who want to make actual
+use of the product tend to get a little overwhelmed and do not track them
+anymore.
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001848.html">[Gpsd-dev] making gosdrive haoot
+</A></li>
+	<LI>Next message: <A HREF="001850.html">[Gpsd-dev] making gosdrive haoot
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1849">[ date ]</a>
+              <a href="thread.html#1849">[ thread ]</a>
+              <a href="subject.html#1849">[ subject ]</a>
+              <a href="author.html#1849">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

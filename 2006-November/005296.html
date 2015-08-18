@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd.php heads-up -- general timing problem in clients
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd.php%20heads-up%20--%20general%20timing%20problem%20in%20clients&In-Reply-To=%3C20061122174235.GA21106%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005320.html">
+   <LINK REL="Next"  HREF="005299.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd.php heads-up -- general timing problem in clients</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd.php%20heads-up%20--%20general%20timing%20problem%20in%20clients&In-Reply-To=%3C20061122174235.GA21106%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] gpsd.php heads-up -- general timing problem in clients">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Nov 22 18:42:35 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005320.html">[Gpsd-dev] Bugs
+</A></li>
+        <LI>Next message: <A HREF="005299.html">[Gpsd-dev] SVN 3934 Change to gpsd.c- Clarifiation please
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5296">[ date ]</a>
+              <a href="thread.html#5296">[ thread ]</a>
+              <a href="subject.html#5296">[ subject ]</a>
+              <a href="author.html#5296">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Chris, the query in gpsd.php had a problem you need to be aware of if you ever 
+write another special-purpose client.  (Copied to dev for the record; other
+people might run into similar problems.)
+
+You were using the old-style queries, specifically SPAMQY.  While these
+are OK to use with J=1 if you're polling repeatedly, it's a dicey way
+to go if you're doing a single-shot query.  Even repeating it a few
+times won't necessarily work.
+
+The problem is that your queries are in a race with the daemon's logic for 
+assigning and initializing a GPS.  It won't try to assign a GPS to your
+channel until the first command that demands actual device information,
+the S in this case.  
+
+Then the race begins. The daemon will be interleaving reads of whatever
+packet fragments the GPS is shipping with reads from your client
+socket.  It is entirely possible that the rest of your commands
+will get processed before the daemon reads and processes enough GPS 
+sentences to get a fix -- especially if the serial device is 
+slow and the GPS has a long initialization sequence.
+
+I've fixed this in gpsd.php by having it set watcher mode and
+read a couple of O responses before issuing SPAMQY.  That way
+the daemon paces the action, actually telling the PHP when it
+receives packets.  By the time SPAMQY is issued there is certain
+to be data, if the GPS is reporting any at all.
+
+To be certain of having full fix data, you'd need to wait for as many O
+responses as there are sentences that set fix data in the device's
+normal cycle.  For SiRFs, one read will do because normally only one
+sentence in the cycle ships fix data.  For NMEA devices you don't have
+a full fix before five reads, enough for an entire
+GPRMC/GPGGA/GPVTG/GPGLL/GPGSV cycle in whatever permutation the device
+ships it.
+
+In practice, three O reads will always be enough to get you *some* fix
+information -- worst case is your first O came from a GPGSA and all
+you get is a mode, and then you get GPVTG, but you'll always get lat/lon 
+on the next O.
+
+As I said, clients that poll SPAMQY repleatedly won't have a problem;
+the race effects will show up but be limited to noise in the first
+few seconds of samples.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005320.html">[Gpsd-dev] Bugs
+</A></li>
+	<LI>Next message: <A HREF="005299.html">[Gpsd-dev] SVN 3934 Change to gpsd.c- Clarifiation please
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5296">[ date ]</a>
+              <a href="thread.html#5296">[ thread ]</a>
+              <a href="subject.html#5296">[ subject ]</a>
+              <a href="author.html#5296">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

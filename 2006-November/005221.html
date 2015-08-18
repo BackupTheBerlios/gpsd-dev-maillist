@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Restoring GPS settings on session end
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Restoring%20GPS%20settings%20on%20session%20end&In-Reply-To=%3C20061113160436.GA19906%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005219.html">
+   <LINK REL="Next"  HREF="005228.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Restoring GPS settings on session end</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Restoring%20GPS%20settings%20on%20session%20end&In-Reply-To=%3C20061113160436.GA19906%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Restoring GPS settings on session end">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Nov 13 17:04:36 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005219.html">[Gpsd-dev] gpsd.spec runs configure twice
+</A></li>
+        <LI>Next message: <A HREF="005228.html">[Gpsd-dev] Restoring GPS settings on session end
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5221">[ date ]</a>
+              <a href="thread.html#5221">[ thread ]</a>
+              <a href="subject.html#5221">[ subject ]</a>
+              <a href="author.html#5221">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Having audited the relevant code, I now believe we can do a good enough
+job of restoring GPS settings on close of session to make a runtime 
+no-reconfigure option unnecessary for over 85% of cases.  
+
+This job is a little simpler because we don't have to try to restore things
+like baud rate or cycle time changes from the B and C commands.  We just
+have to revert what the configurator method does on startup.
+
+The appropriate hook (the wrapup method) is already in our driver
+architecture.  What's needed are (a) per-driver ways to query the
+settings that configurator methods change, (b) code to stash that state
+in driver private storage just before the configurator method tweaks it, 
+and (c) code to restore it in the wrapup method.
+
+I committed two changes last night, to the SiRF and Evermore drivers, that
+restore NMEA mode on device close if the configurator method had switched 
+the device to binary.  This is a good start.  Here is a driver-by-driver 
+summary of what else needs to happen:
+
+The TripMate, EarthMate, TNTC, Zodiac, and RTCM104 drivers don't have
+configurator methods and thus don't need any state restored on exit.
+
+The generic NMEA driver was reconfiguring Motorola OnCore and 
+Sony CXD2951 chips to suppress PSGSA and enable ZDA.   While doing
+this investivation I discovered that ZDA is actually in the default
+sentence mix for these chips.  I removed the configurator method,
+which may expose users who have explicitly turned ZDA off to a 
+century-rollover problem in 94 years but means we no longer
+step on any generic NMEA settings at all.
+
+The Evermore driver now restores NMEA when necessary.  This appears to be
+the only thing it configures, so we're done.
+
+The SiRF driver now restores NMEA when necessary.  I think we can do a
+perfect job of reverting changes during binary sessions by requesting a
+Navigation Parameters message and restoring the configuration it gives
+us on wrapup.  I have not tried to write that code.  I'll do it if
+Chris Kuethe doesn't jump in.
+
+The TSIP driver changes its per-cycle sentence inventory and thus 
+needs some state-restore logic.  This can be done; the same packet 0x35
+we use to configure it can be sent in a no-argument mode to query
+the current sentence mix for later restore.  We don't have code to
+do this yet.
+
+The FV18 changes its per-cycle sentence inventory to include GSAs. It
+is possible to query that inventory, though we don't have code to do
+it yet.
+
+That's the good news; we can handle the vast majority of cases gracefully.
+Now for the bad news:
+
+Garmin devices are a mess.  We reconfigure those heavily, and I
+don't know if there's any way to capture their configuration state
+before we do it. Gary, can you shed any light on this?
+
+The iTrax02 driver sets SYNCMODE to start navigation messages without
+checking to see if it's already on, and stops navigation methods on
+wrapup.  It also forces the set of sentences issued.  We lose on this
+one; I don't see a way to query these settings.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005219.html">[Gpsd-dev] gpsd.spec runs configure twice
+</A></li>
+	<LI>Next message: <A HREF="005228.html">[Gpsd-dev] Restoring GPS settings on session end
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5221">[ date ]</a>
+              <a href="thread.html#5221">[ thread ]</a>
+              <a href="subject.html#5221">[ subject ]</a>
+              <a href="author.html#5221">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

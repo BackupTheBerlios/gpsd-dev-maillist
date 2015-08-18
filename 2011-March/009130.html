@@ -1,0 +1,103 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Single-writer/many-reader consistency
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3CAANLkTikrKYCVjgkDK_HzZgGQehePXrmAXa1npq3H-GXq%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009113.html">
+   <LINK REL="Next"  HREF="009131.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Single-writer/many-reader consistency</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3CAANLkTikrKYCVjgkDK_HzZgGQehePXrmAXa1npq3H-GXq%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Single-writer/many-reader consistency">thomas at mich.com
+       </A><BR>
+    <I>Sun Mar 27 13:38:21 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009113.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+        <LI>Next message: <A HREF="009131.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9130">[ date ]</a>
+              <a href="thread.html#9130">[ thread ]</a>
+              <a href="subject.html#9130">[ subject ]</a>
+              <a href="author.html#9130">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sat, Mar 26, 2011 at 6:22 PM, Terje Mathisen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">terje at tmsw.no</A>&gt; wrote:
+
+&gt;<i> My 4-wide buffer is neither &#160;complex nor a lot of overhead:
+</I>&gt;<i>
+</I>&gt;<i> The total cost is specifically a total of 2 or 3 clock cycles, to mask the
+</I>&gt;<i> counter value and to generate the desired buffer offset which requires a
+</I>&gt;<i> mul-by-24 which is handled with a shift&amp;add on many architectures, and a
+</I>&gt;<i> single LEA to multiply by 3 on x86, whereupon the individual members can be
+</I>&gt;<i> loaded with a scaled-by-8 indexing operation.
+</I>
+The largest problem I have with the method is you still need the write
+barrier, otherwise you would have to use mask &amp; (cnt-1) for the reader
+all the time since the payload might be propagating after the count is
+updated without it.  It is minimal but still requires it.
+
+And I've been searching, but I can't even find a clear way to do
+barriers in Linux (hand-coding assembler for individual architectures
+is as close as I can get).
+
+Maybe someone should file an enhancement request (bug reqport) for
+GCC, or maybe glibc.  I don't think the iTanium sync extensions are
+there for all multicore architectures, and the problem occurs in any
+multi threaded application.  Or maybe we need a libbarrier.  Or even
+official system calls in the supported OSes.
+
+And I just found <A HREF="http://developer.intel.com/Assets/PDF/manual/253668.pdf">http://developer.intel.com/Assets/PDF/manual/253668.pdf</A>
+
+Chapter 8 is worth a read, and it may solve both.  8.2  begins the discussion.
+
+But the key is 8.4.1:
+
+The memory-ordering model respects the follow principles:
+1. Stores within a single string operation may be executed out of order.
+2. Stores from separate string operations (for example, stores from consecutive
+string operations) do not execute out of order. All the stores from an
+earlier string
+operation will complete before any store from a later string operation.
+3. String operations are not reordered with other store operations.
+
+So if we can just force the fast inline string operations for the
+sentinels and payload and do them in the right order, they will imply
+memory barriers on x86.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009113.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+	<LI>Next message: <A HREF="009131.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9130">[ date ]</a>
+              <a href="thread.html#9130">[ thread ]</a>
+              <a href="subject.html#9130">[ subject ]</a>
+              <a href="author.html#9130">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

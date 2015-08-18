@@ -1,0 +1,105 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] 2.40dev/SVN
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%202.40dev/SVN&In-Reply-To=%3C20091012003926.GB10943%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006950.html">
+   <LINK REL="Next"  HREF="006954.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] 2.40dev/SVN</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%202.40dev/SVN&In-Reply-To=%3C20091012003926.GB10943%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] 2.40dev/SVN">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Oct 12 02:39:26 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006950.html">[Gpsd-dev] 2.40dev/SVN
+</A></li>
+        <LI>Next message: <A HREF="006954.html">[Gpsd-dev] SVN 6397 issues JSON warnings and RPM catch 22
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6952">[ date ]</a>
+              <a href="thread.html#6952">[ thread ]</a>
+              <a href="subject.html#6952">[ subject ]</a>
+              <a href="author.html#6952">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+&gt;<i> -----BEGIN PGP SIGNED MESSAGE-----
+</I>&gt;<i> Hash: SHA1
+</I>&gt;<i> 
+</I>&gt;<i> Yo Eric!
+</I>&gt;<i> 
+</I>&gt;<i> I had a chnace to take a quick look at the Garmin Serial binary
+</I>&gt;<i> driver in the latest 2.40dev.  It looks like something simple got unhinged, but not sure where.
+</I>&gt;<i> 
+</I>&gt;<i> here is the -D 6:
+</I>&gt;<i> 
+</I>&gt;<i> gpsd: /dev/ttyS0 is known to be Garmin Serial
+</I>&gt;<i> gpsd: /dev/ttyS0 is known to be Garmin Serial
+</I>&gt;<i> gpsd: /dev/ttyS0 is known to be Garmin Serial
+</I>&gt;<i> gpsd: /dev/ttyS0 is known to be Garmin Serial
+</I>&gt;<i> gpsd: /dev/ttyS0 is known to be Garmin Serial
+</I>&gt;<i> gpsd: /dev/ttyS0 is known to be Garmin Serial
+</I>&gt;<i> gpsd: /dev/ttyS0 is known to be Garmin Serial
+</I>&gt;<i> gpsd: /dev/ttyS0 is known to be Garmin Serial
+</I>&gt;<i> gpsd: Garmin n= 0x46\x0a 1033409ca288440021914165a04741b4af524101008078e7ffffa7b34049a2622f4b9de83f2404858b3cf000c00000000000000000000000002f16a1410f00381c00005c1003
+</I>&gt;<i> gpsd: /dev/ttyS0 is known to be Garmin Serial
+</I>&gt;<i> gpsd: &lt;= GPS: \x103@\xfff\xfff\xfffDgpsd: unknown sentence: &quot;\x103@\xfff\xfff\xfffD&quot;
+</I>&gt;<i> 
+</I>&gt;<i> So the bit stream is detected.  The packet is accepted and discarded in
+</I>&gt;<i> packet.c on line 1192:
+</I>&gt;<i> 		packet_accept(lexer, GARMIN_PACKET);
+</I>&gt;<i>                 packet_discard(lexer);
+</I>&gt;<i> 
+</I>&gt;<i> But the germin parser garmin_ser_parse() is never called.  Any idea where
+</I>&gt;<i> I should look for that not happening?
+</I>
+Yes.  Near line 50 of drivers, where it says:
+
+	/*
+	 * Dispatching on Garmin packets here causes a nasty configure
+	 * loop. It's not clear this is the right way to break the
+	 * loop or whether it merely evades the problem and breaks
+	 * autoconfiguration, but it will have to do until a Garmin
+	 * expert can grok the problem better.
+	 */
+
+Alas for you, you're the Garmin expert...
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006950.html">[Gpsd-dev] 2.40dev/SVN
+</A></li>
+	<LI>Next message: <A HREF="006954.html">[Gpsd-dev] SVN 6397 issues JSON warnings and RPM catch 22
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6952">[ date ]</a>
+              <a href="thread.html#6952">[ thread ]</a>
+              <a href="subject.html#6952">[ subject ]</a>
+              <a href="author.html#6952">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

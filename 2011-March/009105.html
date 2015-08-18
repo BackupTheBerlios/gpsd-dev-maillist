@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Single-writer/many-reader consistency
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3CAANLkTi%3DjJ7JgYp10Q1g0W9KDnXmrFemp9Oa-CG9NoY_b%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009103.html">
+   <LINK REL="Next"  HREF="009110.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Single-writer/many-reader consistency</H1>
+    <B>Dave Hart</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3CAANLkTi%3DjJ7JgYp10Q1g0W9KDnXmrFemp9Oa-CG9NoY_b%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Single-writer/many-reader consistency">davehart_gmail_exchange_tee at davehart.net
+       </A><BR>
+    <I>Sat Mar 26 21:55:28 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009103.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+        <LI>Next message: <A HREF="009110.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9105">[ date ]</a>
+              <a href="thread.html#9105">[ thread ]</a>
+              <a href="subject.html#9105">[ subject ]</a>
+              <a href="author.html#9105">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sat, Mar 26, 2011 at 7:36 PM, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> It's the same painful tradeoff that tz and I and other discussants
+</I>&gt;<i> have been grappling with for the last week in one way or another. &#160;The
+</I>&gt;<i> methods that provably prevent corrupt data have nasty blocking failure
+</I>&gt;<i> modes; the methods that don't have scary worst-case behavior may
+</I>&gt;<i> produce intermittent data corruption in the *normal* case if the underlying
+</I>&gt;<i> hardware messes with operation order enough.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> I am by no means sure I know where to land. &#160;I have working seqlocks
+</I>&gt;<i> now and am oscillating back and forth about whether to scrap that and go
+</I>&gt;<i> with semaphores. &#160;I was almost ready to do it until two things happened:
+</I>&gt;<i>
+</I>&gt;<i> (a) tz pointed out correctly that in a semaphore-based approach, readers
+</I>&gt;<i> have to assert as well as writers - otherwise writer can start an update while
+</I>&gt;<i> reader is still reading.
+</I>&gt;<i>
+</I>&gt;<i> (b) I then realized that under a correct semaphore implementation,
+</I>&gt;<i> anybody dying while semaphore is asserted starves everybody else
+</I>&gt;<i> (which we should have remembered from Operating Systems 101). &#160;This is
+</I>&gt;<i> a very practical problem because while we haven't had a crash bug in
+</I>&gt;<i> gpsd since something like 2005, I can't say the same thing about all
+</I>&gt;<i> the clients out there!
+</I>
+Thanks for your clear summary of the dilemma.
+
+&gt;<i> This is pushing me back towards sticking with the working seqlock.
+</I>&gt;<i> But *that* means I have to either deal with the pile of nonportable
+</I>&gt;<i> hair that is memory barriers or expensively checksum the data.
+</I>
+If you do checksum, ISTR CRC32 isn't terribly strong for 8k.  MD5 is
+widely-available and reasonably fast, and for this purpose, I beieve
+its cryptographic weakness is any reason to avoid it.
+
+&gt;<i> Yes, I've been listening to Terje too. &#160;The problem is that his proposal
+</I>&gt;<i> is complicated enough to make my head hurt - and I plain don't trust
+</I>&gt;<i> complicated algorithms in cases like this, they tend to have holes
+</I>&gt;<i> where nobody is looking and be difficult to *maintain* correctness of
+</I>&gt;<i> even if they started out correct.
+</I>
+The cost of 4 payload copies is trivial for refclock_shm.c, and CRC32
+is more than sufficient to detect corruption and could be layered in
+for belt-and-suspenders detection of problems with the lock-free ring
+buffer approach.  The tradeoffs for gpsd are different.
+
+Personally, my head isn't hurting thinking about the approach Terje
+describes for refclock_shm.  I have used similar approaches for
+producer/consumer lockless queueing repeatedly in the past.  That was
+usually solving a slightly different problem, with a single or several
+consumers that dequeue items, but it's easier with a more
+broadcast-like arrangement of single writer, multiple readers who
+never change shared memory, only examine.
+
+Cheers,
+Dave Hart
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009103.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+	<LI>Next message: <A HREF="009110.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9105">[ date ]</a>
+              <a href="thread.html#9105">[ thread ]</a>
+              <a href="subject.html#9105">[ subject ]</a>
+              <a href="author.html#9105">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

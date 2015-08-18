@@ -1,0 +1,139 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20Single-writer/many-reader%20consistency%3A%0A%20Test%20program%20written%20%26%20verified&In-Reply-To=%3CAANLkTimeEtAxhoDt1%2Bb10aOtaOXKJfLEDQWcRbnVHPWp%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009159.html">
+   <LINK REL="Next"  HREF="009161.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified</H1>
+    <B>Dave Hart</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20Single-writer/many-reader%20consistency%3A%0A%20Test%20program%20written%20%26%20verified&In-Reply-To=%3CAANLkTimeEtAxhoDt1%2Bb10aOtaOXKJfLEDQWcRbnVHPWp%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified">davehart_gmail_exchange_tee at davehart.net
+       </A><BR>
+    <I>Mon Mar 28 21:56:08 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009159.html">[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified
+</A></li>
+        <LI>Next message: <A HREF="009161.html">[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9160">[ date ]</a>
+              <a href="thread.html#9160">[ thread ]</a>
+              <a href="subject.html#9160">[ subject ]</a>
+              <a href="author.html#9160">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Mon, Mar 28, 2011 at 19:21 UTC, Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt; wrote:
+&gt;<i> On Mon, 28 Mar 2011, Terje Mathisen wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Dave Hart &amp; I have banged quite a bit against the (fixed) version of the test
+</I>&gt;&gt;<i> program, and the conclusion is quite nice:
+</I>&gt;<i>
+</I>&gt;<i> Good result, but missing the most crucial detail on the tests: what CPU
+</I>&gt;<i> architecture?
+</I>&gt;<i>
+</I>&gt;<i> As we have seen x86 has the strongest rules on reordering. &#160;What about on
+</I>&gt;<i> another CPU, like ARM with weaker rules?
+</I>
+There's some porting work to be done.  So far just x86 using threads
+on Windows.  Still, I did include a dual-proc Pentium II 400MHz, which
+predates Intel's strictest guarantees.  Below are the hour-long runs I
+did.  Note the output is misleading, it still says 10 seconds when it
+was in fact 3600.  Also despite the mention of debug\test_shm the
+binary was fully optimized, including link-time code generation and
+non-debug C runtime.  The source file is test-shm.c, the test_shm.exe
+name is a result of quirk in how I set up the build here.
+
+Dual Pentium II 400 MHz (dell poweredge 2300) two sockets:
+
+counts[] = {1013285801,23545049282,53651425935,23533216365}
+
+All threads done!
+Thread 0 did 1013285801 iterations
+Thread 1 did 23545049282 iterations
+Thread 2 did 53651425935 iterations
+Thread 3 did 23533216365 iterations
+counter_update = 524233674, counter_retry = 150581, timestamps_inconsistent = 0
+
+I figured that was an interesting machine because Intel made certain
+claims about the arch of Pentium III and later.
+
+Dell Inspiron 9400 with Core2 T7200 2.0 GHz 1 socket:
+
+C:\ntp\ntp-dev-shm-ringtest\ports\winnt\vs2008&gt;debug\shm_test
+counts[] = {0,1,2,3}
+Writer affinity = 1, old = 3
+Reader 1 affinity = fffffffe, old = 3
+Reader 2 affinity = fffffffe, old = 3
+Reader 3 affinity = fffffffe, old = 3
+Done waiting 10 seconds
+counts[] = {1252798093,27888462205,27886570150,27668895725}
+
+All threads done!
+Thread 0 did 1252798093 iterations
+Thread 1 did 27888462205 iterations
+Thread 2 did 27886570150 iterations
+Thread 3 did 27668895725 iterations
+counter_update = 433190983, counter_retry = 807480, timestamps_inconsistent = 0
+
+P4 2.8 GHz Stepping 1 (hyperthreaded to 2 &quot;cpus&quot;, 1 socket).  Dell
+Poweredge 830:
+
+C:\bin&gt;shm_test
+counts[] = {0,1,2,3}
+Writer affinity = 1, old = 3
+Reader 1 affinity = fffffffe, old = 0
+Reader 2 affinity = fffffffe, old = 0
+Reader 3 affinity = fffffffe, old = 0
+Done waiting 10 seconds
+counts[] = {2573620693,80836862874,214678563292,81073590367}
+
+All threads done!
+Thread 0 did 2573620693 iterations
+Thread 1 did 80836862874 iterations
+Thread 2 did 214678563292 iterations
+Thread 3 did 81073590367 iterations
+counter_update = 1362112910, counter_retry = 129953, timestamps_inconsistent = 0
+
+
+Nowhere near as interesting as Alpha or ARM, granted, and hard to
+interpret without the source, which will have to wait for Terje.
+
+Cheers,
+Dave Hart
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009159.html">[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified
+</A></li>
+	<LI>Next message: <A HREF="009161.html">[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9160">[ date ]</a>
+              <a href="thread.html#9160">[ thread ]</a>
+              <a href="subject.html#9160">[ subject ]</a>
+              <a href="author.html#9160">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

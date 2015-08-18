@@ -1,0 +1,124 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] libgps: Receiving NMEA or raw binary data
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20libgps%3A%20Receiving%20NMEA%20or%20raw%20binary%20data&In-Reply-To=%3C4C8541D8.7000909%40navlost.eu%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="008136.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] libgps: Receiving NMEA or raw binary data</H1>
+    <B>Diego Berge</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20libgps%3A%20Receiving%20NMEA%20or%20raw%20binary%20data&In-Reply-To=%3C4C8541D8.7000909%40navlost.eu%3E"
+       TITLE="[Gpsd-dev] libgps: Receiving NMEA or raw binary data">gpsd at navlost.eu
+       </A><BR>
+    <I>Mon Sep  6 21:32:40 CEST 2010</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="008136.html">[Gpsd-dev] libgps: Receiving NMEA or raw binary data
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8135">[ date ]</a>
+              <a href="thread.html#8135">[ thread ]</a>
+              <a href="subject.html#8135">[ subject ]</a>
+              <a href="author.html#8135">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Greetings,
+
+   I am faced with the task of collecting NMEA or raw binary data (e.g.,
+the old &quot;R=2&quot; command) from GPSD via the libgps client API.
+
+   In GPSD &lt; 2.90 it used to be that after switching to NMEA/RAW all
+subsequent data after the first \n character would be NMEA or raw and
+one could just read the contents of the &quot;buffer&quot; variable in whichever
+function was being used at the time (the gps_raw_hook callback?).
+
+   On attempting an analog approach with &gt;2.90 (git head to be exact), I
+get hit with a problem.  My approach is as follows:
+
+    gps_data_t gpsdata;
+    if (gps_open(host, port, &amp;gpsdata) == 0) {
+
+        // set up a select() sort of thing so I
+        // get notified when data comes through
+
+        gps_stream(&amp;gpsdata, WATCH_ENABLE|WATCH_NMEA, NULL);
+    } else {
+        // Error reporting, etc.
+    }
+
+    // Elsewhere, when data arrives...
+
+    if (gps_read(&amp;gpsdata) != -1) {
+        fputs(stdout, gpsdata.buffer);
+    } else {
+        // Error reporting, etc.
+    }
+
+   My problem is that gpsdata.buffer contains a mixture of JSON and
+NMEA|Raw data (which is what's arriving on the wire).  While as far as
+NMEA goes one could in theory filter stuff by looking for the proper
+patterns  (e.g., the regex &quot;/^\$.*\*..$/&quot;), that solution is not
+workable for binary data which could look like anything, including JSON
+data.
+
+   I'm not entirely clear on what's the reasoning behind mixing two or
+more data protocols on the same channel. My expectation would be that
+JSON/NMEA/Raw would either be mutually exclusive or the last two would
+be properly encapsulated inside a JSON object.
+
+   Incidentally, please note that I do not wish to revert to
+WATCH_OLDSTYLE, in the interests of code longevity.
+
+   So my question is: how is one expected to read the NMEA|Raw data
+while ignoring any JSON &quot;noise&quot;?  I feel I must be missing something
+pretty obvious here. :(
+
+
+Regards,
+Diego Berge.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - <A HREF="http://enigmail.mozdev.org/">http://enigmail.mozdev.org/</A>
+
+iEYEARECAAYFAkyFQdcACgkQmlKEtSWrbj30JQCdHGv2thAHgNVFnnDCMFY8+GKb
+LBYAoIJodhFTjJ7wd30iz4zXe6CBdjR3
+=Se0l
+-----END PGP SIGNATURE-----
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="008136.html">[Gpsd-dev] libgps: Receiving NMEA or raw binary data
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8135">[ date ]</a>
+              <a href="thread.html#8135">[ thread ]</a>
+              <a href="subject.html#8135">[ subject ]</a>
+              <a href="author.html#8135">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

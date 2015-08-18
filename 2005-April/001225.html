@@ -1,0 +1,92 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Looking at John Foster's packetpacker,h
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Looking%20at%20John%20Foster%27s%20packetpacker%2Ch&In-Reply-To=%3C200504041629.j34GTGiY019982%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001214.html">
+   <LINK REL="Next"  HREF="001227.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Looking at John Foster's packetpacker,h</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Looking%20at%20John%20Foster%27s%20packetpacker%2Ch&In-Reply-To=%3C200504041629.j34GTGiY019982%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Looking at John Foster's packetpacker,h">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Mon Apr  4 18:29:16 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001214.html">[Gpsd-dev] Re: [Gpsd-users] Preparing for 2.20
+</A></li>
+        <LI>Next message: <A HREF="001227.html">[Gpsd-dev] Looking at John Foster's packetpacker,h
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1225">[ date ]</a>
+              <a href="thread.html#1225">[ thread ]</a>
+              <a href="subject.html#1225">[ subject ]</a>
+              <a href="author.html#1225">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Clever idea.  Perhaps overkill in some respects.  I have contemplated doing
+something similar, but with mostly macros rather than inlines.
+
+I would get rid of the NEEDS_ALIGNMENT condition and just always use
+that code on little-endian machines.  I don't trust the cast method.
+
+Most of the protocol manuals give only field widths rather than
+byte offsets.  Rather than
+
+/ Fields for a GARMIN_PKTID_PRODUCT_DATA packet (no struct was defined)
+define_field(int16_t,gppd_prod_id,HDR_LEN+0);
+define_field(int16_t,gppd_prod_ver,HDR_LEN+2);
+define_field(u_int8_t,gppd_prod_desc,HDR_LEN+4); // a C string
+
+it would be really cool to be able to say something like this
+
+/ Fields for a GARMIN_PKTID_PRODUCT_DATA packet (no struct was defined)
+start_offset(HDR_LEN);
+define_field(int16_t,gppd_prod_id,);
+define_field(int16_t,gppd_prod_ver);
+define_field(u_int8_t,gppd_prod_desc); // a C string
+
+and have it track the field offset internally by adding up field
+widths.  The trouble with that is we'd need a global somewhere,
+breaking thread safety.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+&quot;Those who make peaceful revolution impossible 
+will make violent revolution inevitable.&quot;
+	-- John F. Kennedy
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001214.html">[Gpsd-dev] Re: [Gpsd-users] Preparing for 2.20
+</A></li>
+	<LI>Next message: <A HREF="001227.html">[Gpsd-dev] Looking at John Foster's packetpacker,h
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1225">[ date ]</a>
+              <a href="thread.html#1225">[ thread ]</a>
+              <a href="subject.html#1225">[ subject ]</a>
+              <a href="author.html#1225">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

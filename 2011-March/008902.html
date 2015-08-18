@@ -1,0 +1,98 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [ntp:hackers] ntpd shm changes
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20ntpd%20shm%20changes&In-Reply-To=%3CAANLkTinrCDutKj8nsVVhq-rmFZKFJBg3%3DjvAWZ-AGPhF%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008901.html">
+   <LINK REL="Next"  HREF="008903.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [ntp:hackers] ntpd shm changes</H1>
+    <B>Jon Schlueter</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20ntpd%20shm%20changes&In-Reply-To=%3CAANLkTinrCDutKj8nsVVhq-rmFZKFJBg3%3DjvAWZ-AGPhF%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [ntp:hackers] ntpd shm changes">jon.schlueter at gmail.com
+       </A><BR>
+    <I>Sun Mar 20 13:39:44 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008901.html">[Gpsd-dev] [ntp:hackers]  ntpd shm changes
+</A></li>
+        <LI>Next message: <A HREF="008903.html">[Gpsd-dev] [ntp:hackers] ntpd shm changes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8902">[ date ]</a>
+              <a href="thread.html#8902">[ thread ]</a>
+              <a href="subject.html#8902">[ subject ]</a>
+              <a href="author.html#8902">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sun, Mar 20, 2011 at 7:45 AM, Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt; wrote:
+&gt;<i>
+</I>&gt;<i> Dave Hart &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">davehart_gmail_exchange_tee at davehart.net</A>&gt; writes:
+</I>&gt;<i>
+</I>&gt;&gt;<i> On Sat, Mar 19, 2011 at 11:20 UTC, Terje Mathisen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">terje at tmsw.no</A>&gt; wrote:
+</I>&gt;&gt;&gt;<i> The best you can do with a single producer and one/multiple readers (which
+</I>&gt;&gt;&gt;<i> are allowed to read the same data), is probably to have multiple slots for
+</I>&gt;&gt;&gt;<i> the data packets together with a single pointer to the current/last updated
+</I>&gt;&gt;&gt;<i> slot.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> The pointer can even be a simple index, using a byte variable makes it
+</I>&gt;&gt;&gt;<i> impossible for a reader to read a partially updated value.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> That sounds like a good way to go to me. &#160;Can you think of any reason
+</I>&gt;&gt;<i> two slots would not be enough? &#160;Also I'd feel better about the atomic
+</I>&gt;&gt;<i> handling of th index with it manipulated as the native word size
+</I>&gt;&gt;<i> (currently 32 or 64, could set aside 128 bits). &#160;At least on some RISC
+</I>&gt;&gt;<i> platforms, byte access is handled by the compiler as a native word
+</I>&gt;&gt;<i> size plus extra instructions, killing atomicity I believe.
+</I>&gt;<i>
+</I>&gt;<i> Are there locking operations available as part of the shared memory
+</I>&gt;<i> interface that will be used? &#160;It would seem that in general the use of
+</I>&gt;<i> shared memory requires locking, absent particular circumstances where
+</I>&gt;<i> one can argue that it's not needed. &#160;I think it's best not to assume
+</I>&gt;<i> anything about particular CPU architectures.
+</I>
+I would tend to agree, the &quot;Double checked locking is broken&quot; debate would
+hold in the realm as well.
+
+<A HREF="http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html">http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html</A>
+
+there are many ways you can be bitten by data races if you don't use a
+locking mechanism.  Compiler optimization, cache consistency, multi
+core cache consistency.
+
+if starting from scratch on the transport from gpsd to ntpd a locking mechnism
+might not be a bad idea.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008901.html">[Gpsd-dev] [ntp:hackers]  ntpd shm changes
+</A></li>
+	<LI>Next message: <A HREF="008903.html">[Gpsd-dev] [ntp:hackers] ntpd shm changes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8902">[ date ]</a>
+              <a href="thread.html#8902">[ thread ]</a>
+              <a href="subject.html#8902">[ subject ]</a>
+              <a href="author.html#8902">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

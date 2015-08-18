@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20Single-writer/many-reader%20consistency%3A%0A%20Test%20program%20written%20%26%20verified&In-Reply-To=%3C4D90A14B.8090308%40tmsw.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009149.html">
+   <LINK REL="Next"  HREF="009157.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified</H1>
+    <B>Terje Mathisen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20Single-writer/many-reader%20consistency%3A%0A%20Test%20program%20written%20%26%20verified&In-Reply-To=%3C4D90A14B.8090308%40tmsw.no%3E"
+       TITLE="[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified">terje at tmsw.no
+       </A><BR>
+    <I>Mon Mar 28 16:55:07 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009149.html">[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified
+</A></li>
+        <LI>Next message: <A HREF="009157.html">[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9155">[ date ]</a>
+              <a href="thread.html#9155">[ thread ]</a>
+              <a href="subject.html#9155">[ subject ]</a>
+              <a href="author.html#9155">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>tz wrote:
+&gt;<i> On Mon, Mar 28, 2011 at 8:21 AM, Terje Mathisen&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">terje at tmsw.no</A>&gt;  wrote:
+</I>&gt;&gt;<i> Terje Mathisen wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> All threads done!
+</I>&gt;&gt;<i> Thread 0 did 1020921970 iterations
+</I>&gt;&gt;<i> Thread 1 did 1939160384 iterations
+</I>&gt;&gt;<i> Thread 2 did 924938960 iterations
+</I>&gt;&gt;<i> Thread 3 did 2002669713 iterations
+</I>&gt;&gt;<i> counter_update = 1047208131, counter_retry = 365502934,
+</I>&gt;&gt;<i> timestamps_inconsistent = 0
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I.e. 1e9 write operations, nearly 4e9 reads.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Of the reads 1e9, i.e. about 25% happened in the middle of an update and one
+</I>&gt;&gt;<i> third of these required a retry due to the counter variable getting close to
+</I>&gt;&gt;<i> wrapping around.
+</I>&gt;<i>
+</I>&gt;<i> Which architecture, Alpha is apparently the most intersesting one?
+</I>
+Alpha will work as well, as long as the compiler obeys the rules about 
+not moving load/store operations past the barrier.
+&gt;<i>
+</I>&gt;<i> Also, would it be possible to try higher and higher update rates until
+</I>&gt;<i> we detect inconsistency instead of saying 100Hz seems safe.
+</I>
+That's exactly what I did! The writer managed 13 MHz, the readers 
+significantly more.
+&gt;<i>
+</I>&gt;<i> Others have been pointing out that different architectures guarantee
+</I>&gt;<i> different things, so if the architecture you tested on guarantees no
+</I>&gt;<i> (undetected) errors at 400% cpu even without a write barrier the test
+</I>&gt;<i> is not of the algorithm.
+</I>&gt;<i>
+</I>&gt;<i> I'd be curious how fast you could do things on an alpha without a
+</I>&gt;<i> write barrier.  Or if you are going to use a write barrier for the
+</I>&gt;<i> architectures, the code that implements it - the long #if ARCH chain.
+</I>&gt;<i> Or will sync_synchronize() be enough?
+</I>
+As long as the compiler supports it, the sync call will indeed be 
+sufficient to make the algorithm safe at any speed.
+
+Terje
+-- 
+- &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Terje at tmsw.no</A>&gt;
+&quot;almost all programming can be viewed as an exercise in caching&quot;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009149.html">[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified
+</A></li>
+	<LI>Next message: <A HREF="009157.html">[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9155">[ date ]</a>
+              <a href="thread.html#9155">[ thread ]</a>
+              <a href="subject.html#9155">[ subject ]</a>
+              <a href="author.html#9155">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

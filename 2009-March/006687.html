@@ -1,0 +1,177 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Next-generation GPSD protocol
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Next-generation%20GPSD%20protocol&In-Reply-To=%3C20090326084016.C75FE830291%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006686.html">
+   <LINK REL="Next"  HREF="006689.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Next-generation GPSD protocol</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Next-generation%20GPSD%20protocol&In-Reply-To=%3C20090326084016.C75FE830291%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Next-generation GPSD protocol">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Thu Mar 26 09:40:16 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006686.html">[Gpsd-dev] 2.39 has shipped - roadmap for 2.40
+</A></li>
+        <LI>Next message: <A HREF="006689.html">[Gpsd-dev] Next-generation GPSD protocol
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6687">[ date ]</a>
+              <a href="thread.html#6687">[ thread ]</a>
+              <a href="subject.html#6687">[ subject ]</a>
+              <a href="author.html#6687">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I was studying AIS for the last week or so prior to the GPSD 2.39 release,
+and it has shaken up my thinking about GPSD significantly. It has come
+together in my mind with some previously unrelated thoughts I'd been
+having about the next-generation GPSD protocol design.
+
+(Kurt Schwehr: because AIVDM is mixed up in this, you are specifically
+invited to the discussion. I told you I'd give you a reason to get 
+more involved with GPSD...)
+
+Most of you know that we're going to have to rebuild GPSD's
+request-response protocol sometime in the not too distant future.  The
+problem is that commands and responses are currently single characters
+and we have been running out of single characters to extend it with.  
+Which is a problem, since we want to be able to query for things like 
+almanacs and pseudorange data on devices that have those commands.
+
+Syntactically, I think what we're going to end up with will look a lot
+more like the generic Internet protocol.  In the following imaginary
+session, -&gt; lines are commands sent to the daemon and &lt;- lines are
+transmissions from it. Comments begin with #
+
+Note that this is a far more complex session than most clients will ever
+perform.  Much more usually they'll just say ?WATCH +TPV+SKY+STATUS and
+be done.
+
+# Client asks daemon what devices are available
+# The response tells it there is one GPS and one RTCM3 correction source.
+# Note the bare equal sign on the end of the DEVICES response; 
+# this is a syntactic marker that says the following response is multi-line
+# The fields in each response line are full name and service type.
+-&gt; ?DEVICES
+-&gt; !DEVICES=
+/dev/ttyUSB0,GPS
+/dev/ttyS0,RTCM3
+.
+#
+# Client asks the GPS to identify itself.
+-&gt; ?ID=/dev/ttyUSB0
+# Fields in the response are: service type, protocol, subtype or
+# firmware revision if available.
+&lt;- !ID=/dev/ttyUSB0,GPS,SiRF,231.000.000ES-01-39
+#
+# Client subscribes to TPV (old O), SKY, (old Y) and STATUS (old X) reports 
+# from the GPS.  Daemon confirms this is possible. 
+-&gt; ?WATCH=/dev/ttyUSB0,+TPV+SKY+STATUS
+&lt;- !WATCH=/dev/ttyUSB0,+TPV+SKY+STATUS
+#
+# Daemon begins to stream TPVs and SKYs (like our O and Y reports)
+&lt;- !TPV=MID2,1119197561.890,0.005,46.498203637,7.568074350,1327.780,21.000,124.484,0.0000,0.000,0.000,?,23.56,?,3
+&lt;- !SKY=MID4,1119197562.890,7:10,45,196,34,1:29,67,310,40,1:28,59,108,42,1:26,51,304,43,1:8,44,58,41,1:27,16,66,39,1:21,10,301,0,0:
+&lt;- !TVP=MID2,1119197563.890,0.005,46.498208969,7.568087260,1328.596,21.000,124.484,190.3797,0.091,0.085,?,23.60,?,3
+&lt;- !TVP=MID2,1119197564.890,0.005,46.498215161,7.568087260,1329.321,21.000,124.484,0.0000,0.086,0.091,?,23.53,?,3
+&lt;- !TVP=MID2,1119197565.890,0.005,46.498221628,7.568088976,1328.639,21.000,124.484,0.0000,0.086,0.091,?,23.56,?,3
+
+What AIVDM is doing is changing my thinking about the scope and
+semantics of the new protocol. In the past, GPSD has always been about
+kinematic awareness for devices we presume to be local.  With AIVDM, it
+could become an aggregator for kinematic data from remote sources as well.
+
+So instead, now I'm imagining this:
+
+# Client asks daemon what devices are available
+# The response tells it there is one GPS, one AIS transceiver, 
+# and one RTCM3 correction source. The fields are full name, 
+# service type, and name tag, 
+-&gt; ?DEVICES
+-&gt; !DEVICES=
+/dev/ttyUSB0,GPS,GPS#1
+/dev/ttyUSB1,AIS,AIS#1
+/dev/ttyS0,RTCM3,RTCM3#1
+.
+#
+# Client asks the GPS to identify itself.
+-&gt; ?ID=GPS#1
+&lt;- !ID=GPS#1,GPS,SiRF,231.000.000ES-01-39
+#
+# Client subscribes to TPV, SKY, and STATUS reports from the GPS.  
+# Daemon confirms this is possible. 
+-&gt; ?WATCH=GPS#1,+TPV+SKY+STATUS
+&lt;- !WATCH=GPS#1,+TPV+SKY+STATUS
+#
+# Daemon begins to stream TPVs (like our O report) and SKYs (like Y)
+&lt;- !TVP=GPS#1,MID2,1119197561.890,0.005,46.498203637,7.568074350,1327.780,21.000,124.484,0.0000,0.000,0.000,?,23.56,?,3
+&lt;- !SKY=GPS#1,MID4,1119197562.890,7:10,45,196,34,1:29,67,310,40,1:28,59,108,42,1:26,51,304,43,1:8,44,58,41,1:27,16,66,39,1:21,10,301,0,0:
+&lt;- !TVP=GPS#1,MID2,1119197563.890,0.005,46.498208969,7.568087260,1328.596,21.000,124.484,190.3797,0.091,0.085,?,23.60,?,3
+&lt;- !TVP=GPS#1,MID2,1119197564.890,0.005,46.498215161,7.568087260,1329.321,21.000,124.484,0.0000,0.086,0.091,?,23.53,?,3
+&lt;- !TVP=GPS#1,MID2,1119197565.890,0.005,46.498221628,7.568088976,1328.639,21.000,124.484,0.0000,0.086,0.091,?,23.56,?,3
+#
+# Client subscribes to Type 1 AIS reports.  To subscribe to all
+# reports from a device, we would omit the type argument.
+-&gt; ?WATCH=AIS#1,+1
+&lt;- !WATCH=AIS#1,+1
+#
+# Daemon begins to stream AIVDM Type 1 reports
+# Fields are: device, message type, timestamp, MMSI, navigation status,
+# ROT, SOG, position accuracy, longitude, latitude, COG, and true heading.
+!AIS=AIS#1,TYPE1,1119197565.890,371798000,0,?,12.3,1,-123.395383333,48.38163333333,224,215
+
+Despite the apparent complexity, all of this can be achieved with
+relatively little additional code.  The AIVDM driver is presently
+about 600 lines of code (much of which is string tables and a dump
+function) and won't get much larger; the new command parser might cost
+400 lines.
+
+In the future, if it becomes possible to gather reports from aircraft 
+transponders through an AIS-like device, I can readily imagine presenting
+those reports in a similar format
+
+I'm writing about this now because I invite others to critique the protocol
+design before I implement it.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+&quot;I hold it, that a little rebellion, now and then, is a good thing, and as 
+necessary in the political world as storms in the physical.&quot;
+	-- Thomas Jefferson, Letter to James Madison, January 30, 1787
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006686.html">[Gpsd-dev] 2.39 has shipped - roadmap for 2.40
+</A></li>
+	<LI>Next message: <A HREF="006689.html">[Gpsd-dev] Next-generation GPSD protocol
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6687">[ date ]</a>
+              <a href="thread.html#6687">[ thread ]</a>
+              <a href="subject.html#6687">[ subject ]</a>
+              <a href="author.html#6687">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

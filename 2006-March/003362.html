@@ -1,0 +1,127 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [patch] making port speed a compile-time option
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bpatch%5D%20making%20port%20speed%20a%20compile-time%20option&In-Reply-To=%3C91981b3e0603301103q36c800dbjaf2a6b25c13eae9f%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003355.html">
+   <LINK REL="Next"  HREF="003363.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [patch] making port speed a compile-time option</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bpatch%5D%20making%20port%20speed%20a%20compile-time%20option&In-Reply-To=%3C91981b3e0603301103q36c800dbjaf2a6b25c13eae9f%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [patch] making port speed a compile-time option">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Thu Mar 30 21:03:40 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003355.html">[Gpsd-dev] perl  module name
+</A></li>
+        <LI>Next message: <A HREF="003363.html">[Gpsd-dev] [patch] making port speed a compile-time option
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3362">[ date ]</a>
+              <a href="thread.html#3362">[ thread ]</a>
+              <a href="subject.html#3362">[ subject ]</a>
+              <a href="author.html#3362">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>some time ago, eric mentioned something about making port speed a
+compile time option for embedded devices that didn't need to sniff
+around for port speeds. here's a quick attempt at this. i'm inside a
+cube of concrete at the moment so i can't test this... comments?
+
+Index: configure.ac
+===================================================================
+--- configure.ac	(revision 3273)
++++ configure.ac	(working copy)
+@@ -320,6 +320,20 @@
+   AC_MSG_RESULT([no])
+ fi
+
++dnl check for port speed fixed at compile-time
++AC_ARG_ENABLE(fixed-port-speed,
++  AC_HELP_STRING([--enable-fixed-port-speed],
++                 [compile with fixed serial port speed]),
++  [ac_baud=$enableval], [ac_baud=no])
++AC_MSG_CHECKING([for fixed port speed])
++if test x&quot;$ac_baud&quot; != &quot;xno&quot;; then
++    AC_MSG_RESULT([$ac_baud])
++	AC_DEFINE_UNQUOTED([FIXED_PORT_SPEED], $ac_baud, [Fixed port speed])
++	FIXED_PORT_SPEED=&quot;-DSPEEDFLAGS=$ac_baud&quot;
++else
++  AC_MSG_RESULT([no])
++fi
++
+ dnl Manually configure DBUS until we figure out a
+ dnl distro-independent was to check for both libraries and headers
+ AC_ARG_ENABLE(dbus,
+@@ -395,6 +409,7 @@
+ echo &quot;RTCM104 support         : $ac_rtcm104&quot;
+ echo &quot;NTP SHM                 : $ac_ntpshm&quot;
+ echo &quot;NTP PPS                 : $ac_pps&quot;
++echo &quot;Fixed port speed        : $ac_baud&quot;
+ echo &quot;Enable shared libraries : $enable_shared&quot;
+ echo &quot;Enable DBUS support     : $ac_dbus&quot;
+ echo &quot;------------------------------------------&quot;
+Index: serial.c
+===================================================================
+--- serial.c	(revision 3273)
++++ serial.c	(working copy)
+@@ -193,6 +193,11 @@
+ bool gpsd_next_hunt_setting(struct gps_device_t *session)
+ /* advance to the next hunt setting  */
+ {
++#ifdef FIXED_PORT_SPEED
++#warning using fixed port speed
++    gpsd_set_speed(session, FIXED_PORT_SPEED, 'N', 1);
++    return false;	/* done */
++#else /* FIXED_PORT_SPEED not defined */
+     /* every rate we're likely to see on a GPS */
+     static unsigned int rates[] = {0, 4800, 9600, 19200, 38400, 57600};
+
+@@ -209,6 +214,8 @@
+     }
+
+     return true;	/* keep hunting */
++#endif /* FIXED_PORT_SPEED defined */
++
+ }
+
+ void gpsd_close(struct gps_device_t *session)
+
+--
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003355.html">[Gpsd-dev] perl  module name
+</A></li>
+	<LI>Next message: <A HREF="003363.html">[Gpsd-dev] [patch] making port speed a compile-time option
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3362">[ date ]</a>
+              <a href="thread.html#3362">[ thread ]</a>
+              <a href="subject.html#3362">[ subject ]</a>
+              <a href="author.html#3362">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

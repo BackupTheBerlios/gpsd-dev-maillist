@@ -1,0 +1,111 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Input packets buffering bug(s)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3Crmiljb3po92.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007805.html">
+   <LINK REL="Next"  HREF="007811.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Input packets buffering bug(s)</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3Crmiljb3po92.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] Input packets buffering bug(s)">gdt at ir.bbn.com
+       </A><BR>
+    <I>Sat May 29 02:04:09 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007805.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+        <LI>Next message: <A HREF="007811.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7808">[ date ]</a>
+              <a href="thread.html#7808">[ thread ]</a>
+              <a href="subject.html#7808">[ subject ]</a>
+              <a href="author.html#7808">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+  There is a decision to make, and it mainly depends on what project
+  maintainers feel is the most important.
+
+  The solution proposed by Remco is the quick and safe path: a small,
+  non-intrusive patch that will fix the problem with, by design, no
+  chance to break further code -- at least, as long as gps_poll is the
+  only caller. Definitely not small advantages.
+
+  On the downside, it's a bit like a magic piece of rubber tape on a
+  flawed design.
+  I personally find this particularly bad as it makes the code more
+  difficult to understand and master, which tends to scare new
+  developers away and, in general, kind of paves the way for more bugs
+  to come.
+  It also is blatantly sub-efficient: in the worst case scenario
+  (longest packet: 516 bytes) it takes 33 main() loop spins to read a
+  packet that could have been read in a single system call (I'm not sure
+  what the average packet size is). On modern machines this is no big
+  deal, yet willingly wasting resources just to cover for a broken
+  design is nothing to be proud of...
+
+So, on the question of what to do:
+
+  I think the change to max out reading at 16 should be committed* right
+  away.  It's a little icky, but it has no serious downsides, and it
+  fixes a really serious problem.
+
+  As for efficiency, I think the concern is overblown.  If one had a
+  serial port GPSr, then there would be close to one system call per
+  byte.  On USB, we're talking ~500 bytes/second arriving in a burst,
+  and it taking 32 reads instead of 2 over an entire second is not a big
+  deal.
+
+  Putting in the limit-to-16 will not cause significant problems for
+  anyone trying to write and debug a better fix.  It's easy to comment
+  out the 2 lines for testing.
+
+* actually, in my local repo it's committed, just not pushed.  I would
+  commit --amend and add a comment explaining things, and then push.
+
+It sounds like Olivier and Remco both favor committing, and no one is
+opposed - just people who aren't 100% sure if regression tests are ok
+with the change.  I'll spiff up the comment and do that.
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100528/4929e15d/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100528/4929e15d/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007805.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+	<LI>Next message: <A HREF="007811.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7808">[ date ]</a>
+              <a href="thread.html#7808">[ thread ]</a>
+              <a href="subject.html#7808">[ subject ]</a>
+              <a href="author.html#7808">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

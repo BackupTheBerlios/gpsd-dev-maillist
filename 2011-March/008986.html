@@ -1,0 +1,182 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Unacceptable intrusivemess by the OnCore driver
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Unacceptable%20intrusivemess%20by%20the%20OnCore%20driver&In-Reply-To=%3Calpine.DEB.1.10.1103231042190.27151%40org-pc51.fy.chalmers.se%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008985.html">
+   <LINK REL="Next"  HREF="008988.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Unacceptable intrusivemess by the OnCore driver</H1>
+    <B>H&#229;kan Johansson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Unacceptable%20intrusivemess%20by%20the%20OnCore%20driver&In-Reply-To=%3Calpine.DEB.1.10.1103231042190.27151%40org-pc51.fy.chalmers.se%3E"
+       TITLE="[Gpsd-dev] Unacceptable intrusivemess by the OnCore driver">f96hajo at chalmers.se
+       </A><BR>
+    <I>Wed Mar 23 10:57:26 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008985.html">[Gpsd-dev] Unacceptable intrusivemess by the OnCore driver
+</A></li>
+        <LI>Next message: <A HREF="008988.html">[Gpsd-dev] Unacceptable intrusivemess by the OnCore driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8986">[ date ]</a>
+              <a href="thread.html#8986">[ thread ]</a>
+              <a href="subject.html#8986">[ subject ]</a>
+              <a href="author.html#8986">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Yes, definately ugly.
+
+The attached diff cleans libgpsd_core.c by removing the oncore references 
+inside libgpsd_core.c, without stripping out the support functionality in 
+the driver itself.  So that a proper solution can be worked out without 
+rush, but also not having to re-add that code.  (In position hold mode, an 
+oncore will never deliver a position fix, as it already has been told 
+where it is.  Somehow this has to be modelled, that it has a 'really' good 
+time, without claiming a fix.)
+
+I at the moment (for weeks) do not have access to these devices, so can 
+test neither this nor a solution, more than compiling.  The ripping only 
+has the effect of making oncore devices in position hold mode not deliver 
+ntpshm data.
+
+The (independent) use of pulse_delay_ns is also removed, while the code 
+potentially using it inside libgpsd_core.c is kept, as the ugly is the way 
+to get to the data, not the delay itself.  (An oncore device can be told 
+to delay the PPS pulse, thereby making it possible to timestamp several 
+gps modules on the same computer.  Multiple devices otherwise all make the 
+interrupt at the top of the second.)
+
+H&#229;kan
+
+
+On Wed, 23 Mar 2011, Eric Raymond wrote:
+
+&gt;<i> While attempting a cleanup on the PPS logic I encountered some code committed
+</I>&gt;<i> by Jon Schleuter on behalf of Haakan Johansson that is utterly wrong and
+</I>&gt;<i> must be fixed or entirely removed from gpsd.
+</I>&gt;<i>
+</I>&gt;<i> I'm going to explain in detail what is wrong with it, because I
+</I>&gt;<i> *never* want to see a patch this evil submitted or (worse) signed off
+</I>&gt;<i> on *ever again*.  I haven't yet decided whether to rip it out immediately
+</I>&gt;<i> or wait a few days for a fix patch; I'm leaning towards &quot;immediately&quot; and
+</I>&gt;<i> it may have been done by the time you read this.
+</I>&gt;<i>
+</I>&gt;<i> The code in question was introduced by Haakan Johansson's commit of
+</I>&gt;<i> Sat Nov 13 15:12:40 2010 +0100, explained as &quot;Allow oncore devices in
+</I>&gt;<i> postion hold mode to deliver PPS data to ntpshm&quot; and signed off by
+</I>&gt;<i> Jon Schleuter.
+</I>&gt;<i>
+</I>&gt;<i> This commit has already caused Gary Miller and myself concrete
+</I>&gt;<i> problems as we attempted to disentangle the PPS support from the core
+</I>&gt;<i> fix-processing logic.  The more general problem is that the commit
+</I>&gt;<i> grossly violates gpsd's internal rules about how the daemon is
+</I>&gt;<i> layered.  From the top down, the layers look like this:
+</I>&gt;<i>
+</I>&gt;<i> (1) The dispatcher layer.  This mainly consists of gpsd.c plus several
+</I>&gt;<i> modules for generating and parsing JSON. Its job is to manage socket
+</I>&gt;<i> communications with gpsd clients.  The bad code does not touch this layer.
+</I>&gt;<i>
+</I>&gt;<i> (2) The core-library layer.  The dispatcher calls this.  A couple
+</I>&gt;<i> other tools that aren't the daemon use it as well, notably gpsmon and
+</I>&gt;<i> gpsctl. Its job is to manage communications with one or more sensors.
+</I>&gt;<i>
+</I>&gt;<i> (3) The driver layer.  This is a library of drivers for different
+</I>&gt;<i> sensor types, including not just GPSes but Marine AIS radios and RTCM
+</I>&gt;<i> sources.  Each driver is encapsulated as a method structure (struct
+</I>&gt;<i> gps_type_t) intentionally analogous to a Unix device-driver
+</I>&gt;<i> definition.  This method structure contains all the methods and data
+</I>&gt;<i> fields that a driver exports.
+</I>&gt;<i>
+</I>&gt;<i> Each sensor managed by the core library has a session structure
+</I>&gt;<i> (struct gps_device_t) which holds all the information the core library
+</I>&gt;<i> needs to control it and interpret its take.  That session structure
+</I>&gt;<i> includes a pointer to a driver type structure (struct gps_type_t).
+</I>&gt;<i> All access by the core-library layer to the driver layer is supposed
+</I>&gt;<i> to go through a device's type pointer.
+</I>&gt;<i>
+</I>&gt;<i> The bad code violates two rules.  First, it adds if-guards to the core
+</I>&gt;<i> library which explicitly check to see if a sessions's type pointer points
+</I>&gt;<i> ast the OnCore method table, as a condition of performing special actions.
+</I>&gt;<i> Secondly, it adds code that refers to storage in the OnCore member
+</I>&gt;<i> of the driver private union.
+</I>&gt;<i>
+</I>&gt;<i> The bad code breaks down the intended separation between the core-library
+</I>&gt;<i> and driver layers.  It is intended that a driver exports information only
+</I>&gt;<i> by modifying storage accessible from the session structure of a device, but
+</I>&gt;<i> *not in the driver private union* - that is strictly for driver-private
+</I>&gt;<i> state information.  The bad code directly references two members in the
+</I>&gt;<i> OnCore driver private union.
+</I>&gt;<i>
+</I>&gt;<i> This can't be tolerated, because layer violations like this will reduce
+</I>&gt;<i> the core library to a pile of driver-specific hacks that is
+</I>&gt;<i> effectively impossible to modify.  That's not an abstract theoretical
+</I>&gt;<i> objection; Gary Miller and I have already felt this pain in this case.
+</I>&gt;<i>
+</I>&gt;<i> The bad code serves an OnCore running in a special time-service mode,
+</I>&gt;<i> and is trying to do two things that don't fit the present driver
+</I>&gt;<i> model.  One is pass timestamps to NTP even though the device may never
+</I>&gt;<i> have seen a good position fix, bypassing a guard that looks for at
+</I>&gt;<i> least three continuous fixes from all devices.  The other is some
+</I>&gt;<i> kind of manipulation of the NTP fudge and sample data that I
+</I>&gt;<i> don't comprehend.
+</I>&gt;<i>
+</I>&gt;<i> The correct thing to do when the driver method interface is too confining
+</I>&gt;<i> is to *extend that interface*, not violate the interface rules in an
+</I>&gt;<i> ad-hoc way.  This code violates the design rules described in the
+</I>&gt;<i> Hacking Guide; it should never even have been submitted, let alone
+</I>&gt;<i> signed off on.
+</I>&gt;<i>
+</I>&gt;<i> We have those rules for a reason. GPSD is used in potentially
+</I>&gt;<i> life-critical navigation systems. We must maintain proper
+</I>&gt;<i> orthogonality and layering in order to minimize our defect rate. Clean
+</I>&gt;<i> code is not just an esthetic luxury; if the GPSD codebase degrades into
+</I>&gt;<i> a brittle pile of hacks, that failure could *kill* people.
+</I>&gt;<i> --
+</I>&gt;<i> 		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+</I>&gt;<i>
+</I>&gt;<i> Americans have the will to resist because you have weapons.
+</I>&gt;<i> If you don't have a gun, freedom of speech has no power.
+</I>&gt;<i>         -- Yoshimi Ishikawa, Japanese author, in the LA Times 15 Oct 1992
+</I>&gt;<i>
+</I>-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: remove_oncore_intrusiveness.diff
+Type: text/x-diff
+Size: 2338 bytes
+Desc: 
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110323/ed99665e/attachment.diff">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110323/ed99665e/attachment.diff</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008985.html">[Gpsd-dev] Unacceptable intrusivemess by the OnCore driver
+</A></li>
+	<LI>Next message: <A HREF="008988.html">[Gpsd-dev] Unacceptable intrusivemess by the OnCore driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8986">[ date ]</a>
+              <a href="thread.html#8986">[ thread ]</a>
+              <a href="subject.html#8986">[ subject ]</a>
+              <a href="author.html#8986">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

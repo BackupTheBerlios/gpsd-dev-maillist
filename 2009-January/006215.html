@@ -1,0 +1,147 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Support for Ocean Server Digital Compas
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Support%20for%20Ocean%20Server%20Digital%20Compas&In-Reply-To=%3C20090104223837.GA10986%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006214.html">
+   <LINK REL="Next"  HREF="006216.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Support for Ocean Server Digital Compas</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Support%20for%20Ocean%20Server%20Digital%20Compas&In-Reply-To=%3C20090104223837.GA10986%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Support for Ocean Server Digital Compas">esr at thyrsus.com
+       </A><BR>
+    <I>Sun Jan  4 23:38:37 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006214.html">[Gpsd-dev] recursion using raw_hook?
+</A></li>
+        <LI>Next message: <A HREF="006216.html">[Gpsd-dev] Support for Ocean Server Digital Compas
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6215">[ date ]</a>
+              <a href="thread.html#6215">[ thread ]</a>
+              <a href="subject.html#6215">[ subject ]</a>
+              <a href="author.html#6215">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Stefan de Konink &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">stefan at konink.de</A>&gt;:
+&gt;<i> I have created a patch (WIP).
+</I>&gt;<i> 
+</I>&gt;<i> <A HREF="http://ipv4.kinkrsoftware.nl/contrib/elphel/wip.diff">http://ipv4.kinkrsoftware.nl/contrib/elphel/wip.diff</A>
+</I>
+Merged, after some cleanup.  I removed several patch bands that seemed
+to be unnecessary.  I understand this code is not complete, but I was
+able to fix it so all the C changes are properly conditioned on 
+OCEANSERVER_ENABLE.
+
+I have not listed this as a supported device yet, since by what you tell
+me the code is incomplete.
+
+&gt;<i> I'm trying to debug now under what circumstances oceanserver_configure
+</I>&gt;<i> is called, if it is ever called. The device has different modes, and I
+</I>&gt;<i> actually want to parse it in $OHPR mode, but I totally don't get the
+</I>&gt;<i> structure that can lead to this...
+</I>&gt;<i> 
+</I>&gt;<i> The above code snippet allows to figure out what kind of device it is,
+</I>&gt;<i> it could be better, because the device allows something like 'V\n' and
+</I>&gt;<i> it will give back its name. This must probably be implemented in a
+</I>&gt;<i> probe_detect function. I also have updated the packet.c code, so...
+</I>&gt;<i> 
+</I>&gt;<i> gpsd: Packet type 1 accepted 26 =
+</I>&gt;<i> 24433239302e38502d302e3352312e345433342e332a30390d0a
+</I>&gt;<i> gpsd: Packet discard of 26, chars remaining is 0 =
+</I>&gt;<i> gpsd: packet sniff on /dev/ttyUSB0 finds type 1
+</I>&gt;<i> gpsd: switch_driver(Generic NMEA) called...
+</I>&gt;<i> gpsd: selecting Generic NMEA driver...
+</I>&gt;<i> gpsd: =&gt; PROBING SUBTYPE 0
+</I>&gt;<i> gpsd: blabla
+</I>&gt;<i> gpsd: blabla2 0
+</I>&gt;<i> gpsd: GPS sent 26 new characters
+</I>&gt;<i> gpsd: Accepted packet on /dev/ttyUSB0.
+</I>&gt;<i> gpsd: =&gt; PARSE INPUT
+</I>&gt;<i> gpsd: switch_driver(OceanServer Digital Compas OS5000) called...
+</I>&gt;<i> gpsd: selecting OceanServer Digital Compas OS5000 driver...
+</I>&gt;<i> gpsd: blabla
+</I>&gt;<i> gpsd: blabla2 0
+</I>&gt;<i> gpsd: unflagging descriptor 4
+</I>&gt;<i> gpsd: closing GPS=/dev/ttyUSB0 (4)
+</I>&gt;<i> gpsd: select waits
+</I>&gt;<i> gpsd: select waits
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> But looking at this, it actually never 'reconfigures' itself to the
+</I>&gt;<i> 'mode' I want to read out from, at blabla2 it does not work out well.
+</I>&gt;<i> 
+</I>&gt;<i> The output of the device is typically:
+</I>&gt;<i> $C...*NMEACRC
+</I>&gt;<i> $OHPR ... *NMEACRC
+</I>&gt;<i> $HCHDT,...*NMEACRC
+</I>&gt;<i> Or 'raw' output.
+</I>&gt;<i> 
+</I>&gt;<i> How can I 'probe' on my driver? With this I mean, how can I select the
+</I>&gt;<i> driver, make it send the 'V\n' sequence and based on that look at the
+</I>&gt;<i> resulting string?
+</I>&gt;<i> 
+</I>&gt;<i> And how can I make the device to actually switch 'mode' (make the
+</I>&gt;<i> _configure) called?
+</I>
+The configure method should be called when the driver type is switched, which
+I can see happening in your session transcript.  Are you sure you are
+building with ALLOW_RECONFIGURE on?
+
+&gt;<i> &gt;&gt; The non trivial thing here is that I need to build in a calibration
+</I>&gt;<i> &gt;&gt; step. Like GPSd the device runs some interactive interface that is able
+</I>&gt;<i> &gt;&gt; to do filtering and does calibration. It might be interesting to support
+</I>&gt;<i> &gt;&gt; it through GPSd, alternatively I need to shutdown the daemon.
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; I don't undertstand this paragraph.  What are you trying to tell us that 
+</I>&gt;<i> &gt; gpsd needs to do to support calibration?
+</I>&gt;<i> 
+</I>&gt;<i> The compass requires a hardware calibration (rotating it around Y and Z
+</I>&gt;<i> axis) this needs to be initiated by a command sequence to the device. I
+</I>&gt;<i> wonder if it is possible to make this sequence go through gpsd to the
+</I>&gt;<i> device itself.
+</I>
+Currently, no.  See the section called &quot;Blind Alleys&quot; in the Hacker's Guide
+for discussion.
+
+&gt;<i> Is it in the current GPSd possible to hookup more than one device?
+</I>
+Most definitely yes.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006214.html">[Gpsd-dev] recursion using raw_hook?
+</A></li>
+	<LI>Next message: <A HREF="006216.html">[Gpsd-dev] Support for Ocean Server Digital Compas
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6215">[ date ]</a>
+              <a href="thread.html#6215">[ thread ]</a>
+              <a href="subject.html#6215">[ subject ]</a>
+              <a href="author.html#6215">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

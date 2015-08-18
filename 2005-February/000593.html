@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] (no subject)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%28no%20subject%29&In-Reply-To=%3C20050201191751.GA30954%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000598.html">
+   <LINK REL="Next"  HREF="000599.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] (no subject)</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%28no%20subject%29&In-Reply-To=%3C20050201191751.GA30954%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] (no subject)">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Feb  1 20:17:51 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000598.html">[Gpsd-dev] Re: (no subject)
+</A></li>
+        <LI>Next message: <A HREF="000599.html">[Gpsd-dev] (no subject)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#593">[ date ]</a>
+              <a href="thread.html#593">[ thread ]</a>
+              <a href="subject.html#593">[ subject ]</a>
+              <a href="author.html#593">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+&gt;<i> -----BEGIN PGP SIGNED MESSAGE-----
+</I>&gt;<i> Hash: SHA1
+</I>&gt;<i> 
+</I>&gt;<i> Yo Eric!
+</I>&gt;<i> 
+</I>&gt;<i> Boy, that was fast. Thanks
+</I>&gt;<i> 
+</I>&gt;<i> On Tue, 1 Feb 2005, Eric S. Raymond wrote:
+</I>&gt;<i> 
+</I>&gt;<i> &gt; There have been hints of trouble with GSV parsing, but nothing reproducible.
+</I>&gt;<i> &gt; If you take this data, extracted from your report, and feed it to gpsd using
+</I>&gt;<i> &gt; the -T l option, does the core dump reproduce?
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; $GPGSV,2,1,07,04,57,069,40,09,41,221,00,24,44,055,42,05,63,303,45*7C
+</I>&gt;<i> &gt; $GPGSV,2,2,07,02,63,171,00,17,38,189,38,30,29,306,45*44
+</I>&gt;<i> 
+</I>&gt;<i> I put those two line is a file called &quot;tmp&quot;.  Then ran this:
+</I>&gt;<i> 
+</I>&gt;<i> # gpsd -D 2 -n -T l -p tmp
+</I>&gt;<i> gpsd: launching (Version 2.9)
+</I>&gt;<i> gpsd: listening on port 2947
+</I>&gt;<i> gpsd: opening GPS data source at tmp
+</I>&gt;<i> gpsd: gpsd_activate: opened GPS (4)
+</I>&gt;<i> gpsd: &lt;= GPS: $GPGSV,2,1,07,04,57,069,40,09,41,221,00,24,44,055,42,05,63,303,45*7C
+</I>&gt;<i> gpsd: &lt;= GPS: $GPGSV,2,2,07,02,63,171,00,17,38,189,38,30,29,306,45*44
+</I>&gt;<i> Segmentation fault
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> gdb gives me the same backtrace:
+</I>&gt;<i> 
+</I>&gt;<i> Program received signal SIGSEGV, Segmentation fault.
+</I>&gt;<i> 0x400706e1 in __strtol_internal () from /lib/libc.so.6
+</I>&gt;<i> (gdb) bt
+</I>&gt;<i> #0  0x400706e1 in __strtol_internal () from /lib/libc.so.6
+</I>&gt;<i> #1  0x4003baaa in update_field_i (field=0x0, dest=0x804e1e4) at stdlib.h:317
+</I>&gt;<i> #2  0x4003c2f9 in processGPGSV (count=16, field=0xbfffaca0, out=0x804e1e4)
+</I>&gt;<i>     at nmea_parse.c:401
+</I>&gt;<i> #3  0x4003c64c in nmea_parse (sentence=0x5 &lt;Address 0x5 out of bounds&gt;,
+</I>&gt;<i>     outdata=0x0) at nmea_parse.c:500
+</I>&gt;<i> #4  0x4003cb1a in gpsd_NMEA_handle_message (session=0x804e058,
+</I>&gt;<i>     sentence=0x40040400 &quot;$GPGSV,2,2,07,02,63,171,00,17,38,189,38,30,29,306,45*44&quot;) at drivers.c:18
+</I>&gt;<i> #5  0x4003cbdf in nmea_handle_input (session=0x804e058) at drivers.c:52
+</I>&gt;<i> #6  0x4003e891 in gpsd_poll (session=0x804e058) at libgpsd_core.c:155
+</I>&gt;<i> #7  0x0804a5b3 in main (argc=8, argv=0xbfffdfd4) at gpsd.c:590
+</I>&gt;<i> #8  0x40058d06 in __libc_start_main () from /lib/libc.so.6
+</I>&gt;<i> 
+</I>&gt;<i> So I would say this is solidly reproduceable.
+</I>
+But not here.  I tried the same thing and didn't see this core dump.
+ 
+&gt;<i> What next?
+</I>
+Set a breakpoint on gpsd_NMEA_handle_message().  The sentence argument to that
+looks good, but by the time it's passed to nmea_parse() it's corrupted. 
+We need to figure out why that is happening.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000598.html">[Gpsd-dev] Re: (no subject)
+</A></li>
+	<LI>Next message: <A HREF="000599.html">[Gpsd-dev] (no subject)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#593">[ date ]</a>
+              <a href="thread.html#593">[ thread ]</a>
+              <a href="subject.html#593">[ subject ]</a>
+              <a href="author.html#593">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

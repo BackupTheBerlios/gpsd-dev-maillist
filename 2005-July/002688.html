@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsflash
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsflash&In-Reply-To=%3C200507292050.j6TKo9OT010857%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002687.html">
+   <LINK REL="Next"  HREF="002689.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsflash</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsflash&In-Reply-To=%3C200507292050.j6TKo9OT010857%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] gpsflash">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Fri Jul 29 22:50:09 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002687.html">[Gpsd-dev] Re: bu353 1, sirfmon 0
+</A></li>
+        <LI>Next message: <A HREF="002689.html">[Gpsd-dev] sirf message 27
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2688">[ date ]</a>
+              <a href="thread.html#2688">[ thread ]</a>
+              <a href="subject.html#2688">[ subject ]</a>
+              <a href="author.html#2688">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>This is mainly a heads-up for Chris Kuethe.  Chris, I've done some
+more work on gpsflash that you should know about.
+
+The framework code now expects there to be a probe method that gets an
+ID/version string from the GPS.  I have supplied a working probe
+method for SiRF chips.  It's written in terms of a generic expect() 
+function which should be useful for querying other chipsets as well.
+
+In the new flow of control, the probe method for each supported GPS 
+type is called just after the tty is opened and before anything else 
+is done (in particular, before granbbing the loader and firmware
+files).  The first probe to return tells us what kind of chip this is.
+
+Just before signals are blocked and the loader transmission would
+start, the framework calls a type-specific version_check method 
+that gets the version string and both images as arguments.  This
+is where we could do actual content-based sanity checking.  At the
+moment, however, that SiRF method is a stub.
+
+There is a probe mode that does only the sanity checking.  This
+is what happens if the environment variable is not set correctly
+or the -n option is enabled.
+
+Also, I changed the argument parsing.  To be consistent with gpsd,
+gpsfake, and sirfmon,  the tty name is now an argument following
+all options rather than being an option itself.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+Americans have the will to resist because you have weapons. 
+If you don't have a gun, freedom of speech has no power.
+         -- Yoshimi Ishikawa, Japanese author, in the LA Times 15 Oct 1992
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002687.html">[Gpsd-dev] Re: bu353 1, sirfmon 0
+</A></li>
+	<LI>Next message: <A HREF="002689.html">[Gpsd-dev] sirf message 27
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2688">[ date ]</a>
+              <a href="thread.html#2688">[ thread ]</a>
+              <a href="subject.html#2688">[ subject ]</a>
+              <a href="author.html#2688">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,226 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Input packets buffering bug(s)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3C201005231359.54185.remco%40rvt.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007758.html">
+   <LINK REL="Next"  HREF="007760.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Input packets buffering bug(s)</H1>
+    <B>Remco Treffkorn</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3C201005231359.54185.remco%40rvt.com%3E"
+       TITLE="[Gpsd-dev] Input packets buffering bug(s)">remco at rvt.com
+       </A><BR>
+    <I>Sun May 23 22:59:53 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007758.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+        <LI>Next message: <A HREF="007760.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7759">[ date ]</a>
+              <a href="thread.html#7759">[ thread ]</a>
+              <a href="subject.html#7759">[ subject ]</a>
+              <a href="author.html#7759">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Disclaimer: I am not speaking for the group, only for myself. I may be even grumpier
+then normal at this time.
+
+1. I am not intelligent enough to understand what the problem is on a quick read through.
+2. I am too lazy to spend time on something that I don't get, knowing that gpsd is in use
+since about one and a half decades without anybody running into this major bug.
+
+If you want o overcome my low iq and my lazyness, please take the time to explain the
+problem so that I can understand it without investing a lot of time on a problem that
+has a low probability to exist.
+
+Additional remarks embedded in the quoted message:
+
+On Sunday 23 May 2010, Olivier Cornu wrote:
+&gt;<i> There is a severe bug in the way input packets are processed.
+</I>&gt;<i> 
+</I>&gt;<i> To cut it short, the design wrongly assumes packets will be received
+</I>&gt;<i> one-at-a-time.
+</I>
+Are you talking about gps data from the serial port?
+If yes, then what is your definition of 'packet'?
+
+&gt;<i> GPS device may actually send them one-at-a-time, yet there is no
+</I>&gt;<i> guarantee that's how they'll be received by gpsd.
+</I>
+What?
+
+&gt;<i> This is how it currently works:
+</I>&gt;<i>   1. wait until new tty input is available  [gpsd.c:1639]
+</I>&gt;<i>   2. append it into inbuffer                [packet.c:1646]
+</I>&gt;<i>   3. parse first inbuffer packet            [packet.c:1684]
+</I>&gt;<i>   4. broadcast it to clients                [gpsd.c:1709]
+</I>&gt;<i>   5. back to 1.
+</I>
+Sounds good to me. (Too lazy to look at the code).
+
+&gt;<i> What if 2 packets arrive at time t? First one will be parsed and
+</I>&gt;<i> broadcast at time t, then main loop() will wait until t+1 packets
+</I>&gt;<i> arrive to parse the 2d packet.
+</I>
+It's called a 'serial` line for a reason.
+
+&gt;<i> First bug:  clients receive packets with a lag.
+</I>&gt;<i> Second bug: this lag can only get bigger (if multiple packets are
+</I>&gt;<i> again received).
+</I>
+Without explanation that sounds just strange.
+
+&gt;<i> Perhaps more once buffers get full.
+</I>
+'Perhaps` is not a word that raises my willingness to spend time to understand...
+
+&gt;<i> I'm working on an app (gps2nmea) where location info is updated every
+</I>&gt;<i> ~5s. From this info, corresponding NMEA packets are crafted and sent
+</I>&gt;<i> on a tty. Excellent conditions to showcase this bug.
+</I>&gt;<i> When there's a valid fix and good satellites data, 6 or 7 packets can
+</I>&gt;<i> be sent at once. In other words, every 5s the lag is growing by 30s!
+</I>&gt;<i> Goodbye real-time navigation...  ;-)
+</I>
+I totally don't get this '6 or seven packets at once` deal.
+
+&gt;<i> Here is a stripped log of what happens:
+</I>&gt;<i> $ ./gpsd -n -N -b -D9 /dev/rfcomm0
+</I>&gt;<i> gpsd: launching (Version 2.95~dev)
+</I>&gt;<i> gpsd: opening read-only GPS data source type 0 and at '/dev/rfcomm0'
+</I>&gt;<i> gpsd: gpsd_activate(): opened GPS (fd 5)
+</I>&gt;<i> ==&gt; wait for tty input data
+</I>&gt;<i> gpsd: select waits
+</I>&gt;<i> gpsd: select() {3 4 5} -&gt; {} at 1274632424.454401 (errno 0)
+</I>&gt;<i> gpsd: select waits
+</I>&gt;<i> gpsd: select() {3 4 5} -&gt; { 5 } at 1274632425.234852 (errno 0)
+</I>&gt;<i> &gt;&gt;&gt; time t, 5 packets are received (237 chars)
+</I>&gt;<i> gpsd: polling 5
+</I>&gt;<i> gpsd: Read 237 chars to buffer offset 0 (total 237):
+</I>&gt;<i> &gt;&gt;&gt; first packet is processed
+</I>&gt;<i> gpsd: Packet type 1 accepted 45 =
+</I>&gt;<i> &gt;&gt;&gt; inbuffer contains the 4 remaining packets
+</I>&gt;<i> gpsd: Packet discard of 45, chars remaining is 192
+</I>&gt;<i> gpsd: &lt;= GPS: $GPRMC,163403.11,A,,,,,0.0,0.0,230410,,,*23\x0d\x0a
+</I>&gt;<i> &gt;&gt;&gt; back to waiting
+</I>&gt;<i> gpsd: select waits
+</I>&gt;<i> gpsd: select() {3 4 5} -&gt; {} at 1274632426.240638 (errno 0)
+</I>&gt;<i> gpsd: select waits
+</I>&gt;<i> gpsd: select() {3 4 5} -&gt; {} at 1274632427.241247 (errno 0)
+</I>&gt;<i> gpsd: select waits
+</I>&gt;<i> gpsd: select() {3 4 5} -&gt; {} at 1274632428.242723 (errno 0)
+</I>&gt;<i> gpsd: select waits
+</I>&gt;<i> gpsd: select() {3 4 5} -&gt; {} at 1274632429.244125 (errno 0)
+</I>&gt;<i> gpsd: select waits
+</I>&gt;<i> gpsd: select() {3 4 5} -&gt; {} at 1274632430.245538 (errno 0)
+</I>&gt;<i> gpsd: select waits
+</I>&gt;<i> gpsd: select() {3 4 5} -&gt; { 5 } at 1274632430.369327 (errno 0)
+</I>&gt;<i> &gt;&gt;&gt; time t+1, 5 new packets are received
+</I>&gt;<i> gpsd: polling 5
+</I>&gt;<i> gpsd: Read 237 chars to buffer offset 192 (total 429):
+</I>&gt;<i> &gt;&gt;&gt; 2d packet from time t is processed (outdated)
+</I>&gt;<i> gpsd: Packet type 1 accepted 37 =
+</I>&gt;<i> &gt;&gt;&gt; 8 packets remaining in buffer (3 of which outdated)
+</I>&gt;<i> gpsd: Packet discard of 37, chars remaining is 392 =
+</I>&gt;<i> gpsd: &lt;= GPS: $GPGGA,163403.11,,,,,0,,,,M,,M,,*4B\x0d\x0a
+</I>&gt;<i> &gt;&gt;&gt; back to waiting
+</I>&gt;<i> gpsd: select waits
+</I>&gt;<i> gpsd: select() {3 4 5} -&gt; {} at 1274632431.376090 (errno 0)
+</I>&gt;<i> gpsd: select waits
+</I>&gt;<i> gpsd: select() {3 4 5} -&gt; {} at 1274632432.377475 (errno 0)
+</I>&gt;<i> gpsd: select waits
+</I>&gt;<i> gpsd: select() {3 4 5} -&gt; {} at 1274632433.377939 (errno 0)
+</I>&gt;<i> gpsd: select waits
+</I>&gt;<i> gpsd: select() {3 4 5} -&gt; {} at 1274632434.378771 (errno 0)
+</I>&gt;<i> gpsd: select waits
+</I>&gt;<i> gpsd: select() {3 4 5} -&gt; {} at 1274632435.380017 (errno 0)
+</I>&gt;<i> gpsd: select waits
+</I>&gt;<i> gpsd: select() {3 4 5} -&gt; { 5 } at 1274632435.398888 (errno 0)
+</I>&gt;<i> ==&gt; time t+2, 5 new packets are received
+</I>&gt;<i> gpsd: polling 5
+</I>&gt;<i> gpsd: Read 237 chars to buffer offset 392 (total 629):
+</I>&gt;<i> ==&gt; 3d packet from time t is processed
+</I>&gt;<i> gpsd: Packet type 1 accepted 64 =
+</I>&gt;<i> ==&gt; 12 packets remaining in buffer (7 of which outdated),
+</I>&gt;<i> gpsd: Packet discard of 64, chars remaining is 565 =
+</I>&gt;<i> gpsd: &lt;= GPS: $GPGSV,3,1,09,26,55,176,26,09,77,029,,12,56,245,,15,34,168,*7F\x0d\x0a
+</I>&gt;<i> gpsd: select waits
+</I>&gt;<i> gpsd: select() {3 4 5} -&gt; {} at 1274632436.414284 (errno 0)
+</I>&gt;<i> gpsd: select waits
+</I>&gt;<i> gpsd: received terminating signal 2.
+</I>&gt;<i> gpsd: closing GPS=/dev/rfcomm0 (5)
+</I>&gt;<i> gpsd: exiting.
+</I>&gt;<i> 
+</I>
+At this point you completely lost me. I am not trying to parse all that without a good pointer
+on what to look for.
+
+&gt;<i> The solution seems straightforward, at least from an abstract point of view:
+</I>&gt;<i>   1. wait until new tty input is available
+</I>&gt;<i>   2. append it into inbuffer
+</I>&gt;<i>   3. while a complete packet can be parsed from inbuffer, broadcast it
+</I>&gt;<i>   4. back to 1.
+</I>&gt;<i> From a practical point of view though, implementing 3 is not
+</I>&gt;<i> completely obvious...
+</I>&gt;<i> 
+</I>&gt;<i> As i'm pretty new to gpsd code, i'd like to hear feedback from
+</I>&gt;<i> experienced developers about how to best resolve this issue before i
+</I>&gt;<i> start hacking around...
+</I>&gt;<i> 
+</I>
+I may be denser than depleted Plutonium, so please don't take this the wrong way.
+
+Please try again to explain what the problem is, and give a bit more background information.
+If I can not decide from your message alone what the problem is, I am not going to spend
+time digging through code or data.
+
+Please also address the point why in all the time gpsd is in use nobody has been bitten
+by this bug.
+
+Extraordinary claims require extraordinary proof.
+
+Cheers,
+Remco
+
+-- 
+Remco Treffkorn (RT445)
+HAM DC2XT
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007758.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+	<LI>Next message: <A HREF="007760.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7759">[ date ]</a>
+              <a href="thread.html#7759">[ thread ]</a>
+              <a href="subject.html#7759">[ subject ]</a>
+              <a href="author.html#7759">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,185 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] More info about a potential problem with 1pps code	during startup
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20More%20info%20about%20a%20potential%20problem%20with%201pps%20code%0A%09during%20startup&In-Reply-To=%3C200707081415.47813.mick.durkin%40saunalahti.fi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005754.html">
+   <LINK REL="Next"  HREF="005756.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] More info about a potential problem with 1pps code	during startup</H1>
+    <B>Mick Durkin</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20More%20info%20about%20a%20potential%20problem%20with%201pps%20code%0A%09during%20startup&In-Reply-To=%3C200707081415.47813.mick.durkin%40saunalahti.fi%3E"
+       TITLE="[Gpsd-dev] More info about a potential problem with 1pps code	during startup">mick.durkin at saunalahti.fi
+       </A><BR>
+    <I>Sun Jul  8 13:15:47 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005754.html">[Gpsd-dev] Confirmation about the behaviour of gpsd_poll routine in libgpsd_core
+</A></li>
+        <LI>Next message: <A HREF="005756.html">[Gpsd-dev] qtGPSc -- gpsd graphical interface (Qt version of xgps)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5755">[ date ]</a>
+              <a href="thread.html#5755">[ thread ]</a>
+              <a href="subject.html#5755">[ subject ]</a>
+              <a href="author.html#5755">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>All,
+
+I took my checking a bit further and put in some new report statements which 
+show which line in the stock serial.c we are about to execute, each followed 
+by a sleep(3) statement. This allows the 1pps a chance to show if it is still 
+alive before actually executing the statement.
+
+Here is what I see now when the critical speed change comes along and 
+re-programs the serial port.
+
+...
+...
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1
+gpsd: PPS pulse rejected. No fix.
+gpsd:  : serial.c       : gpsd_set_speed, about to execute line 103
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1
+gpsd: PPS pulse rejected. No fix.
+gpsd:  : serial.c       : gpsd_set_speed, about to execute line 104
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1
+gpsd: PPS pulse rejected. No fix.
+gpsd:  : serial.c       : gpsd_set_speed, about to execute line 106
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1
+gpsd: PPS pulse rejected. No fix.
+gpsd:  : serial.c       : gpsd_set_speed, about to execute line 109
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1
+gpsd: PPS pulse rejected. No fix.
+gpsd:  : serial.c       : gpsd_set_speed, about to execute line 120
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 0
+gpsd: PPS pulse rejected. No fix.
+gpsd: pps-detect (DCD) on /dev/ttyS0 changed to 1
+gpsd: PPS pulse rejected. No fix.
+gpsd:  : serial.c       : gpsd_set_speed, about to execute line 122 (actually 
+next active line is 172)
+gpsd: speed 9600, 8N1
+...
+No further output so I killed the daemon.
+...
+gpsd: closing GPS=/dev/ttyS0 (4)
+gpsd: Received terminating signal 2. Exiting...
+
+
+So it looks like the actual tcsetattr() at line 120 is what kills the 1pps. I 
+noticed a partial mail in the latest gpsd-dev daily digest (not shown on the 
+on-line berlios archive for some reason) which has no &quot;from&quot; header, but is 
+signed by Rob, which says this:-
+
+&quot;What probably happens is that the pps monitor hangs indefinitely in the
+TIOCMIWAIT ioctl waiting for a state change on the DCD line, that is no
+longer detected after the port has been re-programmed. &#160;But that probably
+depends very much on the serial port driver.&quot;
+
+I assume that this is from Rob Janssen as there are a couple of other mails 
+from him. It looks like we agree on the cause of the 1pps disappearing.
+
+The question is now though, which of the following is true?
+
+1) We killing the 1pps in gpsd ourselves because of our ordering of events and 
+the behaviour of the serial port is ok. In other words, you can't expect the 
+DCD transition events to be still detected after re-programming the port.
+
+2) This a bug in the kernel that should be reported to the kernel maintainers.
+
+Anyone care to step up to the mark and say which it is?
+
+BR
+
+Mick Durkin
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005754.html">[Gpsd-dev] Confirmation about the behaviour of gpsd_poll routine in libgpsd_core
+</A></li>
+	<LI>Next message: <A HREF="005756.html">[Gpsd-dev] qtGPSc -- gpsd graphical interface (Qt version of xgps)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5755">[ date ]</a>
+              <a href="thread.html#5755">[ thread ]</a>
+              <a href="subject.html#5755">[ subject ]</a>
+              <a href="author.html#5755">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

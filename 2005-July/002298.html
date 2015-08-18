@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Self-defense for gpsd/dgps sessions
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Self-defense%20for%20gpsd/dgps%20sessions&In-Reply-To=%3C20050704024000.GA8565%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002283.html">
+   <LINK REL="Next"  HREF="002302.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Self-defense for gpsd/dgps sessions</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Self-defense%20for%20gpsd/dgps%20sessions&In-Reply-To=%3C20050704024000.GA8565%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Self-defense for gpsd/dgps sessions">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Jul  4 04:40:00 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002283.html">[Gpsd-dev] dgpsip server (was: Big change -- FIONREAD is no longer used)
+</A></li>
+        <LI>Next message: <A HREF="002302.html">[Gpsd-dev] Self-defense for gpsd/dgps sessions
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2298">[ date ]</a>
+              <a href="thread.html#2298">[ thread ]</a>
+              <a href="subject.html#2298">[ subject ]</a>
+              <a href="author.html#2298">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Wolfgang S. Rupprecht:
+&gt;<i> You will probably need to add some protection to gpsd to keep it from
+</I>&gt;<i> collecting an ever-growing number of junk TCP connections.
+</I>
+You are quite right!
+
+By coincidence, as I was mulling your mail I implemented some additional
+machinery in gpsfake.py:TestSession that prints out the file descriptor
+set after each test operation.  I promptly discovered that session 
+closes produce a file descriptor leak!   The daemon can't tell that the 
+pseudo-GPS thread produced by the test framework is gone, all it
+knows is the client is not shipping commands any more.
+
+Same situation as your Akamai proxies, essentially...
+
+To remedy the situation the code now includes two timeout checks:  
+
+1. If, after connecting, the client doesn't issue a command that
+requests a device assignment within 60 seconds, the client is dropped,
+Applications using libgps will never see this timeout, as the client
+library immediately issues a 'w', which puts the session in watcher
+mode and as a side effect immediately binds a device if any is available.
+
+2. If, after device assignment, the client is not in raw mode, not in
+watcher mode, and doesn't issue a command for 15 minutes, it will be
+dropped.  Again, applications using libgps will never see this
+timeout.
+
+In watcher or raw mode, if the client fails to read data long enough for
+the outbound socket buffers to fill, it will be dropped.
+
+If and when I put RTCM service in the daemon, I'll keep the first
+timeout (60 seconds without HELO means good-by Charlie) and treat the
+RTCM session like it's in GPS raw mode -- no timeout, but if the outbound
+buffers back up the client gets dropped.
+
+Does that sound like an adequate defense?
+
+I'll start a second thread on the DGPS policy issues.  Next response...
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002283.html">[Gpsd-dev] dgpsip server (was: Big change -- FIONREAD is no longer used)
+</A></li>
+	<LI>Next message: <A HREF="002302.html">[Gpsd-dev] Self-defense for gpsd/dgps sessions
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2298">[ date ]</a>
+              <a href="thread.html#2298">[ thread ]</a>
+              <a href="subject.html#2298">[ subject ]</a>
+              <a href="author.html#2298">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,118 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20A%20lightweight%20synchronization%0A%20mechanism%20for%20shared%20memory&In-Reply-To=%3C4D8CBA64.4050504%40tmsw.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009062.html">
+   <LINK REL="Next"  HREF="009064.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory</H1>
+    <B>Terje Mathisen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20A%20lightweight%20synchronization%0A%20mechanism%20for%20shared%20memory&In-Reply-To=%3C4D8CBA64.4050504%40tmsw.no%3E"
+       TITLE="[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory">terje at tmsw.no
+       </A><BR>
+    <I>Fri Mar 25 16:53:08 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009062.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+        <LI>Next message: <A HREF="009064.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9063">[ date ]</a>
+              <a href="thread.html#9063">[ thread ]</a>
+              <a href="subject.html#9063">[ subject ]</a>
+              <a href="author.html#9063">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>tz wrote:
+&gt;<i> On Fri, Mar 25, 2011 at 10:29 AM, Terje Mathisen&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">terje at tmsw.no</A>&gt;  wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> New code, buffer size = 1 (so mask = 0)
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>   do {
+</I>&gt;&gt;<i>    read old_counter
+</I>&gt;&gt;<i>    read timestamp[counter&amp;  mask]
+</I>&gt;&gt;<i>    reread counter
+</I>&gt;&gt;<i>   } while (counter != old_counter&amp;&amp;
+</I>&gt;&gt;<i>          ((counter&amp;  mask) == (old_counter&amp;  mask)));
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> The last line above can be optimized to
+</I>&gt;&gt;<i>   (counter ^ old_counter)&amp;  mask
+</I>&gt;<i>
+</I>&gt;<i> I understand that, but going back to the original reason for the write
+</I>&gt;<i> (and read!) barriers, what if the writes complete to
+</I>&gt;<i> timestamp[counter&amp;mask] BEFORE they complete to counter, and don't
+</I>&gt;<i> complete until after the reread counter.
+</I>
+OK, let's take a look at the corresponding writer code:
+
+   cnt = (shm-&gt;count + 1) &amp; mask
+   shm-&gt;timestamp[cnt] = timestamp;
+   memory_barrier(); // All preceding writes must finish at this point
+   shm-&gt;count++;	    // Now the client(s) can read the timestamp
+
+&gt;<i> For that matter, the CPU might reorder it to do the two counter reads
+</I>&gt;<i> before or after the timestamp read or read cached values.
+</I>
+With the barrier operation that is (and must be) impossible.
+&gt;<i>
+</I>&gt;<i> The whole discussion is that writes and/or reads can appear in ANY
+</I>&gt;<i> order to an external CPU regardless of any logic or coherency internal
+</I>&gt;<i> to where the write is taking place (then there's interrupts such that
+</I>&gt;<i> the write starts on one cpu and ends on another).
+</I>&gt;<i>
+</I>&gt;<i> And that even if &quot;volatile&quot; is added to the declaration, reads will
+</I>&gt;<i> just to to the cache or memory normally and any intra CPU pipeline or
+</I>&gt;<i> order changes will still take place so it can read new values for
+</I>&gt;<i> counters both times but old values for timestamp.
+</I>
+This is one of the reasons why 'volatile' isn't sufficient, you need 
+something that guarantees global visibility order.
+&gt;<i>
+</I>&gt;<i> One of the things I did use elsewhere was just to mmap a flie and use
+</I>&gt;<i> write() for the writer which for small things should be atomic, but if
+</I>&gt;<i> you directly access shm instead of read() you can get the same
+</I>&gt;<i> problems, though I think the internal scheduling and memory barriers
+</I>&gt;<i> within the write system call would mitigate them.
+</I>
+The Windows ntpd ports uses such a mmap'ed file for this communication. :-)
+
+Terje
+-- 
+- &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Terje at tmsw.no</A>&gt;
+&quot;almost all programming can be viewed as an exercise in caching&quot;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009062.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+	<LI>Next message: <A HREF="009064.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9063">[ date ]</a>
+              <a href="thread.html#9063">[ thread ]</a>
+              <a href="subject.html#9063">[ subject ]</a>
+              <a href="author.html#9063">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

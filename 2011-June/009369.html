@@ -1,0 +1,150 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPSD's scripting language
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%27s%20scripting%20language&In-Reply-To=%3C4E0B1D48.9010306%40wildgooses.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009366.html">
+   <LINK REL="Next"  HREF="009370.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPSD's scripting language</H1>
+    <B>Ed W</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%27s%20scripting%20language&In-Reply-To=%3C4E0B1D48.9010306%40wildgooses.com%3E"
+       TITLE="[Gpsd-dev] GPSD's scripting language">lists at wildgooses.com
+       </A><BR>
+    <I>Wed Jun 29 14:40:40 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009366.html">[Gpsd-dev] GPSD's scripting language
+</A></li>
+        <LI>Next message: <A HREF="009370.html">[Gpsd-dev] GPSD's scripting language
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9369">[ date ]</a>
+              <a href="thread.html#9369">[ thread ]</a>
+              <a href="subject.html#9369">[ subject ]</a>
+              <a href="author.html#9369">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi, mostly responded to this on -users, but just to bring that to your
+attention and touch a couple of slightly oblique points:
+
+
+On 24/06/2011 16:52, Eric Raymond wrote:
+&gt;<i> Ed W &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">lists at wildgooses.com</A>&gt;:
+</I>&gt;&gt;<i> Note I didn't say that you could do without a scripting language for
+</I>&gt;&gt;<i> some other tasks, only that the udev stuff currently appears to be
+</I>&gt;&gt;<i> fairly straightforward to implement in C?
+</I>&gt;<i> 
+</I>&gt;<i> It might be.  What I'm not hearing, yet, is a good reason to accept the
+</I>&gt;<i> additional maintainance costs and increase in expected defect rates
+</I>&gt;<i> implied by moving that code from Python to C.
+</I>
+It's possible we are looking at slightly different utilities? The one I
+was looking at was the gpsd.hotplug utility, the core of which is arguably:
+- Open Network socket
+- Write &quot;add %s&quot;
+- Read one line of response
+- Close socket and die
+
+If you had never written any C code in your life I would understand
+about increased maintenance costs! But you are obviously very
+experienced and all this code is already in gpsd to act as the server
+side of the same conversation - I really would be surprised if someone
+could string this utility out beyond a few 10s of lines of C including
+comments?  (in fact surely gpsctl already does some of this?)
+
+Quite possibly some refactoring would even allow it to drop out from the
+existing server side code? (Keep the client and server in sync?)
+
+I do like the idea of this potentially growing to be a larger gpsdctl
+utility though. Although does it not make sense to extend gpsctl
+instead? It would potentially make it trivial to (script) things such as
+the watchdog requested on another thread?
+
+
+&gt;<i> That depends on whether there is a significant class of deployments
+</I>&gt;<i> that need hotplug but can't support Python.  I'm skeptical about this;
+</I>&gt;<i> normally, embedded systems have hardwired ports and a set of sensors
+</I>&gt;<i> that is fixed by the system integrator.
+</I>&gt;<i> 
+</I>&gt;<i> Do you have an actual use case like this, or is your objection theoretical?
+</I>
+I think &quot;embedded&quot; no longer means devices built and supplied to
+customers as a complete end to end solution including installation?
+These days it's very common to build custom distributions to serve all
+kinds of needs from mobile phones, tablets, routers, and more
+
+In fact I can't think of a common example of &quot;embedded&quot; where the system
+is supplied with hardwired options and an installer to ensure it's all
+working end to end?
+
+I would suggest that two of the more common examples of &quot;embedded&quot; these
+days are 1) phones/tables and 2) routers.  Both of these would be very
+desirable to include gpsd (especially those with a &quot;mobile&quot; goal).
+
+I think neither can be expected to be shipped to the customer with all
+the peripherals connected, nor supplied in such a way that only certain
+peripherals can be connected to certain ports?  Further both examples
+would be expected to handle dynamic connection/disconnection of devices
+in normal use
+
+Reading the list archives you have users with wild requirements including:
+- Reading GPS feeds for router on planes
+- UAV devices running on tiny gumstix devices
+- Ships logging NMEA feeds
+
+GPS tracking is extremely hot at the moment and there are a number of
+attractive commercial devices I have been following that are built on a
+tiny budget and usually battery powered. I have no idea whether they use
+gpsd, but from knowledge of the specs and prices of the devices I would
+estimate that compiling C applications would be no issue, but python is
+likely not an option
+
+
+In summary:
+
+1) Please consider returning to Python being an optional dependency for
+non core parts of the project (logging, derivative uses of the gps
+output, etc)
+2) Opening a socket, writing one line and reading one line in response
+seriously sounds so trivial that I'm clearly missing something (or more
+likely we are talking cross purposes?) if you are raising objections to
+moving that piece to a C based utility?
+
+Thanks for your consideration
+
+Ed W
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009366.html">[Gpsd-dev] GPSD's scripting language
+</A></li>
+	<LI>Next message: <A HREF="009370.html">[Gpsd-dev] GPSD's scripting language
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9369">[ date ]</a>
+              <a href="thread.html#9369">[ thread ]</a>
+              <a href="subject.html#9369">[ subject ]</a>
+              <a href="author.html#9369">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

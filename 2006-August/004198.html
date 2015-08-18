@@ -1,0 +1,157 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Fix repeatedly lost on a TomTom ONE.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Fix%20repeatedly%20lost%20on%20a%20TomTom%20ONE.&In-Reply-To=%3C1156889734.4209.4.camel%40localhost.localdomain%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004197.html">
+   <LINK REL="Next"  HREF="004199.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Fix repeatedly lost on a TomTom ONE.</H1>
+    <B>Stelian Pop</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Fix%20repeatedly%20lost%20on%20a%20TomTom%20ONE.&In-Reply-To=%3C1156889734.4209.4.camel%40localhost.localdomain%3E"
+       TITLE="[Gpsd-dev] Fix repeatedly lost on a TomTom ONE.">stelian at popies.net
+       </A><BR>
+    <I>Wed Aug 30 00:15:33 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004197.html">[Gpsd-dev] Fix repeatedly lost on a TomTom ONE.
+</A></li>
+        <LI>Next message: <A HREF="004199.html">[Gpsd-dev] Fix repeatedly lost on a TomTom ONE.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4198">[ date ]</a>
+              <a href="thread.html#4198">[ thread ]</a>
+              <a href="subject.html#4198">[ subject ]</a>
+              <a href="author.html#4198">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Le mardi 29 ao&#251;t 2006 &#224; 18:47 +0800, Robin L Darroch a &#233;crit :
+&gt;<i> &gt;I did some additionnal testing, including some tests on your patch.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;Without your patch, the problem persists even if I send a J=1 or a J=0
+</I>&gt;<i> &gt;command to the server.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;With your patch (--enable-wired-policy --disable-casoc) it seems to work
+</I>&gt;<i> &gt;fine, at least when using cgps.
+</I>&gt;<i> 
+</I>&gt;<i> Have you tried *with* my patch and --disable-wired-policy ?  It 
+</I>&gt;<i> should then respond properly to J=0.
+</I>
+I just tried now and indeed, it does properly respond to J=0/J=1.
+
+&gt;<i> &gt;However, launching cgpxlogger (and ending it with Ctrl-C) kills the
+</I>&gt;<i> &gt;daemon. I haven't tried debugging this yet, but it may have something to
+</I>&gt;<i> &gt;do with the fact that cgpxlogger doesn't use gps_open/gps_query but uses
+</I>&gt;<i> &gt;raw connect/write to the fd.
+</I>&gt;<i> 
+</I>&gt;<i> Hmm... ok - I expect there's a way that the compound query sent by 
+</I>&gt;<i> cgpxlogger causes the patched daemon to crash.  I'll have to test it 
+</I>&gt;<i> here and see if I can isolate the problem.  Likely there's an attempt 
+</I>&gt;<i> to dereference a pointer that doesn't exist yet or some such.
+</I>
+The error was caused by the fact you used a variable for 'usefix', which
+was only assigned at the beginning of the function and didn't change
+when the device itself changed. Using a macro corrects the problem for
+me, like in the attached patch (to be applied on top of your
+'persession_casoc_v5' patch).
+
+Stelian.
+
+diff --git a/gpsd.c b/gpsd.c
+index bb795b7..48d2884 100644
+--- a/gpsd.c
++++ b/gpsd.c
+@@ -190,16 +190,16 @@ in which case it specifies an input sour
+ 
+ static bool have_fix_buffered(struct gps_device_t *device, bool buffered)
+ {
++    if (!device) {
++	gpsd_report(4, &quot;Client has no device\n&quot;);
++	return false;
++    }
+ #ifdef WIRED_POLICY
+     int usemode = device-&gt;gpsdata.fix.mode;
+ #else
+     int usemode = (buffered ? device-&gt;buffered.mode : device-&gt;gpsdata.fix.mode);
+ #endif /* WIRED_POLICY */
+     
+-    if (!device) {
+-	gpsd_report(4, &quot;Client has no device\n&quot;);
+-	return false;
+-    }
+ #define VALIDATION_COMPLAINT(level, legend) \
+ 	gpsd_report(level, legend &quot; (status=%d, mode=%d).\n&quot;, \
+ 		    device-&gt;gpsdata.status, usemode)
+@@ -613,20 +613,13 @@ static int handle_gpsd_request(int cfd, 
+     int i, j;
+     struct subscriber_t *whoami = subscribers + cfd;
+     struct gps_device_t *newchan;
+-    struct gps_fix_t *usefix;
+-    bool usebuffer;
+     
+ #ifdef WIRED_POLICY
+-    usefix = &amp;whoami-&gt;device-&gt;gpsdata.fix;
+-    usebuffer = false;
++#define usefix (&amp;whoami-&gt;device-&gt;gpsdata.fix)
++#define usebuffer (false)
+ #else
+-    if (subscribers[cfd].jitter) {
+-    	usefix = &amp;whoami-&gt;device-&gt;gpsdata.fix;
+-    	usebuffer = false;
+-    } else {
+-    	usefix = &amp;whoami-&gt;device-&gt;buffered;
+-    	usebuffer = true;
+-    }
++#define usefix ((subscribers[cfd].jitter) ? (&amp;whoami-&gt;device-&gt;gpsdata.fix) : (&amp;whoami-&gt;device-&gt;buffered))
++#define usebuffer ((subscribers[cfd].jitter) ? false : true )
+ #endif /* WIRED_POLICY */
+ 
+     (void)strlcpy(reply, &quot;GPSD&quot;, BUFSIZ);
+@@ -1172,6 +1165,9 @@ #undef ZEROIZE
+     (void)strlcat(reply, &quot;\r\n&quot;, BUFSIZ);
+ 
+     return (int)throttled_write(cfd, reply, (ssize_t)strlen(reply));
++
++#undef usefix
++#undef usebuffer
+ }
+ 
+ static void handle_control(int sfd, char *buf)
+
+-- 
+Stelian Pop &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">stelian at popies.net</A>&gt;
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004197.html">[Gpsd-dev] Fix repeatedly lost on a TomTom ONE.
+</A></li>
+	<LI>Next message: <A HREF="004199.html">[Gpsd-dev] Fix repeatedly lost on a TomTom ONE.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4198">[ date ]</a>
+              <a href="thread.html#4198">[ thread ]</a>
+              <a href="subject.html#4198">[ subject ]</a>
+              <a href="author.html#4198">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

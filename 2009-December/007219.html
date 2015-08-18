@@ -1,0 +1,292 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] regression failures
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20regression%20failures&In-Reply-To=%3Crmi638o9mf8.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007217.html">
+   <LINK REL="Next"  HREF="007220.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] regression failures</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20regression%20failures&In-Reply-To=%3Crmi638o9mf8.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] regression failures">gdt at ir.bbn.com
+       </A><BR>
+    <I>Thu Dec  3 15:12:11 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007217.html">[Gpsd-dev] Progress towards the 2.90 release
+</A></li>
+        <LI>Next message: <A HREF="007220.html">[Gpsd-dev] regression failures
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7219">[ date ]</a>
+              <a href="thread.html#7219">[ thread ]</a>
+              <a href="subject.html#7219">[ subject ]</a>
+              <a href="author.html#7219">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Here's make check output from r6691 on NetBSD 5.0ish i386.
+
+The bu303-nofix situation seems odd, because it has 180,0 as
+coordinates, and an altitude that looks suspiciously like the center of
+the earth, plus or minus geoid undulation.
+
+mkt-3301 and rgm3800 looks like a bogus test with times beyond Y2038.
+
+navcom looks like a real bug.
+
+Eric: are you saying these all pass for you?  On what platform?  What
+others have you tried?
+
+
+gmake  check-TESTS
+gmake[2]: Entering directory `/usr/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https'
+chmod -R u+w ./test
+./regress-driver -t ./test/daemon/*.log
+Testing the daemon...
+Processing ./test/daemon/ac12.log......(6.09 sec) done.
+Processing ./test/daemon/ait250.log......(10.77 sec) done.
+Processing ./test/daemon/blumax-gps009.log......(7.09 sec) done.
+Processing ./test/daemon/bu303-climbing.log......(12.10 sec) done.
+Processing ./test/daemon/bu303-moving.log......(12.54 sec) done.
+Processing ./test/daemon/bu303-nofix.log......(5.96 sec) done.
+--- ./test/daemon/log-copy.chk	2009-12-03 08:56:55.000000000 -0500
++++ ./test/daemon/test-whole.chk	2009-12-03 08:56:55.000000000 -0500
+@@ -1,28 +1,28 @@
+ {&quot;class&quot;:&quot;SKY&quot;,&quot;tag&quot;:&quot;MID4&quot;,&quot;time&quot;:1037284378.280,&quot;xdop&quot;:0.00,&quot;ydop&quot;:0.00}
+ $GPRMC,143258,V,18000.0000,N,00000.0000,W,0.0000,0.000,141102,,*1F
+ $GPGSA,A,1,,,,,,,,,,,,,,,,*32
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;MID2&quot;,&quot;time&quot;:1037284378.280,&quot;ept&quot;:0.005,&quot;lat&quot;:180.000000000,&quot;lon&quot;:0.000000000,&quot;alt&quot;:-6378137.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.000,&quot;mode&quot;:1}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;MID2&quot;,&quot;time&quot;:1037284378.280,&quot;ept&quot;:0.005,&quot;lat&quot;:180.000000000,&quot;lon&quot;:0.000000000,&quot;alt&quot;:-6378252.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.000,&quot;mode&quot;:1}
+ {&quot;class&quot;:&quot;SKY&quot;,&quot;tag&quot;:&quot;MID4&quot;,&quot;time&quot;:1037284379.280,&quot;hdop&quot;:50.00}
+ $GPRMC,143259,V,18000.0000,N,00000.0000,W,0.0000,0.000,141102,,*1E
+ $GPGSA,A,1,,,,,,,,,,,,,,,,*32
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;MID2&quot;,&quot;time&quot;:1037284379.280,&quot;ept&quot;:0.005,&quot;lat&quot;:180.000000000,&quot;lon&quot;:0.000000000,&quot;alt&quot;:-6378137.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.000,&quot;mode&quot;:1}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;MID2&quot;,&quot;time&quot;:1037284379.280,&quot;ept&quot;:0.005,&quot;lat&quot;:180.000000000,&quot;lon&quot;:0.000000000,&quot;alt&quot;:-6378252.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.000,&quot;mode&quot;:1}
+ {&quot;class&quot;:&quot;SKY&quot;,&quot;tag&quot;:&quot;MID4&quot;,&quot;time&quot;:1037284380.280,&quot;hdop&quot;:50.00}
+ $GPRMC,143300,V,18000.0000,N,00000.0000,W,0.0000,0.000,141102,,*13
+ $GPGSA,A,1,,,,,,,,,,,,,,,,*32
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;MID2&quot;,&quot;time&quot;:1037284380.280,&quot;ept&quot;:0.005,&quot;lat&quot;:180.000000000,&quot;lon&quot;:0.000000000,&quot;alt&quot;:-6378137.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.000,&quot;mode&quot;:1}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;MID2&quot;,&quot;time&quot;:1037284380.280,&quot;ept&quot;:0.005,&quot;lat&quot;:180.000000000,&quot;lon&quot;:0.000000000,&quot;alt&quot;:-6378252.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.000,&quot;mode&quot;:1}
+ {&quot;class&quot;:&quot;SKY&quot;,&quot;tag&quot;:&quot;MID4&quot;,&quot;time&quot;:1037284381.280,&quot;hdop&quot;:50.00}
+ $GPRMC,143301,V,18000.0000,N,00000.0000,W,0.0000,0.000,141102,,*12
+ $GPGSA,A,1,,,,,,,,,,,,,,,,*32
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;MID2&quot;,&quot;time&quot;:1037284381.280,&quot;ept&quot;:0.005,&quot;lat&quot;:180.000000000,&quot;lon&quot;:0.000000000,&quot;alt&quot;:-6378137.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.000,&quot;mode&quot;:1}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;MID2&quot;,&quot;time&quot;:1037284381.280,&quot;ept&quot;:0.005,&quot;lat&quot;:180.000000000,&quot;lon&quot;:0.000000000,&quot;alt&quot;:-6378252.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.000,&quot;mode&quot;:1}
+ {&quot;class&quot;:&quot;SKY&quot;,&quot;tag&quot;:&quot;MID4&quot;,&quot;time&quot;:1037284382.280,&quot;hdop&quot;:50.00}
+ $GPRMC,143302,V,18000.0000,N,00000.0000,W,0.0000,0.000,141102,,*11
+ $GPGSA,A,1,,,,,,,,,,,,,,,,*32
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;MID2&quot;,&quot;time&quot;:1037284382.280,&quot;ept&quot;:0.005,&quot;lat&quot;:180.000000000,&quot;lon&quot;:0.000000000,&quot;alt&quot;:-6378137.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.000,&quot;mode&quot;:1}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;MID2&quot;,&quot;time&quot;:1037284382.280,&quot;ept&quot;:0.005,&quot;lat&quot;:180.000000000,&quot;lon&quot;:0.000000000,&quot;alt&quot;:-6378252.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.000,&quot;mode&quot;:1}
+ {&quot;class&quot;:&quot;SKY&quot;,&quot;tag&quot;:&quot;MID4&quot;,&quot;time&quot;:1118327583.280,&quot;hdop&quot;:50.00}
+ $GPRMC,143303,V,18000.0000,N,00000.0000,W,0.0000,0.000,090605,,*1D
+ $GPGSA,A,1,,,,,,,,,,,,,,,,*32
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;MID2&quot;,&quot;time&quot;:1118327583.280,&quot;ept&quot;:0.005,&quot;lat&quot;:180.000000000,&quot;lon&quot;:0.000000000,&quot;alt&quot;:-6378137.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.000,&quot;mode&quot;:1}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;MID2&quot;,&quot;time&quot;:1118327583.280,&quot;ept&quot;:0.005,&quot;lat&quot;:180.000000000,&quot;lon&quot;:0.000000000,&quot;alt&quot;:-6378252.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.000,&quot;mode&quot;:1}
+ {&quot;class&quot;:&quot;SKY&quot;,&quot;tag&quot;:&quot;MID4&quot;,&quot;time&quot;:1118327584.280,&quot;hdop&quot;:50.00}
+ $GPRMC,143304,V,18000.0000,N,00000.0000,W,0.0000,0.000,090605,,*1A
+ $GPGSA,A,1,,,,,,,,,,,,,,,,*32
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;MID2&quot;,&quot;time&quot;:1118327584.280,&quot;ept&quot;:0.005,&quot;lat&quot;:180.000000000,&quot;lon&quot;:0.000000000,&quot;alt&quot;:-6378137.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.000,&quot;mode&quot;:1}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;MID2&quot;,&quot;time&quot;:1118327584.280,&quot;ept&quot;:0.005,&quot;lat&quot;:180.000000000,&quot;lon&quot;:0.000000000,&quot;alt&quot;:-6378252.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.000,&quot;mode&quot;:1}
+Processing ./test/daemon/bu303-stillfix.log......(6.77 sec) done.
+Processing ./test/daemon/bu303b-nofix.log......(5.72 sec) done.
+Processing ./test/daemon/com-1289.log......(24.01 sec) done.
+Processing ./test/daemon/eXplorist210.log......(5.74 sec) done.
+Processing ./test/daemon/garmin-geko201.log......(14.20 sec) done.
+Processing ./test/daemon/garmin17n.log......(4.64 sec) done.
+Processing ./test/daemon/garmin25lp.log......(8.88 sec) done.
+Processing ./test/daemon/garmin38.log......(6.68 sec) done.
+Processing ./test/daemon/garmin48.log......(8.16 sec) done.
+Processing ./test/daemon/gps-360.log......(16.26 sec) done.
+Processing ./test/daemon/gpslim236.log......(11.97 sec) done.
+Processing ./test/daemon/haicom-305N.log......(20.13 sec) done.
+Processing ./test/daemon/holux-gm-210.log......(5.61 sec) done.
+Processing ./test/daemon/humminbird-M37.log......(56.03 sec) done.
+Processing ./test/daemon/iTrek.log......(8.83 sec) done.
+Processing ./test/daemon/italk-binary.log......(13.69 sec) done.
+Processing ./test/daemon/magellan-ec10.log......(7.42 sec) done.
+Processing ./test/daemon/magellan315.log......(4.71 sec) done.
+Processing ./test/daemon/mkt-3301.log......(6.57 sec) done.
+--- ./test/daemon/log-copy.chk	2009-12-03 09:00:54.000000000 -0500
++++ ./test/daemon/test-whole.chk	2009-12-03 09:00:54.000000000 -0500
+@@ -8,17 +8,17 @@
+ $GPVTG,0.00,T,,M,0.000,N,0.000,K,N*32
+ $GPGGA,235947.004,8960.000000,N,00000.000000,E,0,0,,137.000,M,13.000,M,,*49
+ $GPRMC,235947.004,V,8960.000000,N,00000.000000,E,0.000,0.00,050180,,,N*47
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:3471724787.004,&quot;ept&quot;:0.005}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:-823242508.996,&quot;ept&quot;:0.005}
+ $PMTKCHN,21312,02001,14001,29001,23001,16001,05001,20001,22001,18001,06001,19001,28031,11282,07001,09001,25001,08001,13001,30001,10001,03001,04001,27001,26001,01001,24001,15001,31001,17001,12001,32001*4D
+ $GPVTG,0.00,T,,M,0.000,N,0.000,K,N*32
+ $GPGGA,235948.004,8960.000000,N,00000.000000,E,0,0,,137.000,M,13.000,M,,*46
+ $GPRMC,235948.004,V,8960.000000,N,00000.000000,E,0.000,0.00,050180,,,N*48
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:3471724788.004,&quot;ept&quot;:0.005}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:-823242507.996,&quot;ept&quot;:0.005}
+ $PMTKCHN,21412,28492,22001,14001,29001,23001,02001,11001,16001,05001,20001,06031,19001,18031,07001,09001,25001,08001,13001,30001,10001,03001,04001,27001,26001,01001,24001,15001,31001,17001,12001,32001*4E
+ $GPVTG,0.00,T,,M,0.000,N,0.000,K,N*32
+ $GPGGA,235949.004,8960.000000,N,00000.000000,E,0,0,,137.000,M,13.000,M,,*47
+ $GPRMC,235949.004,V,8960.000000,N,00000.000000,E,0.000,0.00,050180,,,N*49
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:3471724789.004,&quot;ept&quot;:0.005}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:-823242506.996,&quot;ept&quot;:0.005}
+ $PMTKCHN,21422,28502,22242,09282,07432,14001,29001,23001,02001,11001,16001,13031,25031,08031,05001,20001,18001,06001,19001,30001,10001,03001,04001,27001,26001,01001,24001,15001,31001,17001,12001,32001*4E
+ $GPVTG,0.00,T,,M,0.000,N,0.000,K,N*32
+ $GPGGA,235950.004,8960.000000,N,00000.000000,E,0,0,,137.000,M,13.000,M,,*4F
+@@ -26,7 +26,7 @@
+ $GPGSV,2,1,06,21,,,40,28,,,47,25,,,43,07,,,40*71
+ $GPGSV,2,2,06,08,,,49,10,,,41*7E
+ $GPRMC,235950.004,V,8960.000000,N,00000.000000,E,0.000,0.00,050180,,,N*41
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:3471724790.004,&quot;ept&quot;:0.005}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:-823242505.996,&quot;ept&quot;:0.005}
+ $PMTKCHN,21402,28472,14001,25432,07402,08492,29001,10412,23001,02001,11001,03031,04031,27031,16001,05001,20001,22001,18001,06001,19001,09001,13001,30001,26001,01001,24001,15001,31001,17001,12001,32001*49
+ $GPVTG,0.00,T,,M,0.000,N,0.000,K,N*32
+ $GPGGA,081433.591,8960.000000,N,00000.000000,E,0,0,,137.000,M,13.000,M,,*43
+@@ -35,27 +35,27 @@
+ $GPGSV,3,2,12,07,,,44,08,,,50,27,,,48,10,,,44*79
+ $GPGSV,3,3,12,15,,,45,03,,,38,19,,,39,05,,,25*77
+ $GPRMC,081433.591,V,8960.000000,N,00000.000000,E,0.000,0.00,120180,,,N*4B
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:3472272873.591,&quot;ept&quot;:0.005}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:-822694422.409,&quot;ept&quot;:0.005}
+ $PMTKCHN,21422,28522,26482,25452,07442,08502,27482,10442,15452,03382,19392,05252,16342,22031,14001,29001,23001,02001,11001,20001,18001,06001,09001,13001,30001,04001,01001,24001,31001,17001,12001,32001*43
+ $GPVTG,0.00,T,,M,0.000,N,0.000,K,N*32
+ $GPGGA,081434.590,5212.978993,N,00653.097906,E,0,3,,102.907,M,47.093,M,,*42
+ $GPRMC,081434.590,V,5212.978993,N,00653.097906,E,0.052,0.00,230808,,,N*46
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:3491626474.590,&quot;ept&quot;:0.005}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:-803340821.410,&quot;ept&quot;:0.005}
+ $PMTKCHN,21422,28522,26482,25452,07442,08502,27482,10442,15452,03392,19392,18031,06031,22252,14001,29001,23001,02001,11001,16001,05001,20001,09001,13001,30001,04001,01001,24001,31001,17001,12001,32001*45
+ $GPVTG,0.00,T,,M,0.052,N,0.097,K,N*3B
+ $GPGGA,081436.000,5212.982135,N,00653.101394,E,1,3,2.88,102.907,M,47.093,M,,*5F
+ $GPRMC,081436.000,A,5212.982135,N,00653.101394,E,0.039,0.00,230808,,,A*53
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:3491626476.000,&quot;ept&quot;:0.005,&quot;lat&quot;:52.216368917,&quot;lon&quot;:6.885023233,&quot;alt&quot;:102.907,&quot;epv&quot;:0.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.020,&quot;climb&quot;:0.000,&quot;mode&quot;:3}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:-803340820.000,&quot;ept&quot;:0.005,&quot;lat&quot;:52.216368917,&quot;lon&quot;:6.885023233,&quot;alt&quot;:102.907,&quot;epv&quot;:0.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.020,&quot;climb&quot;:0.000,&quot;mode&quot;:3}
+ $PMTKCHN,21422,28522,26482,25452,07442,08502,27482,10442,15452,03392,19392,13031,06031,09272,14001,29001,23001,02001,11001,16001,05001,20001,22001,18001,30001,04001,01001,24001,31001,17001,12001,32001*47
+ $GPVTG,0.00,T,,M,0.039,N,0.072,K,A*32
+ $GPGGA,081437.000,5212.981473,N,00653.102458,E,1,3,2.88,102.907,M,47.093,M,,*5E
+ $GPRMC,081437.000,A,5212.981473,N,00653.102458,E,0.039,0.00,230808,,,A*52
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:3491626477.000,&quot;ept&quot;:0.005,&quot;lat&quot;:52.216357883,&quot;lon&quot;:6.885040967,&quot;alt&quot;:102.907,&quot;epv&quot;:0.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.020,&quot;climb&quot;:0.000,&quot;mode&quot;:3}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:-803340819.000,&quot;ept&quot;:0.005,&quot;lat&quot;:52.216357883,&quot;lon&quot;:6.885040967,&quot;alt&quot;:102.907,&quot;epv&quot;:0.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.020,&quot;climb&quot;:0.000,&quot;mode&quot;:3}
+ $PMTKCHN,21422,28522,26482,25452,07442,08502,27482,10442,15452,03392,19392,13031,29031,14031,23001,02001,11001,16001,05001,20001,22001,18001,06001,09001,30001,04001,01001,24001,31001,17001,12001,32001*42
+ $GPVTG,0.00,T,,M,0.039,N,0.073,K,A*33
+ $GPGGA,081438.000,5212.982641,N,00653.105897,E,1,3,2.88,102.912,M,47.093,M,,*5D
+ $GPRMC,081438.000,A,5212.982641,N,00653.105897,E,0.042,0.00,230808,,,A*59
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:3491626478.000,&quot;ept&quot;:0.005,&quot;lat&quot;:52.216377350,&quot;lon&quot;:6.885098283,&quot;alt&quot;:102.912,&quot;epv&quot;:0.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.022,&quot;climb&quot;:0.005,&quot;mode&quot;:3}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:-803340818.000,&quot;ept&quot;:0.005,&quot;lat&quot;:52.216377350,&quot;lon&quot;:6.885098283,&quot;alt&quot;:102.912,&quot;epv&quot;:0.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.022,&quot;climb&quot;:0.005,&quot;mode&quot;:3}
+ $PMTKCHN,21422,28522,26482,25452,07442,08502,27482,10442,15452,03392,19392,13342,29031,14342,23001,02001,11001,16001,05001,20001,22001,18001,06001,09001,30001,04001,01001,24001,31001,17001,12001,32001*42
+ $GPVTG,0.00,T,,M,0.042,N,0.079,K,A*35
+ $GPGGA,081439.000,5212.981832,N,00653.104686,E,1,3,2.88,102.930,M,47.093,M,,*5A
+@@ -65,6 +65,6 @@
+ $GPGSV,3,3,11,15,,,45,03,,,39,19,,,39*77
+ {&quot;class&quot;:&quot;SKY&quot;,&quot;tag&quot;:&quot;GSV&quot;,&quot;vdop&quot;:1.00,&quot;hdop&quot;:2.88,&quot;pdop&quot;:3.05,&quot;satellites&quot;:[{&quot;PRN&quot;:8,&quot;el&quot;:63,&quot;az&quot;:65,&quot;ss&quot;:50,&quot;used&quot;:true},{&quot;PRN&quot;:28,&quot;el&quot;:42,&quot;az&quot;:144,&quot;ss&quot;:52,&quot;used&quot;:true},{&quot;PRN&quot;:21,&quot;el&quot;:13,&quot;az&quot;:320,&quot;ss&quot;:42,&quot;used&quot;:true},{&quot;PRN&quot;:26,&quot;el&quot;:0,&quot;az&quot;:0,&quot;ss&quot;:48,&quot;used&quot;:false},{&quot;PRN&quot;:25,&quot;el&quot;:0,&quot;az&quot;:0,&quot;ss&quot;:45,&quot;used&quot;:false},{&quot;PRN&quot;:7,&quot;el&quot;:0,&quot;az&quot;:0,&quot;ss&quot;:44,&quot;used&quot;:false},{&quot;PRN&quot;:27,&quot;el&quot;:0,&quot;az&quot;:0,&quot;ss&quot;:48,&quot;used&quot;:false},{&quot;PRN&quot;:10,&quot;el&quot;:0,&quot;az&quot;:0,&quot;ss&quot;:44,&quot;used&quot;:false},{&quot;PRN&quot;:15,&quot;el&quot;:0,&quot;az&quot;:0,&quot;ss&quot;:45,&quot;used&quot;:false},{&quot;PRN&quot;:3,&quot;el&quot;:0,&quot;az&quot;:0,&quot;ss&quot;:39,&quot;used&quot;:false},{&quot;PRN&quot;:19,&quot;el&quot;:0,&quot;az&quot;:0,&quot;ss&quot;:39,&quot;used&quot;:false}]}
+ $GPRMC,081439.000,A,5212.981832,N,00653.104686,E,0.205,0.00,230808,,,A*5F
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:3491626479.000,&quot;ept&quot;:0.005,&quot;lat&quot;:52.216363867,&quot;lon&quot;:6.885078100,&quot;alt&quot;:102.930,&quot;epv&quot;:0.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.105,&quot;climb&quot;:0.018,&quot;mode&quot;:3}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:-803340817.000,&quot;ept&quot;:0.005,&quot;lat&quot;:52.216363867,&quot;lon&quot;:6.885078100,&quot;alt&quot;:102.930,&quot;epv&quot;:0.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.105,&quot;climb&quot;:0.018,&quot;mode&quot;:3}
+ $PMTKCHN,21422,28522,26482,25452,07442,08502,27482,10442,15452,03392,19392,02031,29342,23031,14001,11001,16001,05001,20001,22001,18001,06001,09001,13001,30001,04001,01001,24001,31001,17001,12001,32001*45
+ $GPVTG,0.00,T,,M,0.205,N,0.379,K,A*37
+Processing ./test/daemon/motorola-t805.log......(6.05 sec) done.
+Processing ./test/daemon/navcom.log......(10.87 sec) done.
+--- ./test/daemon/log-copy.chk	2009-12-03 09:01:11.000000000 -0500
++++ ./test/daemon/test-whole.chk	2009-12-03 09:01:11.000000000 -0500
+@@ -97,7 +97,7 @@
+ $GPGGA,102021,3020.5010,N,01213.7242,E,2,09,1.00,627.54,M,31.480,M,,*42
+ $GPRMC,102021,A,3020.5010,N,01213.7242,E,31847.9445,0.000,150107,,*2D
+ $GPGSA,A,3,03,06,07,16,18,21,25,30,31,,,,2.0,1.0,1.8*31
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;0xb1&quot;,&quot;time&quot;:1168856421.000,&quot;ept&quot;:3.920,&quot;lat&quot;:30.341683180,&quot;lon&quot;:12.228735886,&quot;alt&quot;:627.543,&quot;epx&quot;:0.222,&quot;epy&quot;:0.222,&quot;epv&quot;:10.350,&quot;track&quot;:0.0000,&quot;speed&quot;:16383.998,&quot;climb&quot;:0.002,&quot;epd&quot;:83.0472,&quot;eps&quot;:0.44,&quot;mode&quot;:3}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;0xb1&quot;,&quot;time&quot;:1168856421.000,&quot;ept&quot;:3.920,&quot;lat&quot;:30.341683180,&quot;lon&quot;:12.228735886,&quot;alt&quot;:627.543,&quot;epx&quot;:0.222,&quot;epy&quot;:0.222,&quot;epv&quot;:10.350,&quot;track&quot;:0.0000,&quot;speed&quot;:16383.998,&quot;climb&quot;:0.002,&quot;eps&quot;:0.44,&quot;mode&quot;:3}
+ $GPGSV,3,1,10,21,78,040,46,31,39,230,44,06,36,062,43,25,36,245,43*7F
+ $GPGSV,3,2,10,30,26,132,38,16,40,321,42,18,31,140,39,03,10,284,34*7F
+ $GPGSV,3,3,10,07,43,056,43,22,13,173,35*7D
+Processing ./test/daemon/nl402u.log......(16.52 sec) done.
+Processing ./test/daemon/oncore.log......(5.86 sec) done.
+Processing ./test/daemon/pharos-360.log......(16.13 sec) done.
+Processing ./test/daemon/rgm3800.log......(4.74 sec) done.
+--- ./test/daemon/log-copy.chk	2009-12-03 09:01:55.000000000 -0500
++++ ./test/daemon/test-whole.chk	2009-12-03 09:01:55.000000000 -0500
+@@ -7,12 +7,12 @@
+ $GPRMC,235951.952,V,0000.0000,N,00000.0000,E,,0.00,050180,,,N*63
+ $GPGGA,235952.953,0000.0000,N,00000.0000,E,0,00,,0.0,M,0.0,M,,0000*46
+ $GPGSA,A,1,,,,,,,,,,,,,,,*1E
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;GSA&quot;,&quot;time&quot;:3471724791.952,&quot;ept&quot;:0.005,&quot;mode&quot;:1}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;GSA&quot;,&quot;time&quot;:-823242504.048,&quot;ept&quot;:0.005,&quot;mode&quot;:1}
+ $GPGSV,3,1,12,20,00,000,,10,00,000,,31,00,000,,27,00,000,*7C
+ $GPGSV,3,2,12,19,00,000,,07,00,000,,04,00,000,,24,00,000,*76
+ $GPGSV,3,3,12,16,00,000,,28,00,000,,26,00,000,,29,00,000,*78
+ $GPRMC,235952.953,V,0000.0000,N,00000.0000,E,,0.00,050180,,,N*61
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:3471724792.953,&quot;ept&quot;:0.005}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:-823242503.047,&quot;ept&quot;:0.005}
+ $GPGGA,102523.342,4815.6883,N,01140.3675,E,1,03,4.1,-47.5,M,47.5,M,,0000*4B
+ $GPGSA,A,2,09,18,15,,,,,,,,,,4.2,4.1,1.0*35
+ $GPGSV,3,1,11,15,78,236,41,09,30,277,44,18,26,303,36,22,04,332,34*73
+@@ -20,7 +20,7 @@
+ $GPGSV,3,3,11,08,13,081,27,12,06,219,22,10,05,190,21*4F
+ {&quot;class&quot;:&quot;SKY&quot;,&quot;tag&quot;:&quot;GSV&quot;,&quot;vdop&quot;:1.00,&quot;hdop&quot;:4.10,&quot;pdop&quot;:4.20,&quot;satellites&quot;:[{&quot;PRN&quot;:15,&quot;el&quot;:78,&quot;az&quot;:236,&quot;ss&quot;:41,&quot;used&quot;:true},{&quot;PRN&quot;:9,&quot;el&quot;:30,&quot;az&quot;:277,&quot;ss&quot;:44,&quot;used&quot;:true},{&quot;PRN&quot;:18,&quot;el&quot;:26,&quot;az&quot;:303,&quot;ss&quot;:36,&quot;used&quot;:true},{&quot;PRN&quot;:22,&quot;el&quot;:4,&quot;az&quot;:332,&quot;ss&quot;:34,&quot;used&quot;:false},{&quot;PRN&quot;:26,&quot;el&quot;:64,&quot;az&quot;:298,&quot;ss&quot;:0,&quot;used&quot;:false},{&quot;PRN&quot;:29,&quot;el&quot;:53,&quot;az&quot;:146,&quot;ss&quot;:0,&quot;used&quot;:false},{&quot;PRN&quot;:28,&quot;el&quot;:45,&quot;az&quot;:57,&quot;ss&quot;:25,&quot;used&quot;:false},{&quot;PRN&quot;:17,&quot;el&quot;:28,&quot;az&quot;:119,&quot;ss&quot;:22,&quot;used&quot;:false},{&quot;PRN&quot;:8,&quot;el&quot;:13,&quot;az&quot;:81,&quot;ss&quot;:27,&quot;used&quot;:false},{&quot;PRN&quot;:12,&quot;el&quot;:6,&quot;az&quot;:219,&quot;ss&quot;:22,&quot;used&quot;:false},{&quot;PRN&quot;:10,&quot;el&quot;:5,&quot;az&quot;:190,&quot;ss&quot;:21,&quot;used&quot;:false}]}
+ $GPRMC,102523.342,A,4815.6883,N,01140.3675,E,0.00,0.00,210808,,,A*61
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:3491461523.342,&quot;ept&quot;:0.005,&quot;lat&quot;:48.261471667,&quot;lon&quot;:11.672791667,&quot;alt&quot;:-47.500,&quot;epv&quot;:0.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.000,&quot;climb&quot;:0.000,&quot;mode&quot;:3}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:-803505772.658,&quot;ept&quot;:0.005,&quot;lat&quot;:48.261471667,&quot;lon&quot;:11.672791667,&quot;alt&quot;:-47.500,&quot;epv&quot;:0.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.000,&quot;climb&quot;:0.000,&quot;mode&quot;:3}
+ $GPGGA,102524.342,4815.6880,N,01140.3673,E,1,03,4.1,-47.5,M,47.5,M,,0000*49
+ $GPGSA,A,2,09,18,15,,,,,,,,,,4.2,4.1,1.0*35
+ $GPGSV,3,1,11,15,78,236,41,09,30,277,44,18,26,303,36,22,04,332,34*73
+@@ -28,4 +28,4 @@
+ $GPGSV,3,3,11,08,13,081,28,12,06,219,22,10,05,190,21*40
+ {&quot;class&quot;:&quot;SKY&quot;,&quot;tag&quot;:&quot;GSV&quot;,&quot;vdop&quot;:1.00,&quot;hdop&quot;:4.10,&quot;pdop&quot;:4.20,&quot;satellites&quot;:[{&quot;PRN&quot;:15,&quot;el&quot;:78,&quot;az&quot;:236,&quot;ss&quot;:41,&quot;used&quot;:true},{&quot;PRN&quot;:9,&quot;el&quot;:30,&quot;az&quot;:277,&quot;ss&quot;:44,&quot;used&quot;:true},{&quot;PRN&quot;:18,&quot;el&quot;:26,&quot;az&quot;:303,&quot;ss&quot;:36,&quot;used&quot;:true},{&quot;PRN&quot;:22,&quot;el&quot;:4,&quot;az&quot;:332,&quot;ss&quot;:34,&quot;used&quot;:false},{&quot;PRN&quot;:26,&quot;el&quot;:64,&quot;az&quot;:298,&quot;ss&quot;:0,&quot;used&quot;:false},{&quot;PRN&quot;:29,&quot;el&quot;:53,&quot;az&quot;:146,&quot;ss&quot;:0,&quot;used&quot;:false},{&quot;PRN&quot;:28,&quot;el&quot;:45,&quot;az&quot;:57,&quot;ss&quot;:25,&quot;used&quot;:false},{&quot;PRN&quot;:17,&quot;el&quot;:28,&quot;az&quot;:119,&quot;ss&quot;:22,&quot;used&quot;:false},{&quot;PRN&quot;:8,&quot;el&quot;:13,&quot;az&quot;:81,&quot;ss&quot;:28,&quot;used&quot;:false},{&quot;PRN&quot;:12,&quot;el&quot;:6,&quot;az&quot;:219,&quot;ss&quot;:22,&quot;used&quot;:false},{&quot;PRN&quot;:10,&quot;el&quot;:5,&quot;az&quot;:190,&quot;ss&quot;:21,&quot;used&quot;:false}]}
+ $GPRMC,102524.342,A,4815.6880,N,01140.3673,E,0.00,0.00,210808,,,A*63
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:3491461524.342,&quot;ept&quot;:0.005,&quot;lat&quot;:48.261466667,&quot;lon&quot;:11.672788333,&quot;alt&quot;:-47.500,&quot;epv&quot;:23.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.000,&quot;climb&quot;:0.000,&quot;mode&quot;:3}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:-803505771.658,&quot;ept&quot;:0.005,&quot;lat&quot;:48.261466667,&quot;lon&quot;:11.672788333,&quot;alt&quot;:-47.500,&quot;epv&quot;:23.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.000,&quot;climb&quot;:0.000,&quot;mode&quot;:3}
+Processing ./test/daemon/rtcm2.log......(3.90 sec) done.
+Processing ./test/daemon/superstar2.log......(20.69 sec) done.
+Processing ./test/daemon/tn200-all.log......(24.14 sec) done.
+Processing ./test/daemon/tn200.log......(14.60 sec) done.
+Processing ./test/daemon/tn204.log......(5.96 sec) done.
+Processing ./test/daemon/trimble-lassen_iq-3dfix.log......(15.58 sec) done.
+Processing ./test/daemon/trimble-lassen_iq-playacar.log......(12.89 sec) done.
+Processing ./test/daemon/trimble-lassen_iq.log......(20.08 sec) done.
+Processing ./test/daemon/uBlox-lea-4h.log......(22.39 sec) done.
+Processing ./test/daemon/uBlox-lea-4s.log......(4.90 sec) done.
+Processing ./test/daemon/uBlox-lea-4t.log......(20.53 sec) done.
+Processing ./test/daemon/uBlox-sirf1.log......(15.77 sec) done.
+Processing ./test/daemon/zodiac.log......(6.68 sec) done.
+Regression test FAILED: 4 errors in 44 tests total  (0 not found).
+gmake[2]: *** [gps-regress] Error 4
+gmake[2]: Leaving directory `/usr/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https'
+gmake[1]: *** [check-am] Error 2
+gmake[1]: Leaving directory `/usr/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https'
+gmake: *** [check] Error 2
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091203/eed8d23c/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091203/eed8d23c/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007217.html">[Gpsd-dev] Progress towards the 2.90 release
+</A></li>
+	<LI>Next message: <A HREF="007220.html">[Gpsd-dev] regression failures
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7219">[ date ]</a>
+              <a href="thread.html#7219">[ thread ]</a>
+              <a href="subject.html#7219">[ subject ]</a>
+              <a href="author.html#7219">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

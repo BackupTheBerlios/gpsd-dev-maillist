@@ -1,0 +1,157 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd 3.x successfully ported to embedded MIPS	(Netgear wndr3700v2 router)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%203.x%20successfully%20ported%20to%20embedded%20MIPS%0A%09%28Netgear%20wndr3700v2%20router%29&In-Reply-To=%3CCAA93jw4N%2Bnb1VHoHOcRWjiT%3D_Afm1%3DBy9hxY9gRT4yJLb8rc5A%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009524.html">
+   <LINK REL="Next"  HREF="009526.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd 3.x successfully ported to embedded MIPS	(Netgear wndr3700v2 router)</H1>
+    <B>Dave Taht</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%203.x%20successfully%20ported%20to%20embedded%20MIPS%0A%09%28Netgear%20wndr3700v2%20router%29&In-Reply-To=%3CCAA93jw4N%2Bnb1VHoHOcRWjiT%3D_Afm1%3DBy9hxY9gRT4yJLb8rc5A%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] gpsd 3.x successfully ported to embedded MIPS	(Netgear wndr3700v2 router)">dave.taht at gmail.com
+       </A><BR>
+    <I>Sat Sep 17 18:35:40 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009524.html">[Gpsd-dev] gpsd 3.x successfully ported to embedded MIPS (Netgear wndr3700v2 router)
+</A></li>
+        <LI>Next message: <A HREF="009526.html">[Gpsd-dev] gpsd 3.x successfully ported to embedded MIPS (Netgear wndr3700v2 router)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9525">[ date ]</a>
+              <a href="thread.html#9525">[ thread ]</a>
+              <a href="subject.html#9525">[ subject ]</a>
+              <a href="author.html#9525">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sat, Sep 17, 2011 at 7:35 AM, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+
+&gt;<i> Dave Taht &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">dave.taht at gmail.com</A>&gt;:
+</I>&gt;<i> &gt; After gpsd stablizes (gpsd 3.2?) we can get it into openwrt head, but in
+</I>&gt;<i> the
+</I>&gt;<i> &gt; meantime it would be good to know if gpsd 3.x worked well on other
+</I>&gt;<i> variants
+</I>&gt;<i> &gt; of openwrt.
+</I>&gt;<i>
+</I>&gt;<i> What counts as stable?  Changes since 3.0 have been minor, mostly tweaks
+</I>&gt;<i> to the build recipe.  The biggest change I'm expecting in 3.2 is a bug
+</I>&gt;<i> fix to the old (non-kernel) PPS code.
+</I>&gt;<i>
+</I>
+While there are several packages in openwrt head that pull directly from a
+git commit
+of a given package, I would personally prefer that gpsd 3.x baked a little
+more
+(with people testing on arm, mips, mobile devices, etc) and I am also hoping
+
+However, I note that I am not in any way a gatekeeper to the main openwrt
+feeds. Their requirements are different.
+
+We (bufferbloat.net) spun up ceropackages specifically to enable those newer
+to openwrt development and
+embedded development to be able to use github as a base, and 'screw up'
+freely while mastering the cross-development process, while not necessarily
+being able to do builds on or for their own hardware.
+
+Well, that, plus we wanted to try out some crazy things like a variety of
+new test tools, multicast routing, using xinetd, etc.
+
+A side goal is to get the developers of a given piece of software's heads
+around how different embedded development can be, and also get needed
+patches pushed up into those mainline packages.
+
+It has been fun getting evan hunt (bind9 maintainer at isc.org) and your
+respective heads around life inside 8MB of flash.
+
+&gt;<i>  I note that you will have to install the right kmod-serial-* to
+</I>&gt;<i> get the right kernel support for your specific device,
+</I>
+ Bu &quot;your specific device&quot; you mean the router hardware?  When we use that
+&gt;<i> phrase here we generally mean a make/model of GPS...
+</I>&gt;<i>
+</I>&gt;<i> No, I meant the make/model of GPS that we tested, which required a
+</I>
+opkg install kmod-usb-serial-ftdi
+
+in order for ttyUSB0 to be recognised by the openwrt/wndr3700v2 kernel. (I'm
+documenting this for your future builds)
+
+I note many openwrt based devices have real serial ports, too. The wndr
+actually has one inside it that can be hacked onto.
+
+I note that adding a kmod-usb-serial-* depenendency to the gpsd package is
+the wrong thing, as openwrt is more
+like a 'distro to build hardware' distro, where the designer of the firmware
+would pick and choose the right kernel
+modules for their particular hardware.
+
+saving any and all space on precious flash is in large part what drives
+packaging for embedded firmware,
+which is why I'd like to nuke the gpsd libusb dependency as it's only for
+one rarely used device.
+
+&gt;<i>                                                    and enabling the -G
+</I>&gt;<i> &gt; option to gpsd allows you to contact the router remotely with tools like
+</I>&gt;<i> &gt; cgpsd, etc.
+</I>&gt;<i>
+</I>&gt;<i> I've added a force_global configuration option to force -G on for
+</I>&gt;<i> deployments
+</I>&gt;<i> like CeroWrt where listening only on loopback is not a good idea.
+</I>&gt;<i>
+</I>
+Well... then it needs to be invertible somehow. And the gpsd openwrt package
+could merely have an option in the gpsd.config file to enable it where
+needed. I can certainly see cases where lo can be used by other apps on the
+router and no other access is needed.
+
+That said, full ipv6 support would be nice, too.
+
+
+&gt;<i> --
+</I>&gt;<i>                 &lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+</I>&gt;<i>
+</I>
+
+
+-- 
+Dave T&#228;ht
+SKYPE: davetaht
+US Tel: 1-239-829-5608
+<A HREF="http://the-edge.blogspot.com">http://the-edge.blogspot.com</A>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110917/ed23ba2c/attachment.html">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110917/ed23ba2c/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009524.html">[Gpsd-dev] gpsd 3.x successfully ported to embedded MIPS (Netgear wndr3700v2 router)
+</A></li>
+	<LI>Next message: <A HREF="009526.html">[Gpsd-dev] gpsd 3.x successfully ported to embedded MIPS (Netgear wndr3700v2 router)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9525">[ date ]</a>
+              <a href="thread.html#9525">[ thread ]</a>
+              <a href="subject.html#9525">[ subject ]</a>
+              <a href="author.html#9525">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

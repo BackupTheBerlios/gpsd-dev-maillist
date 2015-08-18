@@ -1,0 +1,95 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPSD Protocol Inconsistencies
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3CAANLkTinbwBHDT66CTk6ogATNhLncPrKF-6fB42wKuWM8%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008897.html">
+   <LINK REL="Next"  HREF="008906.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPSD Protocol Inconsistencies</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3CAANLkTinbwBHDT66CTk6ogATNhLncPrKF-6fB42wKuWM8%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] GPSD Protocol Inconsistencies">thomas at mich.com
+       </A><BR>
+    <I>Sun Mar 20 15:57:09 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008897.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+        <LI>Next message: <A HREF="008906.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8904">[ date ]</a>
+              <a href="thread.html#8904">[ thread ]</a>
+              <a href="subject.html#8904">[ subject ]</a>
+              <a href="author.html#8904">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Why is &quot;mode&quot; in TPV if it comes from GPGSA?  Shouldn't it or whatever
+is in GPGSA be in SKY?  But you can derive mode from just the TPV
+information.
+
+Note you need either GPRMC or BOTH GPGLL AND GPZDA to get the date and
+then there is the midnight rollover problem (5Hz garmins if nothing
+else).  To get altitude, you need GPGGA.
+
+The lat/lon sentences have the A/V flag which would correspond to mode
+1 or &gt;1, and the number of satellites in GPGGA should give 2 or 3 for
+2d or 3d fix (ignore the altitude if 2d), but I propose changing 3 to
+4 if GPGGA also indicates DGPS is active.  I don't see anywhere else
+this higher accuracy is indicated.  It isn't DoP, it means whatever
+numbers are being reported are being corrected.  It could be its own
+tag.
+
+The set is lat/lon/validity, date, altitude/sats-2d3d/dgps, each with
+time  TPV should go out at each complete set.  The particular
+sentences aren't as important - if there is line noise, GPGLL/ZDA
+could act as a backup for GPRMC.  You need to see GPRMC or GPZDA at
+least once - but if it isn't a requirement, you need to have some code
+to increment the date at the midnight cross (which could be part of
+the midnight fix anyway).
+
+There may be other combinations that give all the data, but if any
+don't include time, then TPV would have to depend on bounding and
+examining the entire frame and with arbitrary ordering, unless you are
+looking for the interframe pause or something similar, it might be
+very hard to tell which frame something without a time belongs to.
+There is still the problem if they don't occur in every set of
+sentences.
+
+If GPGGA and GPRMC/(GPGLL+GPZDA) are not the same rate, you can still
+only emit TPV when you get a complete set with the same time values.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008897.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+	<LI>Next message: <A HREF="008906.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8904">[ date ]</a>
+              <a href="thread.html#8904">[ thread ]</a>
+              <a href="subject.html#8904">[ subject ]</a>
+              <a href="author.html#8904">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

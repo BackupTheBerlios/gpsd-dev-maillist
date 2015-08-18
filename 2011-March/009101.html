@@ -1,0 +1,91 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Single-writer/many-reader consistency
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3CAANLkTi%3D-DDJ0NP%2BUZx80A8zCQfs1Btw%3D8gZJoECj7kSR%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009100.html">
+   <LINK REL="Next"  HREF="009106.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Single-writer/many-reader consistency</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3CAANLkTi%3D-DDJ0NP%2BUZx80A8zCQfs1Btw%3D8gZJoECj7kSR%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Single-writer/many-reader consistency">thomas at mich.com
+       </A><BR>
+    <I>Sat Mar 26 18:08:39 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009100.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+        <LI>Next message: <A HREF="009106.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9101">[ date ]</a>
+              <a href="thread.html#9101">[ thread ]</a>
+              <a href="subject.html#9101">[ subject ]</a>
+              <a href="author.html#9101">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Excuse a stupid question, but how closely are you trying to synchronize.
+
+If you are using a 1Hz GPS, without the pps, given the variable
+latency in GPSD and hardware, the value will be close, but sometime
+after the second boundary.
+
+For readers, you could just do successive reads every 100 milliseconds
+or even 10 milliseconds (if the cache takes longer than this there are
+far worse problems) and find a set equal - without counters or
+anything.  Just memcmp.
+
+The fastest GPS I can find is 100Hz, but is very expensive, but for
+$100 you can now get one that does 20Hz.  (SkyTraq Venus 638).
+
+Even if it is only a few times per second, what performance benefits
+will be gained by using shm instead of a shared file
+(write(fd,buf,sizeof(buf)); fsync())?  Especially if you start adding
+semaphores.
+
+If you are trying for even higher resolution, you need to go into the
+hardware beyond what this will provide.
+
+I need to do some hardware testes to see how the WWVB clock v.s. GPS
+PPS v.s. Dallas Semi 2ppm (1 minute per year) TCXO clock chip
+<A HREF="http://www.maxim-ic.com/datasheet/index.mvp/id/4627/t/al">http://www.maxim-ic.com/datasheet/index.mvp/id/4627/t/al</A> - each have
+edges on a UTC second - perform.  If I can sync the Dallas Chip to the
+PPS, it can maintain the accurate time for a while so you would have a
+stable and accurate PPS.
+
+But do you need 10mS or 1mS accuracy?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009100.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+	<LI>Next message: <A HREF="009106.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9101">[ date ]</a>
+              <a href="thread.html#9101">[ thread ]</a>
+              <a href="subject.html#9101">[ subject ]</a>
+              <a href="author.html#9101">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

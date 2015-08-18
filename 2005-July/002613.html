@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] What's going on with rtcm.c
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20What%27s%20going%20on%20with%20rtcm.c&In-Reply-To=%3C200507250516.j6P5Gr70023473%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002615.html">
+   <LINK REL="Next"  HREF="002614.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] What's going on with rtcm.c</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20What%27s%20going%20on%20with%20rtcm.c&In-Reply-To=%3C200507250516.j6P5Gr70023473%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] What's going on with rtcm.c">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Mon Jul 25 07:16:53 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002615.html">[Gpsd-dev] SVN head will not compile
+</A></li>
+        <LI>Next message: <A HREF="002614.html">[Gpsd-dev] What's going on with rtcm.c
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2613">[ date ]</a>
+              <a href="thread.html#2613">[ thread ]</a>
+              <a href="subject.html#2613">[ subject ]</a>
+              <a href="author.html#2613">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>This is a note on what I've been doing with rtcm.c intended mainly for
+Wolfgang Rupprecht, but posted here because other developers may find
+the information useful.
+
+The rtcm code, as I fouund it, was clever, twisty, and a major improvement
+on John Sager's old decoder -- but still a way too complicated and
+large lump to be really good software engineering.  I set out to fix that.
+
+My first goal was to separate report generation from decoding.  This
+has been accomplished; unpack() and rtcm_dump() are separate
+functions, and an intermediate structure holds extracted RTCM data in
+a convenient C-native format.
+
+My second goal was to enable operation on big-endian machines.  I think I've
+actually done that, but the results have not yet been tested.  About
+an hour ago I checked in an autoconf-based test for big-endianness
+that is much simpler than the one Chris Kuethe was working up.
+
+My third goal was to eliminate all but the bare necessary minimum of
+casts and type punning from the code -- they made it hard to read.
+This is why the long list of bitfield structures Wolfgang originally laid
+out have coalesced into one big struct rtcm_msg_t; doing this enabled
+me to get rid of all but one cast.
+
+My fourth goal is to write a repack() function that inverts unpsck()
+and will allow going from a synthetic or edited textual RTCM dump
+to an RTCM-104 bit stream.  The grotty part -- C structure to 
+bitfield mapping -- is done, but needs parity and inversion added  
+(and of course testing and debugging).
+
+My fifth goal is to separate the RTCM part from the low-level decoder,
+in hopes of being able to re-use the low-level decoder for 50bps
+subframe data.  This is why the 30-bit word has gone from being
+named rtcmword_t to isgps30bit_t; the &quot;isgps&quot; is meant to relate
+it to the IS-GPS-200 standard.
+
+They're tied together is in the function rtcm_decode().  This really
+ouught to be a thin wrapper around an isgps_decode() function that
+calls unpack() afterwards when isgps_decode() is successful.  There
+are two points of adhesion -- the PREAMBLE_TEST macro and the fact that
+rtcm_decode() uses the frmlen field.  Ideally, PREAMBLE_TEST would
+be written so it works for both variants and doesn't know anything
+about struct rtcm_msg_t -- that's unpack's job.
+
+The sixth and ultimate goal is to get the packet sniffer to recognize
+an RTCM bitstream and segnent it into packets.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+That the said Constitution shall never be construed to authorize
+Congress to infringe the just liberty of the press or the rights of
+conscience; or to prevent the people of the United states who are
+peaceable citizens from keeping their own arms...
+        -- Samuel Adams, in &quot;Phila. Independent Gazetteer&quot;, August 20, 1789
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002615.html">[Gpsd-dev] SVN head will not compile
+</A></li>
+	<LI>Next message: <A HREF="002614.html">[Gpsd-dev] What's going on with rtcm.c
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2613">[ date ]</a>
+              <a href="thread.html#2613">[ thread ]</a>
+              <a href="subject.html#2613">[ subject ]</a>
+              <a href="author.html#2613">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

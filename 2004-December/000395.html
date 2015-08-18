@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Problems compiling with lots of warning flags	enabled
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Problems%20compiling%20with%20lots%20of%20warning%20flags%0A%09enabled&In-Reply-To=%3C1104273934.1582.96.camel%40localhost.localdomain%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000377.html">
+   <LINK REL="Next"  HREF="000397.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Problems compiling with lots of warning flags	enabled</H1>
+    <B>Tilman Koschnick</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Problems%20compiling%20with%20lots%20of%20warning%20flags%0A%09enabled&In-Reply-To=%3C1104273934.1582.96.camel%40localhost.localdomain%3E"
+       TITLE="[Gpsd-dev] Problems compiling with lots of warning flags	enabled">lists at subnetz.org
+       </A><BR>
+    <I>Tue Dec 28 23:45:34 CET 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000377.html">[Gpsd-dev] Problems compiling with lots of warning flags enabled
+</A></li>
+        <LI>Next message: <A HREF="000397.html">[Gpsd-dev] Problems compiling with lots of warning flags enabled
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#395">[ date ]</a>
+              <a href="thread.html#395">[ thread ]</a>
+              <a href="subject.html#395">[ subject ]</a>
+              <a href="author.html#395">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Fri, 2004-12-24 at 14:18 -0500, Eric S. Raymond wrote:
+&gt;<i> Petter Reinholdtsen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">pere at hungry.com</A>&gt;:
+</I>&gt;<i> &gt; Here is a fix using the GCC attribute.  It fixes more warning issues.
+</I>&gt;<i> &gt; I placed the UNUSED define in a new header file display.h.
+</I>&gt;<i> 
+</I>&gt;<i> Thanks, that's much cleaner.  You forgoyt to add display.h to Makefile.am,
+</I>&gt;<i> though.
+</I>
+Here is a small patch to get rid of some more warnings on debian/woody
+(gcc 2.95.4):
+
+Index: gps.c
+===================================================================
+--- gps.c       (revision 119)
++++ gps.c       (working copy)
+@@ -138,7 +138,7 @@
+     gc = XCreateGC(XtDisplay(satellite_diagram),
+        RootWindowOfScreen(XtScreen(satellite_diagram)), GCForeground,
+&amp;gcv);
+     register_canvas(satellite_diagram, gc);
+-    XtAddCallback(satellite_diagram, XmNexposeCallback, redraw, NULL);
++    XtAddCallback(satellite_diagram, XmNexposeCallback, (XtPointer)
+redraw, NULL);
+
+     /* the data display */
+     XtSetArg(args[0], XmNorientation, XmHORIZONTAL);
+@@ -183,7 +183,7 @@
+
+     quitbutton = XtCreateManagedWidget(&quot;Quit&quot;,
+                         xmPushButtonWidgetClass, rowColumn_18, args,
+0);
+-    XtAddCallback(quitbutton, XmNactivateCallback, quit_cb, NULL);
++    XtAddCallback(quitbutton, XmNactivateCallback, (XtPointer) quit_cb,
+NULL);
+
+     XtRealizeWidget(lxbApp);
+     delw = XmInternAtom(XtDisplay(lxbApp), &quot;WM_DELETE_WINDOW&quot;, False);
+Index: Tachometer.c
+===================================================================
+--- Tachometer.c        (revision 119)
++++ Tachometer.c        (working copy)
+@@ -130,7 +130,7 @@
+     /* class_initialize        */      NULL,
+     /* class_part_initialize   */      NULL,
+     /* class_inited            */      FALSE,
+-    /* initialize              */      Initialize,
++    /* initialize              */      (XtInitProc) Initialize,
+     /* initialize_hook         */      NULL,
+     /* realize                 */      Realize,
+     /* actions                 */      NULL,
+@@ -145,7 +145,7 @@
+     /* destroy                 */      Destroy,
+     /* resize                  */      Resize,
+     /* expose                  */      Redisplay,
+-    /* set_values              */      SetValues,
++    /* set_values              */      (XtSetValuesFunc) SetValues,
+     /* set_values_hook         */      NULL,
+     /* set_values_almost       */      XtInheritSetValuesAlmost,
+     /* get_values_hook         */      NULL,
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000377.html">[Gpsd-dev] Problems compiling with lots of warning flags enabled
+</A></li>
+	<LI>Next message: <A HREF="000397.html">[Gpsd-dev] Problems compiling with lots of warning flags enabled
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#395">[ date ]</a>
+              <a href="thread.html#395">[ thread ]</a>
+              <a href="subject.html#395">[ subject ]</a>
+              <a href="author.html#395">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

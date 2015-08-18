@@ -1,0 +1,86 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] 2D fix vertikal error
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%202D%20fix%20vertikal%20error&In-Reply-To=%3C20060906134600.GA8044%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004235.html">
+   <LINK REL="Next"  HREF="004236.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] 2D fix vertikal error</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%202D%20fix%20vertikal%20error&In-Reply-To=%3C20060906134600.GA8044%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] 2D fix vertikal error">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Sep  6 15:46:00 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004235.html">[Gpsd-dev] 2D fix vertikal error
+</A></li>
+        <LI>Next message: <A HREF="004236.html">[Gpsd-dev] binary versus NMEA mode
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4239">[ date ]</a>
+              <a href="thread.html#4239">[ thread ]</a>
+              <a href="subject.html#4239">[ subject ]</a>
+              <a href="author.html#4239">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Petr Slansky &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">slansky at usa.net</A>&gt;:
+&gt;<i> This example is from Evermore binary driver. Binary driver always reports some
+</I>&gt;<i> number. NMEA protocol can avoid number when it is not valid but it is not case
+</I>&gt;<i> in binary protokol (number could be the last known value or just a random
+</I>&gt;<i> value). What about Sirf binary for example? I think this situations have to be
+</I>&gt;<i> handled in gpsd, some standart behaviour have to be defined otherwise output
+</I>&gt;<i> will be GPS specific. Now is question if this should be hanleded in every GPS
+</I>&gt;<i> driver or change gpsd logic to hide differencies between different GPS
+</I>&gt;<i> devices.
+</I>
+That's easy; this should be handled at driver level.  That way, we can 
+distinguish between two classes of devices:
+
+1) Devices that can return an out-of-band &quot;no altitude&quot; indication, like NMEA.
+
+2) Devices that cannot do the above.
+
+Now, one thing that makes this easier is that all newdata fields are set to nan
+(not a number) before the driver interprets each packet.  So if the driver does
+not set altitude explicitly, the upper level of gpsd will see a nan there.
+
+I think, in practice, only the NMEA driver will ever return a non-nan when
+mode isn't 3D.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004235.html">[Gpsd-dev] 2D fix vertikal error
+</A></li>
+	<LI>Next message: <A HREF="004236.html">[Gpsd-dev] binary versus NMEA mode
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4239">[ date ]</a>
+              <a href="thread.html#4239">[ thread ]</a>
+              <a href="subject.html#4239">[ subject ]</a>
+              <a href="author.html#4239">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

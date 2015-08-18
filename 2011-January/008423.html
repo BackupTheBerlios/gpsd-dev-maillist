@@ -1,0 +1,200 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Almanac
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Almanac&In-Reply-To=%3CAANLkTi%3DyAwyZgXzyJBUvmYDtzogbkROq2%3DFEbWc%3DJA1v%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008421.html">
+   <LINK REL="Next"  HREF="008428.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Almanac</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Almanac&In-Reply-To=%3CAANLkTi%3DyAwyZgXzyJBUvmYDtzogbkROq2%3DFEbWc%3DJA1v%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Almanac">thomas at mich.com
+       </A><BR>
+    <I>Mon Jan  3 19:16:44 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008421.html">[Gpsd-dev] Almanac
+</A></li>
+        <LI>Next message: <A HREF="008428.html">[Gpsd-dev] Architecture/complexity issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8423">[ date ]</a>
+              <a href="thread.html#8423">[ thread ]</a>
+              <a href="subject.html#8423">[ subject ]</a>
+              <a href="author.html#8423">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Mon, Jan 3, 2011 at 11:28 AM, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+</I>
+&gt;&gt;<i> I think the feature addtions are getting a bit out of hand, at least
+</I>&gt;&gt;<i> for a monolithic gpsd-ng. &#160;Perhaps the device drivers should be plugin
+</I>&gt;&gt;<i> modules that for gpsd itself, just return that data, but then have
+</I>&gt;&gt;<i> APIs (and perhaps individual control programs) for all the special
+</I>&gt;&gt;<i> cases.
+</I>&gt;<i>
+</I>&gt;<i> *Shudder* &#160;Individual control programs and proliferating special cases
+</I>&gt;<i> is *exactly* what I've worked hard to get us away from. In that direction
+</I>&gt;<i> lies only an unmaintainable mess. I'll return to the plugin issue below.
+</I>
+I would rather there be many external unmantainable or unmaintained
+bits rather than having all of them inside the key parts of gpsd
+itself.
+
+Almanacs, agpsd, and the rest are already being talked about for inclusion.
+
+&gt;&gt;<i> gpsd is basically a multiplexer-demultiplexer - getting data from one
+</I>&gt;&gt;<i> or more sources, and sending it to one or more sinks. &#160;The sinks can
+</I>&gt;&gt;<i> be quite different, but the sources are already getting that way.
+</I>&gt;&gt;<i> When it was just Garmin and NMEA it was ugly. &#160;Now it is multiple
+</I>&gt;&gt;<i> binary and multiple NMEA-wth-quirks and extensions.
+</I>&gt;<i>
+</I>&gt;<i> Yes. Unavoidably so, given the hardware territory it has to cover just
+</I>&gt;<i> to deliver basic GPS data. &#160;The newer stuff like AIS is only a
+</I>&gt;<i> relatively small increment of complexity over what's irreducibly
+</I>&gt;<i> required to do GPS right, given that we have a dozen vendor binary
+</I>&gt;<i> protocols to cope with.
+</I>
+The problem is the small increments tend to collect into a big mess.
+
+&gt;&gt;<i> I would prefer to split the NMEA basic (and/or equivalent from the
+</I>&gt;&gt;<i> binary) support which is what gpsd will be used for in 99.9% of the
+</I>&gt;&gt;<i> time, from the other interesting data and/or setup.
+</I>&gt;<i>
+</I>&gt;<i> We have configure switches to invidually suppress the features beyond NMEA.
+</I>&gt;<i> This is possible because most of the device-specific complexity is pushed
+</I>&gt;<i> down into drivers that are quite well isolated from each other.
+</I>
+Suppressing something means it is still there and it really isn't
+isolated if something in a driver breaks the build as a whole.
+
+&gt;<i> The driver architecture we already have (with the relatively thin layer
+</I>&gt;<i> of dispatcher/multiplexor code on top) does about everything a &quot;plugin&quot;
+</I>&gt;<i> architecture could do, except dynamically load the driver parts. I don't
+</I>&gt;<i> think the driver parts are large enough to justify dynamic loading; they
+</I>&gt;<i> sum total to about 200K of object code and average 12.5K each.
+</I>
+This is OK if the drivers stay limited - the API or functionality
+doesn't expand, nor if their number starts increasing.
+
+I don't know that this will happen, but I already have a large number
+of different GPS units.  If the drivers are going to be vanilla NMEA,
+they are already there.  If I want to add in all the special feature
+support, it might start making it bigger.
+
+If the GPS covered by a binary driver can do NMEA, do we want to keep
+the binary driver?  If so, then do we add specific drivers for
+everyone?
+
+For that matter, lets say I have two GPS units - one is a very
+sensitive precise WAAS enabled unit with a resolution of 1Hz, and a
+second has basic data at 10Hz.  Can I get both?  (That is a problem I
+had to work out on my embedded version).  This is not uncommon - think
+about a cell phone or mobile device and a car with a BT GPS.
+
+&gt;&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160; &#160; Ought things like barometric pressure and gyro data
+</I>&gt;&gt;<i> be provided by gpsd in event driven JSON? &#160;Or should there be a second
+</I>&gt;&gt;<i> or different program (since I like the architecture) that can act as
+</I>&gt;&gt;<i> the catch-all for the sensor information which is not strict GPS and
+</I>&gt;&gt;<i> might not even be strictly for navigation?
+</I>&gt;<i>
+</I>&gt;<i> I think you're confounding two distinct questions here.
+</I>&gt;<i>
+</I>&gt;<i> 1. Would there be any gain from splitting gpsd into multiple separate
+</I>&gt;<i> daemons to handle different subsets of the data it now handles?
+</I>&gt;<i>
+</I>&gt;<i> 2. What sorts of data are in scope for gpsd?
+</I>&gt;<i>
+</I>&gt;<i> 1 is a question mainly about software engineering tradeoffs and I think the
+</I>&gt;<i> answer is clearly &quot;no&quot;. &#160;All such a split would accomplish is to require
+</I>&gt;<i> multiple instances of the dispatcher/multiplexer layer to be maintained
+</I>&gt;<i> separately, and complicate life for clients because they'd have to
+</I>&gt;<i> monitor multiple service ports. &#160;Aggregate complexity would substantially
+</I>&gt;<i> increase.
+</I>
+The other way might be a JSON merge mechanism - so I could write
+something to take data not supported by GPSD itself, send it into a
+port, (be validated and tagged,) and it would appear in the event
+stream.  You could even have some officially supported bits for the
+interesting and useful but 4-sigma cases.
+
+&gt;<i> 2 is a more interesting question, less about nuts-and-bolts software
+</I>&gt;<i> engineering and more philosophical. I don't claim to have a final
+</I>&gt;<i> answer to it. &#160;Anything GPS-related is clearly in scope. &#160;I think AIS
+</I>&gt;<i> is too as it is interesting navigational information meant to be used
+</I>&gt;<i> in conjunction with GPS. &#160;Likewise for the take from magnetic
+</I>&gt;<i> compasses.
+</I>&gt;<i>
+</I>&gt;<i> We get into a gray area with stuff like water-temperature sensors
+</I>&gt;<i> and fish finders. I'd have to think long and hard before adding those.
+</I>&gt;<i> On the other hand, merging in the take from aircraft transponders would
+</I>&gt;<i> be an obvious win.
+</I>&gt;<i>
+</I>&gt;<i> I guess my figure of merit for stuff like this is &quot;how close to the
+</I>&gt;<i> navigation problem&quot; divided by &quot;LOC to implement&quot;. &#160;Close stuff like
+</I>&gt;<i> AIS justifies substantial code additions; things further away might
+</I>&gt;<i> slip in if the code weight of the driver is low.
+</I>
+The first part is reasonable - the lat/long/alt, the quality of data,
+heading and V and H speed are reasonable.  Probably magnetic compass
+too (though if you are pointed north and heading east?).  I think of
+&quot;GPS&quot; as &quot;Navigation&quot;.  Where am I, and where am I headed.
+
+The second - there are 3 approaches.  First would be the merge
+external input mechanism - you would need a custom fishfinder program,
+feed it into gpsd, then any app could use it, the second is to put it
+inside gpsd somewhere, the third is to have a fishfinder program that
+pulls the gpsd information and does the merge.  The problem with #2 is
+then it will have to be maintained as part of this project.  #3 makes
+it an application program, so something like a generic logger wouldn't
+get the data.  I don't know if #1 would be difficult or present other
+problems.
+
+My most common application is to take vehicle performance data (OBD2
+type info) and sensors (compass/gyro/accel) and merge that with GPS
+information since it helps to know when and where something
+interesting in the data happened.  So I tend to think of the problems
+in that context.
+
+&gt;<i> --
+</I>&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008421.html">[Gpsd-dev] Almanac
+</A></li>
+	<LI>Next message: <A HREF="008428.html">[Gpsd-dev] Architecture/complexity issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8423">[ date ]</a>
+              <a href="thread.html#8423">[ thread ]</a>
+              <a href="subject.html#8423">[ subject ]</a>
+              <a href="author.html#8423">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

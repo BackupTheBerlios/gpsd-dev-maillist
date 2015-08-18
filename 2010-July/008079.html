@@ -1,0 +1,117 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] linux pps support / NTPSHM update?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20linux%20pps%20support%20/%20NTPSHM%20update%3F&In-Reply-To=%3Calpine.DEB.1.10.1007220949270.12254%40org-pc51.fy.chalmers.se%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008077.html">
+   <LINK REL="Next"  HREF="008081.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] linux pps support / NTPSHM update?</H1>
+    <B>f96hajo at chalmers.se</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20linux%20pps%20support%20/%20NTPSHM%20update%3F&In-Reply-To=%3Calpine.DEB.1.10.1007220949270.12254%40org-pc51.fy.chalmers.se%3E"
+       TITLE="[Gpsd-dev] linux pps support / NTPSHM update?">f96hajo at chalmers.se
+       </A><BR>
+    <I>Thu Jul 22 10:29:54 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008077.html">[Gpsd-dev] linux pps support
+</A></li>
+        <LI>Next message: <A HREF="008081.html">[Gpsd-dev] linux pps support / NTPSHM update?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8079">[ date ]</a>
+              <a href="thread.html#8079">[ thread ]</a>
+              <a href="subject.html#8079">[ subject ]</a>
+              <a href="author.html#8079">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+The attached small program is for monitoring the 'activity' on an NTPSHM 
+segment, perhaps useful for some debugging.
+
+&gt;&gt;<i> I've filed a request in ntp bugzilla to extend the SHM protocol for
+</I>&gt;&gt;<i> nanoseconds, but so far it was ignored.
+</I>&gt;<i>
+</I>&gt;<i> I have noticed the same limitation.  If you give me the bug number I
+</I>&gt;<i> will 'me too' it.  From the data I see I can expect short term stability
+</I>&gt;<i> better than 1uSec with that addition.  As ckeuthe mentioned early, that
+</I>&gt;<i> is way past that needed for any practical application, but fun.
+</I>
+Regarding updating the NTPSHM structure, I thought about this quite some 
+while ago, but got stuck at the issue of how to make it backwards 
+compatible in the light of mixed 32/64-bit installations discussed a while 
+ago on the gpsd list.  Issue there is that an int can be both 32 and 64 
+bits, thus even spoiling identifications by the 'mode' member.
+
+Ideas:
+
+- The entire structure should be defined with fixed widths from stdint.h
+   to avoid further 32/64 bit issues.  I.e. mostly uint32_t.
+
+- Thus, time fields not as time_t.  Full 64 bits for the seconds.  Should
+   one perhaps use the NTP fractional second format instead of e.g.
+   specifying the use of explicit nanoseconds?  64 bits here as well to
+   prevent any further discussion?  Then also using the NTP epoch instead
+   of the UNIX epoch?
+
+- The members count and valid are needed for the protocol locking.
+
+- precision and nsamples are not really useful/used.  Should one
+   discontinue those?
+
+- A bitmask to tell which fields (and to which width) have been filled,
+   thus making the structure extensible.
+
+- Making the structure sort of 'bi-directional', with the chronyd/ntpd
+   process giving the current stratum and root delay and dispersion,
+   reference time and ID.  For external program wanting to do time sync
+   over a medium not supported natively by chronyd/ntpd.  Filling
+   requested by a mask extension bit.  For this case also provide the
+   chrony parameters describing a not yet completed clock-adjustment.
+
+- Some sort of fall-back (how??) if the receiving end does not support
+   the updated protocol?  Simply use a new NTPSHM_BASE ?  (also solves
+   the combined 32-64 bit issue.)
+
+Best regards,
+H&#195;&#165;kan
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: mon_ntpshm.tar.gz
+Type: application/octet-stream
+Size: 1294 bytes
+Desc: 
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100722/ca71f8f1/attachment.obj">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100722/ca71f8f1/attachment.obj</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008077.html">[Gpsd-dev] linux pps support
+</A></li>
+	<LI>Next message: <A HREF="008081.html">[Gpsd-dev] linux pps support / NTPSHM update?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8079">[ date ]</a>
+              <a href="thread.html#8079">[ thread ]</a>
+              <a href="subject.html#8079">[ subject ]</a>
+              <a href="author.html#8079">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

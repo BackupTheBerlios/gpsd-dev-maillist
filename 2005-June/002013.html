@@ -1,0 +1,186 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Rob Janssen's upset screed
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Rob%20Janssen%27s%20upset%20screed&In-Reply-To=%3C20050607134412.GA2360%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002009.html">
+   <LINK REL="Next"  HREF="002020.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Rob Janssen's upset screed</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Rob%20Janssen%27s%20upset%20screed&In-Reply-To=%3C20050607134412.GA2360%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Rob Janssen's upset screed">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Jun  7 15:44:12 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002009.html">[Gpsd-dev] Rob Janssen's upset screed
+</A></li>
+        <LI>Next message: <A HREF="002020.html">[Gpsd-dev] Rob Janssen's upset screed
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2013">[ date ]</a>
+              <a href="thread.html#2013">[ thread ]</a>
+              <a href="subject.html#2013">[ subject ]</a>
+              <a href="author.html#2013">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+&gt;<i> &gt; I just read Rob Janssen's upset screed about my latest commit.  I then
+</I>&gt;<i> &gt; lost it due to a glitch related to my somewhat jerry-rigged
+</I>&gt;<i> &gt; arrangement for reading mail on the road.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; In one respect, Rob simply has his facts wrong.  That change to sirf.c
+</I>&gt;<i> &gt; is not a random twitch in an unexplored direction.  Allowing for the
+</I>&gt;<i> &gt; rename of the macros, it simply reverts them to an earlier state that
+</I>&gt;<i> &gt; is known good -- I used Andreas Brauchli's information that revision
+</I>&gt;<i> &gt; 2560 is the last one without a speed bug.  Thus, this code has already
+</I>&gt;<i> &gt; been thoroughly &quot;investigated&quot; in Rob's sense.
+</I>&gt;<i> 
+</I>&gt;<i> Oh NO!
+</I>&gt;<i> I thought we had hashed this out a week or so ago.
+</I>
+We did.  I believe you are misinterpreting the situation.  Please bear
+in mind that I reverted to a a version Andreas reported as *known good*.
+Also bear in mind that this is not a change I made to keep splint quiet.
+ 
+&gt;<i> I am still running the last version before splint.  When I do a diff, I
+</I>&gt;<i> see the following change in sirf.c:
+</I>&gt;<i> 
+</I>&gt;<i> 102,104c109,111
+</I>&gt;<i> &lt; #define getb(off)     (buf[off])
+</I>&gt;<i> &lt; #define getw(off)     ((short)((getb(off) &lt;&lt; 8) | getb(off+1)))
+</I>&gt;<i> &lt; #define getl(off)     ((int)((getw(off) &lt;&lt; 16) | (getw(off+2) &amp; 0xffff)))
+</I>&gt;<i> ---
+</I>&gt;<i> &gt; #define getbyte(off)  buf[off]
+</I>&gt;<i> &gt; #define getword(off)  ((getbyte(off) &lt;&lt; 8) | getbyte(off+1))
+</I>&gt;<i> &gt; #define getlong(off)  ((int)((getword(off) &lt;&lt; 16) | (getword(off+2) &amp;
+</I>&gt;<i> 0xffff))
+</I>&gt;<i> 
+</I>&gt;<i> That is just wrong!  The (short) cast in getw or getword is REQUIRED.
+</I>&gt;<i> I have explained that, and I am not going to continue to explain that over
+</I>&gt;<i> and over again.
+</I>
+You convinced me a week ago that the result of getword has to be short-cast
+to get the signedness right.  Those casts *are* being done at the point of 
+call, everywhere.  So the generated code is precisely as if the internal
+short cast were present, except for the getlong expansion.
+
+&gt;<i> I have installed splint and I am not impressed by it.  It warns about
+</I>&gt;<i> things that are just plain silly to warn about, like assigning the NULL
+</I>&gt;<i> value to a pointer (why would that be wrong??) or comparing an unsigned
+</I>&gt;<i> char to a small constant integer.  I also find it extremely lacking that
+</I>&gt;<i> it does not parse the system includefiles to pickup types.
+</I>&gt;<i> The author of this tool is of the typical &quot;I wished that C would be
+</I>&gt;<i> Pascal&quot; type, who did not carefully study the basics of the C language. 
+</I>&gt;<i> What you are doing by eradicating warnings is just massaging the source to
+</I>&gt;<i> his likings, not improving the quality in a general sense.
+</I>
+I disagree.  I have found five real bugs with it, four of which I have
+fixed and one of which is still pending (a word vs. longword problem in
+a function return type -- could be a problem on weird architectures).
+
+I expect to find more bugs now that I am down to less than a hundred 
+warnings that are almost all concerned with possible memory leaks and
+allocation problems.
+
+&gt;<i> To come back to the above macros: they are not sacred.  I see some room
+</I>&gt;<i> for improvement.  But they were carefully designed, and they do work.  In
+</I>&gt;<i> the original version.
+</I>&gt;<i> When splint is issuing warnings about them, you could make modifications. 
+</I>&gt;<i> But I object to modifications that destroy the functionality (and thus
+</I>&gt;<i> introduce bugs) just because they make splint happy.
+</I>
+Of course that's a wrong thing to do.
+
+&gt;<i> Before you try your next modification, I would suggest that you write a
+</I>&gt;<i> test program, that does getx calls on a buffer that you fill with some
+</I>&gt;<i> testdata.  Use testvalues that provide you with some info, e.g.:
+</I>&gt;<i> 
+</I>&gt;<i> 0102030405060708
+</I>&gt;<i> FFFEFDFCFBFAF9F8
+</I>&gt;<i> 
+</I>&gt;<i> See if your &quot;improved&quot; macro still returns the same value when accessing
+</I>&gt;<i> this data.  Yours don't, and it shows as problems that you don't notice
+</I>&gt;<i> every time (because values are more often positive than negative).
+</I>
+This test is a good idea.  
+ 
+&gt;<i> In hindsight, it would have been better to have separate macros for signed
+</I>&gt;<i> and unsigned results.  This makes the list longer:
+</I>&gt;<i> 
+</I>&gt;<i> getsb
+</I>&gt;<i> getub
+</I>&gt;<i> getsw
+</I>&gt;<i> getuw
+</I>&gt;<i> getsl
+</I>&gt;<i> getul
+</I>&gt;<i> 
+</I>&gt;<i> but it would allow the removal of some of the casts in the code.  The
+</I>&gt;<i> unsigned variants would also be more suitable to build the getl in terms
+</I>&gt;<i> of getw etc.
+</I>
+I agree, and would go further.  I'm thinking these ought no longer to
+be macros, I think we ought to have a little module specifically
+devoted to these so that
+
+(a) the code for them can be shared across drivers
+(b) the module can have its own unit test as you propose above.
+
+There isn't really a lot of point to them being macros except to inline
+the code, and I don't see a lot of gain in that.  A few dozen more
+function call-return sequences aren't going to hit the performance
+of the drivers enough to matter.
+
+&gt;<i> The macros would have to be carefully coded again, and the entire binary
+</I>&gt;<i> drivers again need to be checked against the manufacturers docs to make
+</I>&gt;<i> sure that the macro used agrees with the type of value in the message
+</I>&gt;<i> (signed or unsigned).
+</I>&gt;<i> The datatypes used to store the result, and the parameters specified for
+</I>&gt;<i> functions, should match as closely as possible with these types.
+</I>&gt;<i> (e.g. when &quot;gps week&quot; is an unsigned, it should not be passed to
+</I>&gt;<i> gpstime_to_unix as an int)
+</I>&gt;<i> 
+</I>&gt;<i> But I am not going to do that in an environment as it exists now.
+</I>
+OK.  What would we have to do to make you willing to do it?
+
+You have demonstrated that you understand the cross-platform issues 
+with sign extension better than I do.  I think you should write the
+unit test for the new data-extraction functions.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002009.html">[Gpsd-dev] Rob Janssen's upset screed
+</A></li>
+	<LI>Next message: <A HREF="002020.html">[Gpsd-dev] Rob Janssen's upset screed
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2013">[ date ]</a>
+              <a href="thread.html#2013">[ thread ]</a>
+              <a href="subject.html#2013">[ subject ]</a>
+              <a href="author.html#2013">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

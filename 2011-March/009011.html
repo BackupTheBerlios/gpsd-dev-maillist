@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] A lightweight synchronization mechanism for shared	memory
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20A%20lightweight%20synchronization%20mechanism%20for%20shared%0A%09memory&In-Reply-To=%3CAANLkTikogJUi-%2BnD9K95hH3akGQu11xCZ3FMLjZb0Ufi%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009010.html">
+   <LINK REL="Next"  HREF="009013.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] A lightweight synchronization mechanism for shared	memory</H1>
+    <B>Richard Allen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20A%20lightweight%20synchronization%20mechanism%20for%20shared%0A%09memory&In-Reply-To=%3CAANLkTikogJUi-%2BnD9K95hH3akGQu11xCZ3FMLjZb0Ufi%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] A lightweight synchronization mechanism for shared	memory">rsaxvc at gmail.com
+       </A><BR>
+    <I>Fri Mar 25 04:11:29 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009010.html">[Gpsd-dev] A lightweight synchronization mechanism for shared memory
+</A></li>
+        <LI>Next message: <A HREF="009013.html">[Gpsd-dev] A lightweight synchronization mechanism for shared	memory
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9011">[ date ]</a>
+              <a href="thread.html#9011">[ thread ]</a>
+              <a href="subject.html#9011">[ subject ]</a>
+              <a href="author.html#9011">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Just a few small questions...
+
+On Mar 24, 2011 9:55 PM, &quot;Eric Raymond&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at snark.thyrsus.com</A>&gt; wrote:
+&gt;<i>
+</I>&gt;<i> Between the ntp-hackers discussion of synchronization and my own growing
+</I>&gt;<i> interest in writing a shared-memory exporter for gpsd, I've had good
+</I>reason
+&gt;<i> to think recently about lightweight synchronization mechanism for shared
+</I>&gt;<i> memory.
+</I>&gt;<i>
+</I>&gt;<i> The case I'm addressing is one reader, one or more writers.
+</I>&gt;<i> The problem is that partial writes and partial reads may be mixed in
+</I>&gt;<i> any order, and the goal is for the reader to be have certainty when
+</I>&gt;<i> it has read the result of a complete write.
+</I>&gt;<i>
+</I>&gt;<i> I think I have invented a mechanism that avoids contention due to
+</I>&gt;<i> blocking semaphores and is guaranteed correct under relatively weak
+</I>&gt;<i> assumptions.  I present it for review and criticism.
+</I>&gt;<i>
+</I>&gt;<i> Let's say we have a given struct payload_t we want to ship safely.  On
+</I>&gt;<i> each update, we actually write a wrapper structure that looks like
+</I>&gt;<i> this:
+</I>&gt;<i>
+</I>&gt;<i> struct wrapper_t
+</I>&gt;<i> {
+</I>&gt;<i>    int startguard;
+</I>&gt;<i>    struct payload_t payload;
+</I>&gt;<i>    int endguard;
+</I>&gt;<i> };
+</I>&gt;<i>
+</I>&gt;<i> The sentinels startguard and endguard are initially zero. Before each
+</I>write,
+&gt;<i> they are incremented.
+</I>
+After each write, are they decremented? Or do you mean first the startguard
+is incremented, then the critical section is updated, and last the endguard
+is incremented?
+
+&gt;<i> The reader's algorithm is simple: memcpy from the shared segment.  If both
+</I>&gt;<i> sentinels are correct, the read is good.
+</I>
+What defines correct? Both being zero? Both being the same?
+
+&gt;<i> I believe all that is required for guaranteed correctness is that the
+</I>&gt;<i> writer updates the storage bytes in the shared-memory segment in an
+</I>&gt;<i> order that is either monotonic-increasing or monotonic-decreasing, and
+</I>&gt;<i> the reader likewise reads bytes in a monotonic order.
+</I>&gt;<i>
+</I>&gt;<i> Part of the reason I think this is an interesting technique is that I
+</I>&gt;<i> believe the following: on essentially all modern processors, memcpy(3)
+</I>&gt;<i> is optimized to a single-instruction bitblt that reads and updates
+</I>&gt;<i> memory in a monotonic order (certainly this is true of naive C
+</I>&gt;<i> implementations of memcpy()). Thus, it should be sufficient for the
+</I>&gt;<i> writer to memcpy() into the struct and the reader to memcpy() out of
+</I>&gt;<i> it.  It doesn't matter whether or not memcpy() is interruptible.
+</I>&gt;<i>
+</I>&gt;<i> I am ignoring cache-coherency issues, which are orthogonal to those this
+</I>&gt;<i> technique addresses.  Yes, read and write may need surrounding memory
+</I>&gt;<i> barriers.
+</I>&gt;<i>
+</I>&gt;<i> That's it.  Please discuss and criticize.
+</I>&gt;<i> --
+</I>&gt;<i>                &lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+</I>&gt;<i>
+</I>&gt;<i> I have never made but one prayer to God, a very short one: &quot;O Lord,
+</I>&gt;<i> make my enemies ridiculous.&quot; And God granted it.
+</I>&gt;<i>        --Voltaire
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110324/f2b5c032/attachment.html">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110324/f2b5c032/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009010.html">[Gpsd-dev] A lightweight synchronization mechanism for shared memory
+</A></li>
+	<LI>Next message: <A HREF="009013.html">[Gpsd-dev] A lightweight synchronization mechanism for shared	memory
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9011">[ date ]</a>
+              <a href="thread.html#9011">[ thread ]</a>
+              <a href="subject.html#9011">[ subject ]</a>
+              <a href="author.html#9011">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

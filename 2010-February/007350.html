@@ -1,0 +1,82 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Incorrect Date (Year) Calculated &lt;2.39&gt;
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Incorrect%20Date%20%28Year%29%20Calculated%20%3C2.39%3E&In-Reply-To=%3Ca2d3b4551002011611k3ff522eaxf9a561042b61bb4b%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007349.html">
+   <LINK REL="Next"  HREF="007351.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Incorrect Date (Year) Calculated &lt;2.39&gt;</H1>
+    <B>Don Weeks</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Incorrect%20Date%20%28Year%29%20Calculated%20%3C2.39%3E&In-Reply-To=%3Ca2d3b4551002011611k3ff522eaxf9a561042b61bb4b%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Incorrect Date (Year) Calculated &lt;2.39&gt;">don.l.weeks.jr at gmail.com
+       </A><BR>
+    <I>Tue Feb  2 01:11:42 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007349.html">[Gpsd-dev] fix compiler warning
+</A></li>
+        <LI>Next message: <A HREF="007351.html">[Gpsd-dev] Incorrect Date (Year) Calculated &lt;2.39&gt;
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7350">[ date ]</a>
+              <a href="thread.html#7350">[ thread ]</a>
+              <a href="subject.html#7350">[ subject ]</a>
+              <a href="author.html#7350">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Can anyone give me a clue where I can look for a problem? Below is the code
+from the NMEA driver. I am returned a RMC and GGA sentence so it has to
+calculate a year, most of the time, this is correct but on occasion, it
+comes up with 2006. Once it latches on to 2006, I have to kill it and
+restart it which is not good when I need this to set the time/date for my
+system. Has this algorithm changed in the 2.90 release? I will be upgrading
+to 2.90 later in the year but for now, I am using 2.39.
+            Don
+
+#define DD(s) ((int)((s)[0]-'0')*10+(int)((s)[1]-'0'))
+
+static void merge_ddmmyy(char *ddmmyy, struct gps_device_t *session)
+/* sentence supplied ddmmyy, but no century part */
+{
+if (session-&gt;driver.nmea.date.tm_year == 0)
+session-&gt;driver.nmea.date.tm_year = (CENTURY_BASE + DD(ddmmyy+4)) - 1900;
+session-&gt;driver.nmea.date.tm_mon = DD(ddmmyy+2)-1;
+session-&gt;driver.nmea.date.tm_mday = DD(ddmmyy);
+}
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100201/9604b54a/attachment.html">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100201/9604b54a/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007349.html">[Gpsd-dev] fix compiler warning
+</A></li>
+	<LI>Next message: <A HREF="007351.html">[Gpsd-dev] Incorrect Date (Year) Calculated &lt;2.39&gt;
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7350">[ date ]</a>
+              <a href="thread.html#7350">[ thread ]</a>
+              <a href="subject.html#7350">[ subject ]</a>
+              <a href="author.html#7350">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

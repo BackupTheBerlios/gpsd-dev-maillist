@@ -1,0 +1,91 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] How to detect Garmin eTrex?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20How%20to%20detect%20Garmin%20eTrex%3F&In-Reply-To=%3C306LFBoD23164S14.1180793093%40cmsweb14.cms.usa.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005694.html">
+   <LINK REL="Next"  HREF="005693.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] How to detect Garmin eTrex?</H1>
+    <B>Petr Slansky</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20How%20to%20detect%20Garmin%20eTrex%3F&In-Reply-To=%3C306LFBoD23164S14.1180793093%40cmsweb14.cms.usa.net%3E"
+       TITLE="[Gpsd-dev] How to detect Garmin eTrex?">slansky at usa.net
+       </A><BR>
+    <I>Sat Jun  2 16:04:53 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005694.html">[Gpsd-dev] Garmin endian portability
+</A></li>
+        <LI>Next message: <A HREF="005693.html">[Gpsd-dev] How to detect Garmin eTrex?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5691">[ date ]</a>
+              <a href="thread.html#5691">[ thread ]</a>
+              <a href="subject.html#5691">[ subject ]</a>
+              <a href="author.html#5691">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gentlemen,
+
+when you connect Germin eTrex GPS configured with Garmin binary serial
+protocol, it is silent. It sends nothing to your PC. But it is easy to detect
+eTrex GPS. Just send a packet 10FE00021003 and eTrex responses with packets
+0xFF (identity) and 0xFD (capabilities), these packets are already understand
+by garmin.c
+
+Current garmin.c does not probe for a GPS, it probably expects that GPS sends
+data again and again. I tried to add probe call to garmin.c serial protocol
+structure. It works, gpsd sends packet 10FE00021003, eTrex response with two
+packets (second is sent after ACK, when garmin packet is not recognised by
+gpsd, no ACK is sent by gpsd...). Gpsd in many cases miss received data,
+detection is not reliable.
+
+Do you know how to force gpsd to expect garmin data packet during detect call?
+I think it can improve detection. My current solution just sends query packet
+during probe call and returns false, I expect that packet that is received
+will be captured by gpsd parser and recognised as garmin serial. It works but
+it is not too reliable, detection success rate is between 10-50%, I think it
+depends how fast first response from GPS comes.
+
+Thanks for your help,
+Petr
+
+---------------------------------
+  Petr Slansky, <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">slansky at usa.net</A>
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005694.html">[Gpsd-dev] Garmin endian portability
+</A></li>
+	<LI>Next message: <A HREF="005693.html">[Gpsd-dev] How to detect Garmin eTrex?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5691">[ date ]</a>
+              <a href="thread.html#5691">[ thread ]</a>
+              <a href="subject.html#5691">[ subject ]</a>
+              <a href="author.html#5691">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

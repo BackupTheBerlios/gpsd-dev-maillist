@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] State transition issues
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20State%20transition%20issues&In-Reply-To=%3CDDE5741BCE3D8047B49976319557A6A60F535E%40nnexchange.hq.netilla.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000334.html">
+   <LINK REL="Next"  HREF="000342.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] State transition issues</H1>
+    <B>Devin Heitmueller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20State%20transition%20issues&In-Reply-To=%3CDDE5741BCE3D8047B49976319557A6A60F535E%40nnexchange.hq.netilla.com%3E"
+       TITLE="[Gpsd-dev] State transition issues">dheitmueller at netilla.com
+       </A><BR>
+    <I>Fri Nov 26 21:41:47 CET 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000334.html">[Gpsd-dev] Solving the no-GPGSA problem
+</A></li>
+        <LI>Next message: <A HREF="000342.html">[Gpsd-dev] State transition issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#341">[ date ]</a>
+              <a href="thread.html#341">[ thread ]</a>
+              <a href="subject.html#341">[ subject ]</a>
+              <a href="author.html#341">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hello,
+
+I am working with gpsd under Linux, and am seeing some interesting conditions that occur when unplugging my Garmin GPS from the serial port.  
+
+When unplugging the device, gpsd is sending the following responses back to clients:
+
+GPSD,X=1
+GPSD,X=0
+GPSD,X=1
+GPSD,X=0
+etc....
+
+It would appear that because the gpsd_activate() succeeds in opening /dev/ttyS0, then gpsd thinks the device is active.  Then the call to gpsd_poll() fails because there is no information to read on the serial port.
+
+This behavior appears to confuse even the X11 gps client that comes with gpsd, as it never sees the device as &quot;offline&quot; if it was receiving valid data and then the device is disconnected.  
+
+Digging into the source shows that the issue appears to lie in the way the session-&gt;gNMEAdata.online_stamp is managed.  This time is used to indicate state transitions between online and offline.  However it gets updated by gpsd_activate even if the device is not really connected to the serial port.
+
+Is there a smarter way to determine if the device is connected to the serial port other than whether the open() call succeeds?  Or perhaps we don't mark the device as online in gpsd_activate() and instead wait until we get some valid data back from gpsd_poll()?  Does NMEA require that the device pull a signal low when connected (DTR) that we can key off of?
+
+On a slightly different topic, has anyone seen conditions where the X11 gps client drives the CPU at 99% utilization?  It looks like it is some related edge condition, but I haven't put together an exact sequence to reproduce yet.
+
+Thanks,
+
+Devin Heitmueller
+Senior Software Engineer
+Netilla Networks Inc.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000334.html">[Gpsd-dev] Solving the no-GPGSA problem
+</A></li>
+	<LI>Next message: <A HREF="000342.html">[Gpsd-dev] State transition issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#341">[ date ]</a>
+              <a href="thread.html#341">[ thread ]</a>
+              <a href="subject.html#341">[ subject ]</a>
+              <a href="author.html#341">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] bu353 1, sirfmon 0
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20bu353%201%2C%20sirfmon%200&In-Reply-To=%3C8764utld46.fsf%40bonnet.wsrcc.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002685.html">
+   <LINK REL="Next"  HREF="002686.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] bu353 1, sirfmon 0</H1>
+    <B>Wolfgang S. Rupprecht</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20bu353%201%2C%20sirfmon%200&In-Reply-To=%3C8764utld46.fsf%40bonnet.wsrcc.com%3E"
+       TITLE="[Gpsd-dev] bu353 1, sirfmon 0">wolfgang+gnus20050729 at dailyplanet.dontspam.wsrcc.com
+       </A><BR>
+    <I>Fri Jul 29 19:46:01 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002685.html">[Gpsd-dev] Yes, R=2 mode *was* broken...
+</A></li>
+        <LI>Next message: <A HREF="002686.html">[Gpsd-dev] bu353 1, sirfmon 0
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2684">[ date ]</a>
+              <a href="thread.html#2684">[ thread ]</a>
+              <a href="subject.html#2684">[ subject ]</a>
+              <a href="author.html#2684">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Looks like my bu353 was ok all along, although I was beginning to have
+my doubts when tip(1) also couldn't get it to switch to binary mode.
+
+The problem was that sirfmon in direct mode (&quot;sirfmon /dev/cuaU0&quot;)
+tried to write to a closed fd.  Unfortunately the code also forgot to
+print any perror() msg, so the error was silently discarded.
+
+This is how I hacked it, but I'm not sure what the distinction is
+between the controlfd and devicefd when talking to a directly
+connected gps.  Maybe the tty open routine needs to duplicate the fd
+to the other variable?
+
+-wolfgang
+
+Included are also two things gcc complained about when I started
+turning on -Wxxx flags with wild abandon.
+
+Index: sirfmon.c
+===================================================================
+--- sirfmon.c	(revision 3046)
++++ sirfmon.c	(working copy)
+@@ -147,6 +147,7 @@
+     if (status == strlen(buf)) {
+ 	return (int)status;
+     } else {
++	perror(&quot;SiRF write&quot;);
+ 	return -1;
+     }
+ }
+@@ -675,6 +676,10 @@
+     ttyset.c_iflag = ttyset.c_oflag = ttyset.c_lflag = (tcflag_t) 0;
+     ttyset.c_oflag = (ONLCR);
+ 
++    /* XXX: next 2 lines are a hack. -wsr */
++    if (controlfd &lt; 0)
++	controlfd = devicefd;
++
+     for (trystopbits = 1; trystopbits &lt;= 2; trystopbits++) {
+ 	*pstopbits = trystopbits;
+ 	for (ip = rates; ip &lt; rates + sizeof(rates)/sizeof(rates[0]); ip++)
+Index: gpsflash.c
+===================================================================
+--- gpsflash.c	(revision 3046)
++++ gpsflash.c	(working copy)
+@@ -266,7 +266,7 @@
+ 	struct stat sb;
+ 	struct flashloader_t *gpstype = &amp;sirf_type;
+ 	char *fname = NULL;
+-	char *lname = (char *)sirf_type.flashloader;
++	const char *lname = (const char *)sirf_type.flashloader;
+ 	char *port = NULL;
+ 	char *warning;
+ 	struct termios term;
+Index: dgpsip.c
+===================================================================
+--- dgpsip.c	(revision 3046)
++++ dgpsip.c	(working copy)
+@@ -105,7 +105,7 @@
+ 
+ static int srvcmp(const void *s, const void *t)
+ {
+-    return (int)(((struct dgps_server_t *)s)-&gt;dist - ((struct dgps_server_t *)t)-&gt;dist);
++    return (int)(((const struct dgps_server_t *)s)-&gt;dist - ((const struct dgps_server_t *)t)-&gt;dist); /* fixes: warning: cast discards qualifiers from pointer target type */
+ }
+ 
+ void dgpsip_autoconnect(struct gps_context_t *context,
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002685.html">[Gpsd-dev] Yes, R=2 mode *was* broken...
+</A></li>
+	<LI>Next message: <A HREF="002686.html">[Gpsd-dev] bu353 1, sirfmon 0
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2684">[ date ]</a>
+              <a href="thread.html#2684">[ thread ]</a>
+              <a href="subject.html#2684">[ subject ]</a>
+              <a href="author.html#2684">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

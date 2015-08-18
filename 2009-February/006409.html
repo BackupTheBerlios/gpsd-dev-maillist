@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] IPv6 Support patch
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20IPv6%20Support%20patch&In-Reply-To=%3Crmiocwy55yw.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006408.html">
+   <LINK REL="Next"  HREF="006410.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] IPv6 Support patch</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20IPv6%20Support%20patch&In-Reply-To=%3Crmiocwy55yw.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] IPv6 Support patch">gdt at ir.bbn.com
+       </A><BR>
+    <I>Fri Feb 20 01:04:23 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006408.html">[Gpsd-dev] IPv6 Support patch
+</A></li>
+        <LI>Next message: <A HREF="006410.html">[Gpsd-dev] IPv6 Support patch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6409">[ date ]</a>
+              <a href="thread.html#6409">[ thread ]</a>
+              <a href="subject.html#6409">[ subject ]</a>
+              <a href="author.html#6409">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+  It allows the gpsd daemon to listen on a v6 socket, when started with the
+  &quot;-6&quot; option.
+  It also updates netlib.c, libgps.c, gpspipe.c, gpsctl.c to allow gpspipe and
+  gpsctl to connect to the gpsd daemon with IPv6.
+
+
+Thanks for hacking on v6 support.  I have long thought that gpsd should
+support v6.  I read your patch and have quite a few comments - sorry if
+this comes across as harsh - am just trying to get us where I think we
+need to be as quickly as possible.
+
+First, I think we need to talk about what the desired behavior is.  I am
+used to the KAME/BSD approach to v6, which is that programs that used to
+listen on a v4 socket should instead listen on both v6 and v4 and be
+able to cope with incoming connections on either.  For example, one of
+my machines runs DNS, and fstat shows:
+
+named    named       4288   20* internet6 stream tcp c32e6ab8 *:53
+named    named       4288  128* internet6 dgram udp c2b966b4 *:53
+
+This is why I haven't dug in to fixing gpsd for v6: it needs a
+structural change (albeit a minor one) to have multiple listening
+sockets.  Listening on v6 and not v4 would be awkward and has no gradual
+transition story.
+
+I think listening on v6 should be the default for systems that have v6
+support (via .h files, separate from 'a global v6 address is
+configured').  It's ok to have an option for 'listen only on v4' and
+'listen only on v6' - but I'm not sure it's really needed.
+
+When given a name (with 'localhost' being the implicit name), cgps
+etc. should use getaddrinfo (if it exists), and then use the first
+AF/address returned, which will typically be v6.
+For example:
+
+  foobar gdt &gt; telnet localhost smtp
+  Trying ::1...
+  Connected to localhost.
+  Escape character is '^]'.
+  220 foobar.ir.bbn.com ESMTP Postfix
+
+goes over v6.
+
+I would say that if netlib_ takes names, then it should perhaps just use
+getaddrinfo, and perhaps should take an AF_ variable to force only a
+specific family so -4 and -6 command line args can be given in case of
+trouble (as ntpq and ssh do).  Sockets already defines AF_INET and
+AF_INET6, so IMHO best to use those rather than define new constants.
+
+
+I think gpsd runs on some systems which are too lame to have
+getaddrinfo, so autoconf support is needed.
+getaddrinfo is in POSIX.1 2004:
+
+  <A HREF="http://www.opengroup.org/onlinepubs/009695399/functions/getaddrinfo.html">http://www.opengroup.org/onlinepubs/009695399/functions/getaddrinfo.html</A>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 193 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090219/426cdf72/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090219/426cdf72/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006408.html">[Gpsd-dev] IPv6 Support patch
+</A></li>
+	<LI>Next message: <A HREF="006410.html">[Gpsd-dev] IPv6 Support patch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6409">[ date ]</a>
+              <a href="thread.html#6409">[ thread ]</a>
+              <a href="subject.html#6409">[ subject ]</a>
+              <a href="author.html#6409">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

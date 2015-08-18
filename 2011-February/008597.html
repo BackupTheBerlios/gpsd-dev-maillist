@@ -1,0 +1,221 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-837-gde1b449
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20Project%20gpsd%20at%20BerliOS%20branch%2C%0A%20master%2C%20updated.%20release-2.95-837-gde1b449&In-Reply-To=%3CAANLkTimLoyRdDZVPdPHz5RzQLNcPu70O_drGoMgOcnzf%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008596.html">
+   <LINK REL="Next"  HREF="008598.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-837-gde1b449</H1>
+    <B>Jon Schlueter</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20Project%20gpsd%20at%20BerliOS%20branch%2C%0A%20master%2C%20updated.%20release-2.95-837-gde1b449&In-Reply-To=%3CAANLkTimLoyRdDZVPdPHz5RzQLNcPu70O_drGoMgOcnzf%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-837-gde1b449">jon.schlueter at gmail.com
+       </A><BR>
+    <I>Thu Feb 24 11:28:02 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008596.html">[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-837-gde1b449
+</A></li>
+        <LI>Next message: <A HREF="008598.html">[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-837-gde1b449
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8597">[ date ]</a>
+              <a href="thread.html#8597">[ thread ]</a>
+              <a href="subject.html#8597">[ subject ]</a>
+              <a href="author.html#8597">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Andre,
+
+Thanks for the patch testing right now.  These patches last night was
+to get detection of Garmin USB gps
+ working again.  NTRIP and Garmin have fought before for detection.
+This solution has a good chance of
+doing the right thing.  The removed code sends the non nema probes so
+that those GPS Devices can be
+detected.  If it doesn't run a number of GPS Devices won't work, but
+if it runs on an ntrip you have indicated
+that it breaks things?
+
+Just finished testing that patch and it appears to correctly detect my
+Garmin USB GPS !!
+
+Jon
+
+On Thu, Feb 24, 2011 at 4:54 AM, Andre Naujoks &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">nautsch2 at googlemail.com</A>&gt; wrote:
+&gt;<i> Heres a patch that fixes this.
+</I>&gt;<i>
+</I>&gt;<i> Also on: <A HREF="git://github.com/nautsch/nautsch-branch.git">git://github.com/nautsch/nautsch-branch.git</A>
+</I>&gt;<i>
+</I>&gt;<i> This shows me that we really do need a tool to make sure
+</I>&gt;<i> ntrip connections remain working.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> diff --git a/libgpsd_core.c b/libgpsd_core.c
+</I>&gt;<i> index fd8e0e2..790270c 100644
+</I>&gt;<i> --- a/libgpsd_core.c
+</I>&gt;<i> +++ b/libgpsd_core.c
+</I>&gt;<i> @@ -738,22 +738,24 @@ int gpsd_activate(struct gps_device_t *session)
+</I>&gt;<i> &#160; &#160; &#160; &#160;return -1;
+</I>&gt;<i> &#160; &#160; else {
+</I>&gt;<i> &#160;#ifdef NON_NMEA_ENABLE
+</I>&gt;<i> - &#160; &#160; &#160; const struct gps_type_t **dp;
+</I>&gt;<i> -
+</I>&gt;<i> - &#160; &#160; &#160; /*@ -mustfreeonly @*/
+</I>&gt;<i> - &#160; &#160; &#160; for (dp = gpsd_drivers; *dp; dp++) {
+</I>&gt;<i> - &#160; &#160; &#160; &#160; &#160; (void)tcflush(session-&gt;gpsdata.gps_fd, TCIOFLUSH); &#160;/* toss stale data */
+</I>&gt;<i> - &#160; &#160; &#160; &#160; &#160; if ((*dp)-&gt;probe_detect != NULL
+</I>&gt;<i> - &#160; &#160; &#160; &#160; &#160; &#160; &#160; &amp;&amp; (*dp)-&gt;probe_detect(session) != 0) {
+</I>&gt;<i> - &#160; &#160; &#160; &#160; &#160; &#160; &#160; gpsd_report(LOG_PROG, &quot;probe found %s driver...\n&quot;,
+</I>&gt;<i> - &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; (*dp)-&gt;type_name);
+</I>&gt;<i> - &#160; &#160; &#160; &#160; &#160; &#160; &#160; session-&gt;device_type = *dp;
+</I>&gt;<i> - &#160; &#160; &#160; &#160; &#160; &#160; &#160; gpsd_assert_sync(session);
+</I>&gt;<i> - &#160; &#160; &#160; &#160; &#160; &#160; &#160; goto foundit;
+</I>&gt;<i> - &#160; &#160; &#160; &#160; &#160; }
+</I>&gt;<i> - &#160; &#160; &#160; }
+</I>&gt;<i> - &#160; &#160; &#160; /*@ +mustfreeonly @*/
+</I>&gt;<i> - &#160; &#160; &#160; gpsd_report(LOG_PROG, &quot;no probe matched...\n&quot;);
+</I>&gt;<i> + &#160; &#160; &#160; if (session-&gt;context-&gt;netgnss_service != netgnss_ntrip) &#160;{
+</I>&gt;<i> + &#160; &#160; &#160; &#160; &#160; const struct gps_type_t **dp;
+</I>&gt;<i> +
+</I>&gt;<i> + &#160; &#160; &#160; &#160; &#160; /*@ -mustfreeonly @*/
+</I>&gt;<i> + &#160; &#160; &#160; &#160; &#160; for (dp = gpsd_drivers; *dp; dp++) {
+</I>&gt;<i> + &#160; &#160; &#160; &#160; &#160; &#160; &#160; (void)tcflush(session-&gt;gpsdata.gps_fd, TCIOFLUSH); &#160;/* toss stale data */
+</I>&gt;<i> + &#160; &#160; &#160; &#160; &#160; &#160; &#160; if ((*dp)-&gt;probe_detect != NULL
+</I>&gt;<i> + &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &amp;&amp; (*dp)-&gt;probe_detect(session) != 0) {
+</I>&gt;<i> + &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; gpsd_report(LOG_PROG, &quot;probe found %s driver...\n&quot;,
+</I>&gt;<i> + &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; (*dp)-&gt;type_name);
+</I>&gt;<i> + &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; session-&gt;device_type = *dp;
+</I>&gt;<i> + &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; gpsd_assert_sync(session);
+</I>&gt;<i> + &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; goto foundit;
+</I>&gt;<i> + &#160; &#160; &#160; &#160; &#160; &#160; &#160; }
+</I>&gt;<i> + &#160; &#160; &#160; &#160; &#160; }
+</I>&gt;<i> + &#160; &#160; &#160; &#160; &#160; /*@ +mustfreeonly @*/
+</I>&gt;<i> + &#160; &#160; &#160; &#160; &#160; gpsd_report(LOG_PROG, &quot;no probe matched...\n&quot;);
+</I>&gt;<i> + &#160; &#160; &#160; }
+</I>&gt;<i> &#160; &#160; &#160; foundit:
+</I>&gt;<i> &#160;#endif /* NON_NMEA_ENABLE */
+</I>&gt;<i> &#160; &#160; &#160; &#160;gpsd_clear(session);
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Am 24.02.2011 08:41, schrieb Andre Naujoks:
+</I>&gt;&gt;<i> Hi.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> That will break the ntrip stuff.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> The removal was for a reason, too.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> At least put a guard around it, so the initializing is not done, if an
+</I>&gt;&gt;<i> ntrip connection is in progress.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Regards
+</I>&gt;&gt;<i> &#160; Andre Naujoks
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Am 24.02.2011 05:31, schrieb garyemiller at BerliOS:
+</I>&gt;&gt;&gt;<i> This is an automated email from the git hooks/post-receive script. It was
+</I>&gt;&gt;&gt;<i> generated because a ref change was pushed to the repository containing
+</I>&gt;&gt;&gt;<i> the project &quot;Project gpsd at BerliOS&quot;.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> The branch, master has been updated
+</I>&gt;&gt;&gt;<i> &#160; &#160; &#160; &#160;via &#160;de1b44981944915914c7f4e1da84865af03adb3d (commit)
+</I>&gt;&gt;&gt;<i> &#160; &#160; &#160; from &#160;aa9dd2e0c5bb4e809a9b51f3e1c821a4d939c859 (commit)
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Those revisions listed above that are new to this repository have
+</I>&gt;&gt;&gt;<i> not appeared on any other notification email; so we list those
+</I>&gt;&gt;&gt;<i> revisions in full, below.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> - Log -----------------------------------------------------------------
+</I>&gt;&gt;&gt;<i> commit de1b44981944915914c7f4e1da84865af03adb3d
+</I>&gt;&gt;&gt;<i> Author: Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;
+</I>&gt;&gt;&gt;<i> Date: &#160; Wed Feb 23 20:29:17 2011 -0800
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> &#160; &#160; Revert the removal if GPS driver initializers.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> &#160; &#160; The bad change was from &quot;NTRIP fixes from Andre Naujoks.&quot;
+</I>&gt;&gt;&gt;<i> &#160; &#160; Commit: 1a6ed62be5cda21fbf16d5d0f2b4d5a45660c4d5
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> &#160; &#160; Those initializers are in there for a reason! &#160;Usually hard to test
+</I>&gt;&gt;&gt;<i> &#160; &#160; that you need them without powering down the test GPS. &#160;Reversion
+</I>&gt;&gt;&gt;<i> &#160; &#160; testing will NOT validate the initializers!
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> diff --git a/libgpsd_core.c b/libgpsd_core.c
+</I>&gt;&gt;&gt;<i> index 67b4d85..fd8e0e2 100644
+</I>&gt;&gt;&gt;<i> --- a/libgpsd_core.c
+</I>&gt;&gt;&gt;<i> +++ b/libgpsd_core.c
+</I>&gt;&gt;&gt;<i> @@ -737,6 +737,25 @@ int gpsd_activate(struct gps_device_t *session)
+</I>&gt;&gt;&gt;<i> &#160; &#160; &#160;if (session-&gt;gpsdata.gps_fd &lt; 0)
+</I>&gt;&gt;&gt;<i> &#160; &#160; &#160;return -1;
+</I>&gt;&gt;&gt;<i> &#160; &#160; &#160;else {
+</I>&gt;&gt;&gt;<i> +#ifdef NON_NMEA_ENABLE
+</I>&gt;&gt;&gt;<i> + &#160; &#160; &#160; const struct gps_type_t **dp;
+</I>&gt;&gt;&gt;<i> +
+</I>&gt;&gt;&gt;<i> + &#160; &#160; &#160; /*@ -mustfreeonly @*/
+</I>&gt;&gt;&gt;<i> + &#160; &#160; &#160; for (dp = gpsd_drivers; *dp; dp++) {
+</I>&gt;&gt;&gt;<i> + &#160; &#160; &#160; &#160; &#160; (void)tcflush(session-&gt;gpsdata.gps_fd, TCIOFLUSH); &#160;/* toss stale data */
+</I>&gt;&gt;&gt;<i> + &#160; &#160; &#160; &#160; &#160; if ((*dp)-&gt;probe_detect != NULL
+</I>&gt;&gt;&gt;<i> + &#160; &#160; &#160; &#160; &#160; &#160; &#160; &amp;&amp; (*dp)-&gt;probe_detect(session) != 0) {
+</I>&gt;&gt;&gt;<i> + &#160; &#160; &#160; &#160; &#160; &#160; &#160; gpsd_report(LOG_PROG, &quot;probe found %s driver...\n&quot;,
+</I>&gt;&gt;&gt;<i> + &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; (*dp)-&gt;type_name);
+</I>&gt;&gt;&gt;<i> + &#160; &#160; &#160; &#160; &#160; &#160; &#160; session-&gt;device_type = *dp;
+</I>&gt;&gt;&gt;<i> + &#160; &#160; &#160; &#160; &#160; &#160; &#160; gpsd_assert_sync(session);
+</I>&gt;&gt;&gt;<i> + &#160; &#160; &#160; &#160; &#160; &#160; &#160; goto foundit;
+</I>&gt;&gt;&gt;<i> + &#160; &#160; &#160; &#160; &#160; }
+</I>&gt;&gt;&gt;<i> + &#160; &#160; &#160; }
+</I>&gt;&gt;&gt;<i> + &#160; &#160; &#160; /*@ +mustfreeonly @*/
+</I>&gt;&gt;&gt;<i> + &#160; &#160; &#160; gpsd_report(LOG_PROG, &quot;no probe matched...\n&quot;);
+</I>&gt;&gt;&gt;<i> + &#160; &#160; &#160;foundit:
+</I>&gt;&gt;&gt;<i> +#endif /* NON_NMEA_ENABLE */
+</I>&gt;&gt;&gt;<i> &#160; &#160; &#160;gpsd_clear(session);
+</I>&gt;&gt;&gt;<i> &#160; &#160; &#160;gpsd_report(LOG_INF,
+</I>&gt;&gt;&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;&quot;gpsd_activate(): activated GPS (fd %d)\n&quot;,
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> -----------------------------------------------------------------------
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Summary of changes:
+</I>&gt;&gt;&gt;<i> &#160;libgpsd_core.c | &#160; 19 +++++++++++++++++++
+</I>&gt;&gt;&gt;<i> &#160;1 files changed, 19 insertions(+), 0 deletions(-)
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> hooks/post-receive
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008596.html">[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-837-gde1b449
+</A></li>
+	<LI>Next message: <A HREF="008598.html">[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-837-gde1b449
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8597">[ date ]</a>
+              <a href="thread.html#8597">[ thread ]</a>
+              <a href="subject.html#8597">[ subject ]</a>
+              <a href="author.html#8597">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

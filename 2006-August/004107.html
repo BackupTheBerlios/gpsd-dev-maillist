@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Reducing memory requirements
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Reducing%20memory%20requirements&In-Reply-To=%3C20060816171911.GA3691%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004105.html">
+   <LINK REL="Next"  HREF="004108.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Reducing memory requirements</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Reducing%20memory%20requirements&In-Reply-To=%3C20060816171911.GA3691%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Reducing memory requirements">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Aug 16 19:19:11 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004105.html">[Gpsd-dev] Reducing memory requirements
+</A></li>
+        <LI>Next message: <A HREF="004108.html">[Gpsd-dev] Reducing memory requirements
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4107">[ date ]</a>
+              <a href="thread.html#4107">[ thread ]</a>
+              <a href="subject.html#4107">[ subject ]</a>
+              <a href="author.html#4107">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Bj&#248;rn Mork &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">bjorn at mork.no</A>&gt;:
+&gt;<i> I can see why you'd want to support a large number of subscribers and
+</I>&gt;<i> indexing them by their fd, but I really cannot see the argument for a
+</I>&gt;<i> FD_SETSIZE sized list of GPS devices.  I would assume (yeah, I know...) 
+</I>&gt;<i> that most people will do pretty fine with only one device.  
+</I>
+It was a philosophical choice -- no arbitrary limits in the program.
+
+&gt;<i> But the gps_device_t structure is 14588 bytes, making the &quot;channels&quot;
+</I>&gt;<i> array a whopping 14938112 bytes! No wonder I get ENOMEM...
+</I>
+Ouch.  I never did that calculation.  And, you know, I have to agree
+that wasting 14 megabytes of core is a bit much just to remain
+philosophically pure.
+
+You write:
+
+&gt;<i> I guess there is a reason for the 14588 bytes each GPS device will
+</I>&gt;<i> occupy.  But is there really any reason to support more than, say, 
+</I>&gt;<i> 4 devices by default? Could the size of the &quot;channels&quot; be reduced to
+</I>&gt;<i> something more acceptable?  At least the MAXDEVICES should be a
+</I>&gt;<i> compile-time option, making it adjustable without patching.
+</I>
+It already is a compile-time option.  What you're actually arguing
+for is reducing the default.  
+
+So let's think about that default.  The reference installation I
+design for is a laptop user.  We can ask: what's a reasonable maximum
+for the number of GPSes a laptop can physically hook up?
+
+My Thinkpad X40 has two USB ports, which I think is typical these
+days.  Let's say there's another GPS hanging off the serial port on my
+extender, and a Bluetooth device as well.  That's 4.  A nice round
+number in binary, and by coincidence the one you suggested.
+
+You win.  I'll go change the default.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004105.html">[Gpsd-dev] Reducing memory requirements
+</A></li>
+	<LI>Next message: <A HREF="004108.html">[Gpsd-dev] Reducing memory requirements
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4107">[ date ]</a>
+              <a href="thread.html#4107">[ thread ]</a>
+              <a href="subject.html#4107">[ subject ]</a>
+              <a href="author.html#4107">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

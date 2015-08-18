@@ -1,0 +1,200 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Failing Regression test
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Failing%20Regression%20test&In-Reply-To=%3Ck2mbd1f1cc91004062129pc47b72by663fefc046a439a9%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007600.html">
+   <LINK REL="Next"  HREF="007603.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Failing Regression test</H1>
+    <B>Jon Schlueter</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Failing%20Regression%20test&In-Reply-To=%3Ck2mbd1f1cc91004062129pc47b72by663fefc046a439a9%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Failing Regression test">jon.schlueter at gmail.com
+       </A><BR>
+    <I>Wed Apr  7 06:29:29 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007600.html">[Gpsd-dev] Failing Regression test
+</A></li>
+        <LI>Next message: <A HREF="007603.html">[Gpsd-dev] Failing Regression test
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7602">[ date ]</a>
+              <a href="thread.html#7602">[ thread ]</a>
+              <a href="subject.html#7602">[ subject ]</a>
+              <a href="author.html#7602">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>found a tip after digging a bit more
+
+I had to patch up gps/fake.py to run my local copy of gpsd  patch below...
+
+./gpsfake -s 38400 -1 -p -D 5  test/daemon/ac12.log
+
+section of interest.... notice the entry with &quot;probe found Garmin USB
+binary driver...&quot;
+that might be true on this system but this gpsd is not talking to that device.
+... now to figure out how that probe should actually check to see if
+it is a Garmin USB binary driver...
+... or not use active probe if pipe is readonly?
+
+
+gpsd: opening read-only GPS data source at '/dev/pts/2'
+gpsd: speed 38400, 8N1
+gpsd: Set garmin_gps driver mode = 0
+gpsd: PrintUSBPacket()
+gpsd: Private, Set Mode: 1
+gpsd: SendPacket(), wrote 0 bytes
+gpsd: probe found Garmin USB binary driver...
+gpsd: NTPD ntpd_link_activate: 0
+gpsd: gpsd_activate(): opened GPS (fd 7)
+gpsd: Get Garmin Product Data
+gpsd: SendPacket(), writing 6 bytes: 10fe00021003
+gpsd: PrintSERPacket(, 0xfe, 00, )
+gpsd: Appl, Product Data req
+gpsd: PrintSERPacket(, 0xfe, 00, ) = 00
+gpsd: SendPacket(), wrote 0 bytes
+gpsd: Set Garmin to send reports every 1 second
+gpsd: SendPacket(), writing 8 bytes: 100a023100c31003
+gpsd: PrintSERPacket(, 0xa, 0x2, )
+gpsd: Appl, Command Data: Start Xmit PVT data
+gpsd: PrintSERPacket(, 0xa, 0x2, ) = 00
+gpsd: SendPacket(), wrote 0 bytes
+gpsd: =&gt; client(0):
+{&quot;class&quot;:&quot;DEVICES&quot;,&quot;devices&quot;:[{&quot;class&quot;:&quot;DEVICE&quot;,&quot;path&quot;:&quot;/dev/pts/2&quot;,&quot;activated&quot;:1270613992.77,&quot;driver&quot;:&quot;Garmin
+USB binary&quot;,&quot;native&quot;:0,&quot;bps&quot;:38400,&quot;parity&quot;:&quot;N&quot;,&quot;stopbits&quot;:1,&quot;cycle&quot;:1.00}]}\x0d\x0a{&quot;class&quot;:&quot;WATCH&quot;,&quot;enable&quot;:true,&quot;json&quot;:true,&quot;nmea&quot;:true,&quot;raw&quot;:0,&quot;scaled&quot;:false,&quot;timing&quot;:false}
+gpsd: SendPacket(), writing 6 bytes: 101500eb1003
+gpsd: PrintSERPacket(, 0x15, 00, )
+gpsd: NAK
+gpsd: PrintSERPacket(, 0x15, 00, ) = 00
+gpsd: SendPacket(), wrote 0 bytes
+gpsd: =&gt; client(0):
+$GPGGA,193221.00,2037.72792,N,08704.08478,W,1,04,1.7,-30.40,M,-13.9,M,,*7D
+{&quot;class&quot;:&quot;VERSION&quot;,&quot;release&quot;:&quot;2.93dev&quot;,&quot;rev&quot;:&quot;2010-04-06T22:44:33&quot;,&quot;proto_major&quot;:3,&quot;proto_minor&quot;:2}
+{&quot;class&quot;:&quot;DEVICES&quot;,&quot;devices&quot;:[{&quot;class&quot;:&quot;DEVICE&quot;,&quot;path&quot;:&quot;/dev/pts/2&quot;,&quot;activated&quot;:1270613992.77,&quot;driver&quot;:&quot;Garmin
+USB binary&quot;,&quot;native&quot;:0,&quot;bps&quot;:38400,&quot;parity&quot;:&quot;N&quot;,&quot;stopbits&quot;:1,&quot;cycle&quot;:1.00}]}
+{&quot;class&quot;:&quot;WATCH&quot;,&quot;enable&quot;:true,&quot;json&quot;:true,&quot;nmea&quot;:true,&quot;raw&quot;:0,&quot;scaled&quot;:false,&quot;timing&quot;:false}
+$GPGGA,193221.00,2037.72792,N,08704.08478,W,1,04,1.7,-30.40,M,-13.9,M,,*7D
+gpsd: SendPacket(), writing 6 bytes: 101500eb1003
+gpsd: PrintSERPacket(, 0x15, 00, )
+gpsd: NAK
+
+
+0001-Patchup-gps-fake.py-to-run-local-copy-of-gpsd.patch
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jonschl at nog</A>:~/projects/gpsd-git$ cat
+0001-Patchup-gps-fake.py-to-run-local-copy-of-gpsd.patch
+&gt;<i>From 96799abc4b56a71cebf01e12a7f865ccd303c9fc Mon Sep 17 00:00:00 2001
+</I>From: Jon Schlueter &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jon.schlueter at gmail.com</A>&gt;
+Date: Wed, 7 Apr 2010 00:24:18 -0400
+Subject: [PATCH] Patchup gps/fake.py to run local copy of gpsd
+
+---
+ gps/fake.py |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/gps/fake.py b/gps/fake.py
+index e6446ba..06a8f6b 100644
+--- a/gps/fake.py
++++ b/gps/fake.py
+@@ -262,6 +262,7 @@ class DaemonInstance:
+         self.spawncmd = None
+         if not '/usr/sbin' in os.environ['PATH']:
+             os.environ['PATH']=os.environ['PATH'] + &quot;:/usr/sbin&quot;
++       os.environ['PATH']=&quot;.:&quot; + os.environ['PATH']
+         for path in os.environ['PATH'].split(':'):
+             _spawncmd = &quot;%s/gpsd&quot; % path
+             if os.path.isfile(_spawncmd) and os.access(_spawncmd, os.X_OK):
+--
+1.5.6.5
+
+
+
+
+On Tue, Apr 6, 2010 at 9:27 PM, Jon Schlueter &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jon.schlueter at gmail.com</A>&gt; wrote:
+&gt;<i> I have a box which won't pass the regression tests but I don't know
+</I>&gt;<i> how to get more information.
+</I>&gt;<i>
+</I>&gt;<i> it is failing all of the driver regression tests. &#160;Any suggestions for
+</I>&gt;<i> getting more details on what failed? or how?
+</I>&gt;<i>
+</I>&gt;<i> Jon
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> excerpt:
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> ./regress-driver ./test/daemon/*.log
+</I>&gt;<i> Testing the daemon...
+</I>&gt;<i> Processing ./test/daemon/ac12_binary.log
+</I>&gt;<i> --- /tmp/log-copy-9510.chk &#160; &#160; &#160;2010-04-06 20:23:34.000000000 -0400
+</I>&gt;<i> +++ /tmp/test-whole-9510.chk &#160; &#160;2010-04-06 20:23:34.000000000 -0400
+</I>&gt;<i> @@ -1,16 +1,12 @@
+</I>&gt;<i> &#160;$GPZDA,183531.00,23,12,2007,00,00*6C^M
+</I>&gt;<i> &#160;$GPGGA,183530.00,2037.76012,N,08704.07373,W,1,03,2.2,072.35,M,-13.9,M,,*6B^M
+</I>&gt;<i> -{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;GGA&quot;,&quot;time&quot;:1198434930.000,&quot;ept&quot;:0.005,&quot;lat&quot;:20.629335333,&quot;lon&quot;:-87.067895500,&quot;alt&quot;:72.350,&quot;mode&quot;:3}^M
+</I>&gt;<i> &#160;$GPGSA,A,2,02,10,28,,,,,,,,,,02.2,02.2,*14^M
+</I>&gt;<i> &#160;$GPGSV,3,1,10,28,38,139,46,10,17,193,50,02,55,274,50,04,61,358,*70^M
+</I>&gt;<i> &#160;$GPGSV,3,2,10,17,38,054,,09,21,281,,12,10,322,,20,03,038,*7F^M
+</I>&gt;<i> &#160;$GPGSV,3,3,10,33,08,096,,35,45,118,*70^M
+</I>&gt;<i> -{&quot;class&quot;:&quot;SKY&quot;,&quot;tag&quot;:&quot;GSV&quot;,&quot;vdop&quot;:0.00,&quot;hdop&quot;:2.20,&quot;pdop&quot;:2.20,&quot;satellites&quot;:[{&quot;PRN&quot;:28,&quot;el&quot;:38,&quot;az&quot;:139,&quot;ss&quot;:46,&quot;used&quot;:true},{&quot;PRN&quot;:10,&quot;el&quot;:17,&quot;az&quot;:193,&quot;ss&quot;:50,&quot;used&quot;:true},{&quot;PRN&quot;:2,&quot;el&quot;:55,&quot;az&quot;:274,&quot;ss&quot;:50,&quot;used&quot;:true},{&quot;PRN&quot;:4,&quot;el&quot;:61,&quot;az&quot;:358,&quot;ss&quot;:0,&quot;used&quot;:false},{&quot;PRN&quot;:17,&quot;el&quot;:38,&quot;az&quot;:54,&quot;ss&quot;:0,&quot;used&quot;:false},{&quot;PRN&quot;:9,&quot;el&quot;:21,&quot;az&quot;:281,&quot;ss&quot;:0,&quot;used&quot;:false},{&quot;PRN&quot;:12,&quot;el&quot;:10,&quot;az&quot;:322,&quot;ss&quot;:0,&quot;used&quot;:false},{&quot;PRN&quot;:20,&quot;el&quot;:3,&quot;az&quot;:38,&quot;ss&quot;:0,&quot;used&quot;:false},{&quot;PRN&quot;:33,&quot;el&quot;:8,&quot;az&quot;:96,&quot;ss&quot;:0,&quot;used&quot;:false},{&quot;PRN&quot;:35,&quot;el&quot;:45,&quot;az&quot;:118,&quot;ss&quot;:0,&quot;used&quot;:false}]}^M
+</I>&gt;<i> &#160;$PASHR,POS,0,03,183530.00,2037.76012,N,08704.07373,W,058.48,,359.4,000.0,+000.0,2.2,2.2,0.0,1.0,BQ00*20^M
+</I>&gt;<i> &#160;$GPRMC,183530.00,A,2037.7601,N,08704.0737,W,00.0,359.4,231207,01,W,A*26^M
+</I>&gt;<i> -{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:1198434930.000,&quot;ept&quot;:0.005,&quot;lat&quot;:20.629335000,&quot;lon&quot;:-87.067895000,&quot;alt&quot;:72.350,&quot;epv&quot;:0.000,&quot;track&quot;:359.4000,&quot;speed&quot;:0.000,&quot;climb&quot;:0.000,&quot;mode&quot;:3}^M
+</I>&gt;<i> &#160;$PASHR,SAT,03,28,139,38,46,U,10,193,17,50,U,02,274,55,50,U*53^M
+</I>&gt;<i> -{&quot;class&quot;:&quot;SKY&quot;,&quot;tag&quot;:&quot;PASHR&quot;,&quot;vdop&quot;:0.00,&quot;hdop&quot;:2.20,&quot;pdop&quot;:2.20,&quot;satellites&quot;:[{&quot;PRN&quot;:28,&quot;el&quot;:38,&quot;az&quot;:139,&quot;ss&quot;:46,&quot;used&quot;:true},{&quot;PRN&quot;:10,&quot;el&quot;:17,&quot;az&quot;:193,&quot;ss&quot;:50,&quot;used&quot;:true},{&quot;PRN&quot;:2,&quot;el&quot;:55,&quot;az&quot;:274,&quot;ss&quot;:50,&quot;used&quot;:true}]}^M
+</I>&gt;<i> &#160;$PASHR,XMG,12,Solution valid*4A^M
+</I>&gt;<i> &#160;$GPZDA,183532.00,23,12,2007,00,00*6F^M
+</I>&gt;<i> &#160;$GPGGA,183531.00,2037.76011,N,08704.07369,W,1,03,2.2,072.35,M,-13.9,M,,*62^M
+</I>&gt;<i> @@ -18,12 +14,9 @@
+</I>&gt;<i> &#160;$GPGSV,3,1,10,28,38,139,46,10,17,193,50,02,55,274,50,04,61,358,*70^M
+</I>&gt;<i> &#160;$GPGSV,3,2,10,17,38,054,,09,21,281,,12,10,322,,20,03,038,*7F^M
+</I>&gt;<i> &#160;$GPGSV,3,3,10,33,08,096,,35,45,118,*70^M
+</I>&gt;<i> -{&quot;class&quot;:&quot;SKY&quot;,&quot;tag&quot;:&quot;GSV&quot;,&quot;vdop&quot;:0.00,&quot;hdop&quot;:2.20,&quot;pdop&quot;:2.20,&quot;satellites&quot;:[{&quot;PRN&quot;:28,&quot;el&quot;:38,&quot;az&quot;:139,&quot;ss&quot;:46,&quot;used&quot;:true},{&quot;PRN&quot;:10,&quot;el&quot;:17,&quot;az&quot;:193,&quot;ss&quot;:50,&quot;used&quot;:true},{&quot;PRN&quot;:2,&quot;el&quot;:55,&quot;az&quot;:274,&quot;ss&quot;:50,&quot;used&quot;:true},{&quot;PRN&quot;:4,&quot;el&quot;:61,&quot;az&quot;:358,&quot;ss&quot;:0,&quot;used&quot;:false},{&quot;PRN&quot;:17,&quot;el&quot;:38,&quot;az&quot;:54,&quot;ss&quot;:0,&quot;used&quot;:false},{&quot;PRN&quot;:9,&quot;el&quot;:21,&quot;az&quot;:281,&quot;ss&quot;:0,&quot;used&quot;:false},{&quot;PRN&quot;:12,&quot;el&quot;:10,&quot;az&quot;:322,&quot;ss&quot;:0,&quot;used&quot;:false},{&quot;PRN&quot;:20,&quot;el&quot;:3,&quot;az&quot;:38,&quot;ss&quot;:0,&quot;used&quot;:false},{&quot;PRN&quot;:33,&quot;el&quot;:8,&quot;az&quot;:96,&quot;ss&quot;:0,&quot;used&quot;:false},{&quot;PRN&quot;:35,&quot;el&quot;:45,&quot;az&quot;:118,&quot;ss&quot;:0,&quot;used&quot;:false}]}^M
+</I>&gt;<i> &#160;$PASHR,POS,0,03,183531.00,2037.76011,N,08704.07369,W,058.48,,359.4,000.0,+000.0,2.2,2.2,0.0,1.0,BQ00*29^M
+</I>&gt;<i> &#160;$GPRMC,183531.00,A,2037.7601,N,08704.0737,W,00.0,359.4,231207,01,W,A*27^M
+</I>&gt;<i> -{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:1198434931.000,&quot;ept&quot;:0.005,&quot;lat&quot;:20.629335000,&quot;lon&quot;:-87.067895000,&quot;alt&quot;:72.350,&quot;epv&quot;:0.000,&quot;track&quot;:359.4000,&quot;speed&quot;:0.000,&quot;climb&quot;:-0.000,&quot;mode&quot;:3}^M
+</I>&gt;<i> &#160;$PASHR,SAT,03,28,139,38,46,U,10,193,17,50,U,02,274,55,50,U*53^M
+</I>&gt;<i> -{&quot;class&quot;:&quot;SKY&quot;,&quot;tag&quot;:&quot;PASHR&quot;,&quot;vdop&quot;:0.00,&quot;hdop&quot;:2.20,&quot;pdop&quot;:2.20,&quot;satellites&quot;:[{&quot;PRN&quot;:28,&quot;el&quot;:38,&quot;az&quot;:139,&quot;ss&quot;:46,&quot;used&quot;:true},{&quot;PRN&quot;:10,&quot;el&quot;:17,&quot;az&quot;:193,&quot;ss&quot;:50,&quot;used&quot;:true},{&quot;PRN&quot;:2,&quot;el&quot;:55,&quot;az&quot;:274,&quot;ss&quot;:50,&quot;used&quot;:true}]}^M
+</I>&gt;<i> &#160;$PASHR,XMG,12,Solution valid*4A^M
+</I>&gt;<i> &#160;$GPZDA,183533.00,23,12,2007,00,00*6E^M
+</I>&gt;<i> &#160;$GPGGA,183532.00,2037.76010,N,08704.07366,W,1,03,2.2,072.35,M,-13.9,M,,*6F^M
+</I>&gt;<i> @@ -31,12 +24,9 @@
+</I>&gt;<i> &#160;$GPGSV,3,1,10,28,38,139,46,10,17,193,49,02,55,274,50,04,61,358,*78^M
+</I>&gt;<i> &#160;$GPGSV,3,2,10,17,38,054,,09,21,281,,12,10,322,,20,03,038,*7F^M
+</I>&gt;<i> &#160;$GPGSV,3,3,10,33,08,096,,35,45,118,*70^M
+</I>&gt;<i> -{&quot;class&quot;:&quot;SKY&quot;,&quot;tag&quot;:&quot;GSV&quot;,&quot;vdop&quot;:0.00,&quot;hdop&quot;:2.20,&quot;pdop&quot;:2.20,&quot;satellites&quot;:[{&quot;PRN&quot;:28,&quot;el&quot;:38,&quot;az&quot;:139,&quot;ss&quot;:46,&quot;used&quot;:true},{&quot;PRN&quot;:10,&quot;el&quot;:17,&quot;az&quot;:193,&quot;ss&quot;:49,&quot;used&quot;:true},{&quot;PRN&quot;:2,&quot;el&quot;:55,&quot;az&quot;:274,&quot;ss&quot;:50,&quot;used&quot;:true},{&quot;PRN&quot;:4,&quot;el&quot;:61,&quot;az&quot;:358,&quot;ss&quot;:0,&quot;used&quot;:false},{&quot;PRN&quot;:17,&quot;el&quot;:38,&quot;az&quot;:54,&quot;ss&quot;:0,&quot;used&quot;:false},{&quot;PRN&quot;:9,&quot;el&quot;:21,&quot;az&quot;:281,&quot;ss&quot;:0,&quot;used&quot;:false},{&quot;PRN&quot;:12,&quot;el&quot;:10,&quot;az&quot;:322,&quot;ss&quot;:0,&quot;used&quot;:false},{&quot;PRN&quot;:20,&quot;el&quot;:3,&quot;az&quot;:38,&quot;ss&quot;:0,&quot;used&quot;:false},{&quot;PRN&quot;:33,&quot;el&quot;:8,&quot;az&quot;:96,&quot;ss&quot;:0,&quot;used&quot;:false},{&quot;PRN&quot;:35,&quot;el&quot;:45,&quot;az&quot;:118,&quot;ss&quot;:0,&quot;used&quot;:false}]}^M
+</I>&gt;<i>
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007600.html">[Gpsd-dev] Failing Regression test
+</A></li>
+	<LI>Next message: <A HREF="007603.html">[Gpsd-dev] Failing Regression test
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7602">[ date ]</a>
+              <a href="thread.html#7602">[ thread ]</a>
+              <a href="subject.html#7602">[ subject ]</a>
+              <a href="author.html#7602">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,160 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] SiRF binary protocol question
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20SiRF%20binary%20protocol%20question&In-Reply-To=%3Cea980300909190538q21cf41e3j56dab4a8f4a271f8%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006868.html">
+   <LINK REL="Next"  HREF="006882.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] SiRF binary protocol question</H1>
+    <B>Hannan Sadar</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20SiRF%20binary%20protocol%20question&In-Reply-To=%3Cea980300909190538q21cf41e3j56dab4a8f4a271f8%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] SiRF binary protocol question">hannan.sadar at gmail.com
+       </A><BR>
+    <I>Sat Sep 19 14:38:10 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006868.html">[Gpsd-dev] SiRF binary protocol question
+</A></li>
+        <LI>Next message: <A HREF="006882.html">[Gpsd-dev] SiRF binary protocol question
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6869">[ date ]</a>
+              <a href="thread.html#6869">[ thread ]</a>
+              <a href="subject.html#6869">[ subject ]</a>
+              <a href="author.html#6869">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>could you please supply a binary file of sirf III (also with raw data,
+doesnt metter) as it come from the receiver?
+
+i have a decoder from subframe data which come from uBlox, but the rxm-sbr
+message is simply what is written ICD-GPS-200c wropt out in a ublox message
+package.
+
+it would be also helpful if you could supply a link to SiRF III subframe
+binary protocol (regardning the checksum)
+
+Regards
+
+2009/9/19 Sidney Cadot &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">sidney.cadot at jigsaw.nl</A>&gt;
+
+&gt;<i>
+</I>&gt;<i> Dear all,
+</I>&gt;<i>
+</I>&gt;<i> I have a question concerning the interpretation of a specific packet
+</I>&gt;<i> in the SiRF binary protocol.
+</I>&gt;<i>
+</I>&gt;<i> It has little to do with gpsd, but I don't know of a place where I
+</I>&gt;<i> could expect to find more experts than here. If there is, I'd
+</I>&gt;<i> appreciate a pointer...
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> My question concerns the SiRF binary protocol, message type 8. This
+</I>&gt;<i> message contains GPS &quot;subframes&quot;: the raw data dat is emitted by GPS
+</I>&gt;<i> satellites at 50 bytes-per-second. For each satellite in view, my
+</I>&gt;<i> little SiRFstar III USB receiver emits a packet every six seconds,
+</I>&gt;<i> containing data for a 300-bit &quot;subframe&quot;.
+</I>&gt;<i>
+</I>&gt;<i> Below are some sample packets I collected yesterday:
+</I>&gt;<i>
+</I>&gt;<i>  TTT 2009-09-18 19:37:15.309816 packet: a0 a2 00 2b 08 06 12 22 c2 0d
+</I>&gt;<i> 11 57 ae 12 28 13 c3 7f 0a 83 c2 2e e8 3f 50 00 0f d7 bc c6 43 c4 8a
+</I>&gt;<i> 8c ea ba cf cd e7 f0 cf f6 53 ca 7f fd 30 14 d4 b0 b3
+</I>&gt;<i>
+</I>&gt;<i> What you see here is:
+</I>&gt;<i>
+</I>&gt;<i>   a0 a2: packet header
+</I>&gt;<i>   00 2b: payload length (43 bytes)
+</I>&gt;<i>   08   : first payload byte: message ID
+</I>&gt;<i>   06   : receiver channel number
+</I>&gt;<i>   12   : Satellite ID (&quot;SV&quot;)
+</I>&gt;<i>   22 c2 ..... 40 bytes --&gt; 10 &quot;longwords&quot; of data
+</I>&gt;<i>   14 d4: checksum
+</I>&gt;<i>   b0 b3: packet trailer
+</I>&gt;<i>
+</I>&gt;<i> My question is that I am puzzled by the interpretation of the data.
+</I>&gt;<i> The documentation states that I should see 10 longs worth of data,
+</I>&gt;<i> each representing 30 bits of satellite data (thus, 10 longwords would
+</I>&gt;<i> indeed contain 10x30 = 300 bits of data, for six seconds)
+</I>&gt;<i>
+</I>&gt;<i> However, if I list the data as longwords, I see this:
+</I>&gt;<i>
+</I>&gt;<i> 22c20d11
+</I>&gt;<i> 57ae1228
+</I>&gt;<i> 13c37f0a
+</I>&gt;<i> 83c22ee8
+</I>&gt;<i> 3f50000f
+</I>&gt;<i> d7bcc643
+</I>&gt;<i> c48a8cea
+</I>&gt;<i> bacfcde7
+</I>&gt;<i> f0cff653
+</I>&gt;<i> ca7ffd30
+</I>&gt;<i>
+</I>&gt;<i> For the first word, things look fine: we should be seeing a 30-bit TLM
+</I>&gt;<i> word, consisting of a preamble &quot;10001011&quot;, followed by 16 reserved
+</I>&gt;<i> bits, and a 6-bit checksum. That looks ok.
+</I>&gt;<i>
+</I>&gt;<i> However, the second word is already strange: the two most significant
+</I>&gt;<i> bits are not zero. Furthermore, this second word of each subframe has
+</I>&gt;<i> two upward counters, and they seem to be counting /down/ for
+</I>&gt;<i> subsequent subframes. What seems to happen is that part of the word is
+</I>&gt;<i> inverted (then, these counters behave as expected), and I can find no
+</I>&gt;<i> mention of this anywhere in the documentation.
+</I>&gt;<i>
+</I>&gt;<i> For the following words, more strangeness: Sometimes all 32 bits of
+</I>&gt;<i> the words are used, where I would expect just 30 bits of data.
+</I>&gt;<i>
+</I>&gt;<i> In short, I have no clue as to what is going on here, and I would
+</I>&gt;<i> appreciate any hints at what I am seeing here.
+</I>&gt;<i>
+</I>&gt;<i> If anyone wants to look at more data: <A HREF="http://wopr.jigsaw.nl/sat12.txt.">http://wopr.jigsaw.nl/sat12.txt.</A>
+</I>&gt;<i> This file contains 800+ records of a single satellite, with 6-second
+</I>&gt;<i> intervals (and none missing).
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> best regards,
+</I>&gt;<i>
+</I>&gt;<i>   Sidney
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090919/08cf5f77/attachment.html">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090919/08cf5f77/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006868.html">[Gpsd-dev] SiRF binary protocol question
+</A></li>
+	<LI>Next message: <A HREF="006882.html">[Gpsd-dev] SiRF binary protocol question
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6869">[ date ]</a>
+              <a href="thread.html#6869">[ thread ]</a>
+              <a href="subject.html#6869">[ subject ]</a>
+              <a href="author.html#6869">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

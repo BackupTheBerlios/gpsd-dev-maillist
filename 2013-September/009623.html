@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [AIS] msg 21 regression?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2013-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BAIS%5D%20msg%2021%20regression%3F&In-Reply-To=%3C523533E5.9030003%40gna.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009625.html">
+   <LINK REL="Next"  HREF="009626.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [AIS] msg 21 regression?</H1>
+    <B>Christian Gagneraud</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BAIS%5D%20msg%2021%20regression%3F&In-Reply-To=%3C523533E5.9030003%40gna.org%3E"
+       TITLE="[Gpsd-dev] [AIS] msg 21 regression?">chgans at gna.org
+       </A><BR>
+    <I>Sun Sep 15 06:13:25 CEST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009625.html">[Gpsd-dev] [RFC] Fix coveraging mode in SConstruct
+</A></li>
+        <LI>Next message: <A HREF="009626.html">[Gpsd-dev] [AIS] msg 21 regression?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9623">[ date ]</a>
+              <a href="thread.html#9623">[ thread ]</a>
+              <a href="subject.html#9623">[ subject ]</a>
+              <a href="author.html#9623">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi there,
+
+So before going further with the coverage, I think I need to identify my 
+problems.
+
+I have several issues that might well be related, but if I build gpsd in 
+the right order, I am able to execute the testsuites, and here is the 
+failures on aivdm-regress:
+I've strip them all for clarity:
+
+Testing AIVDM decoding w/ CSV format...
+Testing ./test/sample.aivdm...
+[...]
+-21|0|123456789|20|CHINA ROSE MURPHY EXPRESS 
+ALERT|0|-73619155|28752371|5|5|5|5|1|50|165|0x0|0|0
++21|0|123456789|20|CHINA ROSE MURPHY 
+E|0|-73619155|28752371|5|5|5|5|1|50|165|0x0|0|0
+Testing AIVDM decoding w/ JSON unscaled format...
+  Testing ./test/sample.aivdm...
+[...]
+-{&quot;class&quot;:&quot;AIS&quot;,&quot;device&quot;:&quot;stdin&quot;,&quot;type&quot;:21,&quot;repeat&quot;:0,&quot;mmsi&quot;:123456789,&quot;scaled&quot;:false,&quot;aid_type&quot;:20,&quot;name&quot;:&quot;CHINA 
+ROSE MURPHY EXPRESS 
+ALERT&quot;,&quot;accuracy&quot;:false,&quot;lon&quot;:-73619155,&quot;lat&quot;:28752371,&quot;to_bow&quot;:5,&quot;to_stern&quot;:5,&quot;to_port&quot;:5,&quot;to_starboard&quot;:5,&quot;epfd&quot;:1,&quot;second&quot;:50,&quot;regional&quot;:165,&quot;off_position&quot;:false,&quot;raim&quot;:false,&quot;virtual_aid&quot;:false}
++{&quot;class&quot;:&quot;AIS&quot;,&quot;device&quot;:&quot;stdin&quot;,&quot;type&quot;:21,&quot;repeat&quot;:0,&quot;mmsi&quot;:123456789,&quot;scaled&quot;:false,&quot;aid_type&quot;:20,&quot;name&quot;:&quot;CHINA 
+ROSE MURPHY 
+E&quot;,&quot;accuracy&quot;:false,&quot;lon&quot;:-73619155,&quot;lat&quot;:28752371,&quot;to_bow&quot;:5,&quot;to_stern&quot;:5,&quot;to_port&quot;:5,&quot;to_starboard&quot;:5,&quot;epfd&quot;:1,&quot;second&quot;:50,&quot;regional&quot;:165,&quot;off_position&quot;:false,&quot;raim&quot;:false,&quot;virtual_aid&quot;:false}
+[...]
+Testing AIVDM decoding w/ JSON scaled format...
+  Testing ./test/sample.aivdm...
+[...]
+-{&quot;class&quot;:&quot;AIS&quot;,&quot;device&quot;:&quot;stdin&quot;,&quot;type&quot;:21,&quot;repeat&quot;:0,&quot;mmsi&quot;:123456789,&quot;scaled&quot;:true,&quot;aid_type&quot;:&quot;INVALID 
+NAVAID TYPE&quot;,&quot;name&quot;:&quot;CHINA ROSE MURPHY EXPRESS 
+ALERT&quot;,&quot;lon&quot;:-122.6986,&quot;lat&quot;:47.9206,&quot;accuracy&quot;:false,&quot;to_bow&quot;:5,&quot;to_stern&quot;:5,&quot;to_port&quot;:5,&quot;to_starboard&quot;:5,&quot;epfd&quot;:&quot;GPS&quot;,&quot;second&quot;:50,&quot;regional&quot;:165,&quot;off_position&quot;:false,&quot;raim&quot;:false,&quot;virtual_aid&quot;:false}
++{&quot;class&quot;:&quot;AIS&quot;,&quot;device&quot;:&quot;stdin&quot;,&quot;type&quot;:21,&quot;repeat&quot;:0,&quot;mmsi&quot;:123456789,&quot;scaled&quot;:true,&quot;aid_type&quot;:&quot;INVALID 
+NAVAID TYPE&quot;,&quot;name&quot;:&quot;CHINA ROSE MURPHY 
+E&quot;,&quot;lon&quot;:-122.6986,&quot;lat&quot;:47.9206,&quot;accuracy&quot;:false,&quot;to_bow&quot;:5,&quot;to_stern&quot;:5,&quot;to_port&quot;:5,&quot;to_starboard&quot;:5,&quot;epfd&quot;:&quot;GPS&quot;,&quot;second&quot;:50,&quot;regional&quot;:165,&quot;off_position&quot;:false,&quot;raim&quot;:false,&quot;virtual_aid&quot;:false}
+[...]
+Testing idempotency of unscaled JSON dump/decode for AIS
+Testing idempotency of scaled JSON dump/decode for AIS
+scons: done building targets.
+
+Basically &quot;CHINA ROSE MURPHY EXPRESS ALERT&quot; is stripped to 19 
+characters: &quot;CHINA ROSE MURPHY E&quot;
+
+This is the only error I have on aivdm-regress, my git tree is 
+up-to-date and I have the same result on both machines.
+
+Now, I just rolled back my tree to pre &quot;d7f0809 Fix for a typo spotted 
+by Reinhard Arlt.&quot;, and the testsuite passed on both machine!
+
+Could anyone check if they are impacted by this commit or not? I would 
+like to know if I'm the only one or not, I would love to be as it might 
+be an interesting clue!
+
+Regards,
+Chris
+
+
+
+
+
+
+
+</PRE>
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009625.html">[Gpsd-dev] [RFC] Fix coveraging mode in SConstruct
+</A></li>
+	<LI>Next message: <A HREF="009626.html">[Gpsd-dev] [AIS] msg 21 regression?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9623">[ date ]</a>
+              <a href="thread.html#9623">[ thread ]</a>
+              <a href="subject.html#9623">[ subject ]</a>
+              <a href="author.html#9623">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

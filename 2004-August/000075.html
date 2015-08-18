@@ -1,0 +1,138 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] blocked client eventually stalls gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20blocked%20client%20eventually%20stalls%20gpsd&In-Reply-To=%3C200408270907.18520.remco%40rvt.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000087.html">
+   <LINK REL="Next"  HREF="000057.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] blocked client eventually stalls gpsd</H1>
+    <B>Remco Treffkorn</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20blocked%20client%20eventually%20stalls%20gpsd&In-Reply-To=%3C200408270907.18520.remco%40rvt.com%3E"
+       TITLE="[Gpsd-dev] blocked client eventually stalls gpsd">remco at rvt.com
+       </A><BR>
+    <I>Fri Aug 27 18:07:18 CEST 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000087.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+        <LI>Next message: <A HREF="000057.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#75">[ date ]</a>
+              <a href="thread.html#75">[ thread ]</a>
+              <a href="subject.html#75">[ subject ]</a>
+              <a href="author.html#75">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Friday 27 August 2004 05:18, Eric S. Raymond wrote:
+&gt;<i> Rich Gibson &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">rich at testingrange.com</A>&gt;:
+</I>&gt;<i> &gt; Why is it being exposed again?
+</I>&gt;<i>
+</I>&gt;<i> So Kismet, or gpsdrive, or any one of several other applications I can
+</I>&gt;<i> think of that are used in the normal case of an effectively lossless
+</I>&gt;<i> GPS-to-host link, can easily have an idiot light labeled &quot;GPS not plugged
+</I>&gt;<i> in.&quot;
+</I>
+As I said before: This is a valid reason to have it, but how much this is 
+worth is another question. 
+
+For a second, let's assume this baby is not called gpsd, but locd. That's what 
+I should have called it anyway. The source of the location information can 
+come from a gps, triangulation on a cell phone, an accurate sundial, or a 
+candle with a piece of string (which gives 'online' a totally new meaning.)
+
+Locd promises a few things:
+1. It will tell you a location.
+2. It will give you an idea how credible 1. is.
+
+This was mapped onto the gps case by saying 'If you have a fix the location 
+info is credible'. Then I mixed the 2d/3d stuff in, which was bad.
+
+Locd is a translator. If it does not get at least the information it promises 
+its clients, it can not work. If it is given alot more info, no problem.
+
+Translation is 'lossy' (the technical term here is 'messy'.)
+
+Example:
+en -&gt; de -&gt; en
+&quot;The blue planet&quot; -&gt; &quot;Der blaue Planet&quot; -&gt; &quot;The drunken world&quot;
+Only 'policy' can fix this problem.
+
+So, locd is not only mechanism, it can not be and do it's job.
+It is not an 'nmea parser and spit it out in another format'.
+
+Take the sundial case: Overcast. No current location information. But since it 
+is an accurate sundial it must be stationary, so the cached location has a 
+long lifetime. Locd knows that, the application does not. So we can provide 
+location with high credibility. Policy.
+
+There clearly are policies encoded in locd. There is a certain amount of 
+mangling required to map its input onto its set of promises. The strict 'gps 
+only' case somewhat masks that.
+
+
+Let's talk tcp/udp.
+
+Think of tcp as implemented based on udp (for arguments sake.)
+
+ If you use udp you need also checksums and sequence numbers. Timestamps are 
+not good enough, you can not detect holes.
+In tcp you just don't worry about it. You pay the overhead in the stack, and 
+that's it. If you are planning to supply so many clients with information 
+that this overhead becomes noticeable, you are doing something wrong.
+
+Locd uses a request/response protocol. Congestion manifests itself in 
+latencies. Let the application draw conclusions about their meaning, locd can 
+not.
+
+The concept of 'connectedness' makes life so much simpler. There is just no 
+need to scrape tcp of off udp and then implementing your own tcp replacement 
+protocol on top of udp. What in tcp do you not like that you propose to do 
+better yourself?
+
+I am trying to condense a lot of stuff into one already too long email.
+This does lead to inaccuracies, but please look at it as a first approximation 
+only. I don't want to write a dissertation. So, please take from this what is 
+meaningful to you, and ignore the crap.
+
+Where gpsd comes into this is anybodies guess...
+
+-- 
+Remco Treffkorn (RT445)
+HAM DC2XT
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000087.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+	<LI>Next message: <A HREF="000057.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#75">[ date ]</a>
+              <a href="thread.html#75">[ thread ]</a>
+              <a href="subject.html#75">[ subject ]</a>
+              <a href="author.html#75">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

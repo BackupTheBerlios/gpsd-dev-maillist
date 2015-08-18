@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] motorola oncore position hold mode for pps timing
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20motorola%20oncore%20position%20hold%20mode%20for%20pps%20timing&In-Reply-To=%3C20091110234254.GA30439%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007023.html">
+   <LINK REL="Next"  HREF="007026.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] motorola oncore position hold mode for pps timing</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20motorola%20oncore%20position%20hold%20mode%20for%20pps%20timing&In-Reply-To=%3C20091110234254.GA30439%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] motorola oncore position hold mode for pps timing">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Nov 11 00:42:54 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007023.html">[Gpsd-dev] cgps
+</A></li>
+        <LI>Next message: <A HREF="007026.html">[Gpsd-dev] xgps hangs, occasionally segfaults gpsd when Ctrl-C'ed
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7025">[ date ]</a>
+              <a href="thread.html#7025">[ thread ]</a>
+              <a href="subject.html#7025">[ subject ]</a>
+              <a href="author.html#7025">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>H&#229;kan Johansson &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">f96hajo at chalmers.se</A>&gt;:
+&gt;<i> I'm using the position hold mode of oncore devices, which allows it to  
+</I>&gt;<i> work for timing with only one satellite in view.  I'd like to implement 
+</I>&gt;<i> it cleaner.
+</I>
+I think this should be done with a JSON conmmand to the daeomon,
+invoking a new driver methood.  There are eniugh decices with
+the capability to accept a starting-locartion approximation
+to justify this.
+
+&gt;<i> What would be the gpsd way of loading the position hold coordinates at or 
+</I>&gt;<i> before startup?  I'd like to do it from the command line.  Is gpsctl  
+</I>&gt;<i> suitable for such exercises?  Or should I use a hacked version of  
+</I>&gt;<i> motosend.c ?  Easy access to wgs84_separation would be appreciated :-)  
+</I>&gt;<i> (perhaps not so difficult anywhere)
+</I>
+Agh. Please do not add code to mortosend.c.  I want to eliminate
+type-specific utilities, not proliferate them.  If the daemon's protocol 
+interpreter is not a convenient interface, this should be a gpsctl function.
+
+&gt;<i> When in position hold mode, it does not deliver lat/long and therefore 
+</I>&gt;<i> the session-&gt;context-&gt;fixcnt variable used in gpsd_ppsmonitor never 
+</I>&gt;<i> reaches 3. How to work around this?  Some gps_mask_t like TIME_SET would 
+</I>&gt;<i> do.  But TIME_SET itself likely not, as it seems not to mean that time is 
+</I>&gt;<i> known and accurate to 'pulse-per-second' precision.  Perhaps a 
+</I>&gt;<i> TIME_SET_PPS ?
+</I>
+On the server side, TIME_SET maans the last packet contained timec data.
+
+On the server side, TIME_SET means the time field in the gpsdata_t report
+structure is valid.  
+
+You might be able to reuse TIME_SET for this safely.  There's certainly no clash
+on the client side; the only question is whether your device delivers time
+information in the packets it ships while in hold mode.
+
+TIME_SET_PPS would raise difficulties, as we're already using 32 bits in that
+mask vector and I don't want to inntroduce a 64-bit dependency. 
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007023.html">[Gpsd-dev] cgps
+</A></li>
+	<LI>Next message: <A HREF="007026.html">[Gpsd-dev] xgps hangs, occasionally segfaults gpsd when Ctrl-C'ed
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7025">[ date ]</a>
+              <a href="thread.html#7025">[ thread ]</a>
+              <a href="subject.html#7025">[ subject ]</a>
+              <a href="author.html#7025">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

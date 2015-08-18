@@ -1,0 +1,96 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Choosing the prototype device correctly
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Choosing%20the%20prototype%20device%20correctly&In-Reply-To=%3Crmiwt4nhb1y.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005468.html">
+   <LINK REL="Next"  HREF="005470.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Choosing the prototype device correctly</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Choosing%20the%20prototype%20device%20correctly&In-Reply-To=%3Crmiwt4nhb1y.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] Choosing the prototype device correctly">gdt at ir.bbn.com
+       </A><BR>
+    <I>Tue Dec 19 21:42:49 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005468.html">[Gpsd-dev] Choosing the prototype device correctly
+</A></li>
+        <LI>Next message: <A HREF="005470.html">[Gpsd-dev] Choosing the prototype device correctly
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5469">[ date ]</a>
+              <a href="thread.html#5469">[ thread ]</a>
+              <a href="subject.html#5469">[ subject ]</a>
+              <a href="author.html#5469">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+  &gt; #if defined(__FreeBSD_) || defined(__NetBSD__) || defined(__OpenBSD__)
+
+  Excellent.  I'll check in the appropriate change.
+
+Two trailing underscores in FreeBSD, maybe?
+
+But really this is gross to have OS-dependent switches in the code and
+instead should be in configure, with a switch for the prototypical
+device.  Also, I think it should be /dev/dty00 on NetBSD/i386, to
+suppress carrier detect stuff (that's the dialout device).  But
+/dev/ttydh00 on NetBSD/sparc64, at least on an Ultra5.
+
+This is going to result in 'wheel' for the group, which isn't all that
+reasonable - really one wants to make a _gpsd group and then chgrp
+devices on choosing to let gpsd at them.
+
+It would be nice to avoid having to name a device.  One approach is to
+use the first GPS device given, rather than the prototypical device.
+Then the need to configure this is gone.  That interacts badly with
+starting up with no devices and using the socket, though.
+
+For the pkgsrc case, one could certainly device _gpsd user and group,
+and hard-code that.  Really the sysadmin will have to grant permission
+to gpsd to use devices absent the ability to tell that serial ports
+belong to GPS (and even then, really).
+
+-- 
+    Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 185 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20061219/c1f0948b/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20061219/c1f0948b/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005468.html">[Gpsd-dev] Choosing the prototype device correctly
+</A></li>
+	<LI>Next message: <A HREF="005470.html">[Gpsd-dev] Choosing the prototype device correctly
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5469">[ date ]</a>
+              <a href="thread.html#5469">[ thread ]</a>
+              <a href="subject.html#5469">[ subject ]</a>
+              <a href="author.html#5469">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

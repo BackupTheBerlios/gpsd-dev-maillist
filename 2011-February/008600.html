@@ -1,0 +1,348 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-840-ge7febaf
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20Project%20gpsd%20at%20BerliOS%20branch%2C%0A%20master%2C%20updated.%20release-2.95-840-ge7febaf&In-Reply-To=%3C4D667160.8070807%40googlemail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008603.html">
+   <LINK REL="Next"  HREF="008601.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-840-ge7febaf</H1>
+    <B>Andre Naujoks</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20Project%20gpsd%20at%20BerliOS%20branch%2C%0A%20master%2C%20updated.%20release-2.95-840-ge7febaf&In-Reply-To=%3C4D667160.8070807%40googlemail.com%3E"
+       TITLE="[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-840-ge7febaf">nautsch2 at googlemail.com
+       </A><BR>
+    <I>Thu Feb 24 15:55:28 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008603.html">[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-839-g5590d20
+</A></li>
+        <LI>Next message: <A HREF="008601.html">[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-840-ge7febaf
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8600">[ date ]</a>
+              <a href="thread.html#8600">[ thread ]</a>
+              <a href="subject.html#8600">[ subject ]</a>
+              <a href="author.html#8600">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>This breaks NTRIP.
+
+I don't yet know how, but it breaks it.
+
+As far as I understand it, NTRIP is not a driver in the gpsd sense, but
+just a way to connect to a data source, from which data can be received
+and which is in turn processed by a driver (e.g. rtcm).
+
+Am 24.02.2011 15:32, schrieb esr at BerliOS:
+&gt;<i> This is an automated email from the git hooks/post-receive script. It was
+</I>&gt;<i> generated because a ref change was pushed to the repository containing
+</I>&gt;<i> the project &quot;Project gpsd at BerliOS&quot;.
+</I>&gt;<i> 
+</I>&gt;<i> The branch, master has been updated
+</I>&gt;<i>        via  e7febafc2e1497b7c85fc65ffdfaee063e6a582b (commit)
+</I>&gt;<i>       from  5590d2014af405d1a65619d8e190ce54235836ae (commit)
+</I>&gt;<i> 
+</I>&gt;<i> Those revisions listed above that are new to this repository have
+</I>&gt;<i> not appeared on any other notification email; so we list those
+</I>&gt;<i> revisions in full, below.
+</I>&gt;<i> 
+</I>&gt;<i> - Log -----------------------------------------------------------------
+</I>&gt;<i> commit e7febafc2e1497b7c85fc65ffdfaee063e6a582b
+</I>&gt;<i> Author: Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt;
+</I>&gt;<i> Date:   Thu Feb 24 09:27:39 2011 -0500
+</I>&gt;<i> 
+</I>&gt;<i>     Move NTRIP per-connection state from global context to private driver area.
+</I>&gt;<i>     
+</I>&gt;<i>     The flap over probes revealed that the NTRIP support is bolted onto the daemon
+</I>&gt;<i>     in a very awkward way that is likely to cause problems now that it's actually
+</I>&gt;<i>     being, like, *used*.  This is a step towards making it behave more like a
+</I>&gt;<i>     normal driver.
+</I>&gt;<i> 
+</I>&gt;<i> diff --git a/gpsd.c b/gpsd.c
+</I>&gt;<i> index ba544b9..d972ed3 100644
+</I>&gt;<i> --- a/gpsd.c
+</I>&gt;<i> +++ b/gpsd.c
+</I>&gt;<i> @@ -591,8 +591,6 @@ static void deactivate_device(struct gps_device_t *device)
+</I>&gt;<i>  	if (context.dsock == device-&gt;gpsdata.gps_fd) {
+</I>&gt;<i>  		context.dsock = -1;
+</I>&gt;<i>  	}
+</I>&gt;<i> -	context.ntrip_conn_state = ntrip_conn_init;
+</I>&gt;<i> -	context.ntrip_sourcetable_parse = false;
+</I>&gt;<i>  	gpsd_deactivate(device);
+</I>&gt;<i>      }
+</I>&gt;<i>  }
+</I>&gt;<i> @@ -1283,20 +1281,20 @@ static void consume_packets(struct gps_device_t *device)
+</I>&gt;<i>  	    device-&gt;gpsdata.gps_fd);
+</I>&gt;<i>  
+</I>&gt;<i>      if (device-&gt;context-&gt;netgnss_service == netgnss_ntrip
+</I>&gt;<i> -	    &amp;&amp; device-&gt;context-&gt;ntrip_conn_state != ntrip_conn_established) {
+</I>&gt;<i> +	    &amp;&amp; device-&gt;driver.ntrip.conn_state != ntrip_conn_established) {
+</I>&gt;<i>  
+</I>&gt;<i>  	/* the socket descriptor might change during connection */
+</I>&gt;<i>  	if (device-&gt;gpsdata.gps_fd != -1) {
+</I>&gt;<i>  	    FD_CLR(device-&gt;gpsdata.gps_fd, &amp;all_fds);
+</I>&gt;<i>  	}
+</I>&gt;<i>  	(void)ntrip_open(device, &quot;&quot;);
+</I>&gt;<i> -	if (device-&gt;context-&gt;ntrip_conn_state == ntrip_conn_err) {
+</I>&gt;<i> +	if (device-&gt;driver.ntrip.conn_state == ntrip_conn_err) {
+</I>&gt;<i>  	    gpsd_report(LOG_WARN,
+</I>&gt;<i>  		    &quot;connection to ntrip server failed\n&quot;);
+</I>&gt;<i> -	    device-&gt;context-&gt;ntrip_conn_state = ntrip_conn_init;
+</I>&gt;<i> +	    device-&gt;driver.ntrip.conn_state = ntrip_conn_init;
+</I>&gt;<i>  	    deactivate_device(device);
+</I>&gt;<i>  	} else {
+</I>&gt;<i> -	    if (device-&gt;context-&gt;ntrip_conn_state == ntrip_conn_established) {
+</I>&gt;<i> +	    if (device-&gt;driver.ntrip.conn_state == ntrip_conn_established) {
+</I>&gt;<i>  		device-&gt;context-&gt;dsock = device-&gt;gpsdata.gps_fd;
+</I>&gt;<i>  	    }
+</I>&gt;<i>  	    FD_SET(device-&gt;gpsdata.gps_fd, &amp;all_fds);
+</I>&gt;<i> @@ -1326,8 +1324,8 @@ static void consume_packets(struct gps_device_t *device)
+</I>&gt;<i>  		if (device-&gt;zerokill) {
+</I>&gt;<i>  		    /* failed timeout-and-reawake, kill it */
+</I>&gt;<i>  		    deactivate_device(device);
+</I>&gt;<i> -		    if (device-&gt;context-&gt;ntrip_works) {
+</I>&gt;<i> -			device-&gt;context-&gt;ntrip_works = false; // reset so we try this once only
+</I>&gt;<i> +		    if (device-&gt;driver.ntrip.works) {
+</I>&gt;<i> +			device-&gt;driver.ntrip.works = false; // reset so we try this once only
+</I>&gt;<i>  			if (gpsd_activate(device) &lt; 0) {
+</I>&gt;<i>  			    gpsd_report(LOG_WARN, &quot;reconnect to ntrip server failed\n&quot;);
+</I>&gt;<i>  			} else {
+</I>&gt;<i> diff --git a/gpsd.h-tail b/gpsd.h-tail
+</I>&gt;<i> index 3dcb412..14dedf9 100644
+</I>&gt;<i> --- a/gpsd.h-tail
+</I>&gt;<i> +++ b/gpsd.h-tail
+</I>&gt;<i> @@ -183,15 +183,6 @@ struct gps_context_t {
+</I>&gt;<i>      /* DGPSIP status */
+</I>&gt;<i>      bool sentdgps;			/* have we sent a DGPS report? */
+</I>&gt;<i>      enum { netgnss_none, netgnss_dgpsip, netgnss_ntrip} netgnss_service;	/* type of GNSS service */
+</I>&gt;<i> -    enum {
+</I>&gt;<i> -	ntrip_conn_init,
+</I>&gt;<i> -	ntrip_conn_sent_probe,
+</I>&gt;<i> -	ntrip_conn_sent_get,
+</I>&gt;<i> -	ntrip_conn_established,
+</I>&gt;<i> -	ntrip_conn_err
+</I>&gt;<i> -    } ntrip_conn_state; 		/* ntrip connection state for multi stage connect */
+</I>&gt;<i> -    bool ntrip_works;			/* this marks a working connection, so we try to reconnect once */
+</I>&gt;<i> -    bool ntrip_sourcetable_parse;		/* have we read the sourcetable header? */
+</I>&gt;<i>      int fixcnt;				/* count of good fixes seen */
+</I>&gt;<i>      socket_t dsock;			/* socket to DGPSIP server/Ntrip caster */
+</I>&gt;<i>      size_t rtcmbytes;			/* byte count of last RTCM104 report */
+</I>&gt;<i> @@ -518,6 +509,22 @@ struct gps_device_t {
+</I>&gt;<i>  	    unsigned int    bufindex;
+</I>&gt;<i>  	} isgps;
+</I>&gt;<i>  #endif /* BINARY_ENABLE */
+</I>&gt;<i> +
+</I>&gt;<i> +	/* 
+</I>&gt;<i> +	 * State of an NTRIP connection.  Havoc will ensue if ntrip_conn_init
+</I>&gt;<i> +	 * is not 0, as this is initialized by memset(... '\0', ...).
+</I>&gt;<i> +	 */
+</I>&gt;<i> +	struct {
+</I>&gt;<i> +	    enum {
+</I>&gt;<i> +		ntrip_conn_init,
+</I>&gt;<i> +		ntrip_conn_sent_probe,
+</I>&gt;<i> +		ntrip_conn_sent_get,
+</I>&gt;<i> +		ntrip_conn_established,
+</I>&gt;<i> +		ntrip_conn_err
+</I>&gt;<i> +	    } conn_state; 	/* connection state for multi stage connect */
+</I>&gt;<i> +	    bool works;		/* marks a working connection, so we try to reconnect once */
+</I>&gt;<i> +	    bool sourcetable_parse;	/* have we read the sourcetable header? */
+</I>&gt;<i> +	} ntrip;
+</I>&gt;<i>      } driver;
+</I>&gt;<i>      /*
+</I>&gt;<i>       * Auxiliary structures for parsing data that can be interleaved with
+</I>&gt;<i> diff --git a/libgpsd_core.c b/libgpsd_core.c
+</I>&gt;<i> index 2a532ee..16008b8 100644
+</I>&gt;<i> --- a/libgpsd_core.c
+</I>&gt;<i> +++ b/libgpsd_core.c
+</I>&gt;<i> @@ -161,9 +161,6 @@ void gps_context_init(struct gps_context_t *context)
+</I>&gt;<i>  	.readonly	    = false,
+</I>&gt;<i>  	.sentdgps	    = false,
+</I>&gt;<i>  	.netgnss_service  = netgnss_none,
+</I>&gt;<i> -	.ntrip_conn_state = ntrip_conn_init,
+</I>&gt;<i> -	.ntrip_sourcetable_parse = false,
+</I>&gt;<i> -	.ntrip_works = false,
+</I>&gt;<i>  	.fixcnt	    = 0,
+</I>&gt;<i>  	.dsock	    = -1,
+</I>&gt;<i>  	.rtcmbytes	    = 0,
+</I>&gt;<i> diff --git a/net_ntrip.c b/net_ntrip.c
+</I>&gt;<i> index c853f82..2745140 100644
+</I>&gt;<i> --- a/net_ntrip.c
+</I>&gt;<i> +++ b/net_ntrip.c
+</I>&gt;<i> @@ -186,7 +186,7 @@ static void ntrip_str_parse(char *str, size_t len,
+</I>&gt;<i>      while ((s = ntrip_field_iterate(NULL, s, eol)));
+</I>&gt;<i>  }
+</I>&gt;<i>  
+</I>&gt;<i> -static int ntrip_sourcetable_parse(struct gps_device_t *dev)
+</I>&gt;<i> +static int ntrip_sourcetable_parse(struct gps_device_t *device)
+</I>&gt;<i>  {
+</I>&gt;<i>      struct ntrip_stream_t hold;
+</I>&gt;<i>      ssize_t llen, len = 0;
+</I>&gt;<i> @@ -195,8 +195,7 @@ static int ntrip_sourcetable_parse(struct gps_device_t *dev)
+</I>&gt;<i>      bool match = false;
+</I>&gt;<i>      char buf[BUFSIZ];
+</I>&gt;<i>      size_t blen = BUFSIZ;
+</I>&gt;<i> -    int fd = dev-&gt;gpsdata.gps_fd;
+</I>&gt;<i> -    struct gps_context_t *context = dev-&gt;context;
+</I>&gt;<i> +    int fd = device-&gt;gpsdata.gps_fd;
+</I>&gt;<i>  
+</I>&gt;<i>      while (1) {
+</I>&gt;<i>  	char *eol;
+</I>&gt;<i> @@ -229,13 +228,13 @@ static int ntrip_sourcetable_parse(struct gps_device_t *dev)
+</I>&gt;<i>  
+</I>&gt;<i>  	gpsd_report(LOG_RAW, &quot;Ntrip source table buffer %s\n&quot;, buf);
+</I>&gt;<i>  
+</I>&gt;<i> -	sourcetable = context-&gt;ntrip_sourcetable_parse;
+</I>&gt;<i> +	sourcetable = device-&gt;driver.ntrip.sourcetable_parse;
+</I>&gt;<i>  	if (!sourcetable) {
+</I>&gt;<i>  	    /* parse SOURCETABLE */
+</I>&gt;<i>  	    if (strncmp(line, NTRIP_SOURCETABLE, strlen(NTRIP_SOURCETABLE)) ==
+</I>&gt;<i>  		    0) {
+</I>&gt;<i>  		sourcetable = true;
+</I>&gt;<i> -		context-&gt;ntrip_sourcetable_parse = true;
+</I>&gt;<i> +		device-&gt;driver.ntrip.sourcetable_parse = true;
+</I>&gt;<i>  		llen = (ssize_t) strlen(NTRIP_SOURCETABLE);
+</I>&gt;<i>  		line += llen;
+</I>&gt;<i>  		len -= llen;
+</I>&gt;<i> @@ -461,7 +460,7 @@ close:
+</I>&gt;<i>  }
+</I>&gt;<i>  
+</I>&gt;<i>  /*@ -branchstate -nullpass @*/
+</I>&gt;<i> -int ntrip_open(struct gps_device_t *dev, char *caster)
+</I>&gt;<i> +int ntrip_open(struct gps_device_t *device, char *caster)
+</I>&gt;<i>      /* open a connection to a Ntrip broadcaster */
+</I>&gt;<i>  {
+</I>&gt;<i>      char *amp, *colon, *slash;
+</I>&gt;<i> @@ -472,9 +471,9 @@ int ntrip_open(struct gps_device_t *dev, char *caster)
+</I>&gt;<i>      int ret;
+</I>&gt;<i>      char t[strlen(caster + 1)];
+</I>&gt;<i>      char *tmp = t;
+</I>&gt;<i> -    struct gps_context_t *context = dev-&gt;context;
+</I>&gt;<i> +    struct gps_context_t *context = device-&gt;context;
+</I>&gt;<i>  
+</I>&gt;<i> -    switch (context-&gt;ntrip_conn_state) {
+</I>&gt;<i> +    switch (device-&gt;driver.ntrip.conn_state) {
+</I>&gt;<i>  	case ntrip_conn_init:
+</I>&gt;<i>  	    ntrip_stream.set = false;
+</I>&gt;<i>  	    (void)strlcpy(tmp, caster, strlen(caster));
+</I>&gt;<i> @@ -490,7 +489,7 @@ int ntrip_open(struct gps_device_t *dev, char *caster)
+</I>&gt;<i>  		    gpsd_report(LOG_ERROR,
+</I>&gt;<i>  			    &quot;can't extract user-ID and password from %s\n&quot;,
+</I>&gt;<i>  			    caster);
+</I>&gt;<i> -		    context-&gt;ntrip_conn_state = ntrip_conn_err;
+</I>&gt;<i> +		    device-&gt;driver.ntrip.conn_state = ntrip_conn_err;
+</I>&gt;<i>  		    return -1;
+</I>&gt;<i>  		}
+</I>&gt;<i>  	    }
+</I>&gt;<i> @@ -502,7 +501,7 @@ int ntrip_open(struct gps_device_t *dev, char *caster)
+</I>&gt;<i>  		/* todo: add autoconnect like in dgpsip.c */
+</I>&gt;<i>  		gpsd_report(LOG_ERROR, &quot;can't extract Ntrip stream from %s\n&quot;,
+</I>&gt;<i>  			caster);
+</I>&gt;<i> -		context-&gt;ntrip_conn_state = ntrip_conn_err;
+</I>&gt;<i> +		device-&gt;driver.ntrip.conn_state = ntrip_conn_err;
+</I>&gt;<i>  		return -1;
+</I>&gt;<i>  	    }
+</I>&gt;<i>  	    if ((colon = strchr(tmp, ':')) != NULL) {
+</I>&gt;<i> @@ -524,42 +523,42 @@ int ntrip_open(struct gps_device_t *dev, char *caster)
+</I>&gt;<i>  
+</I>&gt;<i>  	    ret = ntrip_stream_req_probe();
+</I>&gt;<i>  	    if (ret == -1) {
+</I>&gt;<i> -		context-&gt;ntrip_conn_state = ntrip_conn_err;
+</I>&gt;<i> +		device-&gt;driver.ntrip.conn_state = ntrip_conn_err;
+</I>&gt;<i>  		return -1;
+</I>&gt;<i>  	    }
+</I>&gt;<i> -	    dev-&gt;gpsdata.gps_fd = ret;
+</I>&gt;<i> -	    context-&gt;ntrip_conn_state = ntrip_conn_sent_probe;
+</I>&gt;<i> +	    device-&gt;gpsdata.gps_fd = ret;
+</I>&gt;<i> +	    device-&gt;driver.ntrip.conn_state = ntrip_conn_sent_probe;
+</I>&gt;<i>  	    return ret;
+</I>&gt;<i>  	case ntrip_conn_sent_probe:
+</I>&gt;<i> -	    ret = ntrip_sourcetable_parse(dev);
+</I>&gt;<i> +	    ret = ntrip_sourcetable_parse(device);
+</I>&gt;<i>  	    if (ret == -1) {
+</I>&gt;<i> -		context-&gt;ntrip_conn_state = ntrip_conn_err;
+</I>&gt;<i> +		device-&gt;driver.ntrip.conn_state = ntrip_conn_err;
+</I>&gt;<i>  		return -1;
+</I>&gt;<i>  	    }
+</I>&gt;<i>  	    if (ret == 0 &amp;&amp; ntrip_stream.set == false) {
+</I>&gt;<i>  		return ret;
+</I>&gt;<i>  	    }
+</I>&gt;<i> -	    (void)close(dev-&gt;gpsdata.gps_fd);
+</I>&gt;<i> +	    (void)close(device-&gt;gpsdata.gps_fd);
+</I>&gt;<i>  	    if (ntrip_auth_encode(&amp;ntrip_stream, ntrip_stream.credentials, ntrip_stream.authStr, 128) != 0) {
+</I>&gt;<i> -		context-&gt;ntrip_conn_state = ntrip_conn_err;
+</I>&gt;<i> +		device-&gt;driver.ntrip.conn_state = ntrip_conn_err;
+</I>&gt;<i>  		return -1;
+</I>&gt;<i>  	    }
+</I>&gt;<i>  	    ret = ntrip_stream_get_req();
+</I>&gt;<i>  	    if (ret == -1) {
+</I>&gt;<i> -		context-&gt;ntrip_conn_state = ntrip_conn_err;
+</I>&gt;<i> +		device-&gt;driver.ntrip.conn_state = ntrip_conn_err;
+</I>&gt;<i>  		return -1;
+</I>&gt;<i>  	    }
+</I>&gt;<i> -	    dev-&gt;gpsdata.gps_fd = ret;
+</I>&gt;<i> -	    context-&gt;ntrip_conn_state = ntrip_conn_sent_get;
+</I>&gt;<i> +	    device-&gt;gpsdata.gps_fd = ret;
+</I>&gt;<i> +	    device-&gt;driver.ntrip.conn_state = ntrip_conn_sent_get;
+</I>&gt;<i>  	    break;
+</I>&gt;<i>  	case ntrip_conn_sent_get:
+</I>&gt;<i> -	    ret = ntrip_stream_get_parse(dev-&gt;gpsdata.gps_fd);
+</I>&gt;<i> +	    ret = ntrip_stream_get_parse(device-&gt;gpsdata.gps_fd);
+</I>&gt;<i>  	    if (ret == -1) {
+</I>&gt;<i> -		context-&gt;ntrip_conn_state = ntrip_conn_err;
+</I>&gt;<i> +		device-&gt;driver.ntrip.conn_state = ntrip_conn_err;
+</I>&gt;<i>  		return -1;
+</I>&gt;<i>  	    }
+</I>&gt;<i> -	    context-&gt;ntrip_conn_state = ntrip_conn_established;
+</I>&gt;<i> -	    context-&gt;ntrip_works = true; // we know, this worked.
+</I>&gt;<i> +	    device-&gt;driver.ntrip.conn_state = ntrip_conn_established;
+</I>&gt;<i> +	    device-&gt;driver.ntrip.works = true; // we know, this worked.
+</I>&gt;<i>  	    break;
+</I>&gt;<i>  	case ntrip_conn_established:
+</I>&gt;<i>  	case ntrip_conn_err:
+</I>&gt;<i> 
+</I>&gt;<i> -----------------------------------------------------------------------
+</I>&gt;<i> 
+</I>&gt;<i> Summary of changes:
+</I>&gt;<i>  gpsd.c         |   14 ++++++--------
+</I>&gt;<i>  gpsd.h-tail    |   25 ++++++++++++++++---------
+</I>&gt;<i>  libgpsd_core.c |    3 ---
+</I>&gt;<i>  net_ntrip.c    |   47 +++++++++++++++++++++++------------------------
+</I>&gt;<i>  4 files changed, 45 insertions(+), 44 deletions(-)
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> hooks/post-receive
+</I>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008603.html">[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-839-g5590d20
+</A></li>
+	<LI>Next message: <A HREF="008601.html">[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-840-ge7febaf
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8600">[ date ]</a>
+              <a href="thread.html#8600">[ thread ]</a>
+              <a href="subject.html#8600">[ subject ]</a>
+              <a href="author.html#8600">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

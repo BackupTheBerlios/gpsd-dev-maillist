@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] splint just turned up a third bug
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20splint%20just%20turned%20up%20a%20third%20bug&In-Reply-To=%3CPine.LNX.4.63.0505310036040.25681%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001981.html">
+   <LINK REL="Next"  HREF="001983.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] splint just turned up a third bug</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20splint%20just%20turned%20up%20a%20third%20bug&In-Reply-To=%3CPine.LNX.4.63.0505310036040.25681%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] splint just turned up a third bug">gem at rellim.com
+       </A><BR>
+    <I>Tue May 31 09:50:42 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001981.html">[Gpsd-dev] splint just turned up a third bug
+</A></li>
+        <LI>Next message: <A HREF="001983.html">[Gpsd-dev] splint just turned up a third bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1982">[ date ]</a>
+              <a href="thread.html#1982">[ thread ]</a>
+              <a href="subject.html#1982">[ subject ]</a>
+              <a href="author.html#1982">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Rob!
+
+On Tue, 31 May 2005, Rob Janssen wrote:
+
+&gt;<i> Things have changed a bit...  I also remember the days of &quot;mul/div ==
+</I>&gt;<i> slow&quot; and &quot;float == very slow&quot;.  However, Intel have done much work on
+</I>&gt;<i> making their processors suitable for signal processing, and it shows.
+</I>&gt;<i> I have worked with a Motorola 56001 DSP that could multiply and add in 2
+</I>&gt;<i> cycles of its 27 MHz clock, and everyone was impressed.
+</I>
+I have used DSPs that could do an FFT butterfly primitive in a few
+clocks as well, but most gpsd users will be on an IA32 architecture.
+
+&gt;<i> That is about 7 clockcycles per pass through the loop, which includes one
+</I>&gt;<i> fmul, an integer decrement, and a jump-if-nonzero.
+</I>
+Yes, but of course any GHz+ CPU has more power than required.  The issue
+would be how gpsd would work on some embedded system like an ARM that has
+no FPU.  Like my Palm.
+
+&gt;<i> Try beat this with a function call.  Any function call.
+</I>
+Which is why gcc has inlined most of the basic FPU type functions.  When
+I compiled pow() on gcc 4.0.0 I got this inline:
+
+        fldl    -16(%ebp)
+        fmul    %st(0), %st
+        fstpl   -8(%ebp)
+
+When you use the FPU functions then you allow the compiler/library to
+just do the best thing depending on your target CPU.  In this case
+gcc agreed with you on the fmul, and on other architectures it would
+just fiddle the exponent.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.2.3 (GNU/Linux)
+
+iD8DBQFCnBdV8KZibdeR3qURAlWyAJ0YP/FFnGYM0s1n5mIiX/iAzNbjtACfcaGx
+6uyRLPbhX+I2XjkP5rviEcU=
+=BbXK
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001981.html">[Gpsd-dev] splint just turned up a third bug
+</A></li>
+	<LI>Next message: <A HREF="001983.html">[Gpsd-dev] splint just turned up a third bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1982">[ date ]</a>
+              <a href="thread.html#1982">[ thread ]</a>
+              <a href="subject.html#1982">[ subject ]</a>
+              <a href="author.html#1982">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

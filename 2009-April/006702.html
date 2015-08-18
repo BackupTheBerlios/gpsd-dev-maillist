@@ -1,0 +1,104 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] fix link breakage if some drivers are not enabled
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20fix%20link%20breakage%20if%20some%20drivers%20are%20not%20enabled&In-Reply-To=%3C1240504348-8028-1-git-send-email-l.fu%40pengutronix.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006701.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] fix link breakage if some drivers are not enabled</H1>
+    <B>Luotao Fu</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20fix%20link%20breakage%20if%20some%20drivers%20are%20not%20enabled&In-Reply-To=%3C1240504348-8028-1-git-send-email-l.fu%40pengutronix.de%3E"
+       TITLE="[Gpsd-dev] [PATCH] fix link breakage if some drivers are not enabled">l.fu at pengutronix.de
+       </A><BR>
+    <I>Thu Apr 23 18:32:28 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006701.html">[Gpsd-dev] [PATCH] fix core compiling with nmea disabled
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6702">[ date ]</a>
+              <a href="thread.html#6702">[ thread ]</a>
+              <a href="subject.html#6702">[ subject ]</a>
+              <a href="author.html#6702">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>rtcm*_unpack and rtcm*_dump functions are only declared if the rtcm drivers are
+enabled during configuration. The same for aivdm. If these drivers are not
+enable. Linking will fail due to unknow reference. Add some ifdefs to avoid
+this. This is ugly ifdef hell. It'd be way eleganter to change the structures in
+driver code and put some function pointer checking in here. Due to lack of time
+I only did this quick hack. Better ideas are highly welcome.
+
+Signed-off-by: Luotao Fu &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">l.fu at pengutronix.de</A>&gt;
+---
+ gpsdecode.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/gpsdecode.c b/gpsdecode.c
+index 89e0fc9..5558da0 100644
+--- a/gpsdecode.c
++++ b/gpsdecode.c
+@@ -55,19 +55,25 @@ static void decode(FILE *fpin, FILE *fpout)
+ 	if (lexer.type == COMMENT_PACKET)
+ 	    continue;
+ 	else if (lexer.type == RTCM2_PACKET) {
++#if defined(RTCM104V2_ENABLE) 
+ 	    rtcm2_unpack(&amp;rtcm2, (char *)lexer.isgps.buf);
+ 	    rtcm2_dump(&amp;rtcm2, buf, sizeof(buf));
+ 	    (void)fputs(buf, fpout);
++#endif
+ 	}
+ 	else if (lexer.type == RTCM3_PACKET) {
++#if defined(RTCM104V3_ENABLE) 
+ 	    rtcm3_unpack(&amp;rtcm3, (char *)lexer.outbuffer);
+ 	    rtcm3_dump(&amp;rtcm3, stdout);
++#endif
+ 	}
+ 	else if (lexer.type == AIVDM_PACKET) {
++#if defined(aivdm_dump)
+ 	    /*@ -uniondef */
+ 	    if (aivdm_decode((char *)lexer.outbuffer, lexer.outbuflen, &amp;aivdm))
+ 		aivdm_dump(&amp;aivdm.decoded, scaled, labeled, stdout);
+ 	    /*@ +uniondef */
++#endif
+ 	}
+     }
+ }
+-- 
+1.6.2.1
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006701.html">[Gpsd-dev] [PATCH] fix core compiling with nmea disabled
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6702">[ date ]</a>
+              <a href="thread.html#6702">[ thread ]</a>
+              <a href="subject.html#6702">[ subject ]</a>
+              <a href="author.html#6702">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

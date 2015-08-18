@@ -1,0 +1,611 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] warnings from build on netbsd/5 i386
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20warnings%20from%20build%20on%20netbsd/5%20i386&In-Reply-To=%3Crmi8wis77z9.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006772.html">
+   <LINK REL="Next"  HREF="006790.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] warnings from build on netbsd/5 i386</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20warnings%20from%20build%20on%20netbsd/5%20i386&In-Reply-To=%3Crmi8wis77z9.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] warnings from build on netbsd/5 i386">gdt at ir.bbn.com
+       </A><BR>
+    <I>Mon Jul 13 20:28:42 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006772.html">[Gpsd-dev] warnings from build on netbsd/5 i386
+</A></li>
+        <LI>Next message: <A HREF="006790.html">[Gpsd-dev] warnings from build on netbsd/5 i386
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6788">[ date ]</a>
+              <a href="thread.html#6788">[ thread ]</a>
+              <a href="subject.html#6788">[ subject ]</a>
+              <a href="author.html#6788">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Chris Kuethe &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">chris.kuethe at gmail.com</A>&gt; writes:
+
+&gt;<i> On Mon, Jul 13, 2009 at 10:42 AM, Greg Troxel&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt; wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> net_remotegpsd.c:56: warning: 'level' may be used uninitialized in this function
+</I>&gt;&gt;<i> net_remotegpsd.c:56: warning: 'mode' may be used uninitialized in this function
+</I>&gt;<i>
+</I>&gt;<i> false positives. the compiler can't tell that stream-&gt;protocol will be
+</I>&gt;<i> constrained to one of the three permissible values.
+</I>
+In such cases I'm a fan of explicit initializations so we can later turn
+on -Werrror.
+&gt;&gt;<i> [and a ton of:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> packet.c:983: warning: array subscript has type 'char'
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> From passing variables not of type int to isalpha etc.]
+</I>&gt;<i>
+</I>&gt;<i> what warning flags are you using?
+</I>
+I've appended the full build log (from before your %zd fix).  The
+warning flags are the default ones.
+
+The problem is that NetBSD defines isalpha etc. as
+
+  #define isalpha(c)      ((int)((_ctype_ + 1)[(c)] &amp; (_U|_L)))
+
+isalpha is defined to take an int:
+
+  <A HREF="http://www.opengroup.org/onlinepubs/9699919799/functions/isalpha.html">http://www.opengroup.org/onlinepubs/9699919799/functions/isalpha.html</A>
+
+and it's required to have a value which is either EOF or representable
+as an unsigned char.
+
+It is still unclear to me if using isalpha with char is wrong, or if the
+isalpha implementation above is wrong.
+
+
+
+sed -e '/^ *\([A-Z][A-Z0-9_]*\),/s//   &quot;\1&quot;,/' -e '/_states/s//_names/' &lt; `test -f 'packet_states.h' || echo './'`packet_states.h &gt; packet_names.h
+cat ./gpsd.h-head &gt;gpsd.h
+grep VERSION  gpsd_config.h &gt;&gt;gpsd.h
+grep ENABLE gpsd_config.h &gt;&gt;gpsd.h
+cat ./gpsd.h-tail &gt;&gt;gpsd.h
+gmake  all-am
+gmake[1]: Entering directory `/usr/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https'
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT bits.lo -MD -MP -MF .deps/bits.Tpo -c -o bits.lo bits.c
+mkdir .libs
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT bits.lo -MD -MP -MF .deps/bits.Tpo -c bits.c  -fPIC -DPIC -o .libs/bits.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT bits.lo -MD -MP -MF .deps/bits.Tpo -c bits.c -o bits.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/bits.Tpo .deps/bits.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT bsd-base64.lo -MD -MP -MF .deps/bsd-base64.Tpo -c -o bsd-base64.lo bsd-base64.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT bsd-base64.lo -MD -MP -MF .deps/bsd-base64.Tpo -c bsd-base64.c  -fPIC -DPIC -o .libs/bsd-base64.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT bsd-base64.lo -MD -MP -MF .deps/bsd-base64.Tpo -c bsd-base64.c -o bsd-base64.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/bsd-base64.Tpo .deps/bsd-base64.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT crc24q.lo -MD -MP -MF .deps/crc24q.Tpo -c -o crc24q.lo crc24q.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT crc24q.lo -MD -MP -MF .deps/crc24q.Tpo -c crc24q.c  -fPIC -DPIC -o .libs/crc24q.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT crc24q.lo -MD -MP -MF .deps/crc24q.Tpo -c crc24q.c -o crc24q.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/crc24q.Tpo .deps/crc24q.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT gpsd_report.lo -MD -MP -MF .deps/gpsd_report.Tpo -c -o gpsd_report.lo gpsd_report.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT gpsd_report.lo -MD -MP -MF .deps/gpsd_report.Tpo -c gpsd_report.c  -fPIC -DPIC -o .libs/gpsd_report.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT gpsd_report.lo -MD -MP -MF .deps/gpsd_report.Tpo -c gpsd_report.c -o gpsd_report.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/gpsd_report.Tpo .deps/gpsd_report.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT gpsutils.lo -MD -MP -MF .deps/gpsutils.Tpo -c -o gpsutils.lo gpsutils.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT gpsutils.lo -MD -MP -MF .deps/gpsutils.Tpo -c gpsutils.c  -fPIC -DPIC -o .libs/gpsutils.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT gpsutils.lo -MD -MP -MF .deps/gpsutils.Tpo -c gpsutils.c -o gpsutils.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/gpsutils.Tpo .deps/gpsutils.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT geoid.lo -MD -MP -MF .deps/geoid.Tpo -c -o geoid.lo geoid.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT geoid.lo -MD -MP -MF .deps/geoid.Tpo -c geoid.c  -fPIC -DPIC -o .libs/geoid.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT geoid.lo -MD -MP -MF .deps/geoid.Tpo -c geoid.c -o geoid.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/geoid.Tpo .deps/geoid.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT hex.lo -MD -MP -MF .deps/hex.Tpo -c -o hex.lo hex.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT hex.lo -MD -MP -MF .deps/hex.Tpo -c hex.c  -fPIC -DPIC -o .libs/hex.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT hex.lo -MD -MP -MF .deps/hex.Tpo -c hex.c -o hex.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/hex.Tpo .deps/hex.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT isgps.lo -MD -MP -MF .deps/isgps.Tpo -c -o isgps.lo isgps.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT isgps.lo -MD -MP -MF .deps/isgps.Tpo -c isgps.c  -fPIC -DPIC -o .libs/isgps.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT isgps.lo -MD -MP -MF .deps/isgps.Tpo -c isgps.c -o isgps.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/isgps.Tpo .deps/isgps.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT json.lo -MD -MP -MF .deps/json.Tpo -c -o json.lo json.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT json.lo -MD -MP -MF .deps/json.Tpo -c json.c  -fPIC -DPIC -o .libs/json.o
+json.c: In function 'json_read_object':
+json.c:73: warning: array subscript has type 'char'
+json.c:81: warning: array subscript has type 'char'
+json.c:110: warning: array subscript has type 'char'
+json.c:143: warning: array subscript has type 'char'
+json.c:174: warning: array subscript has type 'char'
+json.c: In function 'json_read_array':
+json.c:196: warning: array subscript has type 'char'
+json.c:213: warning: array subscript has type 'char'
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT json.lo -MD -MP -MF .deps/json.Tpo -c json.c -o json.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/json.Tpo .deps/json.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT libgps.lo -MD -MP -MF .deps/libgps.Tpo -c -o libgps.lo libgps.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT libgps.lo -MD -MP -MF .deps/libgps.Tpo -c libgps.c  -fPIC -DPIC -o .libs/libgps.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT libgps.lo -MD -MP -MF .deps/libgps.Tpo -c libgps.c -o libgps.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/libgps.Tpo .deps/libgps.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT gpsdclient.lo -MD -MP -MF .deps/gpsdclient.Tpo -c -o gpsdclient.lo gpsdclient.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT gpsdclient.lo -MD -MP -MF .deps/gpsdclient.Tpo -c gpsdclient.c  -fPIC -DPIC -o .libs/gpsdclient.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT gpsdclient.lo -MD -MP -MF .deps/gpsdclient.Tpo -c gpsdclient.c -o gpsdclient.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/gpsdclient.Tpo .deps/gpsdclient.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT libgpsd_core.lo -MD -MP -MF .deps/libgpsd_core.Tpo -c -o libgpsd_core.lo libgpsd_core.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT libgpsd_core.lo -MD -MP -MF .deps/libgpsd_core.Tpo -c libgpsd_core.c  -fPIC -DPIC -o .libs/libgpsd_core.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT libgpsd_core.lo -MD -MP -MF .deps/libgpsd_core.Tpo -c libgpsd_core.c -o libgpsd_core.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/libgpsd_core.Tpo .deps/libgpsd_core.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT net_dgpsip.lo -MD -MP -MF .deps/net_dgpsip.Tpo -c -o net_dgpsip.lo net_dgpsip.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT net_dgpsip.lo -MD -MP -MF .deps/net_dgpsip.Tpo -c net_dgpsip.c  -fPIC -DPIC -o .libs/net_dgpsip.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT net_dgpsip.lo -MD -MP -MF .deps/net_dgpsip.Tpo -c net_dgpsip.c -o net_dgpsip.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/net_dgpsip.Tpo .deps/net_dgpsip.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT net_gnss_dispatch.lo -MD -MP -MF .deps/net_gnss_dispatch.Tpo -c -o net_gnss_dispatch.lo net_gnss_dispatch.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT net_gnss_dispatch.lo -MD -MP -MF .deps/net_gnss_dispatch.Tpo -c net_gnss_dispatch.c  -fPIC -DPIC -o .libs/net_gnss_dispatch.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT net_gnss_dispatch.lo -MD -MP -MF .deps/net_gnss_dispatch.Tpo -c net_gnss_dispatch.c -o net_gnss_dispatch.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/net_gnss_dispatch.Tpo .deps/net_gnss_dispatch.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT net_ntrip.lo -MD -MP -MF .deps/net_ntrip.Tpo -c -o net_ntrip.lo net_ntrip.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT net_ntrip.lo -MD -MP -MF .deps/net_ntrip.Tpo -c net_ntrip.c  -fPIC -DPIC -o .libs/net_ntrip.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT net_ntrip.lo -MD -MP -MF .deps/net_ntrip.Tpo -c net_ntrip.c -o net_ntrip.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/net_ntrip.Tpo .deps/net_ntrip.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT net_remotegpsd.lo -MD -MP -MF .deps/net_remotegpsd.Tpo -c -o net_remotegpsd.lo net_remotegpsd.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT net_remotegpsd.lo -MD -MP -MF .deps/net_remotegpsd.Tpo -c net_remotegpsd.c  -fPIC -DPIC -o .libs/net_remotegpsd.o
+net_remotegpsd.c: In function 'remotegpsd_open':
+net_remotegpsd.c:56: warning: 'level' may be used uninitialized in this function
+net_remotegpsd.c:56: warning: 'mode' may be used uninitialized in this function
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT net_remotegpsd.lo -MD -MP -MF .deps/net_remotegpsd.Tpo -c net_remotegpsd.c -o net_remotegpsd.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/net_remotegpsd.Tpo .deps/net_remotegpsd.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT netlib.lo -MD -MP -MF .deps/netlib.Tpo -c -o netlib.lo netlib.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT netlib.lo -MD -MP -MF .deps/netlib.Tpo -c netlib.c  -fPIC -DPIC -o .libs/netlib.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT netlib.lo -MD -MP -MF .deps/netlib.Tpo -c netlib.c -o netlib.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/netlib.Tpo .deps/netlib.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT ntpshm.lo -MD -MP -MF .deps/ntpshm.Tpo -c -o ntpshm.lo ntpshm.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT ntpshm.lo -MD -MP -MF .deps/ntpshm.Tpo -c ntpshm.c  -fPIC -DPIC -o .libs/ntpshm.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT ntpshm.lo -MD -MP -MF .deps/ntpshm.Tpo -c ntpshm.c -o ntpshm.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/ntpshm.Tpo .deps/ntpshm.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT packet.lo -MD -MP -MF .deps/packet.Tpo -c -o packet.lo packet.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT packet.lo -MD -MP -MF .deps/packet.Tpo -c packet.c  -fPIC -DPIC -o .libs/packet.o
+packet.c: In function 'packet_parse':
+packet.c:983: warning: array subscript has type 'char'
+packet.c:991: warning: array subscript has type 'char'
+packet.c:992: warning: array subscript has type 'char'
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT packet.lo -MD -MP -MF .deps/packet.Tpo -c packet.c -o packet.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/packet.Tpo .deps/packet.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT serial.lo -MD -MP -MF .deps/serial.Tpo -c -o serial.lo serial.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT serial.lo -MD -MP -MF .deps/serial.Tpo -c serial.c  -fPIC -DPIC -o .libs/serial.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT serial.lo -MD -MP -MF .deps/serial.Tpo -c serial.c -o serial.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/serial.Tpo .deps/serial.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT srecord.lo -MD -MP -MF .deps/srecord.Tpo -c -o srecord.lo srecord.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT srecord.lo -MD -MP -MF .deps/srecord.Tpo -c srecord.c  -fPIC -DPIC -o .libs/srecord.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT srecord.lo -MD -MP -MF .deps/srecord.Tpo -c srecord.c -o srecord.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/srecord.Tpo .deps/srecord.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT strl.lo -MD -MP -MF .deps/strl.Tpo -c -o strl.lo strl.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT strl.lo -MD -MP -MF .deps/strl.Tpo -c strl.c  -fPIC -DPIC -o .libs/strl.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT strl.lo -MD -MP -MF .deps/strl.Tpo -c strl.c -o strl.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/strl.Tpo .deps/strl.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT subframe.lo -MD -MP -MF .deps/subframe.Tpo -c -o subframe.lo subframe.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT subframe.lo -MD -MP -MF .deps/subframe.Tpo -c subframe.c  -fPIC -DPIC -o .libs/subframe.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT subframe.lo -MD -MP -MF .deps/subframe.Tpo -c subframe.c -o subframe.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/subframe.Tpo .deps/subframe.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT drivers.lo -MD -MP -MF .deps/drivers.Tpo -c -o drivers.lo drivers.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT drivers.lo -MD -MP -MF .deps/drivers.Tpo -c drivers.c  -fPIC -DPIC -o .libs/drivers.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT drivers.lo -MD -MP -MF .deps/drivers.Tpo -c drivers.c -o drivers.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/drivers.Tpo .deps/drivers.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT driver_aivdm.lo -MD -MP -MF .deps/driver_aivdm.Tpo -c -o driver_aivdm.lo driver_aivdm.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_aivdm.lo -MD -MP -MF .deps/driver_aivdm.Tpo -c driver_aivdm.c  -fPIC -DPIC -o .libs/driver_aivdm.o
+driver_aivdm.c: In function 'aivdm_decode':
+driver_aivdm.c:83: warning: format '%ld' expects type 'long int', but argument 3 has type 'size_t'
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_aivdm.lo -MD -MP -MF .deps/driver_aivdm.Tpo -c driver_aivdm.c -o driver_aivdm.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/driver_aivdm.Tpo .deps/driver_aivdm.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT driver_evermore.lo -MD -MP -MF .deps/driver_evermore.Tpo -c -o driver_evermore.lo driver_evermore.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_evermore.lo -MD -MP -MF .deps/driver_evermore.Tpo -c driver_evermore.c  -fPIC -DPIC -o .libs/driver_evermore.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_evermore.lo -MD -MP -MF .deps/driver_evermore.Tpo -c driver_evermore.c -o driver_evermore.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/driver_evermore.Tpo .deps/driver_evermore.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT driver_garmin.lo -MD -MP -MF .deps/driver_garmin.Tpo -c -o driver_garmin.lo driver_garmin.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_garmin.lo -MD -MP -MF .deps/driver_garmin.Tpo -c driver_garmin.c  -fPIC -DPIC -o .libs/driver_garmin.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_garmin.lo -MD -MP -MF .deps/driver_garmin.Tpo -c driver_garmin.c -o driver_garmin.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/driver_garmin.Tpo .deps/driver_garmin.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT driver_garmin_txt.lo -MD -MP -MF .deps/driver_garmin_txt.Tpo -c -o driver_garmin_txt.lo driver_garmin_txt.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_garmin_txt.lo -MD -MP -MF .deps/driver_garmin_txt.Tpo -c driver_garmin_txt.c  -fPIC -DPIC -o .libs/driver_garmin_txt.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_garmin_txt.lo -MD -MP -MF .deps/driver_garmin_txt.Tpo -c driver_garmin_txt.c -o driver_garmin_txt.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/driver_garmin_txt.Tpo .deps/driver_garmin_txt.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT driver_italk.lo -MD -MP -MF .deps/driver_italk.Tpo -c -o driver_italk.lo driver_italk.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_italk.lo -MD -MP -MF .deps/driver_italk.Tpo -c driver_italk.c  -fPIC -DPIC -o .libs/driver_italk.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_italk.lo -MD -MP -MF .deps/driver_italk.Tpo -c driver_italk.c -o driver_italk.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/driver_italk.Tpo .deps/driver_italk.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT driver_navcom.lo -MD -MP -MF .deps/driver_navcom.Tpo -c -o driver_navcom.lo driver_navcom.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_navcom.lo -MD -MP -MF .deps/driver_navcom.Tpo -c driver_navcom.c  -fPIC -DPIC -o .libs/driver_navcom.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_navcom.lo -MD -MP -MF .deps/driver_navcom.Tpo -c driver_navcom.c -o driver_navcom.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/driver_navcom.Tpo .deps/driver_navcom.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT driver_nmea.lo -MD -MP -MF .deps/driver_nmea.Tpo -c -o driver_nmea.lo driver_nmea.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_nmea.lo -MD -MP -MF .deps/driver_nmea.Tpo -c driver_nmea.c  -fPIC -DPIC -o .libs/driver_nmea.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_nmea.lo -MD -MP -MF .deps/driver_nmea.Tpo -c driver_nmea.c -o driver_nmea.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/driver_nmea.Tpo .deps/driver_nmea.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT driver_rtcm2.lo -MD -MP -MF .deps/driver_rtcm2.Tpo -c -o driver_rtcm2.lo driver_rtcm2.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_rtcm2.lo -MD -MP -MF .deps/driver_rtcm2.Tpo -c driver_rtcm2.c  -fPIC -DPIC -o .libs/driver_rtcm2.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_rtcm2.lo -MD -MP -MF .deps/driver_rtcm2.Tpo -c driver_rtcm2.c -o driver_rtcm2.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/driver_rtcm2.Tpo .deps/driver_rtcm2.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT driver_rtcm3.lo -MD -MP -MF .deps/driver_rtcm3.Tpo -c -o driver_rtcm3.lo driver_rtcm3.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_rtcm3.lo -MD -MP -MF .deps/driver_rtcm3.Tpo -c driver_rtcm3.c  -fPIC -DPIC -o .libs/driver_rtcm3.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_rtcm3.lo -MD -MP -MF .deps/driver_rtcm3.Tpo -c driver_rtcm3.c -o driver_rtcm3.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/driver_rtcm3.Tpo .deps/driver_rtcm3.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT driver_sirf.lo -MD -MP -MF .deps/driver_sirf.Tpo -c -o driver_sirf.lo driver_sirf.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_sirf.lo -MD -MP -MF .deps/driver_sirf.Tpo -c driver_sirf.c  -fPIC -DPIC -o .libs/driver_sirf.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_sirf.lo -MD -MP -MF .deps/driver_sirf.Tpo -c driver_sirf.c -o driver_sirf.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/driver_sirf.Tpo .deps/driver_sirf.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT driver_superstar2.lo -MD -MP -MF .deps/driver_superstar2.Tpo -c -o driver_superstar2.lo driver_superstar2.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_superstar2.lo -MD -MP -MF .deps/driver_superstar2.Tpo -c driver_superstar2.c  -fPIC -DPIC -o .libs/driver_superstar2.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_superstar2.lo -MD -MP -MF .deps/driver_superstar2.Tpo -c driver_superstar2.c -o driver_superstar2.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/driver_superstar2.Tpo .deps/driver_superstar2.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT driver_tsip.lo -MD -MP -MF .deps/driver_tsip.Tpo -c -o driver_tsip.lo driver_tsip.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_tsip.lo -MD -MP -MF .deps/driver_tsip.Tpo -c driver_tsip.c  -fPIC -DPIC -o .libs/driver_tsip.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_tsip.lo -MD -MP -MF .deps/driver_tsip.Tpo -c driver_tsip.c -o driver_tsip.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/driver_tsip.Tpo .deps/driver_tsip.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT driver_ubx.lo -MD -MP -MF .deps/driver_ubx.Tpo -c -o driver_ubx.lo driver_ubx.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_ubx.lo -MD -MP -MF .deps/driver_ubx.Tpo -c driver_ubx.c  -fPIC -DPIC -o .libs/driver_ubx.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_ubx.lo -MD -MP -MF .deps/driver_ubx.Tpo -c driver_ubx.c -o driver_ubx.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/driver_ubx.Tpo .deps/driver_ubx.Plo
+/bin/ksh ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT driver_zodiac.lo -MD -MP -MF .deps/driver_zodiac.Tpo -c -o driver_zodiac.lo driver_zodiac.c
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_zodiac.lo -MD -MP -MF .deps/driver_zodiac.Tpo -c driver_zodiac.c  -fPIC -DPIC -o .libs/driver_zodiac.o
+ gcc -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -MT driver_zodiac.lo -MD -MP -MF .deps/driver_zodiac.Tpo -c driver_zodiac.c -o driver_zodiac.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/driver_zodiac.Tpo .deps/driver_zodiac.Plo
+/bin/ksh ./libtool --tag=CXX   --mode=compile g++ -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include   -MT libgpsmm.lo -MD -MP -MF .deps/libgpsmm.Tpo -c -o libgpsmm.lo libgpsmm.cpp
+ g++ -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -MT libgpsmm.lo -MD -MP -MF .deps/libgpsmm.Tpo -c libgpsmm.cpp  -fPIC -DPIC -o .libs/libgpsmm.o
+ g++ -DHAVE_CONFIG_H -I. -I/usr/pkg/include -I/usr/pkg/include -MT libgpsmm.lo -MD -MP -MF .deps/libgpsmm.Tpo -c libgpsmm.cpp -o libgpsmm.o &gt;/dev/null 2&gt;&amp;1
+mv -f .deps/libgpsmm.Tpo .deps/libgpsmm.Plo
+/bin/ksh ./libtool --tag=CXX   --mode=link g++   -version-number 19:0:0 -L/usr/pkg/lib -R/usr/pkg/lib  -L/usr/pkg/lib -o libgps.la -rpath /usr/y0/lib bits.lo bsd-base64.lo crc24q.lo gpsd_report.lo gpsutils.lo geoid.lo hex.lo isgps.lo json.lo libgps.lo gpsdclient.lo libgpsd_core.lo net_dgpsip.lo net_gnss_dispatch.lo net_ntrip.lo net_remotegpsd.lo netlib.lo ntpshm.lo packet.lo serial.lo srecord.lo strl.lo subframe.lo drivers.lo driver_aivdm.lo driver_evermore.lo driver_garmin.lo driver_garmin_txt.lo driver_italk.lo driver_navcom.lo driver_nmea.lo driver_rtcm2.lo driver_rtcm3.lo driver_sirf.lo driver_superstar2.lo driver_tsip.lo driver_ubx.lo driver_zodiac.lo  libgpsmm.lo  -lm -lc   -lpthread 
+g++ -shared -nostdlib /usr/lib/crti.o /usr/lib/crtbeginS.o  .libs/bits.o .libs/bsd-base64.o .libs/crc24q.o .libs/gpsd_report.o .libs/gpsutils.o .libs/geoid.o .libs/hex.o .libs/isgps.o .libs/json.o .libs/libgps.o .libs/gpsdclient.o .libs/libgpsd_core.o .libs/net_dgpsip.o .libs/net_gnss_dispatch.o .libs/net_ntrip.o .libs/net_remotegpsd.o .libs/netlib.o .libs/ntpshm.o .libs/packet.o .libs/serial.o .libs/srecord.o .libs/strl.o .libs/subframe.o .libs/drivers.o .libs/driver_aivdm.o .libs/driver_evermore.o .libs/driver_garmin.o .libs/driver_garmin_txt.o .libs/driver_italk.o .libs/driver_navcom.o .libs/driver_nmea.o .libs/driver_rtcm2.o .libs/driver_rtcm3.o .libs/driver_sirf.o .libs/driver_superstar2.o .libs/driver_tsip.o .libs/driver_ubx.o .libs/driver_zodiac.o .libs/libgpsmm.o  -Wl,--rpath -Wl,/usr/pkg/lib -L/usr/pkg/lib -lpthread -lstdc++ -lm -lc -lgcc_s -lgcc_pic /usr/lib/crtendS.o /usr/lib/crtn.o  -Wl,-soname -Wl,libgps.so.19 -o .libs/libgps.so.19.0
+(cd .libs &amp;&amp; rm -f libgps.so.19 &amp;&amp; ln -s libgps.so.19.0 libgps.so.19)
+(cd .libs &amp;&amp; rm -f libgps.so &amp;&amp; ln -s libgps.so.19.0 libgps.so)
+ar cru .libs/libgps.a  bits.o bsd-base64.o crc24q.o gpsd_report.o gpsutils.o geoid.o hex.o isgps.o json.o libgps.o gpsdclient.o libgpsd_core.o net_dgpsip.o net_gnss_dispatch.o net_ntrip.o net_remotegpsd.o netlib.o ntpshm.o packet.o serial.o srecord.o strl.o subframe.o drivers.o driver_aivdm.o driver_evermore.o driver_garmin.o driver_garmin_txt.o driver_italk.o driver_navcom.o driver_nmea.o driver_rtcm2.o driver_rtcm3.o driver_sirf.o driver_superstar2.o driver_tsip.o driver_ubx.o driver_zodiac.o libgpsmm.o
+ranlib .libs/libgps.a
+creating libgps.la
+(cd .libs &amp;&amp; rm -f libgps.la &amp;&amp; ln -s ../libgps.la libgps.la)
+gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT xgps.o -MD -MP -MF .deps/xgps.Tpo -c -o xgps.o xgps.c
+xgps.c: In function 'update_panel':
+xgps.c:880: warning: array subscript has type 'char'
+mv -f .deps/xgps.Tpo .deps/xgps.Po
+/bin/ksh ./libtool --tag=CC   --mode=link gcc  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include  -L/usr/pkg/lib -R/usr/pkg/lib  -L/usr/pkg/lib -o xgps xgps.o -lm -lc   -lXm -lXt -L/usr/pkg/lib -lSM -lICE libgps.la -lm -lpthread 
+gcc -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -o .libs/xgps xgps.o  -L/usr/pkg/lib -lc /usr/pkg/lib/libXm.so /usr/pkg/lib/libXmu.so /usr/pkg/lib/libXp.so /usr/pkg/lib/libXext.so /usr/pkg/lib/libXft.so /usr/pkg/lib/libXrender.so /usr/pkg/lib/libfontconfig.so /usr/pkg/lib/libexpat.so /usr/pkg/lib/libfreetype.so -lz /usr/pkg/lib/libXt.so /usr/pkg/lib/libX11.so /usr/pkg/lib/libXau.so /usr/pkg/lib/libXdmcp.so /usr/pkg/lib/libSM.so /usr/pkg/lib/libICE.so ./.libs/libgps.so -lm -lpthread  -Wl,--rpath -Wl,/usr/pkg/lib -Wl,--rpath -Wl,/usr/y0/lib
+creating xgps
+gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT xgpsspeed.o -MD -MP -MF .deps/xgpsspeed.Tpo -c -o xgpsspeed.o xgpsspeed.c
+mv -f .deps/xgpsspeed.Tpo .deps/xgpsspeed.Po
+gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT Tachometer.o -MD -MP -MF .deps/Tachometer.Tpo -c -o Tachometer.o Tachometer.c
+mv -f .deps/Tachometer.Tpo .deps/Tachometer.Po
+/bin/ksh ./libtool --tag=CC   --mode=link gcc  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include  -L/usr/pkg/lib -R/usr/pkg/lib  -L/usr/pkg/lib -o xgpsspeed xgpsspeed.o Tachometer.o -lm -lc   -lXaw7 -L/usr/pkg/lib -lSM -lICE libgps.la -lm -lpthread 
+gcc -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -o .libs/xgpsspeed xgpsspeed.o Tachometer.o  -L/usr/pkg/lib -lc /usr/pkg/lib/libXaw7.so /usr/pkg/lib/libXmu.so /usr/pkg/lib/libXext.so /usr/pkg/lib/libXt.so /usr/pkg/lib/libXpm.so /usr/pkg/lib/libX11.so /usr/pkg/lib/libXau.so /usr/pkg/lib/libXdmcp.so /usr/pkg/lib/libSM.so /usr/pkg/lib/libICE.so ./.libs/libgps.so -lm -lpthread  -Wl,--rpath -Wl,/usr/pkg/lib -Wl,--rpath -Wl,/usr/y0/lib
+creating xgpsspeed
+gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT gpsdecode.o -MD -MP -MF .deps/gpsdecode.Tpo -c -o gpsdecode.o gpsdecode.c
+mv -f .deps/gpsdecode.Tpo .deps/gpsdecode.Po
+/bin/ksh ./libtool --tag=CC   --mode=link gcc  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include  -L/usr/pkg/lib -R/usr/pkg/lib  -L/usr/pkg/lib -o gpsdecode gpsdecode.o -lm libgps.la -lm -lpthread 
+gcc -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -o .libs/gpsdecode gpsdecode.o  -L/usr/pkg/lib ./.libs/libgps.so -lm -lpthread  -Wl,--rpath -Wl,/usr/y0/lib -Wl,--rpath -Wl,/usr/pkg/lib
+creating gpsdecode
+gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT cgps.o -MD -MP -MF .deps/cgps.Tpo -c -o cgps.o cgps.c
+mv -f .deps/cgps.Tpo .deps/cgps.Po
+/bin/ksh ./libtool --tag=CC   --mode=link gcc  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include  -L/usr/pkg/lib -R/usr/pkg/lib  -L/usr/pkg/lib -o cgps cgps.o -lm -lc   -lncurses libgps.la -lm -lpthread 
+gcc -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -o .libs/cgps cgps.o  -L/usr/pkg/lib -lc /usr/pkg/lib/libncurses.so ./.libs/libgps.so -lm -lpthread  -Wl,--rpath -Wl,/usr/pkg/lib -Wl,--rpath -Wl,/usr/y0/lib
+creating cgps
+gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT gpsmon.o -MD -MP -MF .deps/gpsmon.Tpo -c -o gpsmon.o gpsmon.c
+gpsmon.c: In function 'packet_dump':
+gpsmon.c:187: warning: array subscript has type 'char'
+gpsmon.c:187: warning: array subscript has type 'char'
+gpsmon.c:191: warning: array subscript has type 'char'
+gpsmon.c: In function 'command':
+gpsmon.c:326: warning: array subscript has type 'char'
+gpsmon.c: In function 'main':
+gpsmon.c:643: warning: array subscript has type 'char'
+gpsmon.c:644: warning: array subscript has type 'char'
+mv -f .deps/gpsmon.Tpo .deps/gpsmon.Po
+gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT monitor_nmea.o -MD -MP -MF .deps/monitor_nmea.Tpo -c -o monitor_nmea.o monitor_nmea.c
+mv -f .deps/monitor_nmea.Tpo .deps/monitor_nmea.Po
+gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT monitor_sirf.o -MD -MP -MF .deps/monitor_sirf.Tpo -c -o monitor_sirf.o monitor_sirf.c
+mv -f .deps/monitor_sirf.Tpo .deps/monitor_sirf.Po
+gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT monitor_italk.o -MD -MP -MF .deps/monitor_italk.Tpo -c -o monitor_italk.o monitor_italk.c
+mv -f .deps/monitor_italk.Tpo .deps/monitor_italk.Po
+gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT monitor_ubx.o -MD -MP -MF .deps/monitor_ubx.Tpo -c -o monitor_ubx.o monitor_ubx.c
+mv -f .deps/monitor_ubx.Tpo .deps/monitor_ubx.Po
+gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT monitor_superstar2.o -MD -MP -MF .deps/monitor_superstar2.Tpo -c -o monitor_superstar2.o monitor_superstar2.c
+mv -f .deps/monitor_superstar2.Tpo .deps/monitor_superstar2.Po
+/bin/ksh ./libtool --tag=CC   --mode=link gcc  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include  -L/usr/pkg/lib -R/usr/pkg/lib  -L/usr/pkg/lib -o gpsmon gpsmon.o monitor_nmea.o monitor_sirf.o monitor_italk.o monitor_ubx.o monitor_superstar2.o -lm -lncurses libgps.la -lm -lpthread 
+gcc -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -o .libs/gpsmon gpsmon.o monitor_nmea.o monitor_sirf.o monitor_italk.o monitor_ubx.o monitor_superstar2.o  -L/usr/pkg/lib /usr/pkg/lib/libncurses.so ./.libs/libgps.so -lm -lpthread  -Wl,--rpath -Wl,/usr/pkg/lib -Wl,--rpath -Wl,/usr/y0/lib
+creating gpsmon
+gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT gpsctl.o -MD -MP -MF .deps/gpsctl.Tpo -c -o gpsctl.o gpsctl.c
+mv -f .deps/gpsctl.Tpo .deps/gpsctl.Po
+/bin/ksh ./libtool --tag=CC   --mode=link gcc  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include  -L/usr/pkg/lib -R/usr/pkg/lib  -L/usr/pkg/lib -o gpsctl gpsctl.o -lm libgps.la -lm -lpthread 
+gcc -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -o .libs/gpsctl gpsctl.o  -L/usr/pkg/lib ./.libs/libgps.so -lm -lpthread  -Wl,--rpath -Wl,/usr/y0/lib -Wl,--rpath -Wl,/usr/pkg/lib
+creating gpsctl
+gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT gpspipe.o -MD -MP -MF .deps/gpspipe.Tpo -c -o gpspipe.o gpspipe.c
+mv -f .deps/gpspipe.Tpo .deps/gpspipe.Po
+/bin/ksh ./libtool --tag=CC   --mode=link gcc  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include  -L/usr/pkg/lib -R/usr/pkg/lib  -L/usr/pkg/lib -o gpspipe gpspipe.o  -lm libgps.la -lm 
+gcc -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -o .libs/gpspipe gpspipe.o  -L/usr/pkg/lib ./.libs/libgps.so -lpthread -lm  -Wl,--rpath -Wl,/usr/y0/lib -Wl,--rpath -Wl,/usr/pkg/lib
+creating gpspipe
+gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT gpxlogger.o -MD -MP -MF .deps/gpxlogger.Tpo -c -o gpxlogger.o gpxlogger.c
+mv -f .deps/gpxlogger.Tpo .deps/gpxlogger.Po
+/bin/ksh ./libtool --tag=CC   --mode=link gcc  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include  -L/usr/pkg/lib -R/usr/pkg/lib  -L/usr/pkg/lib -o gpxlogger gpxlogger.o  libgps.la  -lm 
+gcc -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -o .libs/gpxlogger gpxlogger.o  -L/usr/pkg/lib ./.libs/libgps.so -lpthread -lm  -Wl,--rpath -Wl,/usr/y0/lib -Wl,--rpath -Wl,/usr/pkg/lib
+creating gpxlogger
+gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT lcdgps.o -MD -MP -MF .deps/lcdgps.Tpo -c -o lcdgps.o lcdgps.c
+mv -f .deps/lcdgps.Tpo .deps/lcdgps.Po
+/bin/ksh ./libtool --tag=CC   --mode=link gcc  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include  -L/usr/pkg/lib -R/usr/pkg/lib  -L/usr/pkg/lib -o lcdgps lcdgps.o -lm libgps.la -lm 
+gcc -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -o .libs/lcdgps lcdgps.o  -L/usr/pkg/lib ./.libs/libgps.so -lpthread -lm  -Wl,--rpath -Wl,/usr/y0/lib -Wl,--rpath -Wl,/usr/pkg/lib
+creating lcdgps
+gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT gpsd_dbus.o -MD -MP -MF .deps/gpsd_dbus.Tpo -c -o gpsd_dbus.o gpsd_dbus.c
+mv -f .deps/gpsd_dbus.Tpo .deps/gpsd_dbus.Po
+gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT gpsd.o -MD -MP -MF .deps/gpsd.Tpo -c -o gpsd.o gpsd.c
+gpsd.c: In function 'gpsd_report':
+gpsd.c:206: warning: array subscript has type 'char'
+gpsd.c:206: warning: array subscript has type 'char'
+gpsd.c: In function 'throttled_write':
+gpsd.c:424: warning: array subscript has type 'char'
+gpsd.c: In function 'snarfline':
+gpsd.c:698: warning: array subscript has type 'char'
+gpsd.c:698: warning: array subscript has type 'char'
+mv -f .deps/gpsd.Tpo .deps/gpsd.Po
+gcc -DHAVE_CONFIG_H -I.   -I/usr/pkg/include  -I/usr/pkg/include  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include -MT gpsd_output.o -MD -MP -MF .deps/gpsd_output.Tpo -c -o gpsd_output.o gpsd_output.c
+gpsd_output.c: In function 'handle_oldstyle':
+gpsd_output.c:42: warning: array subscript has type 'char'
+gpsd_output.c:60: warning: array subscript has type 'char'
+gpsd_output.c:62: warning: array subscript has type 'char'
+gpsd_output.c:65: warning: array subscript has type 'char'
+gpsd_output.c:70: warning: array subscript has type 'char'
+mv -f .deps/gpsd_output.Tpo .deps/gpsd_output.Po
+/bin/ksh ./libtool --tag=CC   --mode=link gcc  -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE  -I/usr/pkg/include  -L/usr/pkg/lib -R/usr/pkg/lib  -L/usr/pkg/lib -o gpsd gpsd_dbus.o gpsd.o gpsd_output.o  -lm libgps.la -lm -lpthread 
+gcc -g -O2 -Wall -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -I/usr/pkg/include -o .libs/gpsd gpsd_dbus.o gpsd.o gpsd_output.o  -L/usr/pkg/lib ./.libs/libgps.so -lm -lpthread  -Wl,--rpath -Wl,/usr/y0/lib -Wl,--rpath -Wl,/usr/pkg/lib
+creating gpsd
+cd '.' &amp;&amp; \
+	env abs_builddir='/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https' \
+	    MAKE='gmake' \
+		/usr/pkg/bin/python setup.py build_ext \
+			--build-lib '/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https' \
+			--build-temp '/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https/build' \
+			--include-dirs '/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https:.'
+Note: meta source : no *info/productname or alternative            gpscat
+Note: meta source : see <A HREF="http://docbook.sf.net/el/productname">http://docbook.sf.net/el/productname</A>       gpscat
+Note: meta source : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=source   gpscat
+Note: meta source : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gpscat
+Note: meta version: no *info/productnumber or alternative          gpscat
+Note: meta version: see <A HREF="http://docbook.sf.net/el/productnumber">http://docbook.sf.net/el/productnumber</A>     gpscat
+Note: meta version: no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=version  gpscat
+Note: meta version: see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gpscat
+Warn: meta source : no fallback for source, so inserted a fixme    gpscat
+Note: meta manual : no titled ancestor of refentry                 gpscat
+Note: meta manual : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=manual   gpscat
+Note: meta manual : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gpscat
+Warn: meta manual : no fallback for manual, so inserted a fixme    gpscat
+Note: Writing gpscat.1
+Note: meta source : no *info/productname or alternative            gpsfake
+Note: meta source : see <A HREF="http://docbook.sf.net/el/productname">http://docbook.sf.net/el/productname</A>       gpsfake
+Note: meta source : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=source   gpsfake
+Note: meta source : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gpsfake
+Note: meta version: no *info/productnumber or alternative          gpsfake
+Note: meta version: see <A HREF="http://docbook.sf.net/el/productnumber">http://docbook.sf.net/el/productnumber</A>     gpsfake
+Note: meta version: no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=version  gpsfake
+Note: meta version: see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gpsfake
+Warn: meta source : no fallback for source, so inserted a fixme    gpsfake
+Note: meta manual : no titled ancestor of refentry                 gpsfake
+Note: meta manual : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=manual   gpsfake
+Note: meta manual : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gpsfake
+Warn: meta manual : no fallback for manual, so inserted a fixme    gpsfake
+Note: Writing gpsfake.1
+Note: meta source : no *info/productname or alternative            gpsprof
+Note: meta source : see <A HREF="http://docbook.sf.net/el/productname">http://docbook.sf.net/el/productname</A>       gpsprof
+Note: meta source : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=source   gpsprof
+Note: meta source : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gpsprof
+Note: meta version: no *info/productnumber or alternative          gpsprof
+Note: meta version: see <A HREF="http://docbook.sf.net/el/productnumber">http://docbook.sf.net/el/productnumber</A>     gpsprof
+Note: meta version: no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=version  gpsprof
+Note: meta version: see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gpsprof
+Warn: meta source : no fallback for source, so inserted a fixme    gpsprof
+Note: meta manual : no titled ancestor of refentry                 gpsprof
+Note: meta manual : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=manual   gpsprof
+Note: meta manual : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gpsprof
+Warn: meta manual : no fallback for manual, so inserted a fixme    gpsprof
+Note: Writing gpsprof.1
+cd '/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https' &amp;&amp; gmake 'gpscat.1'
+gmake[2]: Entering directory `/usr/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https'
+xsltproc --nonet <A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A> gpscat.xml
+gmake[2]: Leaving directory `/usr/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https'
+
+cd '/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https' &amp;&amp; gmake 'gpsfake.1'
+gmake[2]: Entering directory `/usr/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https'
+xsltproc --nonet <A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A> gpsfake.xml
+gmake[2]: Leaving directory `/usr/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https'
+
+cd '/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https' &amp;&amp; gmake 'gpsprof.1'
+gmake[2]: Entering directory `/usr/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https'
+xsltproc --nonet <A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A> gpsprof.xml
+gmake[2]: Leaving directory `/usr/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https'
+
+running build_ext
+building 'gpspacket' extension
+creating /home/gdt/SOFTWARE/GPSD/gpsd-trunk-https/build
+cc -pthread -fno-strict-aliasing -DNDEBUG -O2 -I/usr/include -I/usr/pkg/include -fPIC -I/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https -I. -I/usr/pkg/include/python2.5 -c gpspacket.c -o /home/gdt/SOFTWARE/GPSD/gpsd-trunk-https/build/gpspacket.o
+cc -pthread -fno-strict-aliasing -DNDEBUG -O2 -I/usr/include -I/usr/pkg/include -fPIC -I/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https -I. -I/usr/pkg/include/python2.5 -c packet.c -o /home/gdt/SOFTWARE/GPSD/gpsd-trunk-https/build/packet.o
+cc -pthread -fno-strict-aliasing -DNDEBUG -O2 -I/usr/include -I/usr/pkg/include -fPIC -I/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https -I. -I/usr/pkg/include/python2.5 -c isgps.c -o /home/gdt/SOFTWARE/GPSD/gpsd-trunk-https/build/isgps.o
+cc -pthread -fno-strict-aliasing -DNDEBUG -O2 -I/usr/include -I/usr/pkg/include -fPIC -I/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https -I. -I/usr/pkg/include/python2.5 -c driver_rtcm2.c -o /home/gdt/SOFTWARE/GPSD/gpsd-trunk-https/build/driver_rtcm2.o
+cc -pthread -fno-strict-aliasing -DNDEBUG -O2 -I/usr/include -I/usr/pkg/include -fPIC -I/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https -I. -I/usr/pkg/include/python2.5 -c strl.c -o /home/gdt/SOFTWARE/GPSD/gpsd-trunk-https/build/strl.o
+cc -pthread -fno-strict-aliasing -DNDEBUG -O2 -I/usr/include -I/usr/pkg/include -fPIC -I/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https -I. -I/usr/pkg/include/python2.5 -c hex.c -o /home/gdt/SOFTWARE/GPSD/gpsd-trunk-https/build/hex.o
+cc -pthread -fno-strict-aliasing -DNDEBUG -O2 -I/usr/include -I/usr/pkg/include -fPIC -I/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https -I. -I/usr/pkg/include/python2.5 -c crc24q.c -o /home/gdt/SOFTWARE/GPSD/gpsd-trunk-https/build/crc24q.o
+cc -shared -L/n0/gdt/NetBSD-current/pkgsrc/lang/python25/work/Python-2.5.4 -L/usr/lib -Wl,-R/usr/lib -L/usr/pkg/lib -Wl,-R/usr/pkg/lib /home/gdt/SOFTWARE/GPSD/gpsd-trunk-https/build/gpspacket.o /home/gdt/SOFTWARE/GPSD/gpsd-trunk-https/build/packet.o /home/gdt/SOFTWARE/GPSD/gpsd-trunk-https/build/isgps.o /home/gdt/SOFTWARE/GPSD/gpsd-trunk-https/build/driver_rtcm2.o /home/gdt/SOFTWARE/GPSD/gpsd-trunk-https/build/strl.o /home/gdt/SOFTWARE/GPSD/gpsd-trunk-https/build/hex.o /home/gdt/SOFTWARE/GPSD/gpsd-trunk-https/build/crc24q.o -lpython2.5 -o /home/gdt/SOFTWARE/GPSD/gpsd-trunk-https/gpspacket.so
+building 'gpslib' extension
+cc -pthread -fno-strict-aliasing -DNDEBUG -O2 -I/usr/include -I/usr/pkg/include -fPIC -I/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https -I. -I/usr/pkg/include/python2.5 -c gpslib.c -o /home/gdt/SOFTWARE/GPSD/gpsd-trunk-https/build/gpslib.o
+cc -pthread -fno-strict-aliasing -DNDEBUG -O2 -I/usr/include -I/usr/pkg/include -fPIC -I/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https -I. -I/usr/pkg/include/python2.5 -c geoid.c -o /home/gdt/SOFTWARE/GPSD/gpsd-trunk-https/build/geoid.o
+cc -shared -L/n0/gdt/NetBSD-current/pkgsrc/lang/python25/work/Python-2.5.4 -L/usr/lib -Wl,-R/usr/lib -L/usr/pkg/lib -Wl,-R/usr/pkg/lib /home/gdt/SOFTWARE/GPSD/gpsd-trunk-https/build/gpslib.o /home/gdt/SOFTWARE/GPSD/gpsd-trunk-https/build/geoid.o -lpython2.5 -o /home/gdt/SOFTWARE/GPSD/gpsd-trunk-https/gpslib.so
+xsltproc --nonet <A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A> gpsd.xml
+Note: meta source : no *info/productname or alternative            gpsd
+Note: meta source : see <A HREF="http://docbook.sf.net/el/productname">http://docbook.sf.net/el/productname</A>       gpsd
+Note: meta source : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=source   gpsd
+Note: meta source : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gpsd
+Note: meta version: no *info/productnumber or alternative          gpsd
+Note: meta version: see <A HREF="http://docbook.sf.net/el/productnumber">http://docbook.sf.net/el/productnumber</A>     gpsd
+Note: meta version: no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=version  gpsd
+Note: meta version: see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gpsd
+Warn: meta source : no fallback for source, so inserted a fixme    gpsd
+Note: meta manual : no titled ancestor of refentry                 gpsd
+Note: meta manual : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=manual   gpsd
+Note: meta manual : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gpsd
+Warn: meta manual : no fallback for manual, so inserted a fixme    gpsd
+Note: Writing gpsd.8
+xsltproc --nonet <A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A> './gps.xml'
+Note: meta source : no *info/productname or alternative            gps
+Note: meta source : see <A HREF="http://docbook.sf.net/el/productname">http://docbook.sf.net/el/productname</A>       gps
+Note: meta source : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=source   gps
+Note: meta source : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gps
+Note: meta version: no *info/productnumber or alternative          gps
+Note: meta version: see <A HREF="http://docbook.sf.net/el/productnumber">http://docbook.sf.net/el/productnumber</A>     gps
+Note: meta version: no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=version  gps
+Note: meta version: see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gps
+Warn: meta source : no fallback for source, so inserted a fixme    gps
+Note: meta manual : no titled ancestor of refentry                 gps
+Note: meta manual : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=manual   gps
+Note: meta manual : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gps
+Warn: meta manual : no fallback for manual, so inserted a fixme    gps
+Note: Writing gps.1
+Note: Writing xgps.1 (soelim stub)
+Note: Writing xgpsspeed.1 (soelim stub)
+Note: Writing cgps.1 (soelim stub)
+Note: Writing lcdgps.1 (soelim stub)
+Note: Writing cgpxlogger.1 (soelim stub)
+xsltproc --nonet <A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A> libgps.xml
+Note: meta manual : no titled ancestor of refentry                 libgps
+Note: meta manual : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=manual   libgps
+Note: meta manual : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       libgps
+Warn: meta manual : using &quot;Linux&quot; for &quot;manual&quot;                     libgps
+Note: Writing libgps.3
+xsltproc --nonet <A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A> libgpsmm.xml
+Note: meta manual : no titled ancestor of refentry                 libgpsmm
+Note: meta manual : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=manual   libgpsmm
+Note: meta manual : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       libgpsmm
+Warn: meta manual : using &quot;Linux&quot; for &quot;manual&quot;                     libgpsmm
+Note: Writing libgpsmm.3
+xsltproc --nonet <A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A> libgpsd.xml
+Note: meta manual : no titled ancestor of refentry                 libgpsd
+Note: meta manual : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=manual   libgpsd
+Note: meta manual : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       libgpsd
+Warn: meta manual : using &quot;Linux&quot; for &quot;manual&quot;                     libgpsd
+Note: Writing libgpsd.3
+xsltproc --nonet <A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A> gpsmon.xml
+Note: meta source : no *info/productname or alternative            gpsmon
+Note: meta source : see <A HREF="http://docbook.sf.net/el/productname">http://docbook.sf.net/el/productname</A>       gpsmon
+Note: meta source : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=source   gpsmon
+Note: meta source : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gpsmon
+Note: meta version: no *info/productnumber or alternative          gpsmon
+Note: meta version: see <A HREF="http://docbook.sf.net/el/productnumber">http://docbook.sf.net/el/productnumber</A>     gpsmon
+Note: meta version: no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=version  gpsmon
+Note: meta version: see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gpsmon
+Warn: meta source : no fallback for source, so inserted a fixme    gpsmon
+Note: meta manual : no titled ancestor of refentry                 gpsmon
+Note: meta manual : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=manual   gpsmon
+Note: meta manual : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gpsmon
+Warn: meta manual : no fallback for manual, so inserted a fixme    gpsmon
+Note: Writing gpsmon.1
+xsltproc --nonet <A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A> gpsctl.xml
+Note: meta source : no *info/productname or alternative            gpsctl
+Note: meta source : see <A HREF="http://docbook.sf.net/el/productname">http://docbook.sf.net/el/productname</A>       gpsctl
+Note: meta source : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=source   gpsctl
+Note: meta source : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gpsctl
+Note: meta version: no *info/productnumber or alternative          gpsctl
+Note: meta version: see <A HREF="http://docbook.sf.net/el/productnumber">http://docbook.sf.net/el/productnumber</A>     gpsctl
+Note: meta version: no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=version  gpsctl
+Note: meta version: see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gpsctl
+Warn: meta source : no fallback for source, so inserted a fixme    gpsctl
+Note: meta manual : no titled ancestor of refentry                 gpsctl
+Note: meta manual : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=manual   gpsctl
+Note: meta manual : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gpsctl
+Warn: meta manual : no fallback for manual, so inserted a fixme    gpsctl
+Note: Writing gpsctl.1
+xsltproc --nonet <A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A> gpspipe.xml
+Note: meta source : no *info/productname or alternative            gpspipe
+Note: meta source : see <A HREF="http://docbook.sf.net/el/productname">http://docbook.sf.net/el/productname</A>       gpspipe
+Note: meta source : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=source   gpspipe
+Note: meta source : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gpspipe
+Note: meta version: no *info/productnumber or alternative          gpspipe
+Note: meta version: see <A HREF="http://docbook.sf.net/el/productnumber">http://docbook.sf.net/el/productnumber</A>     gpspipe
+Note: meta version: no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=version  gpspipe
+Note: meta version: see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gpspipe
+Warn: meta source : no fallback for source, so inserted a fixme    gpspipe
+Note: meta manual : no titled ancestor of refentry                 gpspipe
+Note: meta manual : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=manual   gpspipe
+Note: meta manual : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gpspipe
+Warn: meta manual : no fallback for manual, so inserted a fixme    gpspipe
+Note: Writing gpspipe.1
+xsltproc --nonet <A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A> rtcm-104.xml
+Note: meta source : no *info/productname or alternative            rtcm-104
+Note: meta source : see <A HREF="http://docbook.sf.net/el/productname">http://docbook.sf.net/el/productname</A>       rtcm-104
+Note: meta source : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=source   rtcm-104
+Note: meta source : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       rtcm-104
+Note: meta version: no *info/productnumber or alternative          rtcm-104
+Note: meta version: see <A HREF="http://docbook.sf.net/el/productnumber">http://docbook.sf.net/el/productnumber</A>     rtcm-104
+Note: meta version: no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=version  rtcm-104
+Note: meta version: see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       rtcm-104
+Warn: meta source : no fallback for source, so inserted a fixme    rtcm-104
+Note: meta manual : no titled ancestor of refentry                 rtcm-104
+Note: meta manual : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=manual   rtcm-104
+Note: meta manual : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       rtcm-104
+Warn: meta manual : no fallback for manual, so inserted a fixme    rtcm-104
+Note: Writing rtcm-104.5
+xsltproc --nonet <A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A> srec.xml
+Note: meta source : no *info/productname or alternative            srec
+Note: meta source : see <A HREF="http://docbook.sf.net/el/productname">http://docbook.sf.net/el/productname</A>       srec
+Note: meta source : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=source   srec
+Note: meta source : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       srec
+Note: meta version: no *info/productnumber or alternative          srec
+Note: meta version: see <A HREF="http://docbook.sf.net/el/productnumber">http://docbook.sf.net/el/productnumber</A>     srec
+Note: meta version: no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=version  srec
+Note: meta version: see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       srec
+Warn: meta source : no fallback for source, so inserted a fixme    srec
+Note: meta manual : no titled ancestor of refentry                 srec
+Note: meta manual : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=manual   srec
+Note: meta manual : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       srec
+Warn: meta manual : no fallback for manual, so inserted a fixme    srec
+Note: Writing srec.5
+xsltproc --nonet <A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A> gpsdecode.xml
+Note: meta source : no *info/productname or alternative            gpsdecode
+Note: meta source : see <A HREF="http://docbook.sf.net/el/productname">http://docbook.sf.net/el/productname</A>       gpsdecode
+Note: meta source : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=source   gpsdecode
+Note: meta source : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gpsdecode
+Note: meta version: no *info/productnumber or alternative          gpsdecode
+Note: meta version: see <A HREF="http://docbook.sf.net/el/productnumber">http://docbook.sf.net/el/productnumber</A>     gpsdecode
+Note: meta version: no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=version  gpsdecode
+Note: meta version: see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gpsdecode
+Warn: meta source : no fallback for source, so inserted a fixme    gpsdecode
+Note: meta manual : no titled ancestor of refentry                 gpsdecode
+Note: meta manual : no refentry/refmeta/<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">refmiscinfo at class</A>=manual   gpsdecode
+Note: meta manual : see <A HREF="http://docbook.sf.net/el/refmiscinfo">http://docbook.sf.net/el/refmiscinfo</A>       gpsdecode
+Warn: meta manual : no fallback for manual, so inserted a fixme    gpsdecode
+Note: Writing gpsdecode.1
+gmake[1]: Leaving directory `/usr/home/gdt/SOFTWARE/GPSD/gpsd-trunk-https'
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 193 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090713/e77479cd/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090713/e77479cd/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006772.html">[Gpsd-dev] warnings from build on netbsd/5 i386
+</A></li>
+	<LI>Next message: <A HREF="006790.html">[Gpsd-dev] warnings from build on netbsd/5 i386
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6788">[ date ]</a>
+              <a href="thread.html#6788">[ thread ]</a>
+              <a href="subject.html#6788">[ subject ]</a>
+              <a href="author.html#6788">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

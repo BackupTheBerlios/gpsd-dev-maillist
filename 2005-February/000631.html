@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Success!  (was: gpsd now hunts baud rates)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Success%21%20%20%28was%3A%20gpsd%20now%20hunts%20baud%20rates%29&In-Reply-To=%3C20050214083757.GC9592%40us.netrek.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000634.html">
+   <LINK REL="Next"  HREF="000635.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Success!  (was: gpsd now hunts baud rates)</H1>
+    <B>James Cameron</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Success%21%20%20%28was%3A%20gpsd%20now%20hunts%20baud%20rates%29&In-Reply-To=%3C20050214083757.GC9592%40us.netrek.org%3E"
+       TITLE="[Gpsd-dev] Success!  (was: gpsd now hunts baud rates)">quozl at us.netrek.org
+       </A><BR>
+    <I>Mon Feb 14 09:37:57 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000634.html">[Gpsd-dev] Success!  (was: gpsd now hunts baud rates)
+</A></li>
+        <LI>Next message: <A HREF="000635.html">[Gpsd-dev] Success!  (was: gpsd now hunts baud rates)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#631">[ date ]</a>
+              <a href="thread.html#631">[ thread ]</a>
+              <a href="subject.html#631">[ subject ]</a>
+              <a href="author.html#631">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sun, Feb 13, 2005 at 07:17:26PM -0500, Eric S. Raymond wrote:
+&gt;<i> If I'm getting this right, the kernel's buffers can be cleared with
+</I>&gt;<i> tcflush(), but whether the UART's physical FIFO gets cleared is not
+</I>&gt;<i> under software control and depends on the UART hardware design.  
+</I>
+Yes.
+
+&gt;<i> My dim memory from fifteen years ago when I was closer to this stuff
+</I>&gt;<i> is that the physical FIFO is on a 16550 is 8 to 14 bytes long, thus
+</I>&gt;<i> we're going to see it dribble about that many butes after a baud
+</I>&gt;<i> change.
+</I>
+At least.  I've references to UARTs in PCs with 64 byte chip level
+FIFO's.  The silicon guys can probably tweak it up without having to
+worry the software guys.
+
+&gt;<i> I think it's pretty safe to assume no parity; I haven't seen or heard
+</I>&gt;<i> of a serial link using even parity in almost twenty years, and I've
+</I>&gt;<i> *never* seen odd parity.
+</I>
+I've seen some professional gear doing NMEA that relies on parity; but
+certainly it isn't popular with consumer level stuff.  Parity is
+excellent for ignoring noise on the line.  Kinda like defense in depth.
+
+&gt;<i> Actually, at this point, the problem isn't the blat of garbage we get
+</I>&gt;<i> after a baud rate change; that's easy to ignore.  It is -- or rather
+</I>&gt;<i> was -- that the GPS was not seeing the transmitted baud-rate-change
+</I>&gt;<i> $PSRF string at all.
+</I>
+Ah, right.  Are you calling tcdrain() first, so that you know that the
+kernel has dropped everything into the UART?  I don't know if these
+UARTs have transmit buffers longer than a character, but I wouldn't be
+surprised if they did these days.  After tcdrain() you'd have to wait as
+many bit times as there are bytes in the chip buffer, otherwise the baud
+rate change might affect data as it is leaving.
+
+A digital storage oscilloscope would be great ... you could make sure
+that the message is appearing at a constant rate.
+
+-- 
+James Cameron    mailto:<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">quozl at us.netrek.org</A>     <A HREF="http://quozl.netrek.org/">http://quozl.netrek.org/</A>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000634.html">[Gpsd-dev] Success!  (was: gpsd now hunts baud rates)
+</A></li>
+	<LI>Next message: <A HREF="000635.html">[Gpsd-dev] Success!  (was: gpsd now hunts baud rates)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#631">[ date ]</a>
+              <a href="thread.html#631">[ thread ]</a>
+              <a href="subject.html#631">[ subject ]</a>
+              <a href="author.html#631">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,120 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPSD Protocol Inconsistencies
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3C20110321004839.GD12760%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008908.html">
+   <LINK REL="Next"  HREF="008907.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPSD Protocol Inconsistencies</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3C20110321004839.GD12760%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] GPSD Protocol Inconsistencies">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Mar 21 01:48:39 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008908.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+        <LI>Next message: <A HREF="008907.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8917">[ date ]</a>
+              <a href="thread.html#8917">[ thread ]</a>
+              <a href="subject.html#8917">[ subject ]</a>
+              <a href="author.html#8917">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+&gt;<i> Why is &quot;mode&quot; in TPV if it comes from GPGSA?  Shouldn't it or whatever
+</I>&gt;<i> is in GPGSA be in SKY?  But you can derive mode from just the TPV
+</I>&gt;<i> information.
+</I>
+Mode is in TPV because GPGSAs are normally issued by the per-fix report 
+on one-second intervals.  That is, as opposed to GPGSVs which are normally
+emnitted at 5-second intervals.
+
+Nevertheless, I agree that mode is a bit of an uncomfortable edge case
+for GPSD's assumptions.  It's reported on the timescale of fixes but only
+changes on the timescale of the skyview.
+
+&gt;<i> Note you need either GPRMC or BOTH GPGLL AND GPZDA to get the date and
+</I>&gt;<i> then there is the midnight rollover problem (5Hz garmins if nothing
+</I>&gt;<i> else).  To get altitude, you need GPGGA.
+</I>
+Correct.
+ 
+&gt;<i> The lat/lon sentences have the A/V flag which would correspond to mode
+</I>&gt;<i> 1 or &gt;1, and the number of satellites in GPGGA should give 2 or 3 for
+</I>&gt;<i> 2d or 3d fix (ignore the altitude if 2d), but I propose changing 3 to
+</I>&gt;<i> 4 if GPGGA also indicates DGPS is active.
+</I>
+That's not a bad idea.  Noted.  Remind me after release.
+
+&gt;<i>                                          I don't see anywhere else
+</I>&gt;<i> this higher accuracy is indicated.  It isn't DoP, it means whatever
+</I>&gt;<i> numbers are being reported are being corrected.  It could be its own
+</I>&gt;<i> tag.
+</I>
+The philosophy of the protocol as it is now is that what users really care
+about is the xyz error bounds; DGPS correction is reflected by changing the 
+UERE we multiply the DOPs by.  But defining a mode 4 would be a painless
+way to export that information, so I'm not opposed to it.
+
+&gt;<i> The set is lat/lon/validity, date, altitude/sats-2d3d/dgps, each with
+</I>&gt;<i> time  TPV should go out at each complete set.  The particular
+</I>&gt;<i> sentences aren't as important - if there is line noise, GPGLL/ZDA
+</I>&gt;<i> could act as a backup for GPRMC.  You need to see GPRMC or GPZDA at
+</I>&gt;<i> least once - but if it isn't a requirement, you need to have some code
+</I>&gt;<i> to increment the date at the midnight cross (which could be part of
+</I>&gt;<i> the midnight fix anyway).
+</I>&gt;<i> 
+</I>&gt;<i> There may be other combinations that give all the data, but if any
+</I>&gt;<i> don't include time, then TPV would have to depend on bounding and
+</I>&gt;<i> examining the entire frame and with arbitrary ordering, unless you are
+</I>&gt;<i> looking for the interframe pause or something similar, it might be
+</I>&gt;<i> very hard to tell which frame something without a time belongs to.
+</I>&gt;<i> There is still the problem if they don't occur in every set of
+</I>&gt;<i> sentences.
+</I>&gt;<i> 
+</I>&gt;<i> If GPGGA and GPRMC/(GPGLL+GPZDA) are not the same rate, you can still
+</I>&gt;<i> only emit TPV when you get a complete set with the same time values.
+</I>
+Sounds like you're describing the way the NMEA driver already works,
+pretty closely.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008908.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+	<LI>Next message: <A HREF="008907.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8917">[ date ]</a>
+              <a href="thread.html#8917">[ thread ]</a>
+              <a href="subject.html#8917">[ subject ]</a>
+              <a href="author.html#8917">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

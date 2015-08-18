@@ -1,0 +1,165 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Extreme weirdness as I chase a core dump
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Extreme%20weirdness%20as%20I%20chase%20a%20core%20dump&In-Reply-To=%3C200607270728.k6R7SU30011931%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004034.html">
+   <LINK REL="Next"  HREF="004039.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Extreme weirdness as I chase a core dump</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Extreme%20weirdness%20as%20I%20chase%20a%20core%20dump&In-Reply-To=%3C200607270728.k6R7SU30011931%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Extreme weirdness as I chase a core dump">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Jul 27 09:28:30 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004034.html">[Gpsd-dev] Status
+</A></li>
+        <LI>Next message: <A HREF="004039.html">[Gpsd-dev] Extreme weirdness as I chase a core dump
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4037">[ date ]</a>
+              <a href="thread.html#4037">[ thread ]</a>
+              <a href="subject.html#4037">[ subject ]</a>
+              <a href="author.html#4037">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>OK, this is bizarre.
+
+After Marshall Crocker reported that gpsd is core-dumping when he configures 
+it with  
+
+	configure --enable-max-client-fd=8 --enable-max-devices=1
+
+I was able to reproduce that immediately.  So I inserted some instrumentation, 
+and the more data it gave me, the weirder things got.  Here's my patch full of
+breadcrumbs:
+
+Index: gpsd.c
+===================================================================
+--- gpsd.c	(revision 3365)
++++ gpsd.c	(working copy)
+@@ -1498,10 +1498,14 @@
+ 	    }
+ 
+ 	/* poll all active devices */
++	printf(&quot;Start of channel scan\n&quot;);
+ 	for (channel = channels; channel &lt; channels + MAXDEVICES; channel++) {
++	    printf(&quot;Checking channel %d of %d, channel=%p, channel+MAXDEVICES=%p, %d\n&quot;, channel-channels, MAXDEVICES, channel, channels+MAXDEVICES, channel &lt; channels + MAXDEVICES);
++	    printf(&quot;Got here 1\n&quot;);
+ 	    if (!allocated_channel(channel))
+ 		continue;
+ 
++	    printf(&quot;Got here 2\n&quot;);
+ 	    /* pass the current RTCM correction to the GPS if new */
+ 	    if (channel-&gt;device_type)
+ 		rtcm_relay(channel);
+@@ -1562,6 +1566,7 @@
+ 	    }
+ #endif
+ 	}
++	printf(&quot;End of channel scan\n&quot;);
+ 
+ #ifdef NOT_FIXED
+ 	if (context.fixcnt &gt; 0 &amp;&amp; context.dsock == -1) {
+
+And here's the output it produces:
+
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">root at snark</A>:/home/esr/svn/gpsd/trunk# gpsd -n -N -D 3 /dev/ttyUSB0
+gpsd: launching (Version 2.33)
+gpsd: listening on port gpsd
+gpsd: running with effective group ID 0
+gpsd: running with effective user ID 0
+gpsd: opening GPS data source at '/dev/ttyUSB0'
+gpsd: no probe matched...
+gpsd: speed 9600, 8N1
+gpsd: gpsd_activate: opened GPS (4)
+Start of channel scan
+Checking channel 0 of 1, channel=0x523120, channel+MAXDEVICES=0x527bb0, 1
+Got here 1
+Got here 2
+gpsd: packet sniff finds type -1
+Checking channel 1 of 1, channel=0x527bb0, channel+MAXDEVICES=0x527bb0, 0
+Got here 1
+Checking channel 2 of 1, channel=0x52c640, channel+MAXDEVICES=0x527bb0, 0
+Got here 1
+Checking channel 3 of 1, channel=0x5310d0, channel+MAXDEVICES=0x527bb0, 0
+Got here 1
+Checking channel 4 of 1, channel=0x535b60, channel+MAXDEVICES=0x527bb0, 0
+Got here 1
+Checking channel 5 of 1, channel=0x53a5f0, channel+MAXDEVICES=0x527bb0, 0
+Got here 1
+Checking channel 6 of 1, channel=0x53f080, channel+MAXDEVICES=0x527bb0, 0
+Got here 1
+Checking channel 7 of 1, channel=0x543b10, channel+MAXDEVICES=0x527bb0, 0
+Got here 1
+Checking channel 8 of 1, channel=0x5485a0, channel+MAXDEVICES=0x527bb0, 0
+Got here 1
+Checking channel 9 of 1, channel=0x54d030, channel+MAXDEVICES=0x527bb0, 0
+Got here 1
+Segmentation fault
+
+What's wacky is that I don't think I should ever see those final
+fields of 0.  Evaluation of the loop predicate, 
+channel &lt; channels + MAXDEVICES, is taking place inside the loop --
+which means it should never be false.
+
+It's like for some crazy reason the for(;;) predicate is just being
+ignored.
+
+But if I reconfigure with MAXDEVICES at the default value, the loop
+works as expected.
+
+In the immortal words of P.J. O'Rourke: &quot;What the fuck?  I mean,
+what the fucking fuck?&quot;
+
+Somebody please tell me I've missed something stunningly obvious here
+and just need to get more sleep.  The alternative is that gcc-4.0 has
+become deeply, deeply dsturbed.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+Let us hope our weapons are never needed --but do not forget what 
+the common people knew when they demanded the Bill of Rights: An 
+armed citizenry is the first defense, the best defense, and the 
+final defense against tyranny.
+   If guns are outlawed, only the government will have guns. Only 
+the police, the secret police, the military, the hired servants of 
+our rulers.  Only the government -- and a few outlaws.  I intend to 
+be among the outlaws.
+        -- Edward Abbey, &quot;Abbey's Road&quot;, 1979
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004034.html">[Gpsd-dev] Status
+</A></li>
+	<LI>Next message: <A HREF="004039.html">[Gpsd-dev] Extreme weirdness as I chase a core dump
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4037">[ date ]</a>
+              <a href="thread.html#4037">[ thread ]</a>
+              <a href="subject.html#4037">[ subject ]</a>
+              <a href="author.html#4037">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

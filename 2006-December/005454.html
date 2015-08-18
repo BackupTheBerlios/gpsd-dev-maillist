@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev]  Pre-announcing gpssim, a GPS simulator
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%20Pre-announcing%20gpssim%2C%20a%20GPS%20simulator&In-Reply-To=%3C20061216161148.68350.qmail%40web32506.mail.mud.yahoo.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005452.html">
+   <LINK REL="Next"  HREF="005456.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev]  Pre-announcing gpssim, a GPS simulator</H1>
+    <B>Michael R. Davis</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%20Pre-announcing%20gpssim%2C%20a%20GPS%20simulator&In-Reply-To=%3C20061216161148.68350.qmail%40web32506.mail.mud.yahoo.com%3E"
+       TITLE="[Gpsd-dev]  Pre-announcing gpssim, a GPS simulator">mrdvt92 at yahoo.com
+       </A><BR>
+    <I>Sat Dec 16 17:11:48 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005452.html">[Gpsd-dev] [Gpsd-users] Pre-announcing gpssim, a GPS simulator
+</A></li>
+        <LI>Next message: <A HREF="005456.html">[Gpsd-dev] State of the project
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5454">[ date ]</a>
+              <a href="thread.html#5454">[ thread ]</a>
+              <a href="subject.html#5454">[ subject ]</a>
+              <a href="author.html#5454">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i>What I need is code that takes as input  
+</I>&gt;<i> a) A satellite's orbital elements 
+</I> You can get the TLE (Three Line Element) sets with the Perl package Astro::SpaceTrack. 
+ 
+ see my simple example (navstar-get.pl.txt) at <A HREF="http://gpsd.davisnetworks.com/bin/view/Main/ProjectGPSDSimulator">http://gpsd.davisnetworks.com/bin/view/Main/ProjectGPSDSimulator</A> 
+ 
+ # ./navstar-get.pl.txt login password dataset  # register at <A HREF="http://www.space-track.org/">http://www.space-track.org/</A>
+ ./navstar-get.pl.txt login password navstar &gt; navstar.tle
+ ./navstar-get.pl.txt login password inmarsat &gt; inmarsat.tle
+
+You'll most likely need to get both navstar (GPS) and inmarsat (WAAS) TLE sets. 
+ 
+But, here's a copy that might do you well <A HREF="http://celestrak.com/NORAD/elements/gps-ops.txt">http://celestrak.com/NORAD/elements/gps-ops.txt</A> for starters.
+
+
+&gt;<i> b) a time 
+</I> &gt; c) and observation location (lat/lon) 
+&gt;<i>and tells me as output is position in the sky. 
+</I> 
+ The Perl package Astro::Coord::ECI can do that. 
+ 
+ see my wrapper example (navstar-read.pl.txt) at <A HREF="http://gpsd.davisnetworks.com/bin/view/Main/ProjectGPSDSimulator">http://gpsd.davisnetworks.com/bin/view/Main/ProjectGPSDSimulator</A> 
+ 
+ ./navstar-read.pl.txt dataset.tle
+ 
+ The only problem I ran across is that the GPS receiver community identifies satellite by PRN and the GPS constellation community identifies GPS satellites by Object ID.  I put a simple map together in the Perl package GPS::PRN but, the satellite OIDs will keep changing as they get phased in and out of service so it may be an update nightmare.  Also, I could not find the authoritative OID - PRN mapping for WAAS capabilities.  For some reason GPSD returns 135 for WAAS but web searching returns 122?  Also,
+ it is not easy (nor consistent) to determine what satellites are &quot;in view&quot;.  The satellites on the horizon may or may not be in the list of 12 (or 20).  
+ 
+ My next step is to make an algorithm to fake the signal noise (some kind of cosine function WRT satellite elevation).  Then I'll package it for CPAN.
+ 
+ Mike (mrdvt92)
+
+
+
+__________________________________________________
+Do You Yahoo!?
+Tired of spam?  Yahoo! Mail has the best spam protection around 
+<A HREF="http://mail.yahoo.com">http://mail.yahoo.com</A> 
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005452.html">[Gpsd-dev] [Gpsd-users] Pre-announcing gpssim, a GPS simulator
+</A></li>
+	<LI>Next message: <A HREF="005456.html">[Gpsd-dev] State of the project
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5454">[ date ]</a>
+              <a href="thread.html#5454">[ thread ]</a>
+              <a href="subject.html#5454">[ subject ]</a>
+              <a href="author.html#5454">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

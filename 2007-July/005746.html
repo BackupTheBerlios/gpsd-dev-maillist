@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] It doesn't look like just reverting Eivind's commit	is going to work
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20It%20doesn%27t%20look%20like%20just%20reverting%20Eivind%27s%20commit%0A%09is%20going%20to%20work&In-Reply-To=%3C91981b3e0706302138i4995e397q48be94ad998c96c8%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="005747.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] It doesn't look like just reverting Eivind's commit	is going to work</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20It%20doesn%27t%20look%20like%20just%20reverting%20Eivind%27s%20commit%0A%09is%20going%20to%20work&In-Reply-To=%3C91981b3e0706302138i4995e397q48be94ad998c96c8%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] It doesn't look like just reverting Eivind's commit	is going to work">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Sun Jul  1 06:38:34 CEST 2007</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="005747.html">[Gpsd-dev] gpsd wiki access
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5746">[ date ]</a>
+              <a href="thread.html#5746">[ thread ]</a>
+              <a href="subject.html#5746">[ subject ]</a>
+              <a href="author.html#5746">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 6/26/07, Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> The bug almost has to be in allocate_client(), detach_client(), or
+</I>&gt;<i> adjust_max_fd() -- probably the assumptions they make have some
+</I>&gt;<i> mutual inconsistency that only bites us under stress.
+</I>&gt;<i>
+</I>&gt;<i> Chris, I'd say instrument the hell out of these, reproduce your bug,
+</I>&gt;<i> and watch the logs.
+</I>
+it's a bit of a race. short version seems to be that we first try to
+map an incoming connection to a &quot;subscriber&quot;, then we give that
+subscriber a device. Unfortunately a fresh subscriber doesn't have a
+pointer to the source device, and unwisely, this is the indicator we
+use to determine whether a given subscriber slot is available. Thus,
+we get traces as seen below...
+
+clients on fds 6,7,8 and 9 are all told to use the subscriber struct
+at 0x3c0163a0.
+
+gpsd: launching (Version 2.35beta)
+gpsd: listening on port 2947
+gpsd: running with effective group ID 1000
+gpsd: running with effective user ID 1000
+gpsd: adjust_max_fd: fd=5 on=1
+gpsd: adjust_max_fd: increase maxfd from=0 to=5
+gpsd: opening GPS data source at '/dev/cuaU0'
+gpsd: speed 115200, 8N1
+gpsd: gpsd_activate(1): opened GPS (6)
+gpsd: adjust_max_fd: fd=6 on=1
+gpsd: adjust_max_fd: increase maxfd from=5 to=6
+gpsd: allocate_client: testing subscriber slot 0
+gpsd: allocate_client: allocating subscriber slot 0, address 0x3c0163a0
+gpsd: adjust_max_fd: fd=7 on=1
+gpsd: adjust_max_fd: increase maxfd from=6 to=7
+gpsd: client 127.0.0.1 (0) connect on fd 7
+gpsd: allocate_client: testing subscriber slot 0
+gpsd: allocate_client: allocating subscriber slot 0, address 0x3c0163a0
+gpsd: adjust_max_fd: fd=8 on=1
+gpsd: adjust_max_fd: increase maxfd from=7 to=8
+gpsd: client 127.0.0.1 (0) connect on fd 8
+gpsd: allocate_client: testing subscriber slot 0
+gpsd: allocate_client: allocating subscriber slot 0, address 0x3c0163a0
+gpsd: adjust_max_fd: fd=9 on=1
+gpsd: adjust_max_fd: increase maxfd from=8 to=9
+gpsd: client 127.0.0.1 (0) connect on fd 9
+gpsd: allocate_client: testing subscriber slot 0
+gpsd: allocate_client: allocating subscriber slot 0, address 0x3c0163a0
+gpsd: adjust_max_fd: fd=10 on=1
+gpsd: adjust_max_fd: increase maxfd from=9 to=10
+gpsd: client 127.0.0.1 (0) connect on fd 10
+gpsd: detach_client: detaching 127.0.0.1 (sub 0, fd 10) in detach_client
+gpsd: adjust_max_fd: fd=10 on=0
+gpsd: adjust_max_fd: curfd == maxfd
+gpsd: adjust_max_fd: clamping maxfd - fd 5 is live
+gpsd: adjust_max_fd: clamping maxfd - fd 6 is live
+gpsd: adjust_max_fd: clamping maxfd - fd 7 is live
+gpsd: adjust_max_fd: clamping maxfd - fd 8 is live
+gpsd: adjust_max_fd: clamping maxfd - fd 9 is live
+^Cgpsd: Received terminating signal 2. Exiting...
+
+
+
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="005747.html">[Gpsd-dev] gpsd wiki access
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5746">[ date ]</a>
+              <a href="thread.html#5746">[ thread ]</a>
+              <a href="subject.html#5746">[ subject ]</a>
+              <a href="author.html#5746">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

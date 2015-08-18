@@ -1,0 +1,245 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] time presence and precision, tags,	class member queries.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20time%20presence%20and%20precision%2C%20tags%2C%0A%09class%20member%20queries.&In-Reply-To=%3CAANLkTimn4RpxCySYTkfkQC_7KyUpw9HL_F3bxxVQT%2Bd2%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008827.html">
+   <LINK REL="Next"  HREF="008839.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] time presence and precision, tags,	class member queries.</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20time%20presence%20and%20precision%2C%20tags%2C%0A%09class%20member%20queries.&In-Reply-To=%3CAANLkTimn4RpxCySYTkfkQC_7KyUpw9HL_F3bxxVQT%2Bd2%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] time presence and precision, tags,	class member queries.">thomas at mich.com
+       </A><BR>
+    <I>Wed Mar 16 15:16:56 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008827.html">[Gpsd-dev] time presence and precision, tags, class member queries.
+</A></li>
+        <LI>Next message: <A HREF="008839.html">[Gpsd-dev] time presence and precision, tags, class member queries.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8835">[ date ]</a>
+              <a href="thread.html#8835">[ thread ]</a>
+              <a href="subject.html#8835">[ subject ]</a>
+              <a href="author.html#8835">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Wed, Mar 16, 2011 at 1:40 AM, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+</I>&gt;&gt;<i> I was looking through the manpage and noticed that the ISO timestamp
+</I>&gt;&gt;<i> only has two digits of precision. &#160;I have some GPSes that return it to
+</I>&gt;&gt;<i> 3 digits (when operating at 5Hz or above sometimes they won't sync to
+</I>&gt;&gt;<i> the second unless you tell them to).
+</I>&gt;<i>
+</I>&gt;<i> As the man page says: &quot;While the one-per-second PPS pulses emitted by
+</I>&gt;<i> serial GPS units are timed to the GPS system's intrinsic accuracy
+</I>&gt;<i> limit [3.4e=7 secs], the satellites only emit navigation messages at
+</I>&gt;<i> 0.01-second intervals, and the timestamps in them only carry
+</I>&gt;<i> 0.01-second precision. Thus, the timestamps that gpsd reports in
+</I>&gt;<i> time/position/velocity messages are normally accurate only to 1/100th
+</I>&gt;<i> of a second.&quot;
+</I>&gt;<i>
+</I>&gt;<i> You device may claim accuracy of less than 0.01s, but it's fibbing.
+</I>
+I don't think it is claiming higher accuracy, but if it is running at,
+say 8Hz update or something, It will return .125, .250, .375 ... etc.
+I think it is merely for that purpose.  The internal timer to generate
+the messages is in milliseconds in common units.
+
+accuracy != precision, and in this case it is precise but not accurate.
+
+Also, when adding other devices (gyros, accelerometers), they can be
+synced with the 1pps and offer higher accuracy.
+
+My concern here is I would rather specify an &quot;unknown&quot; number of
+decimal digits whose accuracy is questionable rather than locking
+things down to two decimal digits.
+
+&gt;&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; I also noticed that TPV is
+</I>&gt;&gt;<i> usually tagged RMC, but GLL has some info and GGA is where altitude
+</I>&gt;&gt;<i> resides. &#160;The &quot;tag&quot; seems to be arbitrarily chosen, but enough so I
+</I>&gt;&gt;<i> have to ask why is it there, or if there should be a specification,
+</I>&gt;&gt;<i> the SKY is always tagged GSV although GSA is also key.
+</I>&gt;<i>
+</I>&gt;<i> You've encountered one of the wonderful...let's be nice and call them
+</I>&gt;<i> &quot;quirks&quot;...that makes writing GPS software such wholesome family
+</I>&gt;<i> entertainment.
+</I>
+I've encountered this and worse - I've been doing this for years.
+
+&gt;<i> On NMEA devices, a single sample is turned into a burst of sentences that
+</I>&gt;<i> normally includes a GGA, an RMC, and (sometimes) a GLL. &#160;None of these sentences
+</I>&gt;<i> are sufficient information to generate a TPV by itself, and they arrive in a
+</I>&gt;<i> device-dependent random order.
+</I>&gt;<i>
+</I>&gt;<i> gpsd copes with this by watching sentences come through until it sees a
+</I>&gt;<i> timestamp change. &#160;It then recognizes the *previous* sentence as the
+</I>&gt;<i> cycle ender. &#160;Subsequently arrival of that sentence triggers a TPV report
+</I>&gt;<i> based on the cumulated data from start of cycle, followed by clearing of
+</I>&gt;<i> the cumulated data.
+</I>&gt;<i>
+</I>&gt;<i> The TPV will be decorated with the tag of the cycle-ender sentence.
+</I>&gt;<i> Usually, though not always, this is an RMC.
+</I>
+To clarify, it will queue data and emit a fix when the timestamp changes?
+e.g.
+RMC1, GLL1, GGA1 RMC2- triggers fix(RMC1-GLL1-GGA1) and starts fix(RMC2...)
+
+Doesn't this introduce a second of latency if the update rate is 1Hz?
+
+&gt;<i> (There are entire universes of implementation pain, weird edge cases, and
+</I>&gt;<i> hard-learned black art lurking behind this blithe summary. When I say you
+</I>&gt;<i> do not want to write your own gpsd, this is one of the major reasons.)
+</I>
+I already did, and that was just for NMEA, and at 5Hz+ so I've already
+gone through it, like the GPS16/18 from garmin that at 5Hz doesn't
+update the date until about 700mS after midnight UTC.  That was back
+on my Kyocera router on MIPS.  It is also the reason I log the raw
+NMEA (kml files with XML comments bearing the raw data).
+
+But my original question was the purpose for the tag in the first
+place.  Why is it important for anything downstream to know it was
+GGA, or RMC that triggered things?
+
+(skyview elided)
+
+&gt;&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; Is there a pattern to which fields are
+</I>&gt;&gt;<i> populated?
+</I>&gt;<i>
+</I>&gt;<i> Fields are populated if the underlying device supplies them or supplies
+</I>&gt;<i> enough information to compute them.
+</I>&gt;<i>
+</I>&gt;&gt;<i> &#160;Also I noticed xdop and ydop being populated although I
+</I>&gt;&gt;<i> only have the GPGSA, so they are computed (unless you have a GPS that
+</I>&gt;&gt;<i> has these in a sentence). &#160;But I don't think there is enough
+</I>&gt;&gt;<i> information to compute these as such, only turn hdop into a square.
+</I>&gt;<i>
+</I>&gt;<i> But there is. &#160;It's possible to compute DOPs from the skyview with a
+</I>&gt;<i> bit of matrix algebra. gpsd does this internally because devices are
+</I>&gt;<i> very bad about returning the full set. &#160;Yes, this is another yawning
+</I>&gt;<i> pit full of evil black art and another reason not to roll your own.
+</I>
+So it uses the skyview raw data to compute [xyz]DoP?  This is a lot of
+computation if someone doesn't need the extra data, and the skyview is
+returned.
+
+&gt;&gt;<i> Is there a reason computed values are returned alongside the direct
+</I>&gt;&gt;<i> values?
+</I>&gt;<i>
+</I>&gt;<i> I'm not certain what &quot;direct&quot; values you mean.
+</I>
+The GPS itself returns HDOP, VDOP, and PDOP.  To that you add
+[XYZ]DOP. which are computed.
+
+&gt;&gt;<i> On the gpsd.8 manpage and xml, &quot;Responce&quot; is used - that might be a
+</I>&gt;&gt;<i> non US variant of response, otherwise it is a typo.
+</I>&gt;<i>
+</I>&gt;<i> You must be looking at an old version; I can't find this in git head.
+</I>
+My error - I didn't pull the most recent version - it has been fixed
+in the last few days.
+
+I think you also need to update the website copies of the manpages as
+I first noticed it there.
+
+&gt;&gt;<i> I am also having trouble with the json commands and responses, i.e.
+</I>&gt;&gt;<i> what is required for a gpsd-ng compatible implementation to do (if it
+</I>&gt;&gt;<i> doesn't printout a VERSION object when connected? &#160;Missing WATCH
+</I>&gt;&gt;<i> responses? &#160;Responses to things it doesn't understand but a newer one
+</I>&gt;&gt;<i> might). &#160;It says &quot;it does this&quot; in places but not if the order of
+</I>&gt;&gt;<i> outputs is critical or optional.
+</I>&gt;<i>
+</I>&gt;<i> You'll have to specify your questions more exactlly, sorry. As in:
+</I>&gt;<i> &quot;I send X, Y is expected, I see Z. &#160;What do I do?&quot;
+</I>
+But that is the root of my question.  There is no recommended practice
+or guaranteed responses or even much clarity to how to send the
+commands.
+
+I send it a ?WATCH={'json':true}; and get some not really specified
+response.  You get some kind of Device - one or more?, maybe a watch
+status, I remember a third line...  I've sent different variants
+(double quotes, ordering) of ?WATCH={'enabled':true,'json':true}; and
+json was not set to true sometimes.
+
+So you send some kind of not very well specified blob, and get back
+some kind of not very well specified blob - if it happens to contain
+fields, the contents are detailed.
+
+What I was expecting is something like (don't take these to be accurate)
+
+?WATCH= MUST specify parameters in a specific order
+?WATCH= SHOULD specify enable last in the list
+?WATCH= MAY specify parameters in any order
+
+(I also can't seem to find a way to only watch for position TPV and
+not get the SKY but I might just be dense - I don't think browser
+location will need SKY).
+
+The response MUST return the following:...  The response SHOULD ...
+The response MAY...  Both for content and ordering.
+
+For the TPV - are the device and tag fields MUST, SHOULD, or MAY?
+They might be for libgps, but not if you are decoding the json
+directly.
+
+This might not belong on the gpsd.8 manpage, but it is a detailed
+protocol and it isn't really documented as a protocol.  Think RFC
+(actually that would be a good idea - do an RFC to document this).
+There should be a certain minimum MUST.
+
+The actual protocol is whatever standard you want to set and has to
+precisely describe the behavior of whatever implementation.  Right now
+it is &quot;whatever the code does&quot; and the code can change.  If some are
+depending on specific fields and they go away, it will break.
+
+One of the problems with the original GPSD is it was quirky - the
+commands and responses were all ad-hoc but at least were uniform and
+constant.
+
+JSON creates the problem because it is &quot;extensible&quot;, but also
+contractable, e.g. no altitude for 2d.  But is this behavior set in
+stone, or ad-hoc?
+
+&gt;<i> --
+</I>&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008827.html">[Gpsd-dev] time presence and precision, tags, class member queries.
+</A></li>
+	<LI>Next message: <A HREF="008839.html">[Gpsd-dev] time presence and precision, tags, class member queries.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8835">[ date ]</a>
+              <a href="thread.html#8835">[ thread ]</a>
+              <a href="subject.html#8835">[ subject ]</a>
+              <a href="author.html#8835">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

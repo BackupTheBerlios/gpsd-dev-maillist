@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] RE: Does the GPSD protocol need to be redesigned?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20RE%3A%20Does%20the%20GPSD%20protocol%20need%20to%20be%20redesigned%3F&In-Reply-To=%3CPine.LNX.4.62.0503132107150.13059%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000880.html">
+   <LINK REL="Next"  HREF="000883.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] RE: Does the GPSD protocol need to be redesigned?</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20RE%3A%20Does%20the%20GPSD%20protocol%20need%20to%20be%20redesigned%3F&In-Reply-To=%3CPine.LNX.4.62.0503132107150.13059%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] RE: Does the GPSD protocol need to be redesigned?">gem at rellim.com
+       </A><BR>
+    <I>Mon Mar 14 06:30:02 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000880.html">[Gpsd-dev] RE: Does the GPSD protocol need to be redesigned?
+</A></li>
+        <LI>Next message: <A HREF="000883.html">[Gpsd-dev] RE: Does the GPSD protocol need to be redesigned?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#881">[ date ]</a>
+              <a href="thread.html#881">[ thread ]</a>
+              <a href="subject.html#881">[ subject ]</a>
+              <a href="author.html#881">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Pascal!
+
+On Sun, 13 Mar 2005, Pascal F. Martin wrote:
+
+&gt;<i> My major problem with the gpsd protocol is that I have to actually send
+</I>&gt;<i> a query for every item I am interested in, everytime I want an update.
+</I>
+Uh, no.  Just connect to the gpsd server, send &quot;r&quot;, then sit back
+and let the data roll in.
+
+Here is how I just checked that I had the right char to start that:
+	telnet localhost 2947
+
+Then after the conection is up I entered an &quot;r&quot;.  Then I get updates
+every second.
+
+&gt;<i> In my context (real-time GUI application with user interaction) this is
+</I>&gt;<i> more complicated than just listening to the NMEA protocol. Using the gps
+</I>&gt;<i> d client library seems even worst: I understand from the documentation i
+</I>&gt;<i> t blocks until the response is available.
+</I>
+You can wrap the call to gps_poll() inside a check to see if any data is
+available.  Use select() or an ioctl.  See is_input_waiting() in
+libgpsd_core.c for an example of the later in a few lines of code.
+
+&gt;<i> In addition I would plan for a UDP variant of the protocol. This would m
+</I>&gt;<i> ake it possible to use broadcast or multicast, another bandwidth saver.
+</I>
+Broadcast might be an interesting option.  Since 2947/tcp is assigned
+to gpsd I'll bet that 2947/udp is as well.  In my case I prefer TCP/IP
+because it traverses NATs easier, but otherwise I could live with
+either.
+
+Patches are always welcome.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.2.3 (GNU/Linux)
+
+iD8DBQFCNSFd8KZibdeR3qURAm79AJ9kdimfvsQPnngMA/IzuLdTFCjQBACgqg+0
+7TVkcgmzE3Dm5To0SOu+QZE=
+=G7Gq
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000880.html">[Gpsd-dev] RE: Does the GPSD protocol need to be redesigned?
+</A></li>
+	<LI>Next message: <A HREF="000883.html">[Gpsd-dev] RE: Does the GPSD protocol need to be redesigned?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#881">[ date ]</a>
+              <a href="thread.html#881">[ thread ]</a>
+              <a href="subject.html#881">[ subject ]</a>
+              <a href="author.html#881">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

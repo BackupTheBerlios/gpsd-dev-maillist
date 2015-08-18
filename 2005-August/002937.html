@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Worries about watch mode &amp; dbus output
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%3D%3FISO-8859-1%3FQ%3FWorries_about_watch_mode_%26_dbus_output%3F%3D&In-Reply-To=%3C2638.1124323963%40www87.gmx.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002927.html">
+   <LINK REL="Next"  HREF="002942.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Worries about watch mode &amp; dbus output</H1>
+    <B>Belgabor</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%3D%3FISO-8859-1%3FQ%3FWorries_about_watch_mode_%26_dbus_output%3F%3D&In-Reply-To=%3C2638.1124323963%40www87.gmx.net%3E"
+       TITLE="[Gpsd-dev] Worries about watch mode &amp; dbus output">belgabor at gmx.de
+       </A><BR>
+    <I>Thu Aug 18 02:12:43 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002927.html">[Gpsd-dev] gpsd doesn't compile without sirfII support.
+</A></li>
+        <LI>Next message: <A HREF="002942.html">[Gpsd-dev] Worries about watch mode &amp; dbus output
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2937">[ date ]</a>
+              <a href="thread.html#2937">[ thread ]</a>
+              <a href="subject.html#2937">[ subject ]</a>
+              <a href="author.html#2937">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi everybody,
+
+I just added dbus support to gpsdrive (see the respective mailing list for
+the patch). While writing it, I found some strange behaviour of gpsd in
+respect to what it pushes via dbus. First I thought that this might be a
+glich when using gpsfake (which I was using to test at this point), but a
+live test today showed the same thing (which also affects xgps).
+The problem is easily visible from this debug output (which simply prints
+out all data received via dbus):
+
+DBUS raw: ti:1124014730 mode:0 ept:0,005000  48,757457/ 10,426548 eph:nan
+alt:584,80 epv:nan crs:  nan edp:nan sp:  nan eps:nan cl:0,000000 epc:nan
+
+DBUS raw: ti:1124014730 mode:0 ept:0,005000  48,757457/ 10,426548 eph:nan
+alt:584,80 epv:nan crs:  nan edp:nan sp:  nan eps:nan cl:0,000000 epc:nan
+
+DBUS raw: ti:1124014730 mode:3 ept:0,005000  48,757457/ 10,426548
+eph:42,400000 alt:584,80 epv:20,000000 crs:  nan edp:132,558949 sp:  nan
+eps:58,400000 cl:0,000000 epc:nan
+
+DBUS raw: ti:1124014730 mode:0 ept:0,005000  48,757457/ 10,426548 eph:nan
+alt:   nan epv:nan crs:280,6 edp:nan sp:18,88 eps:nan cl:nan epc:nan
+
+This is what I would call a cycle, ie all dbus messages that apply to a
+single timepoint. The problems for me are:
+- Four messages when there (imho) should be only one (minor)
+- Two no-fix messages at the start (minor)
+- The message that has a valid fix lacks speed and course (track) which are
+sent in the last message (which has no fix according to mode) (major)
+- epd and eps are sent via the fix message that doesn't send course (track)
+and are ridiculously high (minor)
+You probably can see why this is a bother as I can't simply wait for a
+message with a fix and use it, I have to look at all messages, accumulate
+the data and process that...
+The problem seems also to affect the 'normal' watch mode and leads to a wild
+flicker of the displayed values in xgps.
+
+What I believe happens is that whenever gpsd gets a NMEA message, it
+'forwards' the data it got via socket in watcher mode or dbus. Is this
+really how it's supposed to work? Shouldn't it wait for a complete dataset? 
+
+Cheers
+Tobias
+
+-- 
+GMX DSL = Maximale Leistung zum minimalen Preis!
+2000 MB nur 2,99, Flatrate ab 4,99 Euro/Monat: <A HREF="http://www.gmx.net/de/go/dsl">http://www.gmx.net/de/go/dsl</A>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002927.html">[Gpsd-dev] gpsd doesn't compile without sirfII support.
+</A></li>
+	<LI>Next message: <A HREF="002942.html">[Gpsd-dev] Worries about watch mode &amp; dbus output
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2937">[ date ]</a>
+              <a href="thread.html#2937">[ thread ]</a>
+              <a href="subject.html#2937">[ subject ]</a>
+              <a href="author.html#2937">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

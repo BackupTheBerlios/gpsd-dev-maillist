@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] PATCH: Fix Minor Memory Leak In 'xgps' App
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PATCH%3A%20Fix%20Minor%20Memory%20Leak%20In%20%27xgps%27%20App&In-Reply-To=%3C200602192107.42617.marr%40flex.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003216.html">
+   <LINK REL="Next"  HREF="003227.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] PATCH: Fix Minor Memory Leak In 'xgps' App</H1>
+    <B>Marr</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PATCH%3A%20Fix%20Minor%20Memory%20Leak%20In%20%27xgps%27%20App&In-Reply-To=%3C200602192107.42617.marr%40flex.com%3E"
+       TITLE="[Gpsd-dev] PATCH: Fix Minor Memory Leak In 'xgps' App">marr at flex.com
+       </A><BR>
+    <I>Mon Feb 20 03:07:42 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003216.html">[Gpsd-dev] PATCH: Fix Minor Memory Leak In 'xgps' App
+</A></li>
+        <LI>Next message: <A HREF="003227.html">[Gpsd-dev] PATCH: Fix Minor Memory Leak In 'xgps' App
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3220">[ date ]</a>
+              <a href="thread.html#3220">[ thread ]</a>
+              <a href="subject.html#3220">[ subject ]</a>
+              <a href="author.html#3220">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sunday 19 February 2006 7:36pm, Remco Treffkorn wrote:
+&gt;<i> On Sunday 19 February 2006 14:24, Marr wrote:
+</I>&gt;<i> &gt; Fellow GPSD Devs,
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; A perusal of the 'xgps' code shows a minor memory leak, which is fixed by
+</I>&gt;<i> &gt; the attached patch (to be applied against version 2.30 of 'gpsd'). It has
+</I>&gt;<i> &gt; been compiled and tested.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Someone with SVN write access, please review/apply. Thanks!
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Suggested changelog entry:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Memory is allocated for the header string in the table of GPS satellite
+</I>&gt;<i> &gt; status information with each display update, but is erroneously not
+</I>&gt;<i> &gt; released if the satellite count is zero.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Bill Marr
+</I>&gt;<i>
+</I>&gt;<i> Bill,
+</I>&gt;<i>
+</I>&gt;<i> would the following also fix it correctly?
+</I>&gt;<i>
+</I>&gt;<i> Index: xgps.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- xgps.c      (revision 3239)
+</I>&gt;<i> +++ xgps.c      (working copy)
+</I>&gt;<i> @@ -272,9 +272,9 @@
+</I>&gt;<i>         while (isspace(*(sp = message + strlen(message) - 1)))
+</I>&gt;<i>             *sp = '\0';
+</I>&gt;<i>      XmTextFieldSetString(status, message);
+</I>&gt;<i> -    string[0] = XmStringCreateSimple(&quot;PRN:   Elev:  Azim:  SNR:  Used:&quot;);
+</I>&gt;<i>      /* This is for the satellite status display */
+</I>&gt;<i>      if (gpsdata-&gt;satellites) {
+</I>&gt;<i> +       string[0] = XmStringCreateSimple(&quot;PRN:   Elev:  Azim:  SNR: 
+</I>&gt;<i> Used:&quot;); for (i = 0; i &lt; MAXCHANNELS; i++) {
+</I>&gt;<i>             if (i &lt; (unsigned int)gpsdata-&gt;satellites) {
+</I>&gt;<i>                 (void)snprintf(s, sizeof(s),
+</I>&gt;<i>
+</I>&gt;<i> I just moved the string[0] init into the 'if' block. This way it should
+</I>&gt;<i> work just fine (unless I missed something).
+</I>&gt;<i>
+</I>&gt;<i> Cheers,
+</I>&gt;<i> Remco
+</I>
+Remco,
+
+Yes. Good point, good catch! I was taking a quick look for memory leaks, given 
+the mention of such a problem in the &quot;todo&quot; list, and clearly didn't give it 
+enough thought. :^) Your fix is a clear improvement. Thanks!
+
+Please apply your version.
+
+Regards,
+Bill Marr
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003216.html">[Gpsd-dev] PATCH: Fix Minor Memory Leak In 'xgps' App
+</A></li>
+	<LI>Next message: <A HREF="003227.html">[Gpsd-dev] PATCH: Fix Minor Memory Leak In 'xgps' App
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3220">[ date ]</a>
+              <a href="thread.html#3220">[ thread ]</a>
+              <a href="subject.html#3220">[ subject ]</a>
+              <a href="author.html#3220">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

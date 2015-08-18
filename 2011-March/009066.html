@@ -1,0 +1,120 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20A%20lightweight%20synchronization%0A%20mechanism%20for%20shared%20memory&In-Reply-To=%3CAANLkTikLoH%2BsOy2DhPFHkH4BBa92UBivGCMBe0Wqtooc%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009065.html">
+   <LINK REL="Next"  HREF="009071.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20A%20lightweight%20synchronization%0A%20mechanism%20for%20shared%20memory&In-Reply-To=%3CAANLkTikLoH%2BsOy2DhPFHkH4BBa92UBivGCMBe0Wqtooc%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory">thomas at mich.com
+       </A><BR>
+    <I>Fri Mar 25 17:52:15 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009065.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+        <LI>Next message: <A HREF="009071.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9066">[ date ]</a>
+              <a href="thread.html#9066">[ thread ]</a>
+              <a href="subject.html#9066">[ subject ]</a>
+              <a href="author.html#9066">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Fri, Mar 25, 2011 at 12:35 PM, Terje Mathisen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">terje at tmsw.no</A>&gt; wrote:
+&gt;<i> tz wrote:
+</I>
+&gt;&gt;&gt;&gt;<i> For that matter, the CPU might reorder it to do the two counter reads
+</I>&gt;&gt;&gt;&gt;<i> before or after the timestamp read or read cached values.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> With the barrier operation that is (and must be) impossible.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> A write barrier means the external RAM and/or caches are synced with CPU1.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> The loads in CPU2 aren't guaranteed anything without a corresponding
+</I>&gt;&gt;<i> read barrier.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> If I understand correctly,
+</I>&gt;<i>
+</I>&gt;<i> I believe you are wrong, at least on x86 which provides pretty strong memory
+</I>&gt;<i> ordering guarantees, but Alpha and some other architectures might indeed be
+</I>&gt;<i> even stricter.
+</I>
+cnt = (shm-&gt;count + 1) &amp; mask
+
+NON-ATOMIC shm-&gt;timestamp[cnt] = timestamp;
+
+THE timestamp struct copy is  interrupted in the middle or if only
+some but not all writes are complete.
+
+Switch to read process.
+
+Read reads old shm-&gt;count
+Reads INCOHERENT shm-&gt; timestame
+Reads old shm-&gt;count which is the same as the original.
+
+Switch back to write process.
+
+WRITE memory_barrier(); // All preceding writes must finish at this point
+shm-&gt;count++;     // Now the client(s) can read the timestamp
+
+There is an assumption that the sentinels, counts, timestamps are read
+and written atomically, but I should explicitly state it here.
+
+The reason you need two sentinels is because you need to know when the
+memory is out of sync.
+
+If you put a single barrier at the end, the read might get identical
+counts if it reads the count (with the payload) twice before the write
+barrier.
+
+If you put a single barrier/update at the beginning, the count will be
+synced if the read starts in the middle of the write's update.
+
+You need read barriers to insure the end and start sentinels are
+loaded BEFORE and AFTER the sync data is loaded.  Without them,
+
+Read count first time
+Initiate Read for payload since it is not atomic.
+Read count first time.
+Payload reads are NOT completed at this point, some are, some aren't
+Write does it's barrier thing.
+Final payload reads are done with incoherent new data.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009065.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+	<LI>Next message: <A HREF="009071.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9066">[ date ]</a>
+              <a href="thread.html#9066">[ thread ]</a>
+              <a href="subject.html#9066">[ subject ]</a>
+              <a href="author.html#9066">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

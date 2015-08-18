@@ -1,0 +1,184 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Problems compiling with lots of warning flags enabled
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Problems%20compiling%20with%20lots%20of%20warning%20flags%20enabled&In-Reply-To=%3C20041224154339.GB16225%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000371.html">
+   <LINK REL="Next"  HREF="000376.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Problems compiling with lots of warning flags enabled</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Problems%20compiling%20with%20lots%20of%20warning%20flags%20enabled&In-Reply-To=%3C20041224154339.GB16225%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Problems compiling with lots of warning flags enabled">esr at thyrsus.com
+       </A><BR>
+    <I>Fri Dec 24 16:43:39 CET 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000371.html">[Gpsd-dev] Problems compiling with lots of warning flags enabled
+</A></li>
+        <LI>Next message: <A HREF="000376.html">[Gpsd-dev] Problems compiling with lots of warning flags enabled
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#374">[ date ]</a>
+              <a href="thread.html#374">[ thread ]</a>
+              <a href="subject.html#374">[ subject ]</a>
+              <a href="author.html#374">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Petter Reinholdtsen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">pere at hungry.com</A>&gt;:
+&gt;<i> 
+</I>&gt;<i> I try to get gpsd compiling with more warning flags enabled with GCC.
+</I>&gt;<i> I ran into a problem with these warnings:
+</I>&gt;<i> 
+</I>&gt;<i>   gpsd.c: In function `main':
+</I>&gt;<i> 
+</I>&gt;<i>   gpsd.c:403: warning: variable `dgpsserver' might be clobbered by
+</I>&gt;<i>     `longjmp' or `vfork'
+</I>&gt;<i>   gpsd.c:406: warning: variable `nowait' might be clobbered by
+</I>&gt;<i>     `longjmp' or `vfork'
+</I>&gt;<i>   gpsd.c:406: warning: variable `gpsd_speed' might be clobbered by
+</I>&gt;<i>     `longjmp' or `vfork'
+</I>&gt;<i>   gpsd.c:408: warning: variable `gpstype' might be clobbered by
+</I>&gt;<i>     `longjmp' or `vfork'
+</I>&gt;<i> 
+</I>&gt;<i> I'm not quite sure how to get rid of these warnings.  Any ideas?  I
+</I>&gt;<i> see the same warnings with the default warning flags when compiling
+</I>&gt;<i> using GCC 2.95.4 in Debian Woody.
+</I>
+I think I need to add some volatile declarations.
+ 
+&gt;<i> Here is the current patch, adding lots of warning flags, making a new
+</I>&gt;<i> macro UNUSED used to flag unused function arguments, and using it
+</I>&gt;<i> several places.  In handle_request() I rewrote the code to actually
+</I>&gt;<i> use the buflen variable instead of flagging it as unused.
+</I>&gt;<i> 
+</I>&gt;<i> Index: configure.in
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- configure.in        (revision 1144)
+</I>&gt;<i> +++ configure.in        (working copy)
+</I>&gt;<i> @@ -11,7 +11,7 @@
+</I>&gt;<i>  AC_C_BIGENDIAN
+</I>&gt;<i> 
+</I>&gt;<i>  if eval &quot;test x$GCC = xyes&quot;; then
+</I>&gt;<i> -       CFLAGS=&quot;$CFLAGS -Wall -Werror&quot;
+</I>&gt;<i> +       CFLAGS=&quot;$CFLAGS -Wall -Werror -W -Wcast-align -Wcast-qual -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type&quot; fi
+</I>&gt;<i> 
+</I>&gt;<i>  AC_CHECK_HEADERS(termios.h sys/termios.h sys/select.h strings.h sys/filio.h sys/time.h X11/xpm.h xpm.h getopt.h sys/modem.h)
+</I>&gt;<i> Index: gps.h
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- gps.h       (revision 1144)
+</I>&gt;<i> +++ gps.h       (working copy)
+</I>&gt;<i> @@ -120,6 +120,8 @@
+</I>&gt;<i> 
+</I>&gt;<i>  #define DEFAULT_GPSD_PORT      &quot;2947&quot;  /* IANA assignment */
+</I>&gt;<i> 
+</I>&gt;<i> +#define UNUSED(a) (void)(a)    /* Flag variable as unused */
+</I>&gt;<i> +
+</I>&gt;<i>  #ifdef __cplusplus
+</I>&gt;<i>  }  /* End of the 'extern &quot;C&quot;' block */
+</I>&gt;<i>  #endif
+</I>&gt;<i> Index: zodiac.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- zodiac.c    (revision 1144)
+</I>&gt;<i> +++ zodiac.c    (working copy)
+</I>&gt;<i> @@ -283,6 +283,7 @@
+</I>&gt;<i>  static void handle1005(struct gps_session_t *session, unsigned short *p)
+</I>&gt;<i>  {
+</I>&gt;<i>      int i, numcorrections = p[O(12)];
+</I>&gt;<i> +    UNUSED(session);
+</I>&gt;<i> 
+</I>&gt;<i>  #if 1
+</I>&gt;<i>    gpsd_report(1, &quot;Station bad: %d\n&quot;, (p[O(9)] &amp; 1) ? 1 : 0);
+</I>
+I think I have a better fix than this.  I added a line to dump the packet 
+sequence number, so the variable is now used.
+
+
+&gt;<i> Index: report.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- report.c    (revision 1144)
+</I>&gt;<i> +++ report.c    (working copy)
+</I>&gt;<i> @@ -1,5 +1,7 @@
+</I>&gt;<i> +#include &quot;config.h&quot;
+</I>&gt;<i>  #include &lt;stdio.h&gt;
+</I>&gt;<i>  #include &lt;stdarg.h&gt;
+</I>&gt;<i> +#include &quot;gpsd.h&quot;
+</I>&gt;<i> 
+</I>&gt;<i>  void gpsd_report(int errlevel, const char *fmt, ... )
+</I>&gt;<i>  /* stub logger for clients that don't supply one */
+</I>&gt;<i> @@ -9,5 +11,6 @@
+</I>&gt;<i>      va_start(ap, fmt);
+</I>&gt;<i>      vfprintf(stderr, fmt, ap);
+</I>&gt;<i>      va_end(ap);
+</I>&gt;<i> +    UNUSED(errlevel);
+</I>&gt;<i>  }
+</I>&gt;<i> 
+</I>&gt;<i> Index: gpsd.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- gpsd.c      (revision 1144)
+</I>&gt;<i> +++ gpsd.c      (working copy)
+</I>&gt;<i> @@ -43,6 +43,7 @@
+</I>&gt;<i> 
+</I>&gt;<i>  static void restart(int sig)
+</I>&gt;<i>  {
+</I>&gt;<i> +    UNUSED(sig);
+</I>&gt;<i>      longjmp(restartbuf, THROW_SIGHUP);
+</I>&gt;<i>  }
+</I>
+Isn't there supposed to be a C pragma for cases like this?
+
+&gt;<i> @@ -155,6 +156,7 @@
+</I>&gt;<i> 
+</I>&gt;<i>  static int validate(int fd)
+</I>&gt;<i>  {
+</I>&gt;<i> +    UNUSED(fd);
+</I>&gt;<i>  #define VALIDATION_COMPLAINT(level, legend) \
+</I>&gt;<i>          gpsd_report(level, legend &quot; (status=%d, mode=%d).\r\n&quot;, \
+</I>&gt;<i>                     session-&gt;gNMEAdata.status, session-&gt;gNMEAdata.mode)
+</I>&gt;<i> @@ -180,7 +182,7 @@
+</I>&gt;<i> 
+</I>&gt;<i>      sprintf(reply, &quot;GPSD&quot;);
+</I>&gt;<i>      p = buf;
+</I>&gt;<i> -    while (*p) {
+</I>&gt;<i> +    while (*p &amp;&amp; p - buf &lt; buflen) {
+</I>&gt;<i>         switch (toupper(*p++)) {
+</I>&gt;<i>         case 'A':
+</I>&gt;<i>             if (!validate(fd))
+</I>
+I took that change.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000371.html">[Gpsd-dev] Problems compiling with lots of warning flags enabled
+</A></li>
+	<LI>Next message: <A HREF="000376.html">[Gpsd-dev] Problems compiling with lots of warning flags enabled
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#374">[ date ]</a>
+              <a href="thread.html#374">[ thread ]</a>
+              <a href="subject.html#374">[ subject ]</a>
+              <a href="author.html#374">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

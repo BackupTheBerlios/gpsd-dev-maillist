@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from           meters/sec to knots
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Re%3A%20accuracy%20in%20conversion%20from%20%20%0A%20%20%20%20%20%20%20%20%20meters/sec%20to%20knots&In-Reply-To=%3Cp06230917c0ad604168c5%40%5B192.168.1.6%5D%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003623.html">
+   <LINK REL="Next"  HREF="003627.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from           meters/sec to knots</H1>
+    <B>Robin L Darroch</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Re%3A%20accuracy%20in%20conversion%20from%20%20%0A%20%20%20%20%20%20%20%20%20meters/sec%20to%20knots&In-Reply-To=%3Cp06230917c0ad604168c5%40%5B192.168.1.6%5D%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from           meters/sec to knots">robin at spade-men.com
+       </A><BR>
+    <I>Thu Jun  8 07:21:51 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003623.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from          meters/sec to knots
+</A></li>
+        <LI>Next message: <A HREF="003627.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from           meters/sec to knots
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3625">[ date ]</a>
+              <a href="thread.html#3625">[ thread ]</a>
+              <a href="subject.html#3625">[ subject ]</a>
+              <a href="author.html#3625">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i>And there is where we disagree.  A lot of folks use gpsd to gnerate trip logs.
+</I>&gt;<i>To have multiple records with the same time stamps and different data
+</I>&gt;<i>in the fields is to create data that is confusing and contradictory.
+</I>
+That's an interesting case... but I wonder what they do with the 
+current confusing and contradictory information GPSd is returning 
+(assuming they use the release or unpatched SVN version)?  CaSoS is, 
+as I've mentioned before, broken at the moment.  Someone that gets 
+GGA followed by RMC would get the following from watcher mode using 
+either the current release or SVN head version (simplified, and 
+assuming every field changes every fix by 1 in the last significant 
+figure - last sig figs all equal):
+
+O=RMC ... speed:40 track:180 ...
+
+[start of cycle]
+
+O=GGA timestamp:61 latitude:-20.0001 longitude:118.0001 altitude:1001 
+speed:40 track:180
+
+O=RMC timestamp:61 latitude:-20.0001 longitude:110.0001 altitude:NaN 
+speed:41 track:181
+
+O=GGA timestamp:62 latitude:-20.0002 longitude:110.0002 altitude:1002 
+speed:41 track:181
+
+O=RMC timestamp:62 latitude:-20.0002 longitude:110.0002 altitude:NaN 
+speed:42 track:182
+
+Obviously that's a bug (which I've fixed), but they're all getting 
+that RIGHT NOW, and no-one appears to be complaining about it.
+
+Anyway, as I've said in my other message, I would be very happy to 
+implement a command-line switch to turn on CaSoS, and actually fix 
+CaSoS in the process, with never-clear as the default.  The above 
+output under the two resulting cases will then look like:
+
+(without CaSoS)
+
+O=RMC ... speed:40 track:180 ...
+
+O=GGA timestamp:61 latitude:-20.0001 longitude:118.0001 altitude:1001 
+speed:40 track:180
+
+O=RMC timestamp:61 latitude:-20.0001 longitude:110.0001 altitude:1001 
+speed:41 track:181
+
+O=GGA timestamp:62 latitude:-20.0002 longitude:110.0002 altitude:1002 
+speed:41 track:181
+
+O=RMC timestamp:62 latitude:-20.0002 longitude:110.0002 altitude:1002 
+speed:42 track:182
+
+
+(with CaSoS)
+
+O=RMC ... speed:40 track:180 ...
+
+O=GGA timestamp:61 latitude:-20.0001 longitude:118.0001 altitude:1001 
+speed:NaN track:NaN
+
+O=RMC timestamp:61 latitude:-20.0001 longitude:110.0001 altitude:1001 
+speed:41 track:181
+
+O=GGA timestamp:62 latitude:-20.0002 longitude:110.0002 altitude:1002 
+speed:NaN track:NaN
+
+O=RMC timestamp:62 latitude:-20.0002 longitude:110.0002 altitude:1002 
+speed:42 track:182
+
+
+I think that seems like a reasonable choice, and it seems fair to 
+provide the friendlier output as the default, leaving the expert 
+users to select the version that &quot;jitters&quot; in favour of extreme 
+paranoia.
+
+&gt;<i>If you want to smooth the data the place to do it is in the client.
+</I>
+On that, we agree - there has never been an argument from me that 
+smoothing belongs in the daemon (although there have been such 
+suggestions from others, which has muddied the waters on this debate).
+-- 
+
+-------------------------------------------------------------------------
+  Robin L. Darroch - PO Box 2715, South Hedland WA 6722 - +61 421 503 966
+       <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at darroch.id.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at nyca.org.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003623.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from          meters/sec to knots
+</A></li>
+	<LI>Next message: <A HREF="003627.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from           meters/sec to knots
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3625">[ date ]</a>
+              <a href="thread.html#3625">[ thread ]</a>
+              <a href="subject.html#3625">[ subject ]</a>
+              <a href="author.html#3625">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

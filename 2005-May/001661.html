@@ -1,0 +1,138 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] endless loop, 100% cpu
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20endless%20loop%2C%20100%25%20cpu&In-Reply-To=%3C200505151443.26417.remco%40rvt.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001656.html">
+   <LINK REL="Next"  HREF="001662.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] endless loop, 100% cpu</H1>
+    <B>Remco Treffkorn</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20endless%20loop%2C%20100%25%20cpu&In-Reply-To=%3C200505151443.26417.remco%40rvt.com%3E"
+       TITLE="[Gpsd-dev] endless loop, 100% cpu">remco at rvt.com
+       </A><BR>
+    <I>Sun May 15 23:43:24 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001656.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+        <LI>Next message: <A HREF="001662.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1661">[ date ]</a>
+              <a href="thread.html#1661">[ thread ]</a>
+              <a href="subject.html#1661">[ subject ]</a>
+              <a href="author.html#1661">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Saturday 14 May 2005 00:18, Rob Janssen wrote:
+&gt;<i> Ok...
+</I>&gt;<i> What kind of distribution do you use?
+</I>&gt;<i> When you have something with a user-friendly administration program, like
+</I>&gt;<i> SuSE Linux, you can install the ntpd package and there will be an icon in
+</I>&gt;<i> YaST to set it up.
+</I>&gt;<i> In any case, install that package (maybe it is named ntp or xntp) and
+</I>&gt;<i> hopefully there will be some example file /etc/ntp.conf
+</I>&gt;<i>
+</I>
+I am running FC3 on this laptop. Ntp is installed and working.
+
+&gt;<i> In this file you need to add some lines (normally somewhere between the
+</I>&gt;<i> comments at the top and the logging and keys configuration at the bottom)
+</I>&gt;<i> that describe your timeservers.
+</I>&gt;<i>
+</I>&gt;<i> For the gpsd timeserver you would add:
+</I>&gt;<i>
+</I>&gt;<i> server 127.127.28.0 minpoll 4 maxpoll 4
+</I>&gt;<i> fudge 127.127.28.0 refid GPS0
+</I>&gt;<i>
+</I>&gt;<i> for an internet clock you add something like:
+</I>&gt;<i>
+</I>&gt;<i> server 194.109.22.18
+</I>&gt;<i>
+</I>
+I am using three time servers on the internet.
+I added the two gpsd related lines to my already existing servers.
+
+&gt;<i> Hopefully your ISP has an NTP server.  You should put the IP address of
+</I>&gt;<i> that server in place of the 194.109.22.18, which is my provider's server
+</I>&gt;<i> and may be firewalled to external users.
+</I>
+&gt;<i> You can also use:
+</I>&gt;<i>
+</I>&gt;<i> server de.pool.ntp.org
+</I>&gt;<i>
+</I>&gt;<i> to get a random public server from a pool in Germany (assuming that is
+</I>&gt;<i> where you live).
+</I>
+Wrong continent. I am closer to 37N 123W.
+
+&gt;<i> When this is configured you make sure the ntp service is enabled in the
+</I>&gt;<i> /etc/rc.d directories (again using the userfriendly tool or else the
+</I>&gt;<i> insserv command) and started.
+</I>&gt;<i>
+</I>&gt;<i> After a few minutes you should have a synchronized clock.  The status can
+</I>&gt;<i> be viewed with &quot;ntpq -p&quot;.
+</I>&gt;<i>
+</I>
+I get:
+
+     remote           refid      st t when poll reach   delay   offset  jitter
+==============================================================================
+xSHM(0)          .GPS0.           0 l   32   16  376    0.000  -10871.  43.056
++0x50a13f43.boan 212.54.64.203    3 u   42   64  377  190.033   -3.496   0.227
++time.uswo.net   198.82.1.201     3 u   49   64  377   91.327   -3.727   1.014
+ LOCAL(0)        LOCAL(0)        10 l   49   64  377    0.000    0.000   0.004
+*clock2.redhat.c .CDMA.           1 u   36   64  377   83.155   -0.016   0.309
+
+and a little later:
+     remote           refid      st t when poll reach   delay   offset  jitter
+==============================================================================
+ SHM(0)          .GPS0.           0 l  299   16    0    0.000    0.000 4000.00
++0x50a13f43.boan 212.54.64.203    3 u   48   64  377  191.006   -3.295   0.822
++time.uswo.net   198.82.1.201     3 u   58   64  377   90.821   -2.807   1.481
+ LOCAL(0)        LOCAL(0)        10 l   56   64  377    0.000    0.000   0.004
+*clock2.redhat.c .CDMA.           1 u   40   64  377   82.906    0.030   0.890
+
+Does that mean it is not considering the gps any more?
+
+So, what can we learn from this (it's all greek to me).
+
+-- 
+Remco Treffkorn (RT445)
+HAM DC2XT
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001656.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+	<LI>Next message: <A HREF="001662.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1661">[ date ]</a>
+              <a href="thread.html#1661">[ thread ]</a>
+              <a href="subject.html#1661">[ subject ]</a>
+              <a href="author.html#1661">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

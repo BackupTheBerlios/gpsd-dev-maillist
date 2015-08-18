@@ -1,0 +1,382 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] RFC: making xmlto a build requirement
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20RFC%3A%20making%20xmlto%20a%20build%20requirement&In-Reply-To=%3C454CC720.20908%40knitter.ch%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004919.html">
+   <LINK REL="Next"  HREF="004922.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] RFC: making xmlto a build requirement</H1>
+    <B>Andreas Stricker</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20RFC%3A%20making%20xmlto%20a%20build%20requirement&In-Reply-To=%3C454CC720.20908%40knitter.ch%3E"
+       TITLE="[Gpsd-dev] RFC: making xmlto a build requirement">andy at knitter.ch
+       </A><BR>
+    <I>Sat Nov  4 18:00:16 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004919.html">[Gpsd-dev] RFC: making xmlto a build requirement
+</A></li>
+        <LI>Next message: <A HREF="004922.html">[Gpsd-dev] RFC: making xmlto a build requirement
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4920">[ date ]</a>
+              <a href="thread.html#4920">[ thread ]</a>
+              <a href="subject.html#4920">[ subject ]</a>
+              <a href="author.html#4920">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Chris Kuethe wrote:
+&gt;&gt;<i> xsltproc gpsd.xml
+</I>&gt;<i> 
+</I>&gt;<i> works for me on openbsd-current
+</I>
+Fine. I've created a patch that will test for xsltproc and
+xmlto (currently with xsltproc preferred). If one of them
+is found it's used to generate man pages, if none is found
+the man pages are not generated at all.
+I don't claim this perfect, I think there should be an option
+to manually set a processor.
+
+The patch below is against a slightly outdated revision because
+I can't access anonymous svn at the moment.
+
+Cheers, Andy
+
+Index: gpsprof.xml
+===================================================================
+- --- gpsprof.xml	(Revision 3701)
++++ gpsprof.xml	(Arbeitskopie)
+@@ -2,6 +2,8 @@
+ &lt;!DOCTYPE refentry PUBLIC
+    &quot;-//OASIS//DTD DocBook XML V4.1.2//EN&quot;
+    &quot;docbook/docbookx.dtd&quot;&gt;
++&lt;?xml-stylesheet type=&quot;text/xsl&quot;
++  href=&quot;<A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A>&quot;?&gt;
+ &lt;refentry id='gpsprof.1'&gt;
+ &lt;refmeta&gt;
+ &lt;refentrytitle&gt;gpsprof&lt;/refentrytitle&gt;
+Index: gpsd.xml
+===================================================================
+- --- gpsd.xml	(Revision 3701)
++++ gpsd.xml	(Arbeitskopie)
+@@ -4,6 +4,8 @@
+    &quot;docbook/docbookx.dtd&quot; [
+ &lt;!ENTITY gpsdsock         &quot;/var/run/gpsd.sock&quot;&gt;
+ ]&gt;
++&lt;?xml-stylesheet type=&quot;text/xsl&quot;
++  href=&quot;<A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A>&quot;?&gt;
+ &lt;refentry id='gpsd.8'&gt;
+ &lt;refmeta&gt;
+ &lt;refentrytitle&gt;gpsd&lt;/refentrytitle&gt;
+Index: configure.ac
+===================================================================
+- --- configure.ac	(Revision 3701)
++++ configure.ac	(Arbeitskopie)
+@@ -508,7 +508,27 @@
+   AC_MSG_RESULT([no])
+ fi
+
++AC_CHECK_PROG(WITH_XSLTPROC,[xsltproc],[yes],[no])
++MANGENERATOR=
++MANFLAGS=
++if test &quot;x$WITH_XSLTPROC&quot; = &quot;xyes&quot;; then
++    MANGENERATOR=xsltproc
++    MANFLAGS=
++else
++    AC_CHECK_PROG(WITH_XMLTO,[xmlto],[yes],[no])
++    if test &quot;x$WITH_XMLTO&quot; = &quot;xyes&quot;; then
++        MANGENERATOR=xmlto
++        MANFLAGS=man
++    else
++        AC_MSG_WARN([Neither xsltproc nor xmlto command found: I will not build man pages])
++    fi
++fi
++AM_CONDITIONAL([HAVE_XSLT_PROCESSOR],
++               [test x&quot;$WITH_XSLTPROC&quot; = x&quot;yes&quot; -o x&quot;$WITH_XMLTO&quot; = x&quot;yes&quot;])
++AC_SUBST(MANGENERATOR)
++AC_SUBST(MANFLAGS)
+
++
+ dnl Output the configuration summary
+ echo &quot;&quot;
+ echo &quot;==========================================&quot;
+Index: rtcm-104.xml
+===================================================================
+- --- rtcm-104.xml	(Revision 3701)
++++ rtcm-104.xml	(Arbeitskopie)
+@@ -2,6 +2,8 @@
+ &lt;!DOCTYPE refentry PUBLIC
+    &quot;-//OASIS//DTD DocBook XML V4.1.2//EN&quot;
+    &quot;docbook/docbookx.dtd&quot;&gt;
++&lt;?xml-stylesheet type=&quot;text/xsl&quot;
++  href=&quot;<A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A>&quot;?&gt;
+ &lt;refentry id='rtcm104.5'&gt;
+ &lt;refmeta&gt;
+ &lt;refentrytitle&gt;rtcm-104&lt;/refentrytitle&gt;
+Index: garminctl.xml
+===================================================================
+- --- garminctl.xml	(Revision 3701)
++++ garminctl.xml	(Arbeitskopie)
+@@ -2,6 +2,8 @@
+ &lt;!DOCTYPE refentry PUBLIC
+    &quot;-//OASIS//DTD DocBook XML V4.1.2//EN&quot;
+    &quot;docbook/docbookx.dtd&quot;&gt;
++&lt;?xml-stylesheet type=&quot;text/xsl&quot;
++  href=&quot;<A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A>&quot;?&gt;
+ &lt;refentry id='garminctl.1'&gt;
+ &lt;refmeta&gt;
+ &lt;refentrytitle&gt;garminctl&lt;/refentrytitle&gt;
+Index: itraxctl.xml
+===================================================================
+- --- itraxctl.xml	(Revision 3701)
++++ itraxctl.xml	(Arbeitskopie)
+@@ -2,6 +2,8 @@
+ &lt;!DOCTYPE refentry PUBLIC
+    &quot;-//OASIS//DTD DocBook XML V4.1.2//EN&quot;
+    &quot;docbook/docbookx.dtd&quot;&gt;
++&lt;?xml-stylesheet type=&quot;text/xsl&quot;
++  href=&quot;<A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A>&quot;?&gt;
+ &lt;refentry id='itraxctl.1'&gt;
+ &lt;refmeta&gt;
+ &lt;refentrytitle&gt;itraxctl&lt;/refentrytitle&gt;
+Index: gpspipe.xml
+===================================================================
+- --- gpspipe.xml	(Revision 3701)
++++ gpspipe.xml	(Arbeitskopie)
+@@ -2,6 +2,8 @@
+ &lt;!DOCTYPE refentry PUBLIC
+    &quot;-//OASIS//DTD DocBook XML V4.1.2//EN&quot;
+    &quot;docbook/docbookx.dtd&quot;&gt;
++&lt;?xml-stylesheet type=&quot;text/xsl&quot;
++  href=&quot;<A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A>&quot;?&gt;
+ &lt;refentry id='gpspipe.1'&gt;
+ &lt;refmeta&gt;
+ &lt;refentrytitle&gt;gpspipe&lt;/refentrytitle&gt;
+Index: gpsfake.xml
+===================================================================
+- --- gpsfake.xml	(Revision 3701)
++++ gpsfake.xml	(Arbeitskopie)
+@@ -2,6 +2,8 @@
+ &lt;!DOCTYPE refentry PUBLIC
+    &quot;-//OASIS//DTD DocBook XML V4.1.2//EN&quot;
+    &quot;docbook/docbookx.dtd&quot;&gt;
++&lt;?xml-stylesheet type=&quot;text/xsl&quot;
++  href=&quot;<A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A>&quot;?&gt;
+ &lt;refentry id='gpsfake.1'&gt;
+ &lt;refmeta&gt;
+ &lt;refentrytitle&gt;gpsfake&lt;/refentrytitle&gt;
+Index: libgpsd.xml
+===================================================================
+- --- libgpsd.xml	(Revision 3701)
++++ libgpsd.xml	(Arbeitskopie)
+@@ -1,6 +1,8 @@
+ &lt;?xml version=&quot;1.0&quot; encoding=&quot;ISO-8859-1&quot;?&gt;
+ &lt;!DOCTYPE refentry PUBLIC &quot;-//OASIS//DTD DocBook XML V4.1.2//EN&quot;
+                    &quot;<A HREF="http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd">http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd</A>&quot;&gt;
++&lt;?xml-stylesheet type=&quot;text/xsl&quot;
++  href=&quot;<A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A>&quot;?&gt;
+ &lt;refentry&gt;
+ &lt;refentryinfo&gt;&lt;date&gt;14 Aug 2004&lt;/date&gt;&lt;/refentryinfo&gt;
+ &lt;refmeta&gt;
+Index: gps.xml
+===================================================================
+- --- gps.xml	(Revision 3701)
++++ gps.xml	(Arbeitskopie)
+@@ -2,6 +2,8 @@
+ &lt;!DOCTYPE refentry PUBLIC
+    &quot;-//OASIS//DTD DocBook XML V4.1.2//EN&quot;
+    &quot;docbook/docbookx.dtd&quot;&gt;
++&lt;?xml-stylesheet type=&quot;text/xsl&quot;
++  href=&quot;<A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A>&quot;?&gt;
+ &lt;refentry id='gps.1'&gt;
+ &lt;refmeta&gt;
+ &lt;refentrytitle&gt;gps&lt;/refentrytitle&gt;
+Index: rtcmdecode.xml
+===================================================================
+- --- rtcmdecode.xml	(Revision 3701)
++++ rtcmdecode.xml	(Arbeitskopie)
+@@ -2,6 +2,8 @@
+ &lt;!DOCTYPE refentry PUBLIC
+    &quot;-//OASIS//DTD DocBook XML V4.1.2//EN&quot;
+    &quot;docbook/docbookx.dtd&quot;&gt;
++&lt;?xml-stylesheet type=&quot;text/xsl&quot;
++  href=&quot;<A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A>&quot;?&gt;
+ &lt;refentry id='rtcmdecode.1'&gt;
+ &lt;refmeta&gt;
+ &lt;refentrytitle&gt;rtcmdecode&lt;/refentrytitle&gt;
+Index: Makefile.am
+===================================================================
+- --- Makefile.am	(Revision 3701)
++++ Makefile.am	(Arbeitskopie)
+@@ -185,48 +185,48 @@
+ 	rtcm-104.5 \
+ 	srec.5
+
++if HAVE_XSLT_PROCESSOR
++
++.xml.1:
++	$(MANGENERATOR) $(MANFLAGS) $&lt;
++
++.xml.3:
++	$(MANGENERATOR) $(MANFLAGS) $&lt;
++
++.xml.8:
++	$(MANGENERATOR) $(MANFLAGS) $&lt;
++
+ gpsd.8: gpsd.xml
+- -	-$(XMLTO) man gpsd.xml
++	-$(MANGENERATOR) $(MANFLAGS) gpsd.xml
+
+ gps.1 xgps.1 xgpsspeed.1 cgps.1 cgpxlogger.1: gps.xml
+- -	-$(XMLTO) man gps.xml
+
+ libgps.3: libgps.xml
+- -	-$(XMLTO) man libgps.xml
+
+ libgpsmm.3: libgpsmm.xml
+- -	-$(XMLTO) man libgpsmm.xml
+
+ libgpsd.3: libgpsd.xml
+- -	-$(XMLTO) man libgpsd.xml
+
+ gpsctrl.1: gpsctrl.xml
+- -	-$(XMLTO) man gpsctrl.xml
+
+ gpsprof.1: gpsprof.xml
+- -	-$(XMLTO) man gpsprof.xml
+
+ gpsfake.1: gpsfake.xml
+- -	-$(XMLTO) man gpsfake.xml
+
+ sirfmon.1: sirfmon.xml
+- -	-$(XMLTO) man sirfmon.xml
+
+ gpspipe.1: gpspipe.xml
+- -	-$(XMLTO) man gpspipe.xml
+
+ rtcmdecode.1: rtcmdecode.xml
+- -	-$(XMLTO) man rtcmdecode.xml
+
+ rtcm-104.5: rtcm-104.xml
+- -	-$(XMLTO) man rtcm-104.xml
+
+ srec.5: srec.xml
+- -	-$(XMLTO) man srec.xml
+
+ gpsflash.1: gpsflash.xml
+- -	-$(XMLTO) man gpsflash.xml
+
++endif
++
+ include_HEADERS = gps.h gpsd.h libgpsmm.h rtcm.h gpsd_config.h
+
+ EXTRA_DIST = \
+Index: libgpsmm.xml
+===================================================================
+- --- libgpsmm.xml	(Revision 3701)
++++ libgpsmm.xml	(Arbeitskopie)
+@@ -2,6 +2,8 @@
+ &lt;!DOCTYPE refentry PUBLIC &quot;-//OASIS//DTD DocBook XML V4.1.2//EN&quot;
+                    &quot;<A HREF="http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd">http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd</A>&quot;&gt;
+ &lt;!-- lifted from troff+man by doclifter --&gt;
++&lt;?xml-stylesheet type=&quot;text/xsl&quot;
++  href=&quot;<A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A>&quot;?&gt;
+ &lt;refentry&gt;
+ &lt;refentryinfo&gt;&lt;date&gt;13 May 2005&lt;/date&gt;&lt;/refentryinfo&gt;
+ &lt;refmeta&gt;
+Index: sirfmon.xml
+===================================================================
+- --- sirfmon.xml	(Revision 3701)
++++ sirfmon.xml	(Arbeitskopie)
+@@ -2,6 +2,8 @@
+ &lt;!DOCTYPE refentry PUBLIC
+    &quot;-//OASIS//DTD DocBook XML V4.1.2//EN&quot;
+    &quot;docbook/docbookx.dtd&quot;&gt;
++&lt;?xml-stylesheet type=&quot;text/xsl&quot;
++  href=&quot;<A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A>&quot;?&gt;
+ &lt;refentry id='sirfmon.1'&gt;
+ &lt;refmeta&gt;
+ &lt;refentrytitle&gt;sirfmon&lt;/refentrytitle&gt;
+Index: srec.xml
+===================================================================
+- --- srec.xml	(Revision 3701)
++++ srec.xml	(Arbeitskopie)
+@@ -2,6 +2,8 @@
+ &lt;!DOCTYPE refentry PUBLIC
+    &quot;-//OASIS//DTD DocBook XML V4.1.2//EN&quot;
+    &quot;docbook/docbookx.dtd&quot;&gt;
++&lt;?xml-stylesheet type=&quot;text/xsl&quot;
++  href=&quot;<A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A>&quot;?&gt;
+ &lt;refentry id='srec.5'&gt;
+ &lt;refmeta&gt;
+ &lt;refentrytitle&gt;srec&lt;/refentrytitle&gt;
+Index: gpsflash.xml
+===================================================================
+- --- gpsflash.xml	(Revision 3701)
++++ gpsflash.xml	(Arbeitskopie)
+@@ -2,6 +2,8 @@
+ &lt;!DOCTYPE refentry PUBLIC
+    &quot;-//OASIS//DTD DocBook XML V4.1.2//EN&quot;
+    &quot;docbook/docbookx.dtd&quot;&gt;
++&lt;?xml-stylesheet type=&quot;text/xsl&quot;
++  href=&quot;<A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A>&quot;?&gt;
+ &lt;refentry id='gpsflash.1'&gt;
+ &lt;refmeta&gt;
+ &lt;refentrytitle&gt;gpsflash&lt;/refentrytitle&gt;
+Index: libgps.xml
+===================================================================
+- --- libgps.xml	(Revision 3701)
++++ libgps.xml	(Arbeitskopie)
+@@ -2,6 +2,8 @@
+ &lt;!DOCTYPE refentry PUBLIC &quot;-//OASIS//DTD DocBook XML V4.1.2//EN&quot;
+                    &quot;<A HREF="http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd">http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd</A>&quot;&gt;
+ &lt;!-- lifted from troff+man by doclifter --&gt;
++&lt;?xml-stylesheet type=&quot;text/xsl&quot;
++  href=&quot;<A HREF="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl">http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl</A>&quot;?&gt;
+ &lt;refentry&gt;
+ &lt;refentryinfo&gt;&lt;date&gt;14 Aug 2004&lt;/date&gt;&lt;/refentryinfo&gt;
+ &lt;refmeta&gt;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.5 (GNU/Linux)
+
+iD8DBQFFTMcbbJa6vxmEnbARAhtbAJ98LpZp8GUr512bYU+tsZhByFuAggCcDqn0
+P8ujgOlfXbjvEpALIbKscHg=
+=CBhS
+-----END PGP SIGNATURE-----
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004919.html">[Gpsd-dev] RFC: making xmlto a build requirement
+</A></li>
+	<LI>Next message: <A HREF="004922.html">[Gpsd-dev] RFC: making xmlto a build requirement
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4920">[ date ]</a>
+              <a href="thread.html#4920">[ thread ]</a>
+              <a href="subject.html#4920">[ subject ]</a>
+              <a href="author.html#4920">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

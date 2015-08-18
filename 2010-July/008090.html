@@ -1,0 +1,238 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Input packets buffering bug(s)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3Crmihbjib4cy.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008089.html">
+   <LINK REL="Next"  HREF="008091.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Input packets buffering bug(s)</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3Crmihbjib4cy.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] Input packets buffering bug(s)">gdt at ir.bbn.com
+       </A><BR>
+    <I>Thu Jul 29 19:11:09 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008089.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+        <LI>Next message: <A HREF="008091.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8090">[ date ]</a>
+              <a href="thread.html#8090">[ thread ]</a>
+              <a href="subject.html#8090">[ subject ]</a>
+              <a href="author.html#8090">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+  The good news is: the main bug has disappeared. Gpsd isn't
+  continuously drifting behind anymore when faced with multi-packets
+  inputs.
+  The bad news is: there still is a bug, afaict. Now gpsd is
+  consistently lagging one GPS tick (i.e. one multi-packets input)
+  behind.
+
+I have a ublox antaris-4, and using it to provide ntpd with time, I get
+offsets within 10ms of other refclocks when I use 'fudge 0.114' which
+means (I think) 114ms slow.  The ublox has 1s output interface, so at
+least for that there is no big issue.
+
+I fired up xgps, and hit return when the time ticked over the seconds
+for 15s in a row, using a program to capture timevals (just
+gettimeofday) on my return keys.  Discarding outliers and averaging, the
+timestamps are 168ms behind real time.  That syncs with 114ms in ntp
+fudge and 50ms of gdt keyboarding error.
+
+So I don't believe there is anything wrong on my system with input
+processing and xgps.  (I am pretty up to date with gpsd git.)
+
+
+------------------------------
+/*
+ * Copyright 1997,2000,2006 Gregory D. Troxel
+ */
+
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;sys/time.h&gt;
+
+#include &lt;assert.h&gt;
+
+void
+assert_adjust(struct timeval *tv)
+{
+  assert(tv-&gt;tv_usec &gt;= 0);
+  assert(tv-&gt;tv_usec &lt; 1000000);
+}
+
+/*
+ * adjust tv_usec to 0 &lt;= usec &lt; 1e6
+ */
+void
+usec_adjust(struct timeval *tv)
+{
+  while ( tv-&gt;tv_usec &gt;= 1000000 ) {
+    tv-&gt;tv_usec -= 1000000;
+    tv-&gt;tv_sec += 1;
+  }
+  while ( tv-&gt;tv_usec &lt; 0 ) {
+    tv-&gt;tv_usec += 1000000;
+    tv-&gt;tv_sec -= 1;
+  }
+  assert_adjust(tv);
+}
+
+/*
+ * Modify tv to make usec near pivot
+ * The sec + 1e6 * usec will be the same, but it may
+ * no longer be well-formed (ie, usec may be &lt; 0 or &gt; 1e6).
+ * Essentially, we center about something other than 500k.
+ */
+void
+pivot_adjust(struct timeval *tv, long pivot)
+{
+  assert(pivot &lt;= 500000);
+  assert(pivot &gt; -500000);
+
+  usec_adjust(tv);
+
+  /* allow +499999 or -500000 from pivot, to make 0 &lt;= usec &lt; 1e6 */
+  if ( tv-&gt;tv_usec &gt;= pivot + 500000 ) {
+    tv-&gt;tv_sec += 1;
+    tv-&gt;tv_usec -= 1000000;
+  } else if ( tv-&gt;tv_usec &lt; pivot - 500000 ) {
+    tv-&gt;tv_sec -= 1;
+    tv-&gt;tv_usec += 1000000;
+  }
+}
+
+
+int
+main(int argc, char **argv)
+{
+  struct timeval tv;
+  time_t s;
+  int i;
+  long pivot = 0;
+  char *ctp;
+  char buf[1024];
+
+
+  /* averaging stuff */
+  int first;
+  struct timeval tv_first = {0, 0};
+  struct timeval tv_diff;
+  double diff, avg, avg_n;
+
+  buf[0] = '\0';
+
+  printf(&quot;timeval double\n&quot;);
+
+  first = 1;
+  avg = avg_n = 0;
+
+  while ( buf[0] != 'q' )
+    {
+      ctp = fgets(buf, 128, stdin);
+      if ( ctp == NULL || buf[0] == 'q' )
+	break;
+      i = gettimeofday(&amp;tv, NULL);
+      if ( i &lt; 0 ) { perror(&quot;gettimeofday&quot;); exit(-1); }
+
+      if ( first == 1 )
+	{
+	  first = 0;
+	  tv_first = tv;
+	  avg = 0; avg_n = 1;
+	  diff = 0;		/* XXX unnecessary? */
+
+	  /* Choose pivot s.t. -500000 &lt; pivot &lt;= 500000 */
+	  pivot = tv.tv_usec;
+	  if ( pivot &gt; 500000 )
+	    pivot -= 1000000;
+	}
+      else
+	{
+	  timersub(&amp;tv, &amp;tv_first, &amp;tv_diff);
+	  assert_adjust(&amp;tv_diff);
+	  /* find average deviation from 1 sec later expected */
+	  diff = tv_diff.tv_sec + tv_diff.tv_usec / 1000000.0 - avg_n;
+	  avg += diff; avg_n += 1;
+	}
+
+      s = tv.tv_sec;
+      ctp = ctime(&amp;s);
+      ctp[24] = '\0';
+
+      /* print raw data */
+      printf(&quot;;. %lu %lu\n&quot;, tv.tv_sec, tv.tv_usec);
+      if ( avg_n &gt; 1 )
+	printf(&quot;;DIFF %f\n&quot;, diff);
+
+      /* pivot, and print xplot point */
+      pivot_adjust(&amp;tv, pivot);
+      printf(&quot;x %lu %ld\n&quot;, tv.tv_sec, tv.tv_usec);
+    }
+
+  if ( avg_n &gt; 0 ) {		/* if any points */
+    avg /= avg_n;
+    printf(&quot;;AVERAGE RELATIVE TO FIRST %f\n&quot;, avg);
+    tv_diff.tv_sec = 0;
+    tv_diff.tv_usec = avg * 1000000.0;
+    usec_adjust(&amp;tv_diff);
+
+    timeradd(&amp;tv_first, &amp;tv_diff, &amp;tv);
+
+    /* print box at average coordinate */
+    printf(&quot;box %ld.%06ld&quot;, tv.tv_sec, tv.tv_usec);
+
+    /* make height centered about pivot */
+    pivot_adjust(&amp;tv, pivot);
+    printf(&quot; %ld 1\n&quot;,  tv.tv_usec);
+  }
+
+  return 0;
+}
+
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100729/74719922/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100729/74719922/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008089.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+	<LI>Next message: <A HREF="008091.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8090">[ date ]</a>
+              <a href="thread.html#8090">[ thread ]</a>
+              <a href="subject.html#8090">[ subject ]</a>
+              <a href="author.html#8090">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

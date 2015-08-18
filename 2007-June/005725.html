@@ -1,0 +1,146 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] packet parser discards packets
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20packet%20parser%20discards%20packets&In-Reply-To=%3C200706101821.35048.remco%40rvt.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005724.html">
+   <LINK REL="Next"  HREF="005726.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] packet parser discards packets</H1>
+    <B>Remco Treffkorn</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20packet%20parser%20discards%20packets&In-Reply-To=%3C200706101821.35048.remco%40rvt.com%3E"
+       TITLE="[Gpsd-dev] packet parser discards packets">remco at rvt.com
+       </A><BR>
+    <I>Mon Jun 11 03:21:34 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005724.html">[Gpsd-dev] packet parser discards packets
+</A></li>
+        <LI>Next message: <A HREF="005726.html">[Gpsd-dev] packet parser discards packets
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5725">[ date ]</a>
+              <a href="thread.html#5725">[ thread ]</a>
+              <a href="subject.html#5725">[ subject ]</a>
+              <a href="author.html#5725">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sunday 10 June 2007, Petr Slansky wrote:
+&gt;<i> &gt; &gt; I checked log files from yesterday and I don't know what was wrong.
+</I>&gt;<i> &gt; &gt; Maybe it was not gpsd code. Anyway, please, apply the patch to
+</I>&gt;<i> &gt; &gt; packet.c, I
+</I>&gt;<i>
+</I>&gt;<i> think
+</I>&gt;<i>
+</I>&gt;<i> &gt; &gt; that original code used invalid pointer test.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; If that is so, why does gcc not complain? I don't want a compiler that is
+</I>&gt;<i>
+</I>&gt;<i> not
+</I>&gt;<i>
+</I>&gt;<i> &gt; able to flag a gross error like that.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Without some valid explanation this is just slander. I am sure you will
+</I>&gt;<i> &gt; hear
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; from gcc's lawyers :-)
+</I>&gt;<i>
+</I>&gt;<i> Well, you think that test was valid in gcc. I failed to find example or
+</I>&gt;<i> explanation in C tutorial if this is correct. I was working in the past
+</I>&gt;<i> with some x86 C compiler that doesn't support that operation (segment,
+</I>&gt;<i> offset problem). And I cannot find good description of pointer arithmetic
+</I>&gt;<i> now. You don't need to call gcc lawyer, just point me to pointer arithmetic
+</I>&gt;<i> &quot;specification&quot;.
+</I>&gt;<i>
+</I>&gt;<i> What about this change? Isn't it nicer? I guess it will, at least, produce
+</I>&gt;<i> better code.
+</I>&gt;<i>
+</I>&gt;<i> -               for (n = 1; (char *)lexer-&gt;inbuffer + n &lt; trailer; n++)
+</I>&gt;<i> +               for (n = 1; (char)lexer-&gt;inbuffer[n] != '*'; n++)
+</I>&gt;<i>
+</I>
+Those two lines are very hard to compare out of context. IIRC, lexer-&gt;inbuffer 
+is a character pointer, not a void pointer. The cast to (char *) in the first 
+line is redundant. If it were not, then the second line would be incorrect, 
+since you use the uncast lexer-&gt;inbuffer to retrieve an object that you then 
+cast to (char), which is NOT the same. The correct thing is to drop the cast 
+in both cases.
+
+Looking at those lines alone, the first one is more efficient. Your version 
+actually reads every array element and compares it to '*'. The fist one does 
+not touch any data from the array. I know what is more efficient :-)
+
+OTOH, the first line has more information to start with. The cost of getting 
+this information may just destroy any advantage it has over the second line. 
+
+Although I also remember the same problem with an old x86 C compiler, that is 
+only anecdotal. The real question is what the standard says. Since it is 
+Sunday I can't be bothered to do the heavy reading, but here is a translation 
+into common English:
+   <A HREF="http://publications.gbdirect.co.uk/c_book/chapter5/pointer_expressions.html">http://publications.gbdirect.co.uk/c_book/chapter5/pointer_expressions.html</A>
+
+In short I quote:
+==========================================
+5.7.3. Relational expressions
+These allow us to compare pointers with each other. You can only compare
+
+    o Pointers to compatible object types with each other
+    o Pointers to compatible incomplete types with each other
+
+It does not matter if the types that are pointed to are qualified or 
+unqualified.
+If two pointers compare equal to each other then they point to the same thing, 
+whether it is an object or the non-existent element off the end of an array 
+(see arithmetic, above). If two pointers point to the same thing, then they 
+compare equal to each other. The relational operators &gt;, &lt;= and so on all 
+give the result that you would expect if the pointers point into the same 
+array: if one pointer compares less than another, then it points nearer to 
+the front of the array.
+==========================================
+
+My feeling is: If it ain't broke, don't fix it.
+
+I have to admit that your second (?) patch looked nicer than the current code, 
+though.
+
+Cheers,
+Remco
+
+-- 
+Remco Treffkorn (RT445)
+HAM DC2XT
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005724.html">[Gpsd-dev] packet parser discards packets
+</A></li>
+	<LI>Next message: <A HREF="005726.html">[Gpsd-dev] packet parser discards packets
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5725">[ date ]</a>
+              <a href="thread.html#5725">[ thread ]</a>
+              <a href="subject.html#5725">[ subject ]</a>
+              <a href="author.html#5725">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

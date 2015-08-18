@@ -1,0 +1,157 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Availability of pkg-config
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Availability%20of%20pkg-config&In-Reply-To=%3CAANLkTi%3DXprJjth4Ayz8cU28mu9cVktW0T5ntrj0KKNuZ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008678.html">
+   <LINK REL="Next"  HREF="008685.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Availability of pkg-config</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Availability%20of%20pkg-config&In-Reply-To=%3CAANLkTi%3DXprJjth4Ayz8cU28mu9cVktW0T5ntrj0KKNuZ%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Availability of pkg-config">thomas at mich.com
+       </A><BR>
+    <I>Thu Mar  3 23:35:20 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008678.html">[Gpsd-dev] Availability of pkg-config
+</A></li>
+        <LI>Next message: <A HREF="008685.html">[Gpsd-dev] Availability of pkg-config
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8679">[ date ]</a>
+              <a href="thread.html#8679">[ thread ]</a>
+              <a href="subject.html#8679">[ subject ]</a>
+              <a href="author.html#8679">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Subject to my work schedule, since I need to eat :)
+
+I'm willing, but it means a fundamental change in the structures - rip
+out the doubles and replace them with (32 bit?) ints.  Then do you
+want to do 100 nanoDegrees or microDegrees (the former is about 1cm).
+
+I think I could fully rework the minimalist NMEA without too much
+problem once I figure out how to build it, and start taking stabs at
+the rest of the infrastructure, but there is a lot external and all of
+it breaks once the structures are changed.
+
+The problem with leaving things as doubles is that now the entire,
+larger codebase assumes double instead of int.
+
+Other than possible future precision improvements which I don't see
+coming for another decade, I don't think keeping things as doubles
+provides any functionality.  The code appears simpler until you try to
+remove library calls to simplify the parsing (I could have used atoi
+in many places too, but I tried for the shortest and fastest forms
+necessary).
+
+On a non-FPU processor, you really need this change, so I will just
+throw the question out to the discussion (or perhaps it should be a
+new topic for the next rev).
+
+What I need from a gpsd to work in embedded:
+
+1. No floating point or other big libraries.  This might or might not
+mean NMEA only, but from the binary formats I've seen it isn't that
+hard to do fixed point parsing.
+
+2. I need to be able to type &quot;make -f Makefile.gpsdmini&quot; instead of
+requiring the entire GNU autobuild environment.  Even if the binary is
+a bit chubby (I suggested drivers as plugins earlier) memory is rarely
+a limit and you can -DNMEA_ONLY if it comes to that.  Nothing but -lc,
+i.e. the implicit link path, or maybe one or two if they are cross
+system and really needed, but I can't think of any.  No libtool,
+automake, autoconf, or the rest should be necessary for gpsd itself.
+I could do this too once I see how to do a minimalist
+makefile/config.h.
+
+3. An API for interleaving events or other sensor data.  I can have
+another interface picking up other data, but if the line of text comes
+in before the GPS line of text, it needs to go out, send the event, or
+otherwise coordinate with it.  For example, my dashboard app needs
+engine RPM.  I could pull everything separately and merge it but each
+app would have to do that.  Maybe a driver_xeno.c that just opens a
+listen/read socket and provides text strings out the JSON if a watch
+is set.  I don't need much, but I do need a way to merge and sync
+data.  (I'm assuming the multiple source GPS and failover is already
+there).  If this is decided, it might clear up trouble on whether to
+include some of the other data GPS devices provide which aren't nav
+data like water temp.  Anything not in the main nav structure becomes
+available through a standard catch-all method.
+
+There may be a few more subtle things, e.g. if you have a bluetooth
+datafeed, it might not correspond to the current device model, but
+those should be easily solvable.
+
+And yes, I would prefer to get gpsd-ng down to embedded size rather
+than doing a separate codebase.
+
+On Thu, Mar 3, 2011 at 4:51 PM, Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt; wrote:
+&gt;<i> -----BEGIN PGP SIGNED MESSAGE-----
+</I>&gt;<i> Hash: SHA1
+</I>&gt;<i>
+</I>&gt;<i> Yo TZ!
+</I>&gt;<i>
+</I>&gt;<i> On Thu, 3 Mar 2011, tz wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> As a postscript, looking at gps.h, &quot;double&quot; is everywhere.
+</I>&gt;<i>
+</I>&gt;<i> That always bugged me too. &#160;But at the time it was a cheap way to get
+</I>&gt;<i> things working. &#160;Any work to go to fixed point would likely be welcomed
+</I>&gt;<i> if you wanted to hack it. &#160;A side benefit would be the weird floating
+</I>&gt;<i> point regressions gpsd gets would disappear.
+</I>&gt;<i>
+</I>&gt;<i> RGDS
+</I>&gt;<i> GARY
+</I>&gt;<i> - ---------------------------------------------------------------------------
+</I>&gt;<i> Gary E. Miller Rellim 109 NW Wilmington Ave., Suite E, Bend, OR 97701
+</I>&gt;<i> &#160; &#160; &#160; &#160;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A> &#160;Tel:+1(541)382-8588
+</I>&gt;<i>
+</I>&gt;<i> -----BEGIN PGP SIGNATURE-----
+</I>&gt;<i> Version: GnuPG v1.4.3 (GNU/Linux)
+</I>&gt;<i>
+</I>&gt;<i> iD8DBQFNcA1iBmnRqz71OvMRAgHSAKDUBwdgYlEoYQcaft3XRsLJstQhjQCgov52
+</I>&gt;<i> zCHdZh7W4Jmq1qB/FhzVZLQ=
+</I>&gt;<i> =W+2d
+</I>&gt;<i> -----END PGP SIGNATURE-----
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008678.html">[Gpsd-dev] Availability of pkg-config
+</A></li>
+	<LI>Next message: <A HREF="008685.html">[Gpsd-dev] Availability of pkg-config
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8679">[ date ]</a>
+              <a href="thread.html#8679">[ thread ]</a>
+              <a href="subject.html#8679">[ subject ]</a>
+              <a href="author.html#8679">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

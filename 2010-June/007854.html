@@ -1,0 +1,87 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Input packets buffering bug(s)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3CAANLkTin-HQKCGorm6soA_9JHmc3wI_a_-0q0GbrrAqnI%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007853.html">
+   <LINK REL="Next"  HREF="007856.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Input packets buffering bug(s)</H1>
+    <B>Jon Schlueter</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3CAANLkTin-HQKCGorm6soA_9JHmc3wI_a_-0q0GbrrAqnI%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Input packets buffering bug(s)">jon.schlueter at gmail.com
+       </A><BR>
+    <I>Wed Jun  2 17:45:17 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007853.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+        <LI>Next message: <A HREF="007856.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7854">[ date ]</a>
+              <a href="thread.html#7854">[ thread ]</a>
+              <a href="subject.html#7854">[ subject ]</a>
+              <a href="author.html#7854">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>a rambling thought:
+
+one way I was seeing to change behavior but have packet_get just do
+the right thing
+if it got a FD passed in it would read as much as it could and parse a
+packet out.
+If no FD try to parse a packet out of the buffer if there was enough
+data in the buffer.
+
+the interface into packet_get stays the same but the correct behavior
+of the function
+is only dependent on it's inputs.
+
+ssize_t packet_get(int fd, struct gps_packet_t *lexer);
+
+the calling instances would have to do the correct thing and yes the
+algorithm would have to change.
+
+change gpsd_poll to take a flag that new data was detected by select
+change generic_get / and session-&gt;device_type-&gt;get_packet to take same flag
+and make generic_get correctly pass the FD or not to packet_get(FD,lexer)
+
+The loop to call gpsd_poll and process the packets could be added to
+the main loop
+
+Jon
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007853.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+	<LI>Next message: <A HREF="007856.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7854">[ date ]</a>
+              <a href="thread.html#7854">[ thread ]</a>
+              <a href="subject.html#7854">[ subject ]</a>
+              <a href="author.html#7854">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

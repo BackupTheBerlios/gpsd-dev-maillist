@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Single-writer/many-reader consistency
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3C20110326225704.GB29753%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009107.html">
+   <LINK REL="Next"  HREF="009125.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Single-writer/many-reader consistency</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3C20110326225704.GB29753%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Single-writer/many-reader consistency">esr at thyrsus.com
+       </A><BR>
+    <I>Sat Mar 26 23:57:04 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009107.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+        <LI>Next message: <A HREF="009125.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9117">[ date ]</a>
+              <a href="thread.html#9117">[ thread ]</a>
+              <a href="subject.html#9117">[ subject ]</a>
+              <a href="author.html#9117">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+&gt;<i> One quick question - How large is this structure?  8k sounds extremely
+</I>&gt;<i> large.
+</I>
+7.9K.  Fixes are much smaller (120 bytes), but the structure contains
+storage for other things.  Like a skyview - larger than you'd think,
+becuause we've designed ahead for a GLONASS-friendly 72-satellite
+limit in order to avoid an ABI break in the future. And there's a
+union that can hold RTCM2 corrections, RTCM3 corrections and other
+such stuff; RTCM3 is probably the worst offender at 5.7K.
+
+A lot of this stuff can be conditioned out in an NMEA-only version.
+
+&gt;<i> Also what are the chances of a CRC32 collision?
+</I>
+I don't know how to estimate that, because I don't know what the
+distribution density function of that hash is.
+
+&gt;<i>                     I've also
+</I>&gt;<i> noted an ECC block could fixup unsynced areas.
+</I>
+It could, but why add that complexity and potential bug load when
+spinning back around to reread the shared segment is cheap?
+
+&gt;<i> System semaphores are usually unlocked/destroyed/closed or whatever
+</I>&gt;<i> when a process closes (part of the close on exit or kill cleanup).
+</I>
+The resources get scavenged, les, but it's not clear to me what waiting
+processes see when that happens.  And it's exactly the kind of thing where
+I'd most expect platform and port bugs to be lurking.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009107.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+	<LI>Next message: <A HREF="009125.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9117">[ date ]</a>
+              <a href="thread.html#9117">[ thread ]</a>
+              <a href="subject.html#9117">[ subject ]</a>
+              <a href="author.html#9117">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Gpsd startup/hotplug system - new proposal
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Gpsd%20startup/hotplug%20system%20-%20new%20proposal&In-Reply-To=%3CBANLkTi%3DkMPSpMuPUGGQAJ1Bcpzch-URDSw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009365.html">
+   <LINK REL="Next"  HREF="009342.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Gpsd startup/hotplug system - new proposal</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Gpsd%20startup/hotplug%20system%20-%20new%20proposal&In-Reply-To=%3CBANLkTi%3DkMPSpMuPUGGQAJ1Bcpzch-URDSw%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Gpsd startup/hotplug system - new proposal">thomas at mich.com
+       </A><BR>
+    <I>Fri Jun 24 18:30:51 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009365.html">[Gpsd-dev] Gpsd startup/hotplug system - new proposal
+</A></li>
+        <LI>Next message: <A HREF="009342.html">[Gpsd-dev] [Gpsd-users] Gpsd configuration files
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9367">[ date ]</a>
+              <a href="thread.html#9367">[ thread ]</a>
+              <a href="subject.html#9367">[ subject ]</a>
+              <a href="author.html#9367">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Python is much better than bash assuming you have the modules to support
+everything.
+
+For example, you would need stty or a lot of system programs with bash and
+it works but it easily becomes messy going beyond ordinary linear scripting.
+
+Generally Python just ends up gluing calls to binary together so except in
+rare cases is more than efficient enough.  For a single fire routine that
+doesn't have to sit there and do a conversation it is a no-brainer.  Even
+the pull-push (device to pipe) is close to that of C.
+
+(To merge another thread...)
+
+Even for Embedded, I can generally assume Python, or for targeted systems,
+you can refactor the python scripts to the minimal specific requirements and
+port them to C, usually in an hour or two if python was not available.
+
+One question would be Windows systems - Python is native on Mac (and
+jailbroken iOS), and is generally available on all Linux.
+
+My only worry about python and udev might be security issues.
+
+I also want to highlight how I did webgpsd (and I'm trying to clear out some
+final bugs before I try to merge my stuff into gpsd-ng - I haven't
+forgotten, but only want to merge pristine code, and I'm running into the
+same kind of hotplug issues on my embedded arm board).  Basically it has
+only the listen/accept socket at 2947, and optionally others including a
+unix socket. I use feeder scripts and programs to access the GPS devices,
+one per device type (I also do sensors).  I feed a string with the
+information into gpsd via that socket - if it has a specific prefix, it
+knows it is NMEA so it can use the internal parser, but that could be a
+javascript interpreter, or the J1850 interpreter I have for my motorcycle.
+The advantage is all the usb, termios, probing, baud, setup, whatever is
+moved outside of the core multiplexer/state engine and can be done in
+python, though I have binaries for my 20Hz NMEA to reduce latency and CPU.
+
+Were I to do it in gpsd-ng form, I would have the gpsd proper, then one or
+more information source scripts or programs that would open, probe,
+configure, then do a read/poll loop and send the decoded JSON to the gpsd
+multiplexer input socket (no structures in headers!).  gpsd would then
+decode (and maybe echo them to watchers) and save the state so inquires
+could be delivered before new data comes in.  It would also make
+prioritizing the &quot;best&quot; fix from multiple sources easier (weighing
+staleness, DoP, DGPS, 2d/3d - that is another feature I need to push from
+mine).  There would be some latency for time synchronization, but there
+already is just in getting across the device interface.
+
+On Fri, Jun 24, 2011 at 11:33 AM, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+
+&gt;<i> Sebastian Arcus &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">shop at open-t.co.uk</A>&gt;:
+</I>&gt;<i> &gt; This would do away with the two hotplug scripts, while hiding all
+</I>&gt;<i> &gt; the socket communication in a nice binary, properly named and
+</I>&gt;<i> &gt; located with the rest of the project - but without being included in
+</I>&gt;<i> &gt; gpsd or affecting the gpsd code.
+</I>&gt;<i>
+</I>&gt;<i> &gt; Is this any closer to the spirit of the gpsd project and the desired
+</I>&gt;<i> goals?
+</I>&gt;<i>
+</I>&gt;<i> Yes, it is. This proposal, unlike your previous one, is well thought
+</I>&gt;<i> out and does not avoidably mix distro- and platform-dependent
+</I>&gt;<i> complexity into the core code. That is a very large improvement, and
+</I>&gt;<i> thus I am taking this plan seriously as a possibility.
+</I>&gt;<i>
+</I>&gt;<i> What I don't see here is any justification for the position that a binary
+</I>&gt;<i> is especially &quot;nice&quot; relative to a bash or Python script.  In general, I
+</I>&gt;<i> try to write as much in scripting languages and as little in C as possible,
+</I>&gt;<i> because of the difference in downstream maintainance costs.
+</I>&gt;<i>
+</I>&gt;<i> What would the advantage of a C binary be over folding the bash
+</I>&gt;<i> wrapper into the Python and renaming the whole thing gpsdctl?
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110624/5f3a19c2/attachment.html">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110624/5f3a19c2/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009365.html">[Gpsd-dev] Gpsd startup/hotplug system - new proposal
+</A></li>
+	<LI>Next message: <A HREF="009342.html">[Gpsd-dev] [Gpsd-users] Gpsd configuration files
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9367">[ date ]</a>
+              <a href="thread.html#9367">[ thread ]</a>
+              <a href="subject.html#9367">[ subject ]</a>
+              <a href="author.html#9367">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

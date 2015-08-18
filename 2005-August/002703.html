@@ -1,0 +1,118 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] garmin driver
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20garmin%20driver&In-Reply-To=%3CPine.LNX.4.63.0508012305380.20943%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002702.html">
+   <LINK REL="Next"  HREF="002704.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] garmin driver</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20garmin%20driver&In-Reply-To=%3CPine.LNX.4.63.0508012305380.20943%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] garmin driver">gem at rellim.com
+       </A><BR>
+    <I>Tue Aug  2 08:08:18 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002702.html">[Gpsd-dev] garmin driver
+</A></li>
+        <LI>Next message: <A HREF="002704.html">[Gpsd-dev] garmin driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2703">[ date ]</a>
+              <a href="thread.html#2703">[ thread ]</a>
+              <a href="subject.html#2703">[ subject ]</a>
+              <a href="author.html#2703">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Eric!
+
+On Tue, 2 Aug 2005, Eric S. Raymond wrote:
+
+&gt;<i> Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+</I>&gt;<i> &gt; garmin_get_packet() returns 1 if it has a packet, otherwise 0.  So I do not
+</I>&gt;<i> &gt; think that is it.  I see a new function packet_get(), that reads the
+</I>&gt;<i> &gt; packet and then parses it.  That is not called for Garmin, instead
+</I>&gt;<i> &gt; just get_packet() is called, which gets the packet and does not parse it.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; I am guessing that I need a packet_get() like yours that does get_packet()
+</I>&gt;<i> &gt; and parses the packet in one.
+</I>&gt;<i>
+</I>&gt;<i> That's not what packet_get() does, though.  It only grabs packets.
+</I>
+Use the source Luke: libgpsd_core.c, packet_get() lines 782 to 795.
+
+Pay close attention to the line that starts with return:
+
+ssize_t packet_get(struct gps_device_t *session)
+/* grab a packet; returns ether BAD_PACKET or the length */
+{
+    ssize_t newdata;
+    /*@ -modobserver @*/
+    newdata = read(session-&gt;gpsdata.gps_fd, session-&gt;inbufptr,
+                        sizeof(session-&gt;inbuffer)-(session-&gt;inbufptr-session-&gt;in
+buffer));
+    /*@ +modobserver @*/
+    if (newdata &lt; 0 &amp;&amp; errno != EAGAIN)
+        return BAD_PACKET;
+    else if (newdata == 0 || (newdata &lt; 0 &amp;&amp; errno == EAGAIN))
+        return 0;
+    return packet_parse(session, (size_t)newdata);
+}
+
+When I convert my get_packet to get the packet AND parse it, things work much
+better.
+
+One more problem.  garmin_probe() seems to be called 2 times in a row.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.1 (GNU/Linux)
+
+iD8DBQFC7w3V8KZibdeR3qURAvilAJ4xos/w+lG3LeMrRbHURXQkY0EyDgCcCnL4
+97ucvIFBU3CSC6CMXD1+lFQ=
+=UMQc
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002702.html">[Gpsd-dev] garmin driver
+</A></li>
+	<LI>Next message: <A HREF="002704.html">[Gpsd-dev] garmin driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2703">[ date ]</a>
+              <a href="thread.html#2703">[ thread ]</a>
+              <a href="subject.html#2703">[ subject ]</a>
+              <a href="author.html#2703">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

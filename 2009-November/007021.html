@@ -1,0 +1,104 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] cgps problems
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20cgps%20problems&In-Reply-To=%3C20091110211541.GA25659%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007020.html">
+   <LINK REL="Next"  HREF="007022.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] cgps problems</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20cgps%20problems&In-Reply-To=%3C20091110211541.GA25659%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] cgps problems">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Nov 10 22:15:41 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007020.html">[Gpsd-dev] cgps problems
+</A></li>
+        <LI>Next message: <A HREF="007022.html">[Gpsd-dev] cgps problems
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7021">[ date ]</a>
+              <a href="thread.html#7021">[ thread ]</a>
+              <a href="subject.html#7021">[ subject ]</a>
+              <a href="author.html#7021">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+&gt;<i> I think my 'GPS Type' unknown, and your cgps slow start, are the
+</I>&gt;<i> same problem.
+</I>&gt;<i> 
+</I>&gt;<i> Check out cgps.c, lines 776 to 795.  At startup cgps sends an 'i'
+</I>&gt;<i> query to gpsd, and waits 10 seconds for a reply.  When no reply is
+</I>&gt;<i> received in 10 secs it defaults to 'unknown' and continues.
+</I>&gt;<i> 
+</I>&gt;<i> When I start up cgps, the initial delay is exactly 10 secs, so
+</I>&gt;<i> looks very suspicious.
+</I>&gt;<i> 
+</I>&gt;<i> If I telnet to localhost:2947 and manually issue an 'i' then I
+</I>&gt;<i> get the expected 'GPSD,I=' back promptly.  So the problem looks
+</I>&gt;<i> to be in cgps (or its libs).
+</I>
+Yes.  I would have replied to this effect sooner - I've nbeen studying
+cgps for other reasons, and I knew where that 10-swecond delay had to
+be coming from - but I've been concentrating on another project for
+the last two days.
+ 
+&gt;<i> I added some debug code and it looks like update_probe()
+</I>&gt;<i> never gets called.
+</I>&gt;<i> 
+</I>&gt;<i> I suspect some hiccup with the new json protocol.
+</I>&gt;<i> 
+</I>&gt;<i> I suspect that may also be why gpsctl fails for me.
+</I>&gt;<i> 
+</I>&gt;<i> Ideas?
+</I>
+I suppose it''s possible, but the daemon still fully supports old
+protcol, in tha if you send old-protocol commands you'll get
+old-protocol responses back.
+
+cgps is the only client left in the gpsd tree that doesn't speak new 
+protocol, if that helps.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 189 bytes
+Desc: Digital signature
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091110/fbcaabfd/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091110/fbcaabfd/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007020.html">[Gpsd-dev] cgps problems
+</A></li>
+	<LI>Next message: <A HREF="007022.html">[Gpsd-dev] cgps problems
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7021">[ date ]</a>
+              <a href="thread.html#7021">[ thread ]</a>
+              <a href="subject.html#7021">[ subject ]</a>
+              <a href="author.html#7021">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

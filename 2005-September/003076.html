@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPRMC bug?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPRMC%20bug%3F&In-Reply-To=%3C20050926170103.GH3513%40www.gritch.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003075.html">
+   <LINK REL="Next"  HREF="003077.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPRMC bug?</H1>
+    <B>Jeff Francis</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPRMC%20bug%3F&In-Reply-To=%3C20050926170103.GH3513%40www.gritch.org%3E"
+       TITLE="[Gpsd-dev] GPRMC bug?">jeff at gritch.org
+       </A><BR>
+    <I>Mon Sep 26 19:01:03 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003075.html">[Gpsd-dev] GPRMC bug?
+</A></li>
+        <LI>Next message: <A HREF="003077.html">[Gpsd-dev] GPRMC bug?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3076">[ date ]</a>
+              <a href="thread.html#3076">[ thread ]</a>
+              <a href="subject.html#3076">[ subject ]</a>
+              <a href="author.html#3076">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>  So I've literally never looked at the gpsd internals before last
+night, but is that not the place where the emulated GPRMC sentences
+are constructed for 'r' output?  Clearly, I'm misunderstanding
+something, but I'm not sure what...
+
+
+On Mon, Sep 26, 2005 at 10:50:17AM -0700, Gary E. Miller wrote:
+&gt;<i> -----BEGIN PGP SIGNED MESSAGE-----
+</I>&gt;<i> Hash: SHA1
+</I>&gt;<i> 
+</I>&gt;<i> Yo Jeff!
+</I>&gt;<i> 
+</I>&gt;<i> Nope, that breaks the garmin, and probably other drivers.  That changes
+</I>&gt;<i> the meaning of fix.speed and that is a bad place to go.
+</I>&gt;<i> 
+</I>&gt;<i> What you need to do is find where the NMEA drivers writes in to fix.speed
+</I>&gt;<i> and make the conversion there.
+</I>&gt;<i> 
+</I>&gt;<i> RGDS
+</I>&gt;<i> GARY
+</I>&gt;<i> - ---------------------------------------------------------------------------
+</I>&gt;<i> Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+</I>&gt;<i> 	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+</I>&gt;<i> 
+</I>&gt;<i> On Mon, 26 Sep 2005, Jeff Francis wrote:
+</I>&gt;<i> 
+</I>&gt;<i> &gt; Date: Mon, 26 Sep 2005 09:35:59 -0700
+</I>&gt;<i> &gt; From: Jeff Francis &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>&gt;
+</I>&gt;<i> &gt; To: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> &gt; Subject: Re: [Gpsd-dev] GPRMC bug?
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;   Ok, major patch here to fix issue #1:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Index: libgpsd_core.c
+</I>&gt;<i> &gt; ===================================================================
+</I>&gt;<i> &gt; --- libgpsd_core.c      (revision 3207)
+</I>&gt;<i> &gt; +++ libgpsd_core.c      (working copy)
+</I>&gt;<i> &gt; @@ -268,7 +268,7 @@
+</I>&gt;<i> &gt;             ((session-&gt;gpsdata.fix.latitude &gt; 0) ? 'N' : 'S'),
+</I>&gt;<i> &gt;             degtodm(fabs(session-&gt;gpsdata.fix.longitude)),
+</I>&gt;<i> &gt;             ((session-&gt;gpsdata.fix.longitude &gt; 0) ? 'E' : 'W'),
+</I>&gt;<i> &gt; -           session-&gt;gpsdata.fix.speed,
+</I>&gt;<i> &gt; +           session-&gt;gpsdata.fix.speed * MPS_TO_KNOTS,
+</I>&gt;<i> &gt;             session-&gt;gpsdata.fix.track,
+</I>&gt;<i> &gt;             tm.tm_mday,
+</I>&gt;<i> &gt;             tm.tm_mon + 1,
+</I>&gt;<i> -----BEGIN PGP SIGNATURE-----
+</I>&gt;<i> Version: GnuPG v1.4.1 (GNU/Linux)
+</I>&gt;<i> 
+</I>&gt;<i> iD8DBQFDODTc8KZibdeR3qURAnW5AKDMMkSnXMHuPEKLFx+0HxFyESOLewCdGeUJ
+</I>&gt;<i> jWo3FyqwikI8a7H48z+wbLE=
+</I>&gt;<i> =BxMZ
+</I>&gt;<i> -----END PGP SIGNATURE-----
+</I>
+-- 
++--------------------------+---------------------------------------------+
+|<i>   Jeff Francis - N0GQ    | &quot;When people forget God, tyrants forge      |
+</I>|<i> Snohomish, WA USA, Earth |  their chains; a corrputed public           |
+</I>|<i>     <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>      |  conscience is incompatible with freedom.&quot;  |
+</I>|<i>  <A HREF="http://www.gritch.org">http://www.gritch.org</A>   |                         -- Patrick Henry    |
+</I>+--------------------------+---------------------------------------------+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003075.html">[Gpsd-dev] GPRMC bug?
+</A></li>
+	<LI>Next message: <A HREF="003077.html">[Gpsd-dev] GPRMC bug?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3076">[ date ]</a>
+              <a href="thread.html#3076">[ thread ]</a>
+              <a href="subject.html#3076">[ subject ]</a>
+              <a href="author.html#3076">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

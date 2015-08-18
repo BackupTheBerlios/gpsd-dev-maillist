@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-users] Fw: Error While Building This Morning's	HEAD
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-users%5D%20Fw%3A%20Error%20While%20Building%20This%20Morning%27s%0A%09HEAD&In-Reply-To=%3C1296612949.4844.658.camel%40rudd%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008544.html">
+   <LINK REL="Next"  HREF="008548.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-users] Fw: Error While Building This Morning's	HEAD</H1>
+    <B>Thomas Sprinkmeier</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-users%5D%20Fw%3A%20Error%20While%20Building%20This%20Morning%27s%0A%09HEAD&In-Reply-To=%3C1296612949.4844.658.camel%40rudd%3E"
+       TITLE="[Gpsd-dev] [Gpsd-users] Fw: Error While Building This Morning's	HEAD">thomas.sprinkmeier at cohdawireless.com
+       </A><BR>
+    <I>Wed Feb  2 03:15:49 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008544.html">[Gpsd-dev] new gps report
+</A></li>
+        <LI>Next message: <A HREF="008548.html">[Gpsd-dev] gpsfake in multiple ports
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8545">[ date ]</a>
+              <a href="thread.html#8545">[ thread ]</a>
+              <a href="subject.html#8545">[ subject ]</a>
+              <a href="author.html#8545">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Tue, 2011-02-01 at 18:47 -0700, Charles Curley wrote:
+&gt;<i> On Mon, 31 Jan 2011 21:14:22 -0700
+</I>&gt;<i> Charles Curley &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">charlescurley at charlescurley.com</A>&gt; wrote:
+</I>&gt;<i> 
+</I>&gt;<i> &gt; On Mon, 31 Jan 2011 22:45:08 -0500
+</I>&gt;<i> &gt; Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; &gt; All I can suggest is running a bisection search on recent commits
+</I>&gt;<i> &gt; &gt; to idenify which one caused you a problem.  
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; OK. I have my trusty compass and straight edge out...
+</I>&gt;<i> 
+</I>&gt;<i> My test sequence consists of:
+</I>&gt;<i> 
+</I>&gt;<i> git bisect [good|bad]
+</I>&gt;<i> ./autogen.sh
+</I>&gt;<i> make &gt; trace.txt
+</I>&gt;<i> sudo make install
+</I>&gt;<i> git bisect [good|bad]
+</I>&gt;<i> 
+</I>
+I think I'm chasing (have fixed?) a different build bug.
+
+
+# init
+$ git clone <A HREF="git://git.berlios.de/gpsd">git://git.berlios.de/gpsd</A>
+$ cd gpsd
+$ git bisect start ; git bisect bad ; git bisect good 4ee8ea94a4fec9c9c6127c2ea6ad656857c787db
+
+# loop
+$ make distclean ; ./autogen.sh ; make -j; make
+$ git bisect [good|bad]
+
+
+Failed builds had the wollowing error:
+        Installing manual pages, generator is xsltproc
+        Traceback (most recent call last):
+          File &quot;setup.py&quot;, line 60, in &lt;module&gt;
+            abs_builddir]
+        NameError: name 'abs_builddir' is not defined
+        make: *** [clean-local] Error 1
+        Configuring build environment for gpsd
+        libtoolize: putting auxiliary files in `.'.
+
+I also had a (harmless?) warning:
+	configure: WARNING: QtNetwork library not found. Not including QT support
+
+
+I ended up here:
+        70840816e110345e9467e8010f83084ab609fa04 is the first bad commit
+        commit 70840816e110345e9467e8010f83084ab609fa04
+        Author: Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt;
+        Date:   Fri Jan 28 15:21:17 2011 -0500
+        
+            Address bug #17532: gpsd 2.96~dev fails to build from separate directory.
+            
+            Out-of-directory builds work now, but require the ability to hack the build
+            subdir in the pareant directory and so won't work if it's read-only.  This
+            limitation cannot be fixed without real VPATH support in distutils.
+        
+        :100644 100644 1ff87e434a53f8b7474058d4660c2fc4421849f9 53625eb31b993a4d439121b4da9c136712f51798 M      setup.py
+
+
+Seems to be fixed with attached patch (though I have not tested this
+with an out-of-directory build (how?))
+
+
+Thomas
+
+
+&gt;<i> I got down to:
+</I>&gt;<i> 
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">ccurley at dragon</A>:~/versioned/gpsd$ git bisect bad
+</I>&gt;<i> Bisecting: 0 revisions left to test after this (roughly 0 steps)
+</I>&gt;<i> [00064a206c26e67e59e6ce351951eaa2ebb37bc2] Most of the way to out-of-directory builds.
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">ccurley at dragon</A>:~/versioned/gpsd$ 
+</I>&gt;<i> 
+</I>&gt;<i> which installed successfully. so:
+</I>&gt;<i> 
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">ccurley at dragon</A>:~/versioned/gpsd$ git bisect good
+</I>&gt;<i> d9375ca6870bfc684b37ec41084d6f09ed1763fb is the first bad commit
+</I>&gt;<i> commit d9375ca6870bfc684b37ec41084d6f09ed1763fb
+</I>&gt;<i> Author: Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt;
+</I>&gt;<i> Date:   Fri Jan 28 07:35:40 2011 -0500
+</I>&gt;<i> 
+</I>&gt;<i>     Another step towards out-of-directory builds.
+</I>&gt;<i> 
+</I>&gt;<i> :100644 100644 34342822a55549cbd0842f6d97de4460067426f2 3d8e19facacf5986473ca19683aeb97221b00d1d M	Makefile.am
+</I>&gt;<i> :100644 100644 b4ddc6d337a521ad80b619fe6c50816f679d6f5f 1ff87e434a53f8b7474058d4660c2fc4421849f9 M	setup.py
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">ccurley at dragon</A>:~/versioned/gpsd$ 
+</I>&gt;<i> 
+</I>&gt;<i> If I did everything right, that should be the culprit.
+</I>&gt;<i> 
+</I>&gt;<i> BTW, I am compiling as a non-root user. Since we seem to have an environment variable issue, that could be relevant.
+</I>&gt;<i> 
+</I>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: in-directory-build-fix.patch
+Type: text/x-patch
+Size: 561 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110202/b7bf2530/attachment.bin">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110202/b7bf2530/attachment.bin</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008544.html">[Gpsd-dev] new gps report
+</A></li>
+	<LI>Next message: <A HREF="008548.html">[Gpsd-dev] gpsfake in multiple ports
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8545">[ date ]</a>
+              <a href="thread.html#8545">[ thread ]</a>
+              <a href="subject.html#8545">[ subject ]</a>
+              <a href="author.html#8545">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

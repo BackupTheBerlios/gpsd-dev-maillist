@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPSD as a GPSD data source
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20as%20a%20GPSD%20data%20source&In-Reply-To=%3C91981b3e0907031218g4f49b064l1fbcd440e8d2536f%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006787.html">
+   <LINK REL="Next"  HREF="006763.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPSD as a GPSD data source</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20as%20a%20GPSD%20data%20source&In-Reply-To=%3C91981b3e0907031218g4f49b064l1fbcd440e8d2536f%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] GPSD as a GPSD data source">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Fri Jul  3 21:18:10 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006787.html">[Gpsd-dev] new gps report
+</A></li>
+        <LI>Next message: <A HREF="006763.html">[Gpsd-dev] GPSD as a GPSD data source
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6762">[ date ]</a>
+              <a href="thread.html#6762">[ thread ]</a>
+              <a href="subject.html#6762">[ subject ]</a>
+              <a href="author.html#6762">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>This came to me while I was answering the raw data thread.
+
+Someone was asking me why I'd want to make gpsd be able to use gpsd as
+a source device... now I have an example where this would be useful. I
+can have a long-running gpsd watching a receiver, and then I can run
+&quot;gpsd -S 2948 <A HREF="gpsd://127.0.0.1:2947/raw">gpsd://127.0.0.1:2947/raw</A>&quot; and be hacking on other
+things. Or use one gpsd as an aggregator for a bunch of remote
+servers.
+
+Here's my proposal for a GPSD URI format:
+
+<A HREF="gpsd://&lt;host">gpsd://&lt;host</A>&gt;[:&lt;port&gt;]/[&lt;device&gt;][/&lt;protocol&gt;]
+
+host is a hostname or an ipv4 address (eventually ipv6 should be supported)
+port is an optional tcp port number, if gpsd isn't listening on :2947
+device can be used to select a particular receiver if multiple
+receivers are in use. if unspecified gpsd will select the &quot;best&quot;
+device.
+protocol is one of: &quot;raw&quot;, &quot;nmea&quot;, &quot;gpsd&quot;. if unspecified, the gpsd
+protocol will be used.
+
+<A HREF="gpsd://gpsd.mainframe.cx/">gpsd://gpsd.mainframe.cx/</A> - connect to gpsd.mainframe.cx, default
+port, autoselect the receiver, and use gpsd transport (w=1)
+
+<A HREF="gpsd://127.0.0.1:2948/dev/cuaU1/raw">gpsd://127.0.0.1:2948/dev/cuaU1/raw</A> - connect to 127.0.0.1 port 2948,
+use /dev/cuaU1 (if attached), and use super-raw transport (R=2)
+
+<A HREF="gpsd://127.0.0.1:2948/tmp/gps/raw">gpsd://127.0.0.1:2948/tmp/gps/raw</A> - connect to 127.0.0.1 port 2948,
+use /tmp/gps (this is where i create fifos for testing stuff), and use
+super-raw transport (R=2)
+
+<A HREF="gpsd://gpsd.rellim.com:2947/nmea">gpsd://gpsd.rellim.com:2947/nmea</A> - connect to gpsd.rellim.com port
+2947, autoselect the receiver, and use gpsd's synthetic NMEA transport
+(R=1)
+
+Comments?
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006787.html">[Gpsd-dev] new gps report
+</A></li>
+	<LI>Next message: <A HREF="006763.html">[Gpsd-dev] GPSD as a GPSD data source
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6762">[ date ]</a>
+              <a href="thread.html#6762">[ thread ]</a>
+              <a href="subject.html#6762">[ subject ]</a>
+              <a href="author.html#6762">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

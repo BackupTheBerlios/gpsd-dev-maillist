@@ -1,0 +1,86 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] is_input_waiting() supports modularity
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20is_input_waiting%28%29%20supports%20modularity&In-Reply-To=%3C200410182203.i9IM31hD028500%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000302.html">
+   <LINK REL="Next"  HREF="000306.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] is_input_waiting() supports modularity</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20is_input_waiting%28%29%20supports%20modularity&In-Reply-To=%3C200410182203.i9IM31hD028500%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] is_input_waiting() supports modularity">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Tue Oct 19 00:03:01 CEST 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000302.html">[Gpsd-dev] Announcing release 2.2 of gpsd
+</A></li>
+        <LI>Next message: <A HREF="000306.html">[Gpsd-dev] gpsd v2 and ngpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#305">[ date ]</a>
+              <a href="thread.html#305">[ thread ]</a>
+              <a href="subject.html#305">[ subject ]</a>
+              <a href="author.html#305">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Yes, Remco is right.  is_input_waiting() is not strictly necessary,
+Given the circumstances under which gps_poll() is called from the
+daemon main sequence, the read from the GPS could be guarded with
+FD_ISSET() instead.
+
+I partitioned the code this way so that gps_poll() would be more
+usable by programs which are *not* calling the low-level interface
+from within a select loop.  There are not yet any such programs, but I
+believe strongly in designing in cleanly separated layers with
+well-defined APIs.
+
+There are two key decisions in the implementation that made it
+possible to split away the implementation of the low-level GPS
+interface from the daemon loop code.  is_input_waiting() was one, and
+the way raw-mode hooks are handled is the other.
+
+I have changed the comment at the head of the main polling loop to
+relect Remco's comments.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+Fantastic doctrines (like Christianity or Islam or Marxism) require unanimity
+of belief. One dissenter casts doubt on the creed of millions. Thus the fear
+and the hate; thus the torture chamber, the iron stake, the gallows, the labor
+camp, the psychiatric ward.	-- Edward Abbey
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000302.html">[Gpsd-dev] Announcing release 2.2 of gpsd
+</A></li>
+	<LI>Next message: <A HREF="000306.html">[Gpsd-dev] gpsd v2 and ngpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#305">[ date ]</a>
+              <a href="thread.html#305">[ thread ]</a>
+              <a href="subject.html#305">[ subject ]</a>
+              <a href="author.html#305">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

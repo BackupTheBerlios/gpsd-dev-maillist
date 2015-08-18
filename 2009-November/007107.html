@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Patch to gpsd.h-tail fixes build failure on Mac OS X.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Patch%20to%20gpsd.h-tail%20fixes%20build%20failure%20on%20Mac%20OS%20X.&In-Reply-To=%3C4CB257EA-5B5B-4ECA-92D8-CF2BE00375FA%40ledford.cc%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007116.html">
+   <LINK REL="Next"  HREF="007111.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Patch to gpsd.h-tail fixes build failure on Mac OS X.</H1>
+    <B>Michael Ledford</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Patch%20to%20gpsd.h-tail%20fixes%20build%20failure%20on%20Mac%20OS%20X.&In-Reply-To=%3C4CB257EA-5B5B-4ECA-92D8-CF2BE00375FA%40ledford.cc%3E"
+       TITLE="[Gpsd-dev] Patch to gpsd.h-tail fixes build failure on Mac OS X.">michael at ledford.cc
+       </A><BR>
+    <I>Thu Nov 19 14:39:42 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007116.html">[Gpsd-dev] Patches fix errors and warnings on Mac OS X.
+</A></li>
+        <LI>Next message: <A HREF="007111.html">[Gpsd-dev] Patch to gpsd.h-tail fixes build failure on Mac OS	X.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7107">[ date ]</a>
+              <a href="thread.html#7107">[ thread ]</a>
+              <a href="subject.html#7107">[ subject ]</a>
+              <a href="author.html#7107">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hello,
+
+I was getting the following error while building using Apple's gcc  
+4.0.1 and also gcc 4.2.1.
+
+/bin/sh ./libtool --tag=CXX --mode=link g++ -o libgps.la -rpath /usr/ 
+local/lib ais_json.lo bits.lo bsd-base64.lo crc24q.lo gpsd_report.lo  
+gpsutils.lo geoid.lo gpsd_json.lo hex.lo isgps.lo json.lo libgps.lo  
+libgps_json.lo gpsdclient.lo libgpsd_core.lo maskdump.lo net_dgpsip.lo  
+net_gnss_dispatch.lo net_ntrip.lo netlib.lo ntpshm.lo packet.lo  
+pseudonmea.lo serial.lo rtcm2_json.lo srecord.lo strl.lo subframe.lo  
+drivers.lo driver_aivdm.lo driver_evermore.lo driver_garmin.lo  
+driver_garmin_txt.lo driver_italk.lo driver_navcom.lo driver_nmea.lo  
+driver_oncore.lo driver_rtcm2.lo driver_rtcm3.lo driver_sirf.lo  
+driver_superstar2.lo driver_tsip.lo driver_ubx.lo driver_zodiac.lo   
+libgpsmm.lo  -lm -lc   -lpthread
+g++ -dynamiclib -single_module ${wl}-flat_namespace ${wl}-undefined $ 
+{wl}suppress -o .libs/libgps.0.dylib  .libs/ais_json.o .libs/ 
+bits.o .libs/bsd-base64.o .libs/crc24q.o .libs/gpsd_report.o .libs/ 
+gpsutils.o .libs/geoid.o .libs/gpsd_json.o .libs/hex.o .libs/ 
+isgps.o .libs/json.o .libs/libgps.o .libs/libgps_json.o .libs/ 
+gpsdclient.o .libs/libgpsd_core.o .libs/maskdump.o .libs/ 
+net_dgpsip.o .libs/net_gnss_dispatch.o .libs/net_ntrip.o .libs/ 
+netlib.o .libs/ntpshm.o .libs/packet.o .libs/pseudonmea.o .libs/ 
+serial.o .libs/rtcm2_json.o .libs/srecord.o .libs/strl.o .libs/ 
+subframe.o .libs/drivers.o .libs/driver_aivdm.o .libs/ 
+driver_evermore.o .libs/driver_garmin.o .libs/ 
+driver_garmin_txt.o .libs/driver_italk.o .libs/driver_navcom.o .libs/ 
+driver_nmea.o .libs/driver_oncore.o .libs/driver_rtcm2.o .libs/ 
+driver_rtcm3.o .libs/driver_sirf.o .libs/driver_superstar2.o .libs/ 
+driver_tsip.o .libs/driver_ubx.o .libs/driver_zodiac.o .libs/ 
+libgpsmm.o  -lm -lc -lpthread  -install_name  /usr/local/lib/libgps. 
+0.dylib -Wl,-compatibility_version -Wl,1 -Wl,-current_version -Wl,1.0
+ld: duplicate symbol _classmap in .libs/gpsd_report.o and .libs/ 
+ais_json.o
+
+collect2: ld returned 1 exit status
+make[1]: *** [libgps.la] Error 1
+make: *** [all] Error 2
+
+I solved it by extern'ing the classmap variable as given by the  
+following diff.
+
+Sincerely,
+Michaell
+
+-------------- next part --------------
+An embedded and charset-unspecified text was scrubbed...
+Name: diff.txt
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091119/41e1d381/attachment.txt">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091119/41e1d381/attachment.txt</A>&gt;
+-------------- next part --------------
+
+
+
+Index: gpsd.h-tail
+===================================================================
+--- gpsd.h-tail	(revision 6555)
++++ gpsd.h-tail	(working copy)
+@@ -140,7 +140,7 @@
+      int		packetmask;
+  };
+  #define CLASSMAP_NITEMS	5
+-struct classmap_t classmap[CLASSMAP_NITEMS];
++extern struct classmap_t classmap[CLASSMAP_NITEMS];
+
+  #define NTPSHMSEGS	4		/* number of NTP SHM segments */
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007116.html">[Gpsd-dev] Patches fix errors and warnings on Mac OS X.
+</A></li>
+	<LI>Next message: <A HREF="007111.html">[Gpsd-dev] Patch to gpsd.h-tail fixes build failure on Mac OS	X.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7107">[ date ]</a>
+              <a href="thread.html#7107">[ thread ]</a>
+              <a href="subject.html#7107">[ subject ]</a>
+              <a href="author.html#7107">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

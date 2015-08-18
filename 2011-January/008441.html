@@ -1,0 +1,353 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] Add a Python port of Jason Hecker's webgps.py
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%3D%3Futf-8%3Fq%3F%3D5BPATCH%3D5D_Add_a_Python_port_of_Jason_Hecke%3F%3D%0A%09%3D%3Futf-8%3Fq%3Fr%3D27s_webgps%3D2Epy%3F%3D&In-Reply-To=%3C1294242413-7937-1-git-send-email-bbolli%40ewanet.ch%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008471.html">
+   <LINK REL="Next"  HREF="008444.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] Add a Python port of Jason Hecker's webgps.py</H1>
+    <B>Beat Bolli</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%3D%3Futf-8%3Fq%3F%3D5BPATCH%3D5D_Add_a_Python_port_of_Jason_Hecke%3F%3D%0A%09%3D%3Futf-8%3Fq%3Fr%3D27s_webgps%3D2Epy%3F%3D&In-Reply-To=%3C1294242413-7937-1-git-send-email-bbolli%40ewanet.ch%3E"
+       TITLE="[Gpsd-dev] [PATCH] Add a Python port of Jason Hecker's webgps.py">bbolli at ewanet.ch
+       </A><BR>
+    <I>Wed Jan  5 16:46:53 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008471.html">[Gpsd-dev] EAGAIN
+</A></li>
+        <LI>Next message: <A HREF="008444.html">[Gpsd-dev] Remaining work on subframe reporting
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8441">[ date ]</a>
+              <a href="thread.html#8441">[ thread ]</a>
+              <a href="subject.html#8441">[ subject ]</a>
+              <a href="author.html#8441">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>This client draws a sky view of the satellites and their tracks using
+HTML and SVG. It needs to run continuously in order to build a history
+and generate the satellite tracks. Your browser must be able to handle
+SVG to get the skymap display working properly.
+---
+ contrib/webgps.py |  275 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 275 insertions(+), 0 deletions(-)
+ create mode 100755 contrib/webgps.py
+
+diff --git a/contrib/webgps.py b/contrib/webgps.py
+new file mode 100755
+index 0000000..1438f8c
+--- /dev/null
++++ b/contrib/webgps.py
+@@ -0,0 +1,275 @@
++#!/usr/bin/env python
++# encoding: utf-8
++
++# webgps.py
++#
++# This is a Python port of webgps.c from <A HREF="http://www.wireless.org.au/~jhecker/gpsd/">http://www.wireless.org.au/~jhecker/gpsd/</A>
++# by Beat Bolli &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">me+gps at drbeat.li</A>&gt;
++#
++
++import time, calendar, math, socket, sys, os, select, pickle
++from gps import *
++
++TRACKMAX = 1024
++STALECOUNT = 10
++
++DIAMETER = 200
++XYOFFSET = 10
++
++def polartocart(el, az):
++    radius = DIAMETER * (1 - el / 90.0) # * math.cos(Deg2Rad(float(el)))
++    theta = Deg2Rad(float(az - 90))
++    return (
++        int(radius * math.cos(theta) + 0.5) + DIAMETER + XYOFFSET,
++        int(radius * math.sin(theta) + 0.5) + DIAMETER + XYOFFSET
++    )
++
++
++class Track:
++    '''Store the track of one satellite.'''
++
++    def __init__(self, prn):
++        self.prn = prn
++        self.stale = 0
++        self.posn = []          # list of (x, y) tuples
++
++    def add(self, x, y):
++        pos = (x, y)
++        self.stale = STALECOUNT
++        if not self.posn or self.posn[-1] != pos:
++            self.posn.append(pos)
++            if len(self.posn) &gt; TRACKMAX:
++                self.posn = self.posn[-TRACKMAX:]
++            #print self.prn, self.posn
++            return 1
++        return 0
++
++class SatTracks(gps):
++    '''gpsd client writing HTML and SVG output.'''
++
++    def __init__(self):
++        gps.__init__(self)
++        self.sattrack = {}      # maps PRNs to Tracks
++        self.state = None
++        self.statetimer = time.time()
++        self.needsupdate = 0
++
++    def html(self, svgfile):
++        self.fh.write(&quot;&quot;&quot;&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
++&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML Transitional 1.0//EN&quot;
++\t&quot;<A HREF="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd</A>&quot;&gt;
++
++&lt;html xmlns=&quot;<A HREF="http://www.w3.org/1999/xhtml">http://www.w3.org/1999/xhtml</A>&quot;&gt;
++&lt;head&gt;
++\t&lt;meta http-equiv=&quot;Refresh&quot; content=&quot;300&quot; /&gt;
++\t&lt;title&gt;GPSD Satellite Positions and Readings&lt;/title&gt;
++\t&lt;style type=&quot;text/css&quot;&gt;&lt;!--
++\t\t.num td { text-align: right; }
++\t\tth { text-align: left; }
++\t--&gt;&lt;/style&gt;
++&lt;/head&gt;
++&lt;body&gt;
++\t&lt;table border=&quot;1&quot;&gt;
++\t\t&lt;tr&gt;
++\t\t\t&lt;td&gt;
++\t\t\t\t&lt;table border=&quot;0&quot; class=&quot;num&quot;&gt;
++\t\t\t\t\t&lt;tr&gt;&lt;th&gt;PRN:&lt;/th&gt;&lt;th&gt;Elev:&lt;/th&gt;&lt;th&gt;Azim:&lt;/th&gt;&lt;th&gt;SNR:&lt;/th&gt;&lt;th&gt;Used:&lt;/th&gt;&lt;/tr&gt;
++&quot;&quot;&quot;)
++
++        sats = self.satellites[:]
++        sats.sort(lambda a, b: a.PRN - b.PRN)
++        for s in sats:
++            self.fh.write(&quot;\t\t\t\t\t&lt;tr&gt;&lt;td&gt;%d&lt;/td&gt;&lt;td&gt;%d&lt;/td&gt;&lt;td&gt;%d&lt;/td&gt;&lt;td&gt;%d&lt;/td&gt;&lt;td&gt;%s&lt;/td&gt;&lt;/tr&gt;\n&quot; % (
++                s.PRN, s.elevation, s.azimuth, s.ss, s.used and 'Y' or 'N'
++            ))
++
++	self.fh.write(&quot;\t\t\t\t&lt;/table&gt;\n\t\t\t\t&lt;table border=\&quot;0\&quot;&gt;\n&quot;)
++
++	def row(l, v):
++	    self.fh.write(&quot;\t\t\t\t\t&lt;tr&gt;&lt;th&gt;%s:&lt;/th&gt;&lt;td&gt;%s&lt;/td&gt;&lt;/tr&gt;\n&quot; % (l, v))
++
++	def deg_to_str(a, hemi):
++	    return '%.6f %c' % (abs(a), hemi[a &lt; 0])
++
++	row('Time', self.utc or 'N/A')
++
++	if self.fix.mode &gt;= MODE_2D:
++	    row('Latitude', deg_to_str(self.fix.latitude, 'SN'))
++	    row('Longitude', deg_to_str(self.fix.longitude, 'WE'))
++	    row('Altitude', self.fix.mode == MODE_3D and &quot;%f m&quot; % self.fix.altitude or 'N/A')
++	    row('Speed', not isnan(self.fix.speed) and &quot;%f m/s&quot; % self.fix.speed or 'N/A')
++	    row('Course', not isnan(self.fix.track) and &quot;%f&#176;&quot; % self.fix.track or 'N/A')
++	else:
++	    row('Latitude', 'N/A')
++	    row('Longitude', 'N/A')
++	    row('Altitude', 'N/A')
++	    row('Speed', 'N/A')
++	    row('Course', 'N/A')
++
++	row('EPX', not isnan(self.fix.epx) and &quot;%f m&quot; % self.fix.epx or 'N/A')
++	row('EPY', not isnan(self.fix.epy) and &quot;%f m&quot; % self.fix.epy or 'N/A')
++	row('EPV', not isnan(self.fix.epv) and &quot;%f m&quot; % self.fix.epv or 'N/A')
++	row('Climb', self.fix.mode == MODE_3D and not isnan(self.fix.climb) and
++	    &quot;%f m/s&quot; % self.fix.climb or 'N/A'
++	)
++
++	if not (self.valid &amp; ONLINE_SET):
++	    newstate = 0
++	    state = &quot;OFFLINE&quot;
++	else:
++	    newstate = self.fix.mode
++	    if newstate == MODE_2D:
++                state = self.status == STATUS_DGPS_FIX and &quot;2D DIFF FIX&quot; or &quot;2D FIX&quot;
++	    elif newstate == MODE_3D:
++		state = self.status == STATUS_DGPS_FIX and &quot;3D DIFF FIX&quot; or &quot;3D FIX&quot;
++	    else:
++		state = &quot;NO FIX&quot;
++	if newstate != self.state:
++	    self.statetimer = time.time()
++	    self.state = newstate
++	row('State', state + &quot; (%d secs)&quot; % (time.time() - self.statetimer))
++
++	self.fh.write(&quot;\t\t\t\t&lt;/table&gt;\n\t\t\t&lt;/td&gt;\n&quot;)
++
++	# SVG stuff
++	self.fh.write(&quot;\t\t\t&lt;td&gt;\n\t\t\t\t&lt;object data=\&quot;%s\&quot; \
++width=\&quot;425\&quot; height=\&quot;425\&quot; type=\&quot;image/svg+xml\&quot; /&gt;\n\
++\t\t\t&lt;/td&gt;\n\t\t&lt;/tr&gt;\n&quot; % svgfile)
++
++	self.fh.write(&quot;\t&lt;/table&gt;\n&lt;/body&gt;\n&lt;/html&gt;\n&quot;)
++
++    def svg(self):
++        self.fh.write(&quot;&quot;&quot;&lt;?xml version=&quot;1.0&quot; standalone=&quot;no&quot;?&gt;
++&lt;!DOCTYPE svg PUBLIC &quot;-//W3C//DTD SVG 1.1//EN&quot;
++        &quot;<A HREF="http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd</A>&quot;&gt;
++&lt;svg width=&quot;100%&quot; height=&quot;100%&quot; version=&quot;1.1&quot; xmlns=&quot;<A HREF="http://www.w3.org/2000/svg">http://www.w3.org/2000/svg</A>&quot;&gt;
++\t&lt;g transform=&quot;translate(0,0)&quot;&gt;
++\t\t&lt;circle cx=&quot;210&quot; cy=&quot;210&quot; r=&quot;200&quot; stroke=&quot;black&quot; stroke-width=&quot;1&quot; fill=&quot;white&quot;/&gt;
++\t\t&lt;circle cx=&quot;210&quot; cy=&quot;210&quot; r=&quot;100&quot; stroke=&quot;grey&quot; stroke-width=&quot;1&quot; fill=&quot;white&quot;/&gt;
++\t\t&lt;circle cx=&quot;210&quot; cy=&quot;210&quot; r=&quot;2&quot; stroke=&quot;grey&quot; stroke-width=&quot;1&quot; fill=&quot;white&quot;/&gt;
++\t\t&lt;line x1=&quot;210&quot; y1=&quot;10&quot; x2=&quot;210&quot; y2=&quot;410&quot; stroke=&quot;lightgrey&quot;/&gt;
++\t\t&lt;line x1=&quot;10&quot; y1=&quot;210&quot; x2=&quot;410&quot; y2=&quot;210&quot; stroke=&quot;lightgrey&quot;/&gt;
++\t\t&lt;line x1=&quot;68.578644&quot; y1=&quot;68.578644&quot; x2=&quot;351.42136&quot; y2=&quot;351.42136&quot; stroke=&quot;lightgrey&quot;/&gt;
++\t\t&lt;line x1=&quot;68.578644&quot; y1=&quot;351.42136&quot; x2=&quot;351.42136&quot; y2=&quot;68.578644&quot; stroke=&quot;lightgrey&quot;/&gt;
++\t\t&lt;g font-size=&quot;10&quot; stroke=&quot;black&quot; stroke-width=&quot;0.5&quot;&gt;
++\t\t\t&lt;text x=&quot;206&quot; y=&quot;8&quot;&gt;N&lt;/text&gt;
++\t\t\t&lt;text x=&quot;0&quot; y=&quot;214&quot;&gt;W&lt;/text&gt;
++\t\t\t&lt;text x=&quot;412&quot; y=&quot;214&quot;&gt;E&lt;/text&gt;
++\t\t\t&lt;text x=&quot;206&quot; y=&quot;420&quot;&gt;S&lt;/text&gt;
++\t\t&lt;/g&gt;
++&quot;&quot;&quot;
++        )
++
++        # Draw the tracks
++        self.fh.write('\t\t&lt;g stroke-width=&quot;0.6&quot; stroke=&quot;red&quot; fill=&quot;none&quot;&gt;\n')
++        for t in self.sattrack.values():
++            if t.posn:
++                self.fh.write('\t\t\t&lt;polyline points=&quot;%s&quot;%s/&gt;\n' % (
++                    ' '.join(['%d,%d' % p for p in t.posn]), t.stale == 0 and ' opacity=&quot;.33&quot;' or ''
++                ))
++        self.fh.write('\t\t&lt;/g&gt;\n')
++
++        # Draw the satellites
++        self.fh.write('\t\t&lt;g stroke-width=&quot;1&quot; stroke=&quot;black&quot; fill=&quot;black&quot; font-size=&quot;10&quot;&gt;\n')
++        for s in self.satellites:
++            x, y = polartocart(s.elevation, s.azimuth)
++            fill = s.ss &lt; 30 and 'red' or s.ss &lt; 35 and 'yellow' or s.ss &lt; 40 and 'green' or 'lime'
++            opaque = not s.used and ' opacity=&quot;.33&quot;' or ''
++
++            # Center PRNs in the marker
++            offset = s.PRN &lt; 10 and 3 or s.PRN &gt;= 100 and -3 or 0
++
++            if s.PRN &gt; 32:      # draw a diamond for SBAS satellites
++                self.fh.write(
++                    '\t\t\t&lt;path d=&quot;M%d %d l-8 -8 -8 8 8 8 8 -8&quot; fill=&quot;%s&quot;%s/&gt;\n' %
++                    (x + 8, y, fill, opaque)
++                )
++            else:
++                self.fh.write(
++                    '\t\t\t&lt;circle cx=&quot;%d&quot; cy=&quot;%d&quot; r=&quot;8&quot; fill=&quot;%s&quot;%s/&gt;\n' %
++                    (x, y, fill, opaque)
++                )
++            self.fh.write('\t\t\t&lt;text x=&quot;%d&quot; y=&quot;%d&quot;&gt;%d&lt;/text&gt;\n' % (x - 6 + offset, y + 4, s.PRN))
++
++        self.fh.write('\t\t&lt;/g&gt;\n\t&lt;/g&gt;\n&lt;/svg&gt;\n')
++
++    def make_stale(self):
++        for t in self.sattrack.values():
++            if t.stale:
++                t.stale -= 1
++
++    def delete_stale(self):
++        for prn in self.sattrack.keys():
++            if self.sattrack[prn].stale == 0:
++                del self.sattrack[prn]
++                self.needsupdate = 1
++
++    def insert_sat(self, prn, x, y):
++        try:
++            t = self.sattrack[prn]
++        except KeyError:
++            self.sattrack[prn] = t = Track(prn)
++        self.needsupdate += t.add(x, y)
++
++    def update_tracks(self):
++        self.make_stale()
++        for s in self.satellites:
++            x, y = polartocart(s.elevation, s.azimuth)
++            if self.insert_sat(s.PRN, x, y):
++                self.needsupdate = 1
++        self.delete_stale()
++
++    def generate_html(self, htmlfile, svgfile):
++        self.fh = open(htmlfile, 'w')
++        self.html(svgfile)
++        self.fh.close()
++
++    def generate_svg(self, svgfile):
++        self.fh = open(svgfile, 'w')
++        self.svg()
++        self.fh.close()
++
++    def run(self, period):
++	end = time.time() + period
++	self.stream(WATCH_ENABLE | WATCH_NEWSTYLE)
++	for report in self:
++	    if report['class'] not in ('TPV', 'SKY'):
++		continue
++	    self.needsupdate = 0
++	    self.update_tracks()
++	    self.generate_html('gpsd.html', 'gpsd.svg')
++	    if self.needsupdate:
++		self.generate_svg('gpsd.svg')
++		if period &lt;= 0 and not isnan(self.fix.time):
++		    break
++	    if period &gt; 0 and time.time() &gt; end:
++		break
++
++def main():
++    argv = sys.argv[1:]
++
++    period = argv and argv[0] or '0'
++    if period[-1:] in 'smhd':
++	period = int(period[:-1]) * {'s': 1, 'm': 60, 'h': 60*60, 'd': 24*60*60}[period[-1]]
++    else:
++	period = int(period)
++
++    sat = SatTracks()
++
++    # restore the tracks
++    pfile = 'tracks.p'
++    if os.path.isfile(pfile):
++        p = open(pfile)
++        sat.sattrack = pickle.load(p)
++        p.close()
++
++    try:
++        sat.run(period)
++    except KeyboardInterrupt:
++        # save the tracks
++        p = open(pfile, 'w')
++        pickle.dump(sat.sattrack, p)
++        p.close()
++
++if __name__ == '__main__':
++    main()
+-- 
+1.7.2.3
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008471.html">[Gpsd-dev] EAGAIN
+</A></li>
+	<LI>Next message: <A HREF="008444.html">[Gpsd-dev] Remaining work on subframe reporting
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8441">[ date ]</a>
+              <a href="thread.html#8441">[ thread ]</a>
+              <a href="subject.html#8441">[ subject ]</a>
+              <a href="author.html#8441">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

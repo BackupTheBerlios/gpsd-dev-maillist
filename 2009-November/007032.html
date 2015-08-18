@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsctl
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsctl&In-Reply-To=%3Calpine.LNX.1.10.0911101928540.22230%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007031.html">
+   <LINK REL="Next"  HREF="007033.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsctl</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsctl&In-Reply-To=%3Calpine.LNX.1.10.0911101928540.22230%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] gpsctl">gem at rellim.com
+       </A><BR>
+    <I>Wed Nov 11 04:48:40 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007031.html">[Gpsd-dev] gpsctl
+</A></li>
+        <LI>Next message: <A HREF="007033.html">[Gpsd-dev] gpsctl
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7032">[ date ]</a>
+              <a href="thread.html#7032">[ thread ]</a>
+              <a href="subject.html#7032">[ subject ]</a>
+              <a href="author.html#7032">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Eric!
+
+After some more testing it looks like 'parity' must be a character.  We
+want it to default to 'N', but string types do not allow a default.
+
+Now gpsctl fails later for me.  Here is the JSONDEBUG output:
+
+[...]
+Collected token value 1.
+State post_val      , looking at ',' (0x7fffbb8d1db9)
+State await_attr    , looking at '&quot;' (0x7fffbb8d1dba)
+State in_attr       , looking at 'c' (0x7fffbb8d1dbb)
+State in_attr       , looking at 'y' (0x7fffbb8d1dbc)
+State in_attr       , looking at 'c' (0x7fffbb8d1dbd)
+State in_attr       , looking at 'l' (0x7fffbb8d1dbe)
+State in_attr       , looking at 'e' (0x7fffbb8d1dbf)
+State in_attr       , looking at '&quot;' (0x7fffbb8d1dc0)
+Collected attribute name cycle
+State await_value   , looking at ':' (0x7fffbb8d1dc1)
+State await_value   , looking at '1' (0x7fffbb8d1dc2)
+State in_val_token  , looking at '.' (0x7fffbb8d1dc3)
+State in_val_token  , looking at '0' (0x7fffbb8d1dc4)
+State in_val_token  , looking at '0' (0x7fffbb8d1dc5)
+State in_val_token  , looking at '}' (0x7fffbb8d1dc6)
+Collected token value 1.00.
+State post_val      , looking at '}' (0x7fffbb8d1dc6)
+JSON parse ends.
+End of array found.
+leaving json_read_array() with 1 elements
+State post_val      , looking at '}' (0x7fffbb8d1dc8)
+Saw quoted value when expecting non-string.
+gpsctl: no DEVICES response received.
+
+Strange.
+
+Here is the exact string not parsing:
+
+{&quot;class&quot;:&quot;DEVICES&quot;,&quot;devices&quot;:[{&quot;class&quot;:&quot;DEVICE&quot;,&quot;path&quot;:&quot;/dev/ttyS0&quot;,&quot;activated&quot;:1257910296.75,&quot;flags&quot;:1,&quot;driver&quot;:&quot;SiRF binary&quot;,&quot;subtype&quot;:&quot;GSW3.2.4_3.1.00.12-SDK003P1.00a &quot;,&quot;native&quot;:1,&quot;bps&quot;:4800,&quot;parity&quot;:N,&quot;stopbits&quot;:1,&quot;cycle&quot;:1.00}]}
+
+PHP has a primitive json decoder and it also fails on that string.  So
+it looks like the string gpsd returns is invalid in some way.  Don't
+know enough json to know why.
+
+BTW, I still see some sort of startup race in cgps, and I can not
+compile xgps since it requires libXaw8 and gentoo only has libXaw7.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 109 NW Wilmington Ave., Suite E, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFK+jQaBmnRqz71OvMRApDKAJwKb0zeerWrGFfhr10TfbjMBuWxFgCfTmvU
+9E66A0d6dSaGbDUxcxM3KJQ=
+=8KIy
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007031.html">[Gpsd-dev] gpsctl
+</A></li>
+	<LI>Next message: <A HREF="007033.html">[Gpsd-dev] gpsctl
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7032">[ date ]</a>
+              <a href="thread.html#7032">[ thread ]</a>
+              <a href="subject.html#7032">[ subject ]</a>
+              <a href="author.html#7032">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,86 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] squelching gpsd_report/gpsd_hexdump
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20squelching%20gpsd_report/gpsd_hexdump&In-Reply-To=%3C91981b3e0609252110q11a84cecr49ed5c6483333f33%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004404.html">
+   <LINK REL="Next"  HREF="004402.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] squelching gpsd_report/gpsd_hexdump</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20squelching%20gpsd_report/gpsd_hexdump&In-Reply-To=%3C91981b3e0609252110q11a84cecr49ed5c6483333f33%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] squelching gpsd_report/gpsd_hexdump">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Tue Sep 26 06:10:56 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004404.html">[Gpsd-dev] squelching gpsd_report/gpsd_hexdump
+</A></li>
+        <LI>Next message: <A HREF="004402.html">[Gpsd-dev] contact
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4418">[ date ]</a>
+              <a href="thread.html#4418">[ thread ]</a>
+              <a href="subject.html#4418">[ subject ]</a>
+              <a href="author.html#4418">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 9/24/06, Chris Kuethe &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">chris.kuethe at gmail.com</A>&gt; wrote:
+&gt;<i> Here's a little optimization for the embedded folks. This patch
+</I>&gt;<i> disables the main body of gpsd_report and gpsd_hexdump. I found that
+</I>&gt;<i> they use a fairly large percentage of the CPU doing stuff that may not
+</I>&gt;<i> be relevant/desirable in an embedded situation. Obviously running with
+</I>&gt;<i> --enable-squelch means you don't get logs of any kind, but if you're
+</I>&gt;<i> looking to avoid unnecessary cycles doing formatted output that no one
+</I>&gt;<i> will ever see, maybe this is for you. Comments?
+</I>
+No one has any comments?
+
+Formatted output is right up there with regexes for expensive and
+undesirable codepaths on an embedded platform. The vast majority of
+gpsd's time *is* spent doing formatted output (or at least formatting
+strings into buffers). Calling sprintf(&quot;%02x&quot;) is horribly painful. A
+simple test program that did lots of hexdumps went from using 65% of
+my cpu to 35% by being able to do sprintf(&quot;%02x%02x%02x%02x&quot;) instead
+of sprintf(&quot;%02x&quot;).
+
+Granted, gpsd only uses about 3.5% of my soekris anyway, and 0.0% of
+my 2GHz laptop. I guess having no logs might be a fairly significant
+impact. Ah, the things we do for a few more processor cycles...
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004404.html">[Gpsd-dev] squelching gpsd_report/gpsd_hexdump
+</A></li>
+	<LI>Next message: <A HREF="004402.html">[Gpsd-dev] contact
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4418">[ date ]</a>
+              <a href="thread.html#4418">[ thread ]</a>
+              <a href="subject.html#4418">[ subject ]</a>
+              <a href="author.html#4418">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

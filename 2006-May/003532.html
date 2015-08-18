@@ -1,0 +1,165 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: remaining patches - summary
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20remaining%20patches%20-%20summary&In-Reply-To=%3Cp0623092cc09569c12699%40%5B192.168.11.10%5D%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003527.html">
+   <LINK REL="Next"  HREF="003564.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: remaining patches - summary</H1>
+    <B>Robin L Darroch</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20remaining%20patches%20-%20summary&In-Reply-To=%3Cp0623092cc09569c12699%40%5B192.168.11.10%5D%3E"
+       TITLE="[Gpsd-dev] Re: remaining patches - summary">robin at spade-men.com
+       </A><BR>
+    <I>Sun May 21 03:27:35 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003527.html">[Gpsd-dev] Re: remaining patches - summary
+</A></li>
+        <LI>Next message: <A HREF="003564.html">[Gpsd-dev] Re: remaining patches - summary
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3532">[ date ]</a>
+              <a href="thread.html#3532">[ thread ]</a>
+              <a href="subject.html#3532">[ subject ]</a>
+              <a href="author.html#3532">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>At 7:18 +0800 20/5/06, Robin L Darroch wrote:
+&gt;<i>At 18:58 -0400 19/5/06, Eric S. Raymond wrote:
+</I>&gt;&gt;<i>  &gt; actual fix data (i.e. 3D) &gt; calculated estimate &gt; NaN &gt; completely
+</I>&gt;&gt;&gt;<i>  random garbage
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>So, when the GPS reports altitude with a 2D fix, is it:
+</I>&gt;<i>
+</I>&gt;<i>a) a calculated estimate? or
+</I>&gt;<i>b) completely random garbage?
+</I>&gt;<i>
+</I>&gt;<i>My current bet is on (a), and I *think* that's what I've seen... but 
+</I>&gt;<i>I'll do some field work and get back to you.
+</I>
+An interesting twist in my own personal consideration of this 
+question just occurred: see, the reason I found this bug in the first 
+place is that I was testing other bug-fixes using two clients with 
+different query methods side-by-side (cgps, which uses watcher mode, 
+and gps2ge, which uses a compound query), and observed a discrepancy 
+in the mode they were returning (cgps went from &quot;NO FIX&quot; straight to 
+&quot;3D Fix&quot;, while gps2ge was aware of 2D fixes).  What makes that 
+interesting is that - for gps2ge - I thought I'd decided to run with 
+altitude reported by the gps even in a 2D fix... but, I hadn't.  In 
+fact, because I use a compound query in that program (rather than a 
+single O query), it wouldn't have been possible anyway.  Why?
+
+Because &quot;A&quot; *already* only returns the altitude if mode==3D.
+
+Now here's where it gets interesting, at least as far as I'm 
+concerned: I quite agree with my own arguments as to why an O report 
+should include any altitude the GPS unit is reporting, along with the 
+mode, so that users can make their own decision as to whether to use 
+a calculated estimate of altitude (although I'm prepared to concede 
+this point if it is shown that altitude in a 2D fix is &quot;completely 
+random garbage&quot;).  However, I don't believe we can do the same thing 
+with the A query - since a client could send an A query in isolation, 
+we can't respond to that with anything other than ? unless the mode 
+is 3D, since otherwise the client may have no way of knowing that the 
+reliability of that response has lowered.
+
+As far as I can see, this makes the question more complicated because 
+individual value queries give us no way of ensuring the user is aware 
+of a problem with the quality of the data, so we can only pass the 
+data on if gpsd is sufficiently assured that it is correct.  This 
+means we need to do better status handling so as not to return DR'd 
+positions to P queries (there is currently no status-based logic to 
+prevent this, although that depends whether the GPS unit could be 
+counted on to return MODE_NO_FIX if in DR mode; I have done no 
+testing to see if that is the case for my device... although I have 
+watched KisMAC continue to follow a straight line on the map when 
+I've turned a corner under a tunnel or bridge, so the circumstantial 
+evidence says that either my GPS gave no indication that it was 
+DR'ing, or that gpsd passed the P values on anyway).
+
+However, I also think the ideal result of using O queries or watcher 
+mode along with libgps should be that the gps.fix structure in the 
+client contains the same data as the gpsdata.fix structure in the 
+running gpsd... and the only way to achieve that is to accept my 
+proposed patch to add mode to the O query response.
+
+So... what do others think?
+
+1) should individual queries such as P and A be filtered so that we 
+only return data that comes from a real GPS fix in that dimension?
+	-&gt; leave A as is, but add a filter so that P=? when in DR mode
+
+2) should the aim of using O/W with libgps be to put data into 
+gps.fix that resembles as closely as possible the data in gpsdata.fix?
+
+3) should an O query aim to mimic a compound query (TPAV...) but 
+without the delimiters?
+
+The possible answers to that are &quot;yes&quot; to: 1+2; 2+3, 1+3.  1+2+3 is 
+not an option.
+
+- At the moment, we have 1 (needs work) plus 3 (needs work).
+- My patched version gives 1 (needs work) plus 2 (pretty close).
+
+1+2: I think as an overall system design, 1+2 provides greater 
+flexibility and leads more to the behaviour I would expect, 
+particularly in regards to libgps, while still being suitably 
+paranoid for individual query-based clients.  This is my preference.
+
+1+3: If, however, GPS altitude returned in a 2D fix is shown to be 
+&quot;completely random garbage&quot; rather than &quot;calculated estimate&quot;, I'm 
+prepared to accept that we don't really lose anything with 1+3.
+
+2+3: This seems irresponsible towards individual query-based clients 
+(since it would require us to return values for P and A if we have 
+them, even if there's some question about their validity, and the 
+client may not ask for the accompanying field that would allow them 
+to be aware of that uncertainty). I would be inclined to avoid this 
+option.
+
+Thoughts?
+
+Robin
+-- 
+
+-------------------------------------------------------------------------
+  Robin L. Darroch - PO Box 2715, South Hedland WA 6722 - +61 421 503 966
+       <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at darroch.id.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at nyca.org.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003527.html">[Gpsd-dev] Re: remaining patches - summary
+</A></li>
+	<LI>Next message: <A HREF="003564.html">[Gpsd-dev] Re: remaining patches - summary
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3532">[ date ]</a>
+              <a href="thread.html#3532">[ thread ]</a>
+              <a href="subject.html#3532">[ subject ]</a>
+              <a href="author.html#3532">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

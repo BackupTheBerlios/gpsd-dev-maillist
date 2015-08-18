@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Bug in gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2008-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Bug%20in%20gpsd&In-Reply-To=%3C91981b3e0810182228q23f77f78m401e4f86b89141e8%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006152.html">
+   <LINK REL="Next"  HREF="006171.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Bug in gpsd</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Bug%20in%20gpsd&In-Reply-To=%3C91981b3e0810182228q23f77f78m401e4f86b89141e8%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Bug in gpsd">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Sun Oct 19 07:28:00 CEST 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006152.html">[Gpsd-dev] Bug in gpsd
+</A></li>
+        <LI>Next message: <A HREF="006171.html">[Gpsd-dev] Bug in gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6170">[ date ]</a>
+              <a href="thread.html#6170">[ thread ]</a>
+              <a href="subject.html#6170">[ subject ]</a>
+              <a href="author.html#6170">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>this doesn't apply to SVN. what version of gpsd are you patching against?
+
+On Sun, Oct 5, 2008 at 11:54 PM, Bartos-Elekes Zsolt &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">muszi at kite.hu</A>&gt; wrote:
+&gt;<i> Hi!
+</I>&gt;<i>
+</I>&gt;<i> I found a bug in gpsd, allocate_client(): when allocating a new client, the fix data is not
+</I>&gt;<i> initialized, and old data is possibly sent to the new client as the first fix (this is a big problem
+</I>&gt;<i> if the client only requests a single fix and then exits - like my client program does to record a
+</I>&gt;<i> waypoint).
+</I>&gt;<i>
+</I>&gt;<i> Here is a fix:
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> --- gpsd.c.orig 2008-01-28 21:04:33.000000000 +0100
+</I>&gt;<i> +++ gpsd.c      2008-10-05 08:22:07.000000000 +0200
+</I>&gt;<i> @@ -391,6 +391,8 @@
+</I>&gt;<i>      int cfd;
+</I>&gt;<i>      for (cfd = 0; cfd &lt; MAXSUBSCRIBERS; cfd++) {
+</I>&gt;<i>        if (subscribers[cfd].fd &lt;= 0 ) {
+</I>&gt;<i> +           gps_clear_fix(&amp;subscribers[cfd].fixbuffer);
+</I>&gt;<i> +           gps_clear_fix(&amp;subscribers[cfd].oldfix);
+</I>&gt;<i>            subscribers[cfd].fd = cfd; /* mark subscriber as allocated */
+</I>&gt;<i>            return &amp;subscribers[cfd];
+</I>&gt;<i>        }
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i> Zsolt
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>
+
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006152.html">[Gpsd-dev] Bug in gpsd
+</A></li>
+	<LI>Next message: <A HREF="006171.html">[Gpsd-dev] Bug in gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6170">[ date ]</a>
+              <a href="thread.html#6170">[ thread ]</a>
+              <a href="subject.html#6170">[ subject ]</a>
+              <a href="author.html#6170">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

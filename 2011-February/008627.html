@@ -1,0 +1,194 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] How the RTCM2 support is supposed to be working
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20How%20the%20RTCM2%20support%20is%20supposed%20to%20be%20working&In-Reply-To=%3C20110226165602.GA22119%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008612.html">
+   <LINK REL="Next"  HREF="008630.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] How the RTCM2 support is supposed to be working</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20How%20the%20RTCM2%20support%20is%20supposed%20to%20be%20working&In-Reply-To=%3C20110226165602.GA22119%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] How the RTCM2 support is supposed to be working">esr at thyrsus.com
+       </A><BR>
+    <I>Sat Feb 26 17:56:02 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008612.html">[Gpsd-dev] NTRIP, and why we're not back to state Yellow
+</A></li>
+        <LI>Next message: <A HREF="008630.html">[Gpsd-dev] How the RTCM2 support is supposed to be working
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8627">[ date ]</a>
+              <a href="thread.html#8627">[ thread ]</a>
+              <a href="subject.html#8627">[ subject ]</a>
+              <a href="author.html#8627">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Andre, I'm merging in your previous question.  This reply is intended
+to put on the record how the RTCM2 support is supposed to work so that
+you and others can review it.
+
+If anything I say here is not a correct description, that itself is a
+bug that needs to be fixed.  Please check my statements.  To assist
+checking, I will try to identify the code regions that implement each
+behavior.
+
+Andre Naujoks &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">nautsch2 at googlemail.com</A>&gt;:
+&gt;<i>If every RTCM emitting device has a seperate RTCM buffer, how is it
+</I>&gt;<i>determined, which RTCM buffer is pushed into which device? The NTRIP
+</I>&gt;<i>server offers one RTCM stream, which has to be uploaded to any GPS
+</I>&gt;<i>device, which supports it.
+</I>
+Every RTCM2 packet received is copied to every activated GPS.  See
+gpsd.c near line 1977; this is the first thing done when a new device is
+polled.  The implementation is in net_gnss_dispatch.c:rtcm_relay().
+It copies from a global, shared RTCM buffer to the device.  I'll
+describe how this buffer is updated in a bit.
+
+&gt;<i>The NTRIP server needs an NMEA update from one active GPS device. I'd
+</I>&gt;<i>really dislike mixing updates from different devices, even if the
+</I>&gt;<i>difference between the data is marginal.
+</I>
+One assumption that the code does presently make is that all GPses
+attached to the daemon are near each other from the point of view of
+an RTCM station many kilometers distant.  This assumption seems safe
+because the maximum cable traverse for RS-232, USB and Bluetooth
+connections is measured in meters rather than kilometers.  Thus, one
+update from any attached GPS should inform an RTCM station about all
+devices.
+
+A previous remark of yours implied that RTCM transmitters use the
+update to filter what information they ship back.  If so, this could
+be a problem for using GPSD as a whole-sky observatory.  It implies that
+we might need a mechanism to spoof RTCM stations about our location.
+
+&gt;<i>I really have no clear idea how a GPS device is chosen for one (or more)
+</I>&gt;<i>NTRIP server or how an RTCM stream is chosen for any GPS device.
+</I>
+First, how a  GPS device is chosen for one (or more) NTRIP servers:
+
+Look near gpsd.c:1420.  When a TPV has been received from any device
+(the REPORT_IS bit is on in the change mask) and the device has a 3D
+fix, then the code walks through all other devices calling netgnss_report()
+to attempt to ship a notification to them. netgnss_report() is expected
+to pick out devices that are DGNSS casters and call the right handler;
+in your case that'sntrip_report().
+
+Yes, this code has changed since when you last looked at it.  While
+preparing this reply I finally understood your previous remark about
+the problem with making dsock device-local.  The gpsd.c code
+referenced in the above paragraph, and a change to
+{netgnss,dgpsip,ntrip}_report that makes them take three arguments each,
+should fix this.
+
+I also found the global ntrip_stream variable.  For future reference,
+globals like that are *forbidden* in GPSD.  The reason is that the entire
+lower level of GPSD is structured as a library that is meant to be called by
+different applications. Currently there are four such, gpsd and gpsctl
+and gpsmon and gpsdecode.  Things that would be globals belong in the
+contetxt structure.  
+
+In this case, the contents of ntrip_stream is logically part of the
+device state associated with a caster, and I have moved it there along
+with the parsing context.
+
+Next, how an RTCM stream is chosen for any GPS device:
+
+Currently, no real &quot;choosing&quot; is done.  When a GPS activates, the last
+RTCM2 packet seen (if there is one in the context buffer) is shipped 
+to it first thing.  
+
+&gt;<i>                                                                   There
+</I>&gt;<i>has to be *something* figuring out the best RTCM stream for GPS devices
+</I>&gt;<i>and *something* figuring out an appropriate GPS device, which is used
+</I>&gt;<i>for the NMEA updates for the NTRIP server. Maybe something really
+</I>&gt;<i>simple, like the first connected RTCM stream for any GPS device. And the
+</I>&gt;<i>first GPS device with a 3D fix as the source for the NTRIP servers NMEA
+</I>&gt;<i>updates. This can surely be improved by e.g. taking DOP values into
+</I>&gt;<i>account, but I don't know enough about the whole system to even make an
+</I>&gt;<i>educated guess as to what would be appropriate here.
+</I>
+This would be a filtering policy.  Currently, we don't have one.  If we
+decide to implement one, that belongs in gpsd.c as part of the dispatcher
+logic.  Let's get the mechanism right first, then worry about that.
+
+&gt;<i> &gt; I think the code is OK as is. The global context buffer is atomically
+</I>&gt;<i> &gt; updated every time an RTCM2 or RTCM3 packet is recognized. Thus rtcm_relay()
+</I>&gt;<i> &gt; will always ship the last packet received to all devices from that buffer.
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; RTCM data from multiple devices won't be scrambled together.  At worst,
+</I>&gt;<i> &gt; you could have a dependency from the order in which multiple RTCM devices 
+</I>&gt;<i> &gt; are polled to which GPSes get which correction packets.  If you think that's
+</I>&gt;<i> &gt; a problem, it could be fixed.
+</I>&gt;<i> 
+</I>&gt;<i> I don't see anywhere, that RTCM data has to be sent only as complete
+</I>&gt;<i> packets. This is streamed and can arrive in chunks. So if the same
+</I>&gt;<i> buffer is used for multiple devices you may get broken data.
+</I>&gt;<i> 
+</I>&gt;<i> dev1 sends: 1 2 3 4 5
+</I>&gt;<i> dev2 sends: A B C D E
+</I>&gt;<i> 
+</I>&gt;<i> rtcm_buf contains: 1 2 A B C 3 ..
+</I>&gt;<i> 
+</I>&gt;<i> I think the point is clear here.
+</I>
+Yes, but you have missed a subtlety in how RTCM2 is handled.
+
+There are actually two state machines running in parallel in the
+packet sniffer.  One of them is a conventional character-oriented
+state machine, resembling a compiler's lexical analyzer that is used
+to recognize packets from GPS and AIS receivers.  Most of packet.c
+implements this.  It updates the session packet buffer directly and
+never touches the context rtcmbuf.
+
+The other is a bitstream state recognizer for the ISGPS over-the-air
+protocol, which is what RTCM2 uses.  It is implemented in isgps.c (under
+a thin wrapper provided by driver_rtcm2_decode.c).  The bitstream
+recognizer does not update the session buffer, *and never touches the
+context rtcmbuf either*.  Instead, it decodes into session-&gt;isgps.buf.
+
+Each state machine is instantiated once for each device, and each
+device has its own buffering for incoming packets, including RTCM2 packets.
+
+When the bitstream recognizer tells the packet sniffer that it has
+received an entire RTCM2 packet from a device, the packet is copied
+to the context RTCM2 buf (code is near gpsd.c:1394).  Thus, the context
+rtcmbuf always contains either nothing or an entire RTCM2 packet, the
+last one to be seen.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008612.html">[Gpsd-dev] NTRIP, and why we're not back to state Yellow
+</A></li>
+	<LI>Next message: <A HREF="008630.html">[Gpsd-dev] How the RTCM2 support is supposed to be working
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8627">[ date ]</a>
+              <a href="thread.html#8627">[ thread ]</a>
+              <a href="subject.html#8627">[ subject ]</a>
+              <a href="author.html#8627">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

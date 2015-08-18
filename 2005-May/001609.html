@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] endless loop, 100% cpu
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20endless%20loop%2C%20100%25%20cpu&In-Reply-To=%3C19386.213.84.187.156.1115624225.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001676.html">
+   <LINK REL="Next"  HREF="001610.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] endless loop, 100% cpu</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20endless%20loop%2C%20100%25%20cpu&In-Reply-To=%3C19386.213.84.187.156.1115624225.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] endless loop, 100% cpu">gpsd at xs4all.nl
+       </A><BR>
+    <I>Mon May  9 09:37:05 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001676.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+        <LI>Next message: <A HREF="001610.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1609">[ date ]</a>
+              <a href="thread.html#1609">[ thread ]</a>
+              <a href="subject.html#1609">[ subject ]</a>
+              <a href="author.html#1609">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> On Sunday 08 May 2005 15:22, Remco Treffkorn wrote:
+</I>&gt;&gt;<i> So I have gpsd compiled without sirf support
+</I>&gt;&gt;<i> As soon as gpsd sees the first $GPVTG sentence, it goes catatonic.
+</I>&gt;<i>
+</I>&gt;<i> After this sentence is seen [ something goes wrong ] then the input buffer
+</I>&gt;<i> fills up till it is full. Somehow delivery of the data in the buffer is
+</I>&gt;<i> never
+</I>&gt;<i> triggered, so it fills up.
+</I>
+Yesterday I have been testing with a Rockwell Jupiter receiver (Zodiac
+chipset) and I had some interesting problems with the packet handler.
+I made some modifications.
+
+One thing I noticed is when the state machine finds an error and goes back
+to GROUND_STATE, the caller only removes 1 character instead of all data
+that lead to the error condition.   This could result in a loop under some
+conditions.
+Also, it resulted in problems with the Zodiac protocol which is not too
+well designed.
+(unlike the SiRF protocol it has no end-marker but a header with a length
+field.  when there is a wrong sync it can read an invalid length, then an
+invalid amount of data will be read and the whole handler crashes or
+hangs)
+
+Maybe your problem would be solved by the change I made.  I have sent a
+patch to Eric directly but not yet got a reply.
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001676.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+	<LI>Next message: <A HREF="001610.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1609">[ date ]</a>
+              <a href="thread.html#1609">[ thread ]</a>
+              <a href="subject.html#1609">[ subject ]</a>
+              <a href="author.html#1609">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

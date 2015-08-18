@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-commit-watch] r2028 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r2028%20-%20trunk&In-Reply-To=%3C20050316201322.GA17113%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000914.html">
+   <LINK REL="Next"  HREF="000917.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-commit-watch] r2028 - trunk</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r2028%20-%20trunk&In-Reply-To=%3C20050316201322.GA17113%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-commit-watch] r2028 - trunk">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Mar 16 21:13:22 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000914.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2028 - trunk
+</A></li>
+        <LI>Next message: <A HREF="000917.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2028 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#916">[ date ]</a>
+              <a href="thread.html#916">[ thread ]</a>
+              <a href="subject.html#916">[ subject ]</a>
+              <a href="author.html#916">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+&gt;<i> This looks to be what broke the Garmin today.  Now there are only
+</I>&gt;<i> two choices, Sirf and NMEA.  No way to get to the Garmin.
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> &gt; Modified: trunk/libgpsd_core.c
+</I>&gt;<i> &gt; ===================================================================
+</I>&gt;<i> &gt; --- trunk/libgpsd_core.c	2005-03-16 17:50:41 UTC (rev 2027)
+</I>&gt;<i> &gt; +++ trunk/libgpsd_core.c	2005-03-16 18:12:47 UTC (rev 2028)
+</I>&gt;<i> &gt; @@ -96,10 +96,11 @@
+</I>&gt;<i> &gt;  	session-&gt;gNMEAdata.online = 1;
+</I>&gt;<i> &gt;  	REFRESH(session-&gt;gNMEAdata.online_stamp);
+</I>&gt;<i> &gt;  	gpsd_report(1, &quot;gpsd_activate: opened GPS (%d)\n&quot;, session-&gt;gNMEAdata.gps_fd);
+</I>&gt;<i> &gt; +	if (session-&gt;packet_type == SIRF_PACKET)
+</I>&gt;<i> &gt; +	    gpsd_switch_driver(session, &quot;SiRF-II binary&quot;);
+</I>&gt;<i> &gt; +	else
+</I>&gt;<i> &gt; +	    gpsd_switch_driver(session, &quot;Generic NMEA&quot;);
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; -	/* if there is an initializer and no trigger string, invoke it */
+</I>&gt;<i> &gt; -	if (session-&gt;device_type-&gt;initializer &amp;&amp; !session-&gt;device_type-&gt;trigger)
+</I>&gt;<i> &gt; -	    session-&gt;device_type-&gt;initializer(session);
+</I>&gt;<i> &gt;  	return session-&gt;gNMEAdata.gps_fd;
+</I>&gt;<i> &gt;      }
+</I>&gt;<i> &gt;  }
+</I>
+I think I just fixed this.  The test should now read
+
+
+if (session-&gt;packet_type == SIRF_PACKET)
+    gpsd_switch_driver(session, &quot;SiRF-II binary&quot;);
+else if (session-&gt;packet_type == NMEA_PACKET)
+    gpsd_switch_driver(session, &quot;Generic NMEA&quot;);
+
+The idea here is that if the Garmin probe returned a match, 
+the packet sniffer never ran, so session-&gt;packet_type == BAD_PACKET
+and it falls through this code without changing the driver.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000914.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2028 - trunk
+</A></li>
+	<LI>Next message: <A HREF="000917.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2028 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#916">[ date ]</a>
+              <a href="thread.html#916">[ thread ]</a>
+              <a href="subject.html#916">[ subject ]</a>
+              <a href="author.html#916">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

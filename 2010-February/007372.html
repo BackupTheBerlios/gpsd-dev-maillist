@@ -1,0 +1,192 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] ship board navigational software and gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ship%20board%20navigational%20software%20and%20gpsd&In-Reply-To=%3C4B7F3502.5020701%40babel.com.au%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007368.html">
+   <LINK REL="Next"  HREF="007373.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] ship board navigational software and gpsd</H1>
+    <B>Del</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ship%20board%20navigational%20software%20and%20gpsd&In-Reply-To=%3C4B7F3502.5020701%40babel.com.au%3E"
+       TITLE="[Gpsd-dev] ship board navigational software and gpsd">del at babel.com.au
+       </A><BR>
+    <I>Sat Feb 20 02:04:02 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007368.html">[Gpsd-dev] ship board navigational software and gpsd
+</A></li>
+        <LI>Next message: <A HREF="007373.html">[Gpsd-dev] ship board navigational software and gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7372">[ date ]</a>
+              <a href="thread.html#7372">[ thread ]</a>
+              <a href="subject.html#7372">[ subject ]</a>
+              <a href="author.html#7372">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+&gt;&gt;<i> Side note:  An &quot;II&quot; is an integrated instrumentation device which 
+</I>&gt;&gt;<i> usually has a GPS plugged in to it, hence the &quot;II&quot; used as a prefix in 
+</I>&gt;&gt;<i> the NMEA sentences.  ESR's document here: 
+</I>&gt;&gt;<i> <A HREF="http://gpsd.berlios.de/NMEA.html">http://gpsd.berlios.de/NMEA.html</A> incorrectly attributes this prefix to 
+</I>&gt;&gt;<i> the &quot;AutoHelm Seatalk system, made by Raytheon&quot; but in fact there are a 
+</I>&gt;&gt;<i> number of different makes and manufacturers of II devices, often 
+</I>&gt;&gt;<i> referred to as NMEA multiplexers, that use this prefix.  e.g. TackTick 
+</I>&gt;&gt;<i> which has been discussed extensively on the gpsd-users mailing list, 
+</I>&gt;&gt;<i> also Micromux as well as others.
+</I>&gt;<i> 
+</I>&gt;<i> I have just revised that 'graph to this:
+</I>&gt;<i> 
+</I>&gt;<i>     II - II is emitted by the NMEA interfaces of several widely-used lines
+</I>&gt;<i>     of marine-navigation electronics. One is the AutoHelm system by
+</I>&gt;<i>     Raymarine; see also [SEATALK] for the native protocol of these
+</I>&gt;<i>     devices.
+</I>
+That's a lot more accurate.
+
+Seatalk is the native protocol of all of the Raymarine instruments, but 
+is used nowhere outside of Raymarine.  Most of these manufacturers 
+(Garmin, Northstar, TackTick, Coursemaster, etc) have their own closed 
+protocol, of which Seatalk is just one example.  Some of those protocols 
+are wired (as is Seatalk), but an increasing number (e.g. TackTick) are 
+wireless.  Nearly all of them have proprietary protocol to NMEA gateway 
+devices, or will have one device on the network that emits and/or 
+receives NMEA 0183.
+
+&gt;<i> Chris's response was appropriate at the time.  However, our wire protocol
+</I>&gt;<i> and our design philosophy have since widened the scope of gpsd significantly.
+</I>
+Understood, and Chris emailed me separately.  I don't have a history 
+with the gpsd project so I'm unaware of the past discussions and current 
+thinking.
+
+&gt;&gt;<i> So question 1, starter for 10 points: Are the current gpsd maintainers 
+</I>&gt;&gt;<i> interested in having support for non-TPV data added to gpsd in its 
+</I>&gt;&gt;<i> current incarnation or not?
+</I>&gt;<i> 
+</I>&gt;<i> We are now.  Our thinking is no longer constrained by the old protocol.
+</I>&gt;<i> You arrive at an opportune moment, as we have just gotten the JSON-vased
+</I>&gt;<i> protocol to an opportune state.
+</I>&gt;<i> 
+</I>&gt;<i> The remaining constraint is this: because we target embedded systems, 
+</I>&gt;<i> we need it to be possible to condition out support for protocols that 
+</I>&gt;<i> a particular installation doesn't need.  Ths means the code to handle
+</I>&gt;<i> Seatalk sentences needs to live inside #ifdef SEATALK/#endif SEATALK.
+</I>
+Well I would say II rather than SEATALK.  The sentences we're talking 
+about aren't specific to Seatalk, but they do appear in roughly 
+equivalent forms on both the Seatalk NMEA gateway and the TackTick NMEA 
+gateway, as well as in a slightly different form on the Micromux NMEA 
+mux.  I have friends around the area here who have various different 
+NMEA muxes, I can go sniff those and see what they emit as well.
+
+It's going to be the same set of data though, in roughly the same set of 
+NMEA sentences.  If I hack up support for the ones that are in the 
+Seatalk, Micromux and TackTick II devices then that would cover 80% of 
+cases, and the rest can be hacked in over time.
+
+&gt;&gt;<i> In terms of the internal data structures, there appear to be a couple of 
+</I>&gt;&gt;<i> ways to go.  The data structure containing the session data is of type 
+</I>&gt;&gt;<i> gps_data_t defined in gps.h.  We can either extend this data structure 
+</I>&gt;&gt;<i> to contain the other non-TPV data (the TPV data is in the component fix 
+</I>&gt;&gt;<i> of type gps_fix_t), or we can squeeze the data in elsewhere.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> What would be the best approach?
+</I>&gt;<i> 
+</I>&gt;<i> That depends on the number and size of the new data fields.  If they'll
+</I>&gt;<i> fit in the union area of the struct, which seems likely, we'll put them there.
+</I>&gt;<i> If not, that would break binary compatibility and they'd have to go in the 
+</I>&gt;<i> privdata area.
+</I>
+I will draft up a list of fields and types.
+
+One warning that I am a sailboat owner and I'm going to draft up support 
+for those sentences and data types that are of interest to a sailboat. 
+In particular that includes wind, current &amp; depth data but excludes 
+stuff like fuel levels and cavitation which might be of interest on a 
+stinkboat.  So the best I can probably offer is a 70% solution to the 
+marine requirements.  However I do have a good friend nearby here who 
+has a recent model cruiser with the Northstar instrumentation set, I'll 
+ask him if he has a NMEA gateway on board.
+
+&gt;&gt;<i> In terms of the code that extracting TPV data from NMEA sentences, there 
+</I>&gt;&gt;<i> are about half a dozen sentences that are applicable.  Each different 
+</I>&gt;&gt;<i> sentence type contains a separate function in driver_nmea.c to extract 
+</I>&gt;&gt;<i> the data.  For extracting non-TPV data, there are probably 20 - 30 
+</I>&gt;&gt;<i> sentences that are applicable.  It bothers me a little that there isn't 
+</I>&gt;&gt;<i> a single function in driver_nmea.c to handle an arbitrary NMEA sentence, 
+</I>&gt;&gt;<i> which then looks at a director or lookup table to find a method of 
+</I>&gt;&gt;<i> handing each different data element.  Personally if I was designing it 
+</I>&gt;&gt;<i> from scratch I would have taken a different approach, but that might be 
+</I>&gt;&gt;<i> a change too far.  Thoughts?
+</I>&gt;<i> 
+</I>&gt;<i> I'm not quite sure what you're advocating.  Somethuing like what you describe
+</I>&gt;<i> lives near driver_nmea.c:877 in the function nmea_parse(). How would you
+</I>&gt;<i> organize it differently?
+</I>
+I'll go take a closer look and post some code.
+
+&gt;<i> The sentences you describe are in scope for the NMEA driver.  They're all 
+</I>&gt;<i> NMEA 0183.  Thus, by having support for them in gpsd itself, it is likely
+</I>&gt;<i> that we will effectively support a wider range of systems than just Seatalk.
+</I>&gt;<i> It would be nice if no one ever had to solve that problem again.
+</I>
+Understood.
+
+&gt;&gt;<i> So, in summary, where I'm at is a crossroads between two different 
+</I>&gt;&gt;<i> solutions involving some up front design decisions:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> 1. Major hacking on gpsd.
+</I>&gt;&gt;<i> 2. External gpsd client to interpret and make available the NMEA data 
+</I>&gt;&gt;<i> that gpsd does not currently provide.
+</I>&gt;<i> 
+</I>&gt;<i> I invite you to do major hacking.  You may think of it as making Seatalk
+</I>&gt;<i> work, but I think of it as extending our support for generic NMEA 0183.
+</I>
+OK, I'll start working on some patches.
+
+Also, once again, this isn't about Seatalk.  Seatalk is a very specific 
+protocol, it runs over 3 wires with a 12V carrier wire, a ground wire 
+and a signal wire.  I have no idea about the protocol on the signal 
+wire, it's a closely guarded secret, however I do know if you plug it 
+into a PC's serial port you will most likely make all of the magic smoke 
+leak out.  This is about generic NMEA, in particular II devices, of 
+which the Seatalk to NMEA gateway is one, and the TackTick NMEA gateway 
+is another.
+
+Del
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007368.html">[Gpsd-dev] ship board navigational software and gpsd
+</A></li>
+	<LI>Next message: <A HREF="007373.html">[Gpsd-dev] ship board navigational software and gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7372">[ date ]</a>
+              <a href="thread.html#7372">[ thread ]</a>
+              <a href="subject.html#7372">[ subject ]</a>
+              <a href="author.html#7372">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

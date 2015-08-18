@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Choosing the prototype device correctly
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Choosing%20the%20prototype%20device%20correctly&In-Reply-To=%3C20061219214408.GA15260%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005469.html">
+   <LINK REL="Next"  HREF="005465.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Choosing the prototype device correctly</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Choosing%20the%20prototype%20device%20correctly&In-Reply-To=%3C20061219214408.GA15260%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Choosing the prototype device correctly">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Dec 19 22:44:08 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005469.html">[Gpsd-dev] Choosing the prototype device correctly
+</A></li>
+        <LI>Next message: <A HREF="005465.html">[Gpsd-dev] gpsd default prefix bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5470">[ date ]</a>
+              <a href="thread.html#5470">[ thread ]</a>
+              <a href="subject.html#5470">[ subject ]</a>
+              <a href="author.html#5470">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;:
+&gt;<i>   &gt; #if defined(__FreeBSD_) || defined(__NetBSD__) || defined(__OpenBSD__)
+</I>&gt;<i> 
+</I>&gt;<i>   Excellent.  I'll check in the appropriate change.
+</I>&gt;<i> 
+</I>&gt;<i> Two trailing underscores in FreeBSD, maybe?
+</I>
+Clearly that needs to be fixed...I'll do it.
+ 
+&gt;<i> But really this is gross to have OS-dependent switches in the code and
+</I>&gt;<i> instead should be in configure, with a switch for the prototypical
+</I>&gt;<i> device.  
+</I>
+I don't think having policy stuff at the top of gpsd is gross.  That's
+what it's for, and the reason I've been so obsessive about the layer
+separation between gpsd.c and the libgpsd library.
+
+Yes, there's a case that identifying a 'prototypical' device ought to be
+a job for autotools, but let's get this right locally before we try 
+to push the job upstream.
+
+&gt;<i> Also, I think it should be /dev/dty00 on NetBSD/i386, to
+</I>&gt;<i> suppress carrier detect stuff (that's the dialout device).  But
+</I>&gt;<i> /dev/ttydh00 on NetBSD/sparc64, at least on an Ultra5.
+</I>
+Why is the dialout device involved?  It's not like gpsd ever dials out.
+No -- we want to be looking at the devices gpsd will actually read.
+
+&gt;<i> This is going to result in 'wheel' for the group, which isn't all that
+</I>&gt;<i> reasonable - really one wants to make a _gpsd group and then chgrp
+</I>&gt;<i> devices on choosing to let gpsd at them.
+</I>&gt;<i> 
+</I>&gt;<i> It would be nice to avoid having to name a device.  One approach is to
+</I>&gt;<i> use the first GPS device given, rather than the prototypical device.
+</I>&gt;<i> Then the need to configure this is gone.  That interacts badly with
+</I>&gt;<i> starting up with no devices and using the socket, though.
+</I>
+Yes.  You have just collided head-on with gpsd's design philosophy,
+and lost the exchange.  Let me be very clear about why: the magic
+words are &quot;zero configuration&quot;.
+
+While the ability to specify devices on the command line is useful for
+testing, starting up with no devices and using the socket is what the
+hotplug agent does.  Supporting the hotplug agent comes *first*, because
+the goal of the project is for an ordinary non-technical end user to be
+able to just plug in a GPS and have all the right things (including
+gpsd startup and GPS device discovery) happen automatically.
+
+Proposed design changes that are incompatible with the zero-configuration
+goal will be summarily, brutally, and rudely rejected.
+
+You have just described a gpsd setup procedure that requires manual
+intervention by a system administrator futzing with chgrp before gpsd 
+is usable.  This is absolutely *not* going to happen. Fuhgettaboudit.
+
+&gt;<i> For the pkgsrc case, one could certainly device _gpsd user and group,
+</I>&gt;<i> and hard-code that.  Really the sysadmin will have to grant permission
+</I>&gt;<i> to gpsd to use devices absent the ability to tell that serial ports
+</I>&gt;<i> belong to GPS (and even then, really).
+</I>
+You're thinking like a sysadmin.  Wrong, wrong, *wrong*!
+
+If you're feeling anal-retentive, go ahead and chgrp all your tty 
+devices to a new group 'tty' or 'gpsd'.  gpsd won't care; it will
+just go on doing its job, part of which is to make such interventions
+unnecessary.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005469.html">[Gpsd-dev] Choosing the prototype device correctly
+</A></li>
+	<LI>Next message: <A HREF="005465.html">[Gpsd-dev] gpsd default prefix bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5470">[ date ]</a>
+              <a href="thread.html#5470">[ thread ]</a>
+              <a href="subject.html#5470">[ subject ]</a>
+              <a href="author.html#5470">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

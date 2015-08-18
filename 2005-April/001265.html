@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Y=? problem
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Y%3D%3F%20problem&In-Reply-To=%3CPine.LNX.4.62.0504062323420.15647%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001349.html">
+   <LINK REL="Next"  HREF="001314.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Y=? problem</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Y%3D%3F%20problem&In-Reply-To=%3CPine.LNX.4.62.0504062323420.15647%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] Y=? problem">gem at rellim.com
+       </A><BR>
+    <I>Thu Apr  7 08:54:36 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001349.html">[Gpsd-dev] gpspipe.c
+</A></li>
+        <LI>Next message: <A HREF="001314.html">[Gpsd-dev] Re: Y=? problem
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1265">[ date ]</a>
+              <a href="thread.html#1265">[ thread ]</a>
+              <a href="subject.html#1265">[ subject ]</a>
+              <a href="author.html#1265">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Eric!
+
+For a while xgps has not shown the satellites from the Y= data for Garmin.
+It looks like raw NMEA has the same problem.
+
+Found the problem, not sure how you want to fix it.
+
+Here is the data as &quot;gpspipe -w&quot; shows it:
+
+GPSD,Y=? 10:13 81 111 92 1:27 59 286 0 0:23 47 126 92 1:3 27 91 92 1:19 18 118 93 1:16 16 43 0 0:20 1 173 0 0:8 33 268 0 0:10 16 321 0 0:28 3 213 0 0:
+GPSD,O=20 1112856660.00 0.005 44.068848 -121.313708       ? 79.63 76.39 213.7439    0.016      ? ? 159.27      ?
+
+
+Notice the first part of the Y= sentence:
+
+GPSD,Y=?
+       ^
+
+The '?' is there to show the sat data has no associated time stamp.  That
+is sort of OK 'cause the data is not really time sensitive.
+
+The problem is in the function gps_unpack() in the file libgps.c.
+Specifically on lines 79/79:
+
+                if (sp[2] == '?')
+                    continue;
+
+This causes the rest of the Y= data to be discarded.  Just because
+the time code was not known.  Not what was intended.
+
+Either the GPSD protocol needs to be changed or the Y= sentence needs
+to be changed.  Since no release of gpsd uses the new Y= sentence
+structure it is not too late to change that.  We could put the time
+at the end of the Y= sentence instead of the beginning.  This also
+has the advantage of being back compatible with the old Y= sentence.
+
+Here is an NMEA sample from &quot;gpspipe -r&quot; you can feed to gpsfake to
+duplicate this.
+
+$GPGSA,A,2,13,27,23,03,,,,,,,,,0.0,0.0,0.0*36
+$PGRME,51.17,56.86,76.50*44
+$GPGSV,3,1,10,13,81,113,92,27,59,286,00,23,47,126,92,03,27,091,92*75
+$GPGSV,3,2,10,19,18,118,92,16,16,043,00,20,01,173,00,08,33,268,00*7E
+$GPGSV,3,3,10,10,16,321,00,28,03,213,00*77
+$GPGGA,065118,4404.1291,N,12118.8227,W,2,04,,1160.1,M,-20.139,M,,*6A
+$GPRMC,065118,A,4404.1291,N,12118.8227,W,0.0165,218.856,070405,,*3B
+
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.2.3 (GNU/Linux)
+
+iD8DBQFCVNkw8KZibdeR3qURAg7hAKD1uxc3EDuJpBGpCkfa+V3KhzH37wCg5gP2
+CwhWwI6SK4JIe7jq+BZMjYg=
+=HZob
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001349.html">[Gpsd-dev] gpspipe.c
+</A></li>
+	<LI>Next message: <A HREF="001314.html">[Gpsd-dev] Re: Y=? problem
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1265">[ date ]</a>
+              <a href="thread.html#1265">[ thread ]</a>
+              <a href="subject.html#1265">[ subject ]</a>
+              <a href="author.html#1265">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

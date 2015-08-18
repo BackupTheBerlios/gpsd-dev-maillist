@@ -1,0 +1,140 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] J appears to be working -- WTF?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20J%20appears%20to%20be%20working%20--%20WTF%3F&In-Reply-To=%3C20061029032309.GA29751%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004703.html">
+   <LINK REL="Next"  HREF="004710.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] J appears to be working -- WTF?</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20J%20appears%20to%20be%20working%20--%20WTF%3F&In-Reply-To=%3C20061029032309.GA29751%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] J appears to be working -- WTF?">esr at thyrsus.com
+       </A><BR>
+    <I>Sun Oct 29 04:23:09 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004703.html">[Gpsd-dev] Apparent lossage in MailMan
+</A></li>
+        <LI>Next message: <A HREF="004710.html">[Gpsd-dev] J appears to be working -- WTF?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4708">[ date ]</a>
+              <a href="thread.html#4708">[ thread ]</a>
+              <a href="subject.html#4708">[ subject ]</a>
+              <a href="author.html#4708">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Having cleared the decks of every other release-blocking issue, I turned
+my attention to the J command and the data-buffering logic.  
+
+Reports about this had been mixed; Stelian Pop said it was working on
+September 15, but on September 24 Chris Kuethe compled a long list of
+versions in which it was allegedly broken.
+
+So I built some instrumentation.  The version of gpsfake in SVN head
+now has an (undocumented) -f option that produces a report
+specifically intended to detect mode-flicker problems.  It enables the
+-1 and -p options (go through the log just once, ship gpsd reports to
+stdout).  It disables raw-mode passthrough of the NMEA sentences.  It
+then filters the reports before actually emitting them. Y reports are
+discarded; in O reports only the the tag, time, altitude, and mode are
+retained; all other GPSD responses are passed through unaltered.
+
+Here is what a run on a representative NMEA capture log looks like.  
+J=0, the default, has been set explicitly here, but you can easily
+verify that the results are the same without the &quot;-r j=0&quot;.
+
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at golux</A>:~/svn/gpsd/trunk$ gpsfake -f -r j=0 test/tn204.log
+GPSD,W=1,J=0
+sentence=RMC, time=1035673308.000, altitude=?, mode=2
+sentence=GGA, time=1035673309.000, altitude=49.40, mode=?
+sentence=GSA, time=1035673309.000, altitude=49.40, mode=3
+sentence=GLL, time=1035673309.000, altitude=49.40, mode=3
+sentence=RMC, time=1035673310.000, altitude=?, mode=2
+sentence=GGA, time=1035673311.000, altitude=49.20, mode=?
+sentence=GSA, time=1035673311.000, altitude=49.20, mode=3
+sentence=GLL, time=1035673311.000, altitude=49.20, mode=3
+sentence=RMC, time=1035673312.000, altitude=?, mode=2
+sentence=GGA, time=1035673313.000, altitude=49.10, mode=?
+sentence=GSA, time=1035673313.000, altitude=49.10, mode=3
+sentence=GLL, time=1035673313.000, altitude=49.10, mode=3
+sentence=RMC, time=1035673314.000, altitude=?, mode=2
+sentence=GGA, time=1035673315.000, altitude=49.00, mode=?
+sentence=GSA, time=1035673315.000, altitude=49.00, mode=3
+sentence=GLL, time=1035673315.000, altitude=49.00, mode=3
+
+Inspecting this, it appears that the clear-at-start-of-cycle
+logic is behaving precisely as we would expect.  Altitude is
+cleared when the timestamp changes, and becomes valid on
+receipt of the following GGA sentence.
+
+Now let's try this with J=1 causing each new fix to be merged into the
+old one:
+
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at golux</A>:~/svn/gpsd/trunk$ gpsfake -f -r j=1 test/tn204.log
+GPSD,W=1,J=1
+sentence=RMC, time=1035673308.000, altitude=?, mode=2
+sentence=GGA, time=1035673309.000, altitude=49.40, mode=2
+sentence=GSA, time=1035673309.000, altitude=49.40, mode=3
+sentence=GLL, time=1035673309.000, altitude=49.40, mode=3
+sentence=RMC, time=1035673310.000, altitude=49.40, mode=2
+sentence=GGA, time=1035673311.000, altitude=49.20, mode=2
+sentence=GSA, time=1035673311.000, altitude=49.20, mode=3
+sentence=GLL, time=1035673311.000, altitude=49.20, mode=3
+sentence=RMC, time=1035673312.000, altitude=49.20, mode=2
+sentence=GGA, time=1035673313.000, altitude=49.10, mode=2
+sentence=GSA, time=1035673313.000, altitude=49.10, mode=3
+sentence=GLL, time=1035673313.000, altitude=49.10, mode=3
+sentence=RMC, time=1035673314.000, altitude=49.10, mode=2
+sentence=GGA, time=1035673315.000, altitude=49.00, mode=2
+sentence=GSA, time=1035673315.000, altitude=49.00, mode=3
+sentence=GLL, time=1035673315.000, altitude=49.00, mode=3
+
+Altitude is held over, exactly as we would expect.  It appears
+that the J command is effective and both branches of the buffering
+logic are working precisely as documented.
+
+Would somebody please tell me now, *what the hell is actually broken*?
+
+Because I couldn't find any errors in the buffering logic when the
+first bug reports on the J patch came in, I have been driving myself
+half-crazy fearing I had introduced some subtle and deep architectural
+flaw into the code.  We have delayed the release of 2.34 for over a
+month.  And all this tsuris because of a 'bug' that now appears to be
+completely and utterly nonexistent!  I am more than a little upset
+about this.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004703.html">[Gpsd-dev] Apparent lossage in MailMan
+</A></li>
+	<LI>Next message: <A HREF="004710.html">[Gpsd-dev] J appears to be working -- WTF?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4708">[ date ]</a>
+              <a href="thread.html#4708">[ thread ]</a>
+              <a href="subject.html#4708">[ subject ]</a>
+              <a href="author.html#4708">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

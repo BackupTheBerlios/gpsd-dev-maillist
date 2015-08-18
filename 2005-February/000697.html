@@ -1,0 +1,140 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd 2.12 on Gentoo Linux (gcc 3.3.3.20040412, glibc 2.3.4.20040808)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%202.12%20on%20Gentoo%20Linux%20%28gcc%203.3.3.20040412%2C%20glibc%0A%202.3.4.20040808%29&In-Reply-To=%3CPine.LNX.4.62.0502211102280.29867%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000689.html">
+   <LINK REL="Next"  HREF="000699.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd 2.12 on Gentoo Linux (gcc 3.3.3.20040412, glibc 2.3.4.20040808)</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%202.12%20on%20Gentoo%20Linux%20%28gcc%203.3.3.20040412%2C%20glibc%0A%202.3.4.20040808%29&In-Reply-To=%3CPine.LNX.4.62.0502211102280.29867%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] gpsd 2.12 on Gentoo Linux (gcc 3.3.3.20040412, glibc 2.3.4.20040808)">gem at rellim.com
+       </A><BR>
+    <I>Mon Feb 21 20:33:09 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000689.html">[Gpsd-dev] gpsd 2.12 on Gentoo Linux (gcc 3.3.3.20040412, glibc 2.3.4.20040808)
+</A></li>
+        <LI>Next message: <A HREF="000699.html">[Gpsd-dev] gpsd 2.12 on Gentoo Linux (gcc 3.3.3.20040412, glibc 2.3.4.20040808)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#697">[ date ]</a>
+              <a href="thread.html#697">[ thread ]</a>
+              <a href="subject.html#697">[ subject ]</a>
+              <a href="author.html#697">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Eric!
+
+On Mon, 21 Feb 2005, Eric S. Raymond wrote:
+
+&gt;<i> Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+</I>&gt;<i> &gt; M_1_PIl and M_PIl are double precision and PI is single precision.
+</I>&gt;<i>
+</I>&gt;<i> Actually, PI is a local copy, and according to the C reference manual (2.3.3)
+</I>&gt;<i> will be interpreted as double precision.
+</I>
+True, but it does not have enough digits to be double.
+
+Here is the gps.h PI
+
+#define PI 3.14159265358979323846
+
+Here is PI as a long:
+
+#define M_PIl          3.1415926535897932384626433832795029L  /* pi */
+
+Notice the difference?  One has a lot more digits and one has the L at the
+end.  The L makes the constant a &quot;long double&quot;.  Intel FPUs us 80 bit
+long doubles as the native format.  Any time the FPUs convert between
+float, double and long double there is loss of precision and extra
+calcuation time.  IMHO, the IEEE mandatory conversion rules are perverse.
+
+Let's look at precision for a minute.  A meter is on millionth the
+distance from the pole to the equator. So to place a point on the
+circumference of the earth we want one part in 4 million.  Some
+surveyors work to get GPS precision down to the centimeter range.  That
+is one part in 400 million.
+
+An IEEE standard float has 23 bits of precision.  23 bits of precision
+is one part in 8,388,608.  With 23 bits if we do every perfectly we
+might make 1/2 meter precision.  This is not where we ultimately want to
+be!  This is why the Garmin binary protocol returns a double float and
+not a single float.
+
+&gt;<i> &gt; Inverting PI causes further loss of precision and is a slow operation.
+</I>&gt;<i>
+</I>&gt;<i> Then the right thing to do is just write that exppression as 180.0 / PI.
+</I>&gt;<i> Unless you think one division loses more preciusion than one multiplication?
+</I>
+Not so much precision as time.  Floating point division is a real pig,
+especially if you have no FPU.
+
+Best I suppose would be to just use the proper constant:
+
+define RAD_TO_DEG  57.2957795130823208767981548141051703L /* degrees = 180/pi */
+
+Maybe the speed and precision gains of doing it right are negligible.  Maybe
+they are not.  Since there is no penalty to doing this right why not?  If
+someone ever ports this code to a slow embedded system w/o FPU they will
+be grateful we did it the best way possible.
+
+&gt;<i> &gt; Not sure what the point of replaceing lrint() with rint().  Do you not
+</I>&gt;<i> &gt; have lrint()? lrint() is a much faster way to get a double to a long
+</I>&gt;<i> &gt; than casting rint();
+</I>&gt;<i>
+</I>&gt;<i> No opinion on this.
+</I>
+Looks like rint() is the way to go for portability.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.2.3 (GNU/Linux)
+
+iD8DBQFCGjd48KZibdeR3qURAvcDAKC1MfmFDddYS/V/GT5d/u3UPymYVACgmrHr
+LF31MmrK6xquJW/NHwgHA7A=
+=Ed5N
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000689.html">[Gpsd-dev] gpsd 2.12 on Gentoo Linux (gcc 3.3.3.20040412, glibc 2.3.4.20040808)
+</A></li>
+	<LI>Next message: <A HREF="000699.html">[Gpsd-dev] gpsd 2.12 on Gentoo Linux (gcc 3.3.3.20040412, glibc 2.3.4.20040808)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#697">[ date ]</a>
+              <a href="thread.html#697">[ thread ]</a>
+              <a href="subject.html#697">[ subject ]</a>
+              <a href="author.html#697">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

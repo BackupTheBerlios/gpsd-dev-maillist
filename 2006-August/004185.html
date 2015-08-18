@@ -1,0 +1,91 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Reducing memory requirements
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Reducing%20memory%20requirements&In-Reply-To=%3C873bbovpeu.fsf%40obelix.mork.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004165.html">
+   <LINK REL="Next"  HREF="004106.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Reducing memory requirements</H1>
+    <B>Bj&#248;rn Mork</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Reducing%20memory%20requirements&In-Reply-To=%3C873bbovpeu.fsf%40obelix.mork.no%3E"
+       TITLE="[Gpsd-dev] Reducing memory requirements">bjorn at mork.no
+       </A><BR>
+    <I>Tue Aug 22 16:03:05 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004165.html">[Gpsd-dev] Reducing memory requirements
+</A></li>
+        <LI>Next message: <A HREF="004106.html">[Gpsd-dev] [patch] ntrip.c needs gpsd_position_fix_dump()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4185">[ date ]</a>
+              <a href="thread.html#4185">[ thread ]</a>
+              <a href="subject.html#4185">[ subject ]</a>
+              <a href="author.html#4185">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&quot;Chris Kuethe&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">chris.kuethe at gmail.com</A>&gt; writes:
+&gt;<i> On 8/16/06, Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+</I>&gt;&gt;<i> Bj&#248;rn Mork &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">bjorn at mork.no</A>&gt;:
+</I>&gt;&gt;<i> &gt; I can see why you'd want to support a large number of subscribers and
+</I>&gt;&gt;<i> &gt; indexing them by their fd, but I really cannot see the argument for a
+</I>&gt;&gt;<i> &gt; FD_SETSIZE sized list of GPS devices.  I would assume (yeah, I know...)
+</I>&gt;&gt;<i> &gt; that most people will do pretty fine with only one device.
+</I>&gt;<i>
+</I>&gt;<i> The current code is buggy, or it doesn't do quite what I want. I came
+</I>&gt;<i> upon a situation on my zaurus tonight where I had configured a max fd
+</I>&gt;<i> limit of 8, an I could only connect with 1 client. I'll look into it
+</I>&gt;<i> and see where it's broken, unless someone gets a fix before I do.
+</I>
+This is to be expected since the client fd is used as a direct index
+into the subscribers array.  Most of the fds below 8 will be in use
+before anyone connects at all (run lsof on gpsd to see where they
+went). 
+
+I would recommend not fiddling with MAXSUBSCRIBERFD.  Even at 1024,
+the subscribers array is still only an acceptable 24576 bytes.  I'm
+not sure that it was a good idea to make this a configurable option.
+
+Reduce MAXDEVICES instead.  Each supported receiver will use 14588
+bytes.  But luckily the channels array is filled from the bottom, so
+you should be able to reduce MAXDEVICES all the way down to 1 if
+you're only using a single receiver.
+
+
+
+Bj&#248;rn
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004165.html">[Gpsd-dev] Reducing memory requirements
+</A></li>
+	<LI>Next message: <A HREF="004106.html">[Gpsd-dev] [patch] ntrip.c needs gpsd_position_fix_dump()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4185">[ date ]</a>
+              <a href="thread.html#4185">[ thread ]</a>
+              <a href="subject.html#4185">[ subject ]</a>
+              <a href="author.html#4185">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

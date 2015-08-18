@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] systemd socket activation patch
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20systemd%20socket%20activation%20patch&In-Reply-To=%3C0MIyAj-1QD9Sp3vDN-003AnF%40mrelayeu.kundenserver.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009314.html">
+   <LINK REL="Next"  HREF="009316.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] systemd socket activation patch</H1>
+    <B>Eckhart W&#246;rner</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20systemd%20socket%20activation%20patch&In-Reply-To=%3C0MIyAj-1QD9Sp3vDN-003AnF%40mrelayeu.kundenserver.de%3E"
+       TITLE="[Gpsd-dev] systemd socket activation patch">ewoerner at kde.org
+       </A><BR>
+    <I>Wed Apr 27 14:59:41 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009314.html">[Gpsd-dev] [PATCH] pps_offset for oncore, dummy for others.
+</A></li>
+        <LI>Next message: <A HREF="009316.html">[Gpsd-dev] regress-aivdm breakage in commit 73731674
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9315">[ date ]</a>
+              <a href="thread.html#9315">[ thread ]</a>
+              <a href="subject.html#9315">[ subject ]</a>
+              <a href="author.html#9315">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+the attached patch allows to use gpsd together with socket activation in 
+systemd.
+The idea is that systemd listens to the control socket and TCP sockets and, as 
+soon as someone connects to them, starts gpsd and passes the file descriptors 
+over (without accept()ing itself).
+Sockets are in the following order: fd 3 is the control socket, followed by up 
+to two TCP sockets (for IPv4 and IPv6).
+If no socket passing happens, behaviour of gpsd should be the same as before.
+
+For using this new feature, one could use the following config *skeleton*:
+-&gt; File /etc/systemd/system/gpsd.socket:
+[Socket]
+ListenStream=/var/run/gpsd.sock
+ListenStream=127.0.0.1:2947
+-&gt; File /etc/systemd/system/gpsd.service:
+[Unit]
+Requires=gpsd.spcket
+[Service]
+type=simple
+ExecStart=/usr/bin/gpsd -N
+
+Changes to the version presented in #gpsd:
+- Files are properly licensed now. (I reimplemented the necessary 15 lines to 
+avoid lengthy license discussions)
+- The number of file descriptors is retrieved from the environment only once, 
+removes a few syscalls.
+- When file descriptors are passed over, there's no need to pass the control 
+socket file name via command line anymore. Doing so will result in a warning.
+
+What has been tested:
+- gpsd compiles fine with both systemd=true/false
+- Socket activation on the TCP socket works (gpsd is started, version string 
+is sent)
+What has not been tested:
+- Socket activation on the control socket works
+
+Eckhart
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: systemd-socket-activation.diff
+Type: text/x-patch
+Size: 4245 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110427/8d7c3928/attachment.bin">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110427/8d7c3928/attachment.bin</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009314.html">[Gpsd-dev] [PATCH] pps_offset for oncore, dummy for others.
+</A></li>
+	<LI>Next message: <A HREF="009316.html">[Gpsd-dev] regress-aivdm breakage in commit 73731674
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9315">[ date ]</a>
+              <a href="thread.html#9315">[ thread ]</a>
+              <a href="subject.html#9315">[ subject ]</a>
+              <a href="author.html#9315">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

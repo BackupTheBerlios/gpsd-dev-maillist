@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Blocking issues for gpsd release
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Blocking%20issues%20for%20gpsd%20release&In-Reply-To=%3CPine.LNX.4.64.0609101358380.23307%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004292.html">
+   <LINK REL="Next"  HREF="004294.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Blocking issues for gpsd release</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Blocking%20issues%20for%20gpsd%20release&In-Reply-To=%3CPine.LNX.4.64.0609101358380.23307%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] Blocking issues for gpsd release">gem at rellim.com
+       </A><BR>
+    <I>Sun Sep 10 23:16:07 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004292.html">[Gpsd-dev] Blocking issues for gpsd release
+</A></li>
+        <LI>Next message: <A HREF="004294.html">[Gpsd-dev] Blocking issues for gpsd release
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4293">[ date ]</a>
+              <a href="thread.html#4293">[ thread ]</a>
+              <a href="subject.html#4293">[ subject ]</a>
+              <a href="author.html#4293">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Eirc/Rob!
+
+On Sun, 10 Sep 2006, Eric S. Raymond wrote:
+
+&gt;<i> That seems reasonable to me, but the PPS support is Rob Janssen's baby and
+</I>&gt;<i> I wuld prefer to leave that decision up to him.
+</I>
+Sounds like a plan.
+
+Rob:  I just checked out 3466, and confirmed is does not give a good pps
+to ntp.  Then I applied this test patch to my working copy and confirmed
+that gpsd does give a good pps to ntps:
+
+# svn diff
+Index: libgpsd_core.c
+===================================================================
+- --- libgpsd_core.c      (revision 3466)
++++ libgpsd_core.c      (working copy)
+@@ -129,7 +129,7 @@
+        }
+
+        /*@ +boolint @*/
+- -       if (session-&gt;gpsdata.fix.mode &gt; MODE_NO_FIX) {
++       if ( 1 ) {
+            /*
+             * The PPS pulse is normally a short pulse with a frequency of
+             * 1 Hz, and the UTC second is defined by the front edge.  But we
+
+Not sure why fix.mode is zero at this time, but my GPS is mounted on an
+antenna mast above my office building and has a great sky view.  Verr is
+just 9 feet and Herr is just 7 ft with a full 3D fix.
+
+The Garmin 18 doc says the pps is accurate to 1uS after 4 consecutive
+valid fixes (Garmin GPS 18 Technical Specs, Rev B, Section 1.6.5.4).  So
+I guess we really should fix the check instead of removing it if we can.
+OTOH, in my fixed application as a time server it is not an issue.
+
+Since the pps monitor has its own thread I am not sure what the sync issues
+are between ppsmonitor() and the main thread.  Maybe it would be good
+enough to check the fix flag for the last fix?
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFFBICa8KZibdeR3qURAlVJAJ9h9/P0iisaWWZ1PfCoAOB5W14p7gCeNWgS
+RtbumZTNjG2lSES50p+ug7Q=
+=Xr/N
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004292.html">[Gpsd-dev] Blocking issues for gpsd release
+</A></li>
+	<LI>Next message: <A HREF="004294.html">[Gpsd-dev] Blocking issues for gpsd release
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4293">[ date ]</a>
+              <a href="thread.html#4293">[ thread ]</a>
+              <a href="subject.html#4293">[ subject ]</a>
+              <a href="author.html#4293">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

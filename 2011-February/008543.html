@@ -1,0 +1,143 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsfake in multiple ports
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsfake%20in%20multiple%20ports&In-Reply-To=%3CAANLkTim2h8UtpdFVYgA7NdqnbvH6gfyR7uPoZpjsLUtR%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="008546.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsfake in multiple ports</H1>
+    <B>Stefano</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsfake%20in%20multiple%20ports&In-Reply-To=%3CAANLkTim2h8UtpdFVYgA7NdqnbvH6gfyR7uPoZpjsLUtR%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] gpsfake in multiple ports">stefano.cudini at gmail.com
+       </A><BR>
+    <I>Tue Feb  1 13:44:59 CET 2011</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="008546.html">[Gpsd-dev] gpsfake in multiple ports
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8543">[ date ]</a>
+              <a href="thread.html#8543">[ thread ]</a>
+              <a href="subject.html#8543">[ subject ]</a>
+              <a href="author.html#8543">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i>
+</I>&gt;<i> From: Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt;
+</I>&gt;<i> Subject: Re: [Gpsd-dev] gpsfake in multiple ports
+</I>&gt;<i>
+</I>&gt;<i> Stefano &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">stefano.cudini at gmail.com</A>&gt;:
+</I>&gt;<i> &gt; and I am making a html interface / OpenLayers to draw up the position of
+</I>&gt;<i> &gt; many GPS devices in real time
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; I used to do this so far gpsfake to simulate the movement of a device
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; but now I need to simulate more than a GPS while on the move
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; so I need to run more processes gpsfake each on a different track
+</I>&gt;<i> &gt; and I also need to be on different port
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; have so far failed to do this by manually editing the file:
+</I>&gt;<i> &gt; / usr / share / pyshared / gps / client.py
+</I>&gt;<i> &gt; at line:
+</I>&gt;<i> &gt; GPSD_PORT = &quot;2947&quot;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; this file is imported from gpsfake
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; I seem to have realized that gpsfake only way you can change the port
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; any of you ever had a similar problem? or do you know a  patch in Python
+</I>&gt;<i> to
+</I>&gt;<i> &gt; do this quickly?
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; The basic problem is that gpsfake don't accepts as parameters the
+</I>&gt;<i> &gt; number of listening
+</I>&gt;<i> &gt; port if only this could help me
+</I>&gt;<i>
+</I>&gt;<i> I don't understand why you think you need to mess with the listening port.
+</I>&gt;<i> If you want to simulate multiple GPSes, just run gpsfake with more than
+</I>&gt;<i> one logfile argument. When you do, for example,
+</I>&gt;<i>
+</I>&gt;<i> gpsfake LOG1 LOG2 LOG3
+</I>&gt;<i>
+</I>&gt;<i> the sequence of packets the spawned gpsd will see looks like this:
+</I>&gt;<i>
+</I>&gt;<i> 1st packet from LOG1
+</I>&gt;<i> 1st packet from LOG2
+</I>&gt;<i> 1st packet from LOG3
+</I>&gt;<i> 2nd packet from LOG1
+</I>&gt;<i> 2nd packet from LOG2
+</I>&gt;<i> 2nd packet from LOG3
+</I>&gt;<i> 3rd packet from LOG1
+</I>&gt;<i> 3rd packet from LOG2
+</I>&gt;<i> 3rd packet from LOG3
+</I>&gt;<i>
+</I>&gt;<i> etcetera.
+</I>&gt;<i> --
+</I>&gt;<i>                &lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> hi Eric
+</I>
+thanks for the quick response
+
+in the real case I have many mobile devices and each has an internal a gpsd
+daemon
+My first idea was for to simulate multiple devices on my local machine was to
+put each device on a different local port and dis/connect to them separately,
+or when onemoves others stop in real time without stopping all
+
+However your suggestion is interesting, I could filter packets
+respect to the field:
+&quot;device&quot;: &quot;/ dev/pts/3&quot;
+&quot;device&quot;: &quot;/ dev/pts/1&quot;
+But the problem remains of how to simulate the fact that one or more gpsd
+are separately connected or disconnected from my software, every time.
+I should stop and restart it gpsfake to change the simulated devices
+
+Stefano
+
+
+-- 
+
+Name indicates what we seek.
+An address indicates where it is.
+A route indicates how we get there.
+Jon Postel (1943-1998) RFC 791,&quot;Internet Protocol&quot;, 1981
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110201/209dfd1b/attachment.html">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110201/209dfd1b/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="008546.html">[Gpsd-dev] gpsfake in multiple ports
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8543">[ date ]</a>
+              <a href="thread.html#8543">[ thread ]</a>
+              <a href="subject.html#8543">[ subject ]</a>
+              <a href="author.html#8543">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

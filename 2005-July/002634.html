@@ -1,0 +1,118 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: RTCM code has successfuly been pried loose
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20RTCM%20code%20has%20successfuly%20been%20pried%20loose&In-Reply-To=%3C87br4qr4c0.fsf%40bonnet.wsrcc.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002629.html">
+   <LINK REL="Next"  HREF="002635.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: RTCM code has successfuly been pried loose</H1>
+    <B>Wolfgang S. Rupprecht</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20RTCM%20code%20has%20successfuly%20been%20pried%20loose&In-Reply-To=%3C87br4qr4c0.fsf%40bonnet.wsrcc.com%3E"
+       TITLE="[Gpsd-dev] Re: RTCM code has successfuly been pried loose">wolfgang+gnus20050725 at dailyplanet.dontspam.wsrcc.com
+       </A><BR>
+    <I>Mon Jul 25 22:57:51 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002629.html">[Gpsd-dev] Re: RTCM code has successfuly been pried loose
+</A></li>
+        <LI>Next message: <A HREF="002635.html">[Gpsd-dev] Re: RTCM code has successfuly been pried loose
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2634">[ date ]</a>
+              <a href="thread.html#2634">[ thread ]</a>
+              <a href="subject.html#2634">[ subject ]</a>
+              <a href="author.html#2634">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&quot;Eric S. Raymond&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; writes:
+&gt;<i> Why does the entire struct has to be reversed?  Why not just shift bits 
+</I>&gt;<i> into the current word in the opposite direction?
+</I>
+Well this is certainly a brain teaser and I learned something about
+big-endian bit-fields in the process.
+
+The simplest reason is that the C-language bitfields in a big-endian
+are not laid out from lsbit to msbit as in a little-endian.  
+
+struct {
+       first:1;
+       _pad:30;
+       last:1;
+};
+
+In a LE &quot;first&quot; is at 1 and &quot;last&quot; is at 1&lt;&lt;31; in a BE it is the
+other way around.  This is very fortunate because without it bitfields
+that straddle byte boundaries would be discontiguous.
+
+In fact, it took me a bit of head scratching to realize that C already
+fixed up the discontiguous fields for me and my htonl-type
+byte-swapping and other runtime hand waving to take parity of a
+temporarily byte swapped copy, doing a temporary inversion, and
+comparing to a bytes-swapped preamble pattern were all not needed.
+Thats very good.  All that crap made the code even more unreadable.
+
+&gt;<i> 2) Python is much, *much* better for long-term maintainability than Perl.
+</I>
+I'm no fan of perl.  I just use it.
+
+&gt;<i> Fine, I'll look forward to both.
+</I>
+Awaiting testing of the gpsd/svn version.  The remote machine needs to
+get a newer automake installed.
+
+    Your automake version  is older than the suggested one, 1.7.6
+    Go on at your own risk. :-)
+
+    Configuring build environment for gpsd
+    Makefile.am:9: HAVE_MOTIF does not appear in AM_CONDITIONAL
+    Makefile.am:15: HAVE_DBUS does not appear in AM_CONDITIONAL
+    contrib/Makefile.am:11: variable `DBUS_GLIB_LIBS' not defined
+    contrib/Makefile.am:11: variable `GLIB_LIBS' not defined
+
+    &lt;and no Makefile is produced&gt;
+
+If you are really curious what the (untested) gpsd diffs look like:
+
+    <A HREF="http://www.wsrcc.com/wolfgang/private/gpsd-svn.diff">http://www.wsrcc.com/wolfgang/private/gpsd-svn.diff</A>
+    <A HREF="http://www.wsrcc.com/wolfgang/private/invert-bitfields.pl">http://www.wsrcc.com/wolfgang/private/invert-bitfields.pl</A>
+
+-wolfgang
+-- 
+Wolfgang S. Rupprecht                <A HREF="http://www.wsrcc.com/wolfgang/">http://www.wsrcc.com/wolfgang/</A>
+      Microsoft Vista - because &quot;Virus Installer&quot; was too long.
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002629.html">[Gpsd-dev] Re: RTCM code has successfuly been pried loose
+</A></li>
+	<LI>Next message: <A HREF="002635.html">[Gpsd-dev] Re: RTCM code has successfuly been pried loose
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2634">[ date ]</a>
+              <a href="thread.html#2634">[ thread ]</a>
+              <a href="subject.html#2634">[ subject ]</a>
+              <a href="author.html#2634">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

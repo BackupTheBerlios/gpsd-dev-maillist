@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH 1/2] Bring gps_read()'s return-code in sync with	its manual entry.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%201/2%5D%20Bring%20gps_read%28%29%27s%20return-code%20in%20sync%20with%0A%09its%20manual%20entry.&In-Reply-To=%3C1289284729-17451-2-git-send-email-gpsd%40meta-dynamic.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008235.html">
+   <LINK REL="Next"  HREF="008237.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH 1/2] Bring gps_read()'s return-code in sync with	its manual entry.</H1>
+    <B>David Favro</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%201/2%5D%20Bring%20gps_read%28%29%27s%20return-code%20in%20sync%20with%0A%09its%20manual%20entry.&In-Reply-To=%3C1289284729-17451-2-git-send-email-gpsd%40meta-dynamic.com%3E"
+       TITLE="[Gpsd-dev] [PATCH 1/2] Bring gps_read()'s return-code in sync with	its manual entry.">gpsd at meta-dynamic.com
+       </A><BR>
+    <I>Tue Nov  9 07:38:48 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008235.html">[Gpsd-dev] [PATCH 0/2] libgpsmm working with libgps 5
+</A></li>
+        <LI>Next message: <A HREF="008237.html">[Gpsd-dev] [PATCH 2/2] Ported libgpsmm to major-version 5.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8236">[ date ]</a>
+              <a href="thread.html#8236">[ thread ]</a>
+              <a href="subject.html#8236">[ subject ]</a>
+              <a href="author.html#8236">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Documented API calls for a return-value of 0 if gps_stream() were called with
+POLL_NONBLOCK and no data is available, and a byte-count on success.  Previously
+it returned 0 on success; it now returns the byte-count.
+
+Signed-off-by: David Favro &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at meta-dynamic.com</A>&gt;
+---
+ libgps.xml    |    9 +++++----
+ libgps_core.c |    7 +++++--
+ 2 files changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/libgps.xml b/libgps.xml
+index bfa2087..3dc9700 100644
+--- a/libgps.xml
++++ b/libgps.xml
+@@ -129,10 +129,11 @@ cautions.&lt;/para&gt;
+ &lt;para&gt;&lt;function&gt;gps_read()&lt;/function&gt; accepts a response, or sequence
+ of responses, from the daemon and interprets it as though it were a
+ query response (the return value is as for a query).  This function
+-does a blocking read waiting for data from the daemon; it returns a
+-count of bytes read for success, -1 with errno set on a Unix-level
+-read error, -1 with errno not set if the socket to the daemon has
+-closed. &lt;/para&gt;
++does a blocking read waiting for data from the daemon (but see
++POLL_NONBLOCK below); it returns a count of bytes read for success,
++-1 with errno set on a Unix-level read error, -1 with errno not set
++if the socket to the daemon has closed, and 0 if POLL_NONBLOCK was
++passed to gps_stream() and no data is yet available.&lt;/para&gt;
+ 
+ &lt;para&gt;&lt;function&gt;gps_waiting()&lt;/function&gt; can be used to check
+ whether there is data from the daemon. It returns true if there is,
+diff --git a/libgps_core.c b/libgps_core.c
+index 19242af..f0a52b3 100644
+--- a/libgps_core.c
++++ b/libgps_core.c
+@@ -251,7 +251,10 @@ static void libgps_dump_state(struct gps_data_t *collect)
+ 
+ /*@ -branchstate -usereleased -mustfreefresh -nullstate -usedef @*/
+ int gps_unpack(char *buf, struct gps_data_t *gpsdata)
+-/* unpack a gpsd response into a status structure, buf must be writeable */
++/* unpack a gpsd response into a status structure, buf must be writeable.
++ * gps_unpack() currently returns 0 in all cases, but should it ever need to
++ * return an error status, it must be &lt; 0.
++ */
+ {
+     libgps_debug_trace((1, &quot;gps_unpack(%s)\n&quot;, buf));
+ 
+@@ -599,7 +602,7 @@ int gps_read(/*@out@*/struct gps_data_t *gpsdata)
+     gpsdata-&gt;waiting -= response_length;
+     gpsdata-&gt;set |= PACKET_SET;
+ 
+-    return status;
++    return (status == 0) ? response_length : status;
+ }
+ /*@+compdef -usedef +uniondef@*/
+ 
+-- 
+1.7.0.4
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008235.html">[Gpsd-dev] [PATCH 0/2] libgpsmm working with libgps 5
+</A></li>
+	<LI>Next message: <A HREF="008237.html">[Gpsd-dev] [PATCH 2/2] Ported libgpsmm to major-version 5.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8236">[ date ]</a>
+              <a href="thread.html#8236">[ thread ]</a>
+              <a href="subject.html#8236">[ subject ]</a>
+              <a href="author.html#8236">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,151 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] UBX Based Device (SkyTrx): reading 'logs'
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20UBX%20Based%20Device%20%28SkyTrx%29%3A%20reading%20%27logs%27&In-Reply-To=%3C91981b3e0703261602v5fded01ev5e065b343ea0430d%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005562.html">
+   <LINK REL="Next"  HREF="005578.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] UBX Based Device (SkyTrx): reading 'logs'</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20UBX%20Based%20Device%20%28SkyTrx%29%3A%20reading%20%27logs%27&In-Reply-To=%3C91981b3e0703261602v5fded01ev5e065b343ea0430d%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] UBX Based Device (SkyTrx): reading 'logs'">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Tue Mar 27 01:02:54 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005562.html">[Gpsd-dev] UBX Based Device (SkyTrx): reading 'logs'
+</A></li>
+        <LI>Next message: <A HREF="005578.html">[Gpsd-dev] UBX Based Device (SkyTrx): reading 'logs'
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5574">[ date ]</a>
+              <a href="thread.html#5574">[ thread ]</a>
+              <a href="subject.html#5574">[ subject ]</a>
+              <a href="author.html#5574">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 3/26/07, Brendan W. McAdams &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">bwmcadams at gmail.com</A>&gt; wrote:
+&gt;<i> I'll get the major/minor versions when I'm home tonight, but it lists itself
+</I>&gt;<i> in USB as &quot;ANTARIS(4) RECEIVER&quot; (I'm working off memory; I'll double check
+</I>&gt;<i> the exact text when home).
+</I>
+See other message about grabbing usb ids and drivers.
+
+&gt;<i> It maps as a comm port: on windows it maps to COM4.  On my mac, when I
+</I>&gt;<i> plugged it in, it got a serial port as well (I don't recall which one, I
+</I>&gt;<i> will check tonight when I'm home).   It appears the serial-&gt;usb bridge on
+</I>&gt;<i> the device is a fairly generic one that most OS' recognize (although you
+</I>&gt;<i> need either a Ublox or SkyTrx driver [both work] to get it working on
+</I>&gt;<i> Windows).
+</I>
+Snap! I've not heard of any ANTARIS drivers for the mac, which leads
+me to believe they're using one of the 3 popular chips. That's a Good
+Thing. I was afraid they'd decided to go with the on-die usb
+controller.
+
+&gt;<i> I'm not keen on Windows either: it's good for games and not much else.  The
+</I>&gt;<i> only known solution right now for pulling logs off of the device is the
+</I>&gt;<i> vendor's software, which only runs on Windows.  I've been sniffing USB
+</I>&gt;<i> packets off of that to determine what it's doing.
+</I>
+I've installed all the chipset tools for sir, trimble, ublox and itrax
+on my windows side. I use them long enough to write something that
+works under *NIX and then they just clutter up my disk. still, it's
+sometimes nice to have vendor tools to regression test with.
+
+&gt;<i> As tested with Mac OS X: When I plug the SkyTrx into my mac, the Mac detects
+</I>&gt;<i> it and gives it a /dev entry (Which I usually ln to /dev/gps).  I can boot
+</I>&gt;<i> the latest SVN GPSD with UBX support and put the SkyTrx into 'live' mode (in
+</I>&gt;<i> which it reports CURRENT GPS status to the system) with no trickery or
+</I>&gt;<i> hackery.  I don't have a working Linux box at home right now but I suspect
+</I>&gt;<i> it will work similarly there.
+</I>
+Yeah, I (with lots of help from Ali and Andreas) developed the UBX
+driver on OpenBSD - so there's nothing OS-specific about it. And if
+there is, that's a bug. :)
+
+&gt;<i> As for patching, the only thing as far as I can tell that needs doing is
+</I>&gt;<i> figuring out :
+</I>&gt;<i>
+</I>&gt;<i> a) the magic message to tell the device to 'dump' it's log of tracking
+</I>&gt;<i> b) the protocol it responds in needs decoding
+</I>&gt;<i> c) Optionally, the flag to 'clear' the on-device log, as it can get filled
+</I>&gt;<i> up [vendor software supports this]
+</I>&gt;<i>
+</I>&gt;<i> With the right guidance, I can puzzle a lot of this out but I may not be the
+</I>&gt;<i> ideal person for this kind of hacking (eager and willing to learn, yes: well
+</I>&gt;<i> educated in reading &amp; decoding USB logs &amp; hex: no).
+</I>
+Make friends with perl. or python. or some other text-oriented
+scripting language. It's somewhat time-consuming, reading usbsnoopy
+logs but not hugely difficult.
+
+basically, you write a script that slurps in the log, breaks off one
+usb packet, extracts the transaction id, and the payload, buffers it
+if necessary or prints it, and repeats. And it'll be pretty obvious.
+look for mu-B and print the next 10 bytes....
+
+&gt;<i> Sorry: it's using a USB protocol bulk transfer: the underlying packets
+</I>
+USB ~= UBX
+
+both have 'U' and 'B', and 'S' and 'X' sound very similar on the telephone.
+
+&gt;<i> appear to be UBX (The UBlox proprietary) protocol (funky high-ascii pseudo-u
+</I>&gt;<i> (character 230 I believe), B, ! heads all the packets, e.g. uB!) messages; I
+</I>&gt;<i> have to go through and figure out what class &amp; id they're using, but when I
+</I>&gt;<i> looked it appeared to be a non-documented one (e.g. vendor wrote a protocol
+</I>&gt;<i> extension, which seems likely).  The bulk transfer is preceded by a single,
+</I>&gt;<i> short UBX message which I also have to puzzle out.
+</I>
+UBX message class 0x40 - 0x4F are for user messages ... it wouldn't
+surprise me in the least if that's how they chose to implement it.
+Really, that would make sense.
+
+&gt;<i> Not sure; I threw it out there figuring it may mean it would be easier to
+</I>&gt;<i> intercept or decode.  I'll look into sticking a debug-enabled version of
+</I>&gt;<i> libusb in, which may give me an easier log.
+</I>
+That might be your easiest solution. Let libusb do the hard work of
+managing usb transactions, and just monitor the results of
+usb_bulk_{read,write}
+
+CK
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005562.html">[Gpsd-dev] UBX Based Device (SkyTrx): reading 'logs'
+</A></li>
+	<LI>Next message: <A HREF="005578.html">[Gpsd-dev] UBX Based Device (SkyTrx): reading 'logs'
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5574">[ date ]</a>
+              <a href="thread.html#5574">[ thread ]</a>
+              <a href="subject.html#5574">[ subject ]</a>
+              <a href="author.html#5574">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

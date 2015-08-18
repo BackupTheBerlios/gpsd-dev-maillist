@@ -1,0 +1,104 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] watch and DEVICES object at startup in 2.90dev
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20watch%20and%20DEVICES%20object%20at%20startup%20in%202.90dev&In-Reply-To=%3C20091124165750.GA1058%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007145.html">
+   <LINK REL="Next"  HREF="007146.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] watch and DEVICES object at startup in 2.90dev</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20watch%20and%20DEVICES%20object%20at%20startup%20in%202.90dev&In-Reply-To=%3C20091124165750.GA1058%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] watch and DEVICES object at startup in 2.90dev">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Nov 24 17:57:50 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007145.html">[Gpsd-dev] watch and DEVICES object at startup in 2.90dev
+</A></li>
+        <LI>Next message: <A HREF="007146.html">[Gpsd-dev] Navcom testregress errors on OS X.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7160">[ date ]</a>
+              <a href="thread.html#7160">[ thread ]</a>
+              <a href="subject.html#7160">[ subject ]</a>
+              <a href="author.html#7160">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Michael R. Davis &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mrdvt92 at yahoo.com</A>&gt;:
+&gt;<i> If you restart the deamon and then quickly execute a
+</I>&gt;<i> ?WATCH={&quot;enable&quot;:true}; You get the DEVICES object before the DEVICE
+</I>&gt;<i> has had a chance to get the flags or subtype properties.
+</I>
+Yes, this is an unavoidable hardware-level race condition.  The time
+at which the device probe will elicit a device subtype ID - or even
+whether it will do so at all - is not predictable.  The time at which
+gpsd will achieve packet sync after the device is opened as an effect
+of the ?WATCH is also not predictable.
+
+You're now bumping into one of the major reasons I designed the new
+protocol around streaming and the client library is designed to handle
+any response at any time rather than being built around a lockstep
+assumption and query operations.  
+
+Older protocol versions tried to paper over this problem, pretending
+the device can be assumed to be in a good state (with driver type
+known) any time after channel attach.  It cannot be; the problem is
+fundamental.  
+
+In fact, it is not even guaranteed that any device in the DEVICES list
+will *ever* achieve packet sync - you could be looking at non-GPSes or
+GPSes of unknown type, put in GPSD's device pool by udev simply
+because of a USB hotplug event.
+
+Hm.  This may belong in the FAQ.
+
+&gt;<i>I also think the WATCH object should come before the the DEVICES
+</I>&gt;<i>object in the return.
+</I>
+If this proposal is an attempt to head off the race condition, it won't work.
+
+The initial DEVICES response is intended to tell the client the driver
+type in the event that gpsd has already achieved packet sync when the
+device is opened.  Perhaps gpsd was started with -n, or another GPSD
+client application has previously triggered the GPS open.
+
+If this isn't the case, gpsd will ship a DEVICE notification when the
+device subtype field is set.  Clients need to watch for both cases 
+if they're interested in that information. 
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007145.html">[Gpsd-dev] watch and DEVICES object at startup in 2.90dev
+</A></li>
+	<LI>Next message: <A HREF="007146.html">[Gpsd-dev] Navcom testregress errors on OS X.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7160">[ date ]</a>
+              <a href="thread.html#7160">[ thread ]</a>
+              <a href="subject.html#7160">[ subject ]</a>
+              <a href="author.html#7160">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

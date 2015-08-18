@@ -1,0 +1,133 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] How should the python bindings work?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20How%20should%20the%20python%20bindings%20work%3F&In-Reply-To=%3C2flis6qm6me.fsf%40saruman.uio.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000386.html">
+   <LINK REL="Next"  HREF="000392.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] How should the python bindings work?</H1>
+    <B>Petter Reinholdtsen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20How%20should%20the%20python%20bindings%20work%3F&In-Reply-To=%3C2flis6qm6me.fsf%40saruman.uio.no%3E"
+       TITLE="[Gpsd-dev] How should the python bindings work?">pere at hungry.com
+       </A><BR>
+    <I>Sat Dec 25 22:04:57 CET 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000386.html">[Gpsd-dev] How should the python bindings work?
+</A></li>
+        <LI>Next message: <A HREF="000392.html">[Gpsd-dev] How should the python bindings work?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#388">[ date ]</a>
+              <a href="thread.html#388">[ thread ]</a>
+              <a href="subject.html#388">[ subject ]</a>
+              <a href="author.html#388">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>[Eric S. Raymond]
+&gt;&gt;<i> What do you think?  It is probably not very effective to call
+</I>&gt;&gt;<i> makefile() every time.  It might be better to cache this new fileobj
+</I>&gt;&gt;<i> object.
+</I>&gt;<i>
+</I>&gt;<i> I think you are probably correct.  My GPS always delivers line-at-a-time,
+</I>&gt;<i> so I don't see this case.
+</I>
+Yes, this seem to solve the problem.  Here is a more complete patch
+caching the fileobj object, and using it both for reading and writing.
+
+Index: gps.py
+===================================================================
+--- gps.py	(revision 1162)
++++ gps.py	(working copy)
+@@ -124,6 +124,7 @@
+     def __init__(self, host=&quot;localhost&quot;, port=&quot;2947&quot;, verbose=0):
+ 	gpsdata.__init__(self)
+ 	self.sock = None	# in case we blow up in connect
++	self.sockfile = None
+ 	self.connect(host, port)
+         self.verbose = verbose
+ 	self.raw_hook = None
+@@ -146,17 +147,20 @@
+         #if self.debuglevel &gt; 0: print 'connect:', (host, port)
+         msg = &quot;getaddrinfo returns an empty list&quot;
+         self.sock = None
++        self.sockfile = None
+         for res in socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM):
+             af, socktype, proto, canonname, sa = res
+             try:
+                 self.sock = socket.socket(af, socktype, proto)
+                 #if self.debuglevel &gt; 0: print 'connect:', (host, port)
+                 self.sock.connect(sa)
++                self.sockfile = self.sock.makefile()
+             except socket.error, msg:
+                 #if self.debuglevel &gt; 0: print 'connect fail:', (host, port)
+                 if self.sock:
+                     self.sock.close()
+                 self.sock = None
++                self.sockfile = None
+                 continue
+             break
+         if not self.sock:
+@@ -168,6 +172,8 @@
+     def __del__(self):
+ 	if self.sock:
+ 	    self.sock.close()
++        self.sock = None
++        self.sockfile = None
+ 
+     def __unpack(self, buf):
+ 	# unpack a daemon response into the instance members
+@@ -252,14 +258,15 @@
+ 
+     def poll(self):
+ 	&quot;Wait for and read data being streamed from gpsd.&quot;
+-        data = self.sock.recv(1024)
++        data = self.sockfile.readline()
+         if self.verbose:
+-            sys.stderr(&quot;GPS DATA %s\n&quot;, repr(data))
++            sys.stderr.write(&quot;GPS DATA %s\n&quot; % repr(data))
+ 	return self.__unpack(data)
+ 
+     def query(self, commands):
+ 	&quot;Send a command, get back a response.&quot;
+-	self.sock.send(commands)
++	self.sockfile.write(commands)
++	self.sockfile.flush()
+ 	return self.poll()
+ 
+ # some multipliers for interpreting GPS output
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000386.html">[Gpsd-dev] How should the python bindings work?
+</A></li>
+	<LI>Next message: <A HREF="000392.html">[Gpsd-dev] How should the python bindings work?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#388">[ date ]</a>
+              <a href="thread.html#388">[ thread ]</a>
+              <a href="subject.html#388">[ subject ]</a>
+              <a href="author.html#388">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

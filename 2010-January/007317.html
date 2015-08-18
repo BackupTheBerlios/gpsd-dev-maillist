@@ -1,0 +1,95 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] IPv6 patch merge
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20IPv6%20patch%20merge&In-Reply-To=%3C20100112194228.GA14357%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007316.html">
+   <LINK REL="Next"  HREF="007322.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] IPv6 patch merge</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20IPv6%20patch%20merge&In-Reply-To=%3C20100112194228.GA14357%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] IPv6 patch merge">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Jan 12 20:42:28 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007316.html">[Gpsd-dev] IPv6 Support patch
+</A></li>
+        <LI>Next message: <A HREF="007322.html">[Gpsd-dev] IPv6 patch merge
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7317">[ date ]</a>
+              <a href="thread.html#7317">[ thread ]</a>
+              <a href="subject.html#7317">[ subject ]</a>
+              <a href="author.html#7317">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>This is a heads-up about my most recent commit.  I went back and 
+part-merged your support patch. The comment reads:
+
+-------------------------------------------------------------------------
+Internal IPv6 support, derived from a support patch by Olivier Mehani.
+The patch original is at <A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments">https://lists.berlios.de/pipermail/gpsd-dev/attachments</A>
+/20100111/85ad4e15/attachment.bin
+
+This revision changes netlib_connectsock() to take a first argument that is
+an address family and can specify IPv4, IPv6, or either.  It also changes
+gpsd.c to open two client sockets, one IPv4 and one IPv6, and listen 
+on both.
+
+As a required cleanup, a number of defaults to &quot;127.0.0.1&quot; become
+defaults to &quot;localhost&quot; so we're not hardwiring in IPv4 assumptions
+anymore.
+
+I've omitted a significant portion of the Mehani patch that changed the
+interface of the client library in an incompatible way.  Currently there is
+no way to make gpsd listen to IPv4 or IPv6 only, and no way to make a
+client query over IPV4 or IPv6 only.  Also, we'd really like to be able to
+condition out IPv6 or (someday) IPv4 support for a leaner runtime, and
+there's no way to do that yet, either. 
+
+Under IPv4, regression tests pass; live operation with a GPS mouse and
+the aishub feed both work. However, the resulting code does not splint
+clean; this will need to be fixed, and that's going to be tricky due
+to the new sockaddr_t struct.
+-------------------------------------------------------------------------
+
+Please pull SVN head and verify that it's functional under IPV6.  Then
+we can start working on the configuration and wrapper stuff.  
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007316.html">[Gpsd-dev] IPv6 Support patch
+</A></li>
+	<LI>Next message: <A HREF="007322.html">[Gpsd-dev] IPv6 patch merge
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7317">[ date ]</a>
+              <a href="thread.html#7317">[ thread ]</a>
+              <a href="subject.html#7317">[ subject ]</a>
+              <a href="author.html#7317">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

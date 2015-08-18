@@ -1,0 +1,92 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] Fix memleak in client library
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Fix%20memleak%20in%20client%20library&In-Reply-To=%3CE1CoI19-0001xv-Kn%40saruman.uio.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000516.html">
+   <LINK REL="Next"  HREF="000521.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] Fix memleak in client library</H1>
+    <B>Petter Reinholdtsen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Fix%20memleak%20in%20client%20library&In-Reply-To=%3CE1CoI19-0001xv-Kn%40saruman.uio.no%3E"
+       TITLE="[Gpsd-dev] [PATCH] Fix memleak in client library">pere at hungry.com
+       </A><BR>
+    <I>Tue Jan 11 10:08:47 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000516.html">[Gpsd-dev] wrong URL in documentation
+</A></li>
+        <LI>Next message: <A HREF="000521.html">[Gpsd-dev] Re: [PATCH] Fix memleak in client library
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#517">[ date ]</a>
+              <a href="thread.html#517">[ thread ]</a>
+              <a href="subject.html#517">[ subject ]</a>
+              <a href="author.html#517">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I discovered a minor memleak in the client library.  It would leak
+memory if the initial connection failed, and when closing the
+connection.  This patch solve the problems.
+
+Index: libgps.c
+===================================================================
+--- libgps.c    (revision 1311)
++++ libgps.c    (working copy)
+@@ -22,6 +22,7 @@
+
+     if ((gpsdata-&gt;gps_fd = netlib_connectsock(host, port, &quot;tcp&quot;)) &lt; 0) {
+        errno = gpsdata-&gt;gps_fd;
++       free(gpsdata);
+        return NULL;
+     }
+
+@@ -43,7 +44,9 @@
+ int gps_close(struct gps_data_t *gpsdata)
+ /* close a gpsd connection */
+ {
+-    return close(gpsdata-&gt;gps_fd);
++    int retval = close(gpsdata-&gt;gps_fd);
++    free(gpsdata);
++    return retval;
+ }
+
+ void gps_set_raw_hook(struct gps_data_t *gpsdata, void (*hook)(char *buf))
+
+I'm working on reconnect support in the C library.  This will probably
+require an API/ABI change to store the hostname and port in the
+gps_data_t structure.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000516.html">[Gpsd-dev] wrong URL in documentation
+</A></li>
+	<LI>Next message: <A HREF="000521.html">[Gpsd-dev] Re: [PATCH] Fix memleak in client library
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#517">[ date ]</a>
+              <a href="thread.html#517">[ thread ]</a>
+              <a href="subject.html#517">[ subject ]</a>
+              <a href="author.html#517">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

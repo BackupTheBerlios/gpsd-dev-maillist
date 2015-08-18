@@ -1,0 +1,111 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-commit-watch] r3160 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r3160%20-%20trunk&In-Reply-To=%3C200508191153.33836.remco%40rvt.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002988.html">
+   <LINK REL="Next"  HREF="002990.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-commit-watch] r3160 - trunk</H1>
+    <B>Remco Treffkorn</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r3160%20-%20trunk&In-Reply-To=%3C200508191153.33836.remco%40rvt.com%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-commit-watch] r3160 - trunk">remco at rvt.com
+       </A><BR>
+    <I>Fri Aug 19 20:53:33 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002988.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r3160 - trunk
+</A></li>
+        <LI>Next message: <A HREF="002990.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r3160 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2989">[ date ]</a>
+              <a href="thread.html#2989">[ thread ]</a>
+              <a href="subject.html#2989">[ subject ]</a>
+              <a href="author.html#2989">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>There is no need to handle EAGAIN and EINTR locally. You can just return, and 
+the next select() will return immediately again with the same fd, since data 
+is still available.
+
+I have thought about the potential of fast spinning in this loop, but have 
+come to the conclusion to just ignore it. I can not see that happening 
+without a bug elsewhere. Instead of coping with the result of that bug, it 
+would be better to fix it (if it ever happens).
+
+Cheers,
+Remco
+
+On Friday 19 August 2005 11:23, Eric S. Raymond wrote:
+&gt;<i> Chris Kuethe at BerliOS &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">ckuethe at berlios.de</A>&gt;:
+</I>&gt;<i> &gt; Author: ckuethe
+</I>&gt;<i> &gt; Date: 2005-08-19 20:05:48 +0200 (Fri, 19 Aug 2005)
+</I>&gt;<i> &gt; New Revision: 3160
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Modified:
+</I>&gt;<i> &gt;    trunk/packet.c
+</I>&gt;<i> &gt; Log:
+</I>&gt;<i> &gt; General feeling seems to be:
+</I>&gt;<i> &gt; a) that checking for (newdata = read()) == -1 is good,
+</I>&gt;<i> &gt; b) that it is appropriate to retry in case of EINTR or EAGAIN
+</I>&gt;<i> &gt; c) a short delay in case of EINTR or EAGAIN is polite but not strictly
+</I>&gt;<i> &gt; needed.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; I put the delay in because this may spin and I really hate busy waiting.
+</I>&gt;<i> &gt; I may put in a retry counter: after some small number of retries that
+</I>&gt;<i> &gt; fail, just give up and return 0 as if there was no data to be read. We
+</I>&gt;<i> &gt; shouldn't have even reached this function unless select() said there was
+</I>&gt;<i> &gt; data to read so it seems appropriate to get the data (with retries if
+</I>&gt;<i> &gt; necessary) unless a truly fatal error occurred ((errno != EAGAIN) &amp;&amp;
+</I>&gt;<i> &gt; (errno != EINTR))...
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; As we've just tagged a release, I feel better about committing this so
+</I>&gt;<i> &gt; this gets a bit more testing.
+</I>&gt;<i>
+</I>&gt;<i> I agree that you picked the best possible timing, but I'm unhappy
+</I>&gt;<i> about any patch with a sleep call in it.  The problem with sleep shows
+</I>&gt;<i> up in the multi-channel case -- you've stalled I/O on all GPS channels, not
+</I>&gt;<i> just the current one.
+</I>&gt;<i>
+</I>&gt;<i> Please come up with some way to hop out to the main select(2) call
+</I>&gt;<i> rather than stalling.
+</I>
+-- 
+Remco Treffkorn (RT445)
+HAM DC2XT
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002988.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r3160 - trunk
+</A></li>
+	<LI>Next message: <A HREF="002990.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r3160 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2989">[ date ]</a>
+              <a href="thread.html#2989">[ thread ]</a>
+              <a href="subject.html#2989">[ subject ]</a>
+              <a href="author.html#2989">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

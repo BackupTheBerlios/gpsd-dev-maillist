@@ -1,0 +1,144 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Changing the signal handler in gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Changing%20the%20signal%20handler%20in%20gpsd&In-Reply-To=%3C91981b3e0706271413o4bdb2336k8a6ac6b56d6b3fc2%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005738.html">
+   <LINK REL="Next"  HREF="005744.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Changing the signal handler in gpsd</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Changing%20the%20signal%20handler%20in%20gpsd&In-Reply-To=%3C91981b3e0706271413o4bdb2336k8a6ac6b56d6b3fc2%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Changing the signal handler in gpsd">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Wed Jun 27 23:13:46 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005738.html">[Gpsd-dev] It doesn't look like just reverting Eivind's commit is	going to work
+</A></li>
+        <LI>Next message: <A HREF="005744.html">[Gpsd-dev] Changing the signal handler in gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5743">[ date ]</a>
+              <a href="thread.html#5743">[ thread ]</a>
+              <a href="subject.html#5743">[ subject ]</a>
+              <a href="author.html#5743">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I've been threatening/muttering about this for some time now, so
+here's a diff to simplify/correct the signal handling. It's not that
+complicated, and it works for me(tm). Comments and feedback are
+greatly appreciated.
+
+Everyone who's been having problems with gpsd not exiting, please test
+this. Everyone who's got a working gpsd, please test this.
+
+Index: gpsd.c
+===================================================================
+--- gpsd.c	(revision 4388)
++++ gpsd.c	(working copy)
+@@ -114,11 +114,11 @@
+ };
+ /*@ +initallelements +nullassign +nullderef @*/
+
++volatile sig_atomic_t signalled;
+ static void onsig(int sig)
+ {
+-    /* go back to the default signal action until we can reset properly */
+-    (void)signal(sig, SIG_DFL);
+-    longjmp(restartbuf, sig+1);
++    /* just set a variable, and deal with it in the main loop */
++    signalled = sig;
+ }
+
+ static int daemonize(void)
+@@ -1431,19 +1431,11 @@
+ 	    if (allocated_channel(&amp;channels[dfd]))
+ 		(void)gpsd_wrap(&amp;channels[dfd]);
+ 	}
+-	if (st == SIGHUP+1)
+-	    gpsd_report(LOG_WARN, &quot;gpsd restarted by SIGHUP\n&quot;);
+-	else if (st &gt; 0) {
+-	    gpsd_report(LOG_WARN, &quot;Received terminating signal %d.
+Exiting...\n&quot;,st-1);
+-	    if (control_socket)
+-		(void)unlink(control_socket);
+-	    if (pid_file)
+-		(void)unlink(pid_file);
+-	    exit(10 + st);
+-	}
++	gpsd_report(LOG_WARN, &quot;gpsd restarted by SIGHUP\n&quot;);
+     }
+
+     /* Handle some signals */
++    signalled = 0;
+     (void)signal(SIGHUP, onsig);
+     (void)signal(SIGINT, onsig);
+     (void)signal(SIGTERM, onsig);
+@@ -1469,7 +1461,7 @@
+ 	}
+     }
+
+-    for (;;) {
++    while (0 == signalled) {
+         (void)memcpy((char *)&amp;rfds, (char *)&amp;all_fds, sizeof(rfds));
+
+ 	gpsd_report(LOG_RAW+2, &quot;select waits\n&quot;);
+@@ -1804,7 +1796,18 @@
+ 		}
+ 	    }
+     }
++    /* if we make it here, we got a signal... deal with it */
++    /* restart on SIGHUP, clean up and exit otherwise */
++    if (SIGHUP == signalled)
++	longjmp(restartbuf, 1);
+
++    gpsd_report(LOG_WARN, &quot;Received terminating signal %d.
+Exiting...\n&quot;,signalled);
++    /* try to undo all device configurations */
++    for (dfd = 0; dfd &lt; MAXDEVICES; dfd++) {
++	if (allocated_channel(&amp;channels[dfd]))
++	    (void)gpsd_wrap(&amp;channels[dfd]);
++    }
++
+     if (control_socket)
+ 	(void)unlink(control_socket);
+     if (pid_file)
+
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005738.html">[Gpsd-dev] It doesn't look like just reverting Eivind's commit is	going to work
+</A></li>
+	<LI>Next message: <A HREF="005744.html">[Gpsd-dev] Changing the signal handler in gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5743">[ date ]</a>
+              <a href="thread.html#5743">[ thread ]</a>
+              <a href="subject.html#5743">[ subject ]</a>
+              <a href="author.html#5743">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

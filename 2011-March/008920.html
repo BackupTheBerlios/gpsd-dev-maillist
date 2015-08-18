@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPSD Protocol Inconsistencies
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3CAANLkTimVeHG81E%2Bsk-pCRjg4drOKhyy%2BWVP8Wwr21bLa%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008918.html">
+   <LINK REL="Next"  HREF="008923.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPSD Protocol Inconsistencies</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3CAANLkTimVeHG81E%2Bsk-pCRjg4drOKhyy%2BWVP8Wwr21bLa%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] GPSD Protocol Inconsistencies">thomas at mich.com
+       </A><BR>
+    <I>Mon Mar 21 02:49:36 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008918.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+        <LI>Next message: <A HREF="008923.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8920">[ date ]</a>
+              <a href="thread.html#8920">[ thread ]</a>
+              <a href="subject.html#8920">[ subject ]</a>
+              <a href="author.html#8920">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I'm going to have to rip the NMEA stuff apart and redo much of it
+anyway for NOFLOAT anyway, and that is going to be a more radical
+change.
+
+I think I can get something more consistent for the TPV, or at least
+more robust.
+
+Someone pointed out that it might be possible to get more than 3
+satellites with a 2d fix, but I don't think I've ever seen it, but I
+can check.
+
+My logs cover Garmin, MTK, SkyTraq/Venus, and UBlox/Antaris.  I don't
+have Sirf or others immediately available
+
+I'll also see if I can do something to show the latency as I'm
+probably going to do some performance testing and banchmarking anyway.
+
+On Sun, Mar 20, 2011 at 9:02 PM, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+</I>&gt;&gt;<i> Looking at the aggregate-to-fix algorithm, it doesn't seem very
+</I>&gt;&gt;<i> robust. &#160;You would appear to get a new fix if the others were damaged
+</I>&gt;&gt;<i> but GGA was the ender and it got through.
+</I>&gt;<i>
+</I>&gt;<i> Possibly. &#160;This is not a case we've ever seen in the wild.
+</I>&gt;<i>
+</I>&gt;&gt;<i> I think it would work better if it would first accumulate the bitmap
+</I>&gt;&gt;<i> of the complete set of identical times, then emit the fix only when
+</I>&gt;&gt;<i> the same set of bits are set - clearing the field if the fixtime
+</I>&gt;&gt;<i> changes.
+</I>&gt;&gt;<i> So if you had RMC/GLL/GGA initially or after a few cycles, you would
+</I>&gt;&gt;<i> require all three with the same fixtime to update the fix. &#160;You can't
+</I>&gt;&gt;<i> misidentify an &quot;ender&quot;.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> This would produce fewer fixes, e.g. if RMC updates at rate 2, GLL at
+</I>&gt;&gt;<i> 3, and GGA at 5, but if a GPS is set that way you really can't do
+</I>&gt;&gt;<i> anything else.
+</I>&gt;<i>
+</I>&gt;<i> Right. &#160;I suspect the reason the aggregate-to-fix algorithm looks robust
+</I>&gt;<i> to us and fragile to you is that, in the consumer grade of hardware we're used
+</I>&gt;<i> to testing, cycle behavior is very stereotyped. &#160; I don't think we've *ever*
+</I>&gt;<i> seen a case where RMC, GLL, and GLL were being emitted at different rates,
+</I>&gt;<i> though some of the devices we support do have that as a theoretical
+</I>&gt;<i> capability. &#160;Closest we've come to it is one really old Garmin that
+</I>&gt;<i> emitted RMC and GLL in asymmetrical half-cycles.
+</I>&gt;<i>
+</I>&gt;<i> If you think you can harden the driver to behave sanely in that case, go
+</I>&gt;<i> ahead. &#160;We've got enough wacky NMEA-variant test loads that I'm willing to
+</I>&gt;<i> have drastic things done to that driver in confidence that we can test
+</I>&gt;<i> for introduced bugs *very* thoroughly.
+</I>&gt;<i> --
+</I>&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+</I>&gt;<i>
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008918.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+	<LI>Next message: <A HREF="008923.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8920">[ date ]</a>
+              <a href="thread.html#8920">[ thread ]</a>
+              <a href="subject.html#8920">[ subject ]</a>
+              <a href="author.html#8920">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

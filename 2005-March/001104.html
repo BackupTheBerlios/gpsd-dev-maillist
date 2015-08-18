@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Raytheon &quot;Integrated Instrumentation&quot; talker ID
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Raytheon%20%22Integrated%20Instrumentation%22%20talker%20ID&In-Reply-To=%3Cca02e7350503281910225e20b1%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001099.html">
+   <LINK REL="Next"  HREF="001107.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Raytheon &quot;Integrated Instrumentation&quot; talker ID</H1>
+    <B>Dave Parker</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Raytheon%20%22Integrated%20Instrumentation%22%20talker%20ID&In-Reply-To=%3Cca02e7350503281910225e20b1%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Raytheon &quot;Integrated Instrumentation&quot; talker ID">daveparker01 at gmail.com
+       </A><BR>
+    <I>Tue Mar 29 05:10:38 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001099.html">[Gpsd-dev] wgetstr patch - sirfmon.c
+</A></li>
+        <LI>Next message: <A HREF="001107.html">[Gpsd-dev] Raytheon &quot;Integrated Instrumentation&quot; talker ID
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1104">[ date ]</a>
+              <a href="thread.html#1104">[ thread ]</a>
+              <a href="subject.html#1104">[ subject ]</a>
+              <a href="author.html#1104">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi
+
+Sorry to jump in here. I feel I've done enough research to pose this
+question in the dev list but if I'm mistaken please accept my apology
+in advance.
+
+I've got a Raytheon navigation system on my boat that includes a
+number of NMEA attachment points (two inputs, three outputs).  I'm
+currently working with the output from the autopilot's computer.  I've
+hooked it into an intel linux box and am successfully receiving NMEA
+data from the course computer at 4800bd (8n1).
+
+My glee was shortlived however when I came to the realization that
+gpsd won't recognize any of the data coming from that device. I'm
+certain I understand at least one part of that: the &quot;talker ID&quot; that
+the course computer sends is &quot;II&quot; - &quot;Integrated Instrumentation&quot;.
+Another reason may be that of the sentences normally recognized by
+gpsd (RMC, GLL, GGA, GSA, GSV, ZDA), GLL is the only one that this
+device emits (the others are related to course and course deviation,
+speed, etc).
+
+For my purposes, however, GLL would be adequate.
+
+My question then is this:  Could I make gpsd &quot;work&quot; with this feed by
+altering it's default notion of the &quot;talker ID&quot;, and if so, where is
+that notion codified.  I've looked through the code (albeit briefly)
+and I attempted to do a quick hack in nmea_parse.c and drivers.c to
+wit:
+
+drivers.c:      if (session-&gt;outbuffer[0]=='$' &amp;&amp;
+strchr(&quot;II&quot;,session-&gt;outbuffer[1]))
+nmea_parse.c:   {&quot;IIRMC&quot;, GPRMC,        processGPRMC},
+nmea_parse.c:   {&quot;IIGGA&quot;, GPGGA,        processGPGGA},
+nmea_parse.c:   {&quot;IIGLL&quot;, GPGLL,        processGPGLL},
+nmea_parse.c:   {&quot;IIGSA&quot;, GPGSA,        processGPGSA},
+nmea_parse.c:   {&quot;IIGSV&quot;, GPGSV,        processGPGSV},
+
+This hasty and ignorant act however gave me no joy, so I'm hoping one
+of you can point me in a more intelligent direction.
+
+For your reference, my intention is to use gpsd in combination w/
+kismet in this case.  I do have another NMEA attach point that emits
+all of the other supported sentences. It however has the same &quot;talker
+ID&quot; issue (and is a bit of a wiring hassle for me).
+
+Here is a sample of NMEA output from the course computer interface:
+
+$IIGLL,3658.00,N,12200.11,W,025238,A*28
+$IIHDG,167.,,,15.,E*16
+$IIBWC,025238,,,,,,T,,M,,N,*0F
+$IIHDM,167.,M*12
+$IIHDT,182.,T*19
+$IIVTG,000.,T,345.,M,00.0,N,,K*45
+
+Thanks in advance for your time.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001099.html">[Gpsd-dev] wgetstr patch - sirfmon.c
+</A></li>
+	<LI>Next message: <A HREF="001107.html">[Gpsd-dev] Raytheon &quot;Integrated Instrumentation&quot; talker ID
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1104">[ date ]</a>
+              <a href="thread.html#1104">[ thread ]</a>
+              <a href="subject.html#1104">[ subject ]</a>
+              <a href="author.html#1104">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] SVN gpsd requires root to build
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20SVN%20gpsd%20requires%20root%20to%20build&In-Reply-To=%3C91981b3e0909131941xfe51945v84a5cf9f119e44ba%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006830.html">
+   <LINK REL="Next"  HREF="006832.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] SVN gpsd requires root to build</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20SVN%20gpsd%20requires%20root%20to%20build&In-Reply-To=%3C91981b3e0909131941xfe51945v84a5cf9f119e44ba%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] SVN gpsd requires root to build">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Mon Sep 14 04:41:12 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006830.html">[Gpsd-dev] SVN gpsd requires root to build
+</A></li>
+        <LI>Next message: <A HREF="006832.html">[Gpsd-dev] SVN gpsd spec file changes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6831">[ date ]</a>
+              <a href="thread.html#6831">[ thread ]</a>
+              <a href="subject.html#6831">[ subject ]</a>
+              <a href="author.html#6831">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Index: Makefile.am
+===================================================================
+--- Makefile.am	(revision 5702)
++++ Makefile.am	(working copy)
+@@ -211,12 +211,12 @@
+ 	@rm -f '$@' '$@.tmp'
+ 	@echo 'timestamp for $@' &gt; '$@.tmp'
+ 	cd '$(srcdir)' &amp;&amp; \
+-	env abs_builddir='$(abs_builddir)' \
++	env abs_builddir='$(srcdir)' \
+ 	    MAKE='$(MAKE)' \
+ 		$(PYTHON) setup.py build_ext \
+-			--build-lib '$(abs_builddir)' \
+-			--build-temp '$(abs_builddir)/build' \
+-			--include-dirs '$(abs_builddir):.'
++			--build-lib '$(srcdir)' \
++			--build-temp '$(srcdir)/build' \
++			--include-dirs '$(srcdir):.'
+ 	@mv -f '$@.tmp' '$@'
+ CLEANFILES += stamp-python-modules stamp-python-modules.tmp
+ endif
+
+On Sun, Sep 13, 2009 at 7:37 PM, Michael R. Davis &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mrdvt92 at yahoo.com</A>&gt; wrote:
+&gt;<i> Gpsd Folks,
+</I>&gt;<i> I got the latest SVN and it will not build past the below step without root permissions. &#160;It look like &quot;$abs_builddir&quot; is not being set in the Makefile and thus it tries to build in the root.
+</I>&gt;<i>
+</I>&gt;<i> I'm planning support for the new protocol in Perl but I'd like to put it in a new name space. &#160;What do you think about &quot;Net::GPSD3&quot;, Net::GPSD::JSON, Net::GPSD::OO? &#160;It's really a marketing decision.
+</I>&gt;<i>
+</I>&gt;<i> My plan is to return objects for each JSON string returned in watcher mode. &#160;Is there an all-inclusive list of JSON objects or is it there a JSON object inheritance documentation?
+</I>&gt;<i> Thanks,
+</I>&gt;<i> Mike
+</I>&gt;<i>
+</I>&gt;<i> ---
+</I>&gt;<i>
+</I>&gt;<i> $ make
+</I>&gt;<i> make &#160;all-am
+</I>&gt;<i> make[1]: Entering directory `/home/XXX/temp/gpsd/trunk'
+</I>&gt;<i> cd '.' &amp;&amp; \
+</I>&gt;<i> &#160; &#160; &#160; &#160;env abs_builddir='' \
+</I>&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160;MAKE='make' \
+</I>&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;/usr/bin/python setup.py build_ext \
+</I>&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;--build-lib '' \
+</I>&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;--build-temp '/build' \
+</I>&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;--include-dirs ':.'
+</I>&gt;<i> running build_ext
+</I>&gt;<i> building 'gpspacket' extension
+</I>&gt;<i> creating /build
+</I>&gt;<i> error: could not create '/build': Permission denied
+</I>&gt;<i> make[1]: *** [stamp-python-modules] Error 1
+</I>&gt;<i> make[1]: Leaving directory `/home/XXX/temp/gpsd/trunk'
+</I>&gt;<i> make: *** [all] Error 2
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>
+
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006830.html">[Gpsd-dev] SVN gpsd requires root to build
+</A></li>
+	<LI>Next message: <A HREF="006832.html">[Gpsd-dev] SVN gpsd spec file changes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6831">[ date ]</a>
+              <a href="thread.html#6831">[ thread ]</a>
+              <a href="subject.html#6831">[ subject ]</a>
+              <a href="author.html#6831">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,109 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsmon (and cgps) infinite loop
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsmon%20%28and%20cgps%29%20infinite%20loop&In-Reply-To=%3Calpine.DEB.1.10.1002040627430.13924%40org-pc51.fy.chalmers.se%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007360.html">
+   <LINK REL="Next"  HREF="007362.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsmon (and cgps) infinite loop</H1>
+    <B>H&#229;kan Johansson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsmon%20%28and%20cgps%29%20infinite%20loop&In-Reply-To=%3Calpine.DEB.1.10.1002040627430.13924%40org-pc51.fy.chalmers.se%3E"
+       TITLE="[Gpsd-dev] gpsmon (and cgps) infinite loop">f96hajo at chalmers.se
+       </A><BR>
+    <I>Thu Feb  4 07:10:24 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007360.html">[Gpsd-dev] Incorrect Date (Year) Calculated &lt;2.39&gt;
+</A></li>
+        <LI>Next message: <A HREF="007362.html">[Gpsd-dev] C++ wrapper: gps close and no-fix
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7361">[ date ]</a>
+              <a href="thread.html#7361">[ thread ]</a>
+              <a href="subject.html#7361">[ subject ]</a>
+              <a href="author.html#7361">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Hi,
+
+After terminating gpsd, gpsmon (and cgps) consumes 100 % CPU in a polling 
+loop.
+
+In gpsmon.c: readpkt(), there is a select() waiting on the fd of the 
+connection to gpsd.  After gpsd leaves, this will tell that the socket is 
+immediately ready for reading (as it is EOF).
+
+It then calls gpsd_poll(),
+calling session-&gt;device_type-&gt;get_packet(session),
+which just is generic_get(),
+calling packet_get(),
+calling read()
+
+This read() returns 0, as in EOF, but this information is not propagated 
+to the outside in a way to kill off the select() loop caused by readpkt(). 
+I'm not sure where the logics ought to be changed.
+
+packet_get()   returns 0
+generic_get()  returns the same 0
+gpsd_poll()    returns 0 too
+
+which readpkt does not react upon, just returning the length of the same 
+last message over and over...
+
+The attached patch (to provoke some comments) fixes the issue with gpsmon, 
+but has at least one side-effect in that if gpsmon is started just after 
+gpsd before has any useful data to send, gpsmon also quits.  Perhaps 
+gpsd_poll should return ERROR_SET on detecting EOF, or another flag is 
+needed for this condition?
+
+As for cgps, the issue is similar: cgps.c main() calls select which 
+returns ready-to-read, after which gps_poll() is called.  gps_poll() 
+returns 0 in a long stream, which cannot be distinguished from the case 
+that gps_poll() just got the first part of a real message.  I.e. return of 
+-1 needed on EOF?  However, then a caller of gps_poll cannot know when to 
+check errno or not...
+
+Cheers,
+H&#229;kan
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: gpsmon_nospin_fix_attempt.diff
+Type: text/x-diff
+Size: 654 bytes
+Desc: 
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100204/b6931372/attachment.diff">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100204/b6931372/attachment.diff</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007360.html">[Gpsd-dev] Incorrect Date (Year) Calculated &lt;2.39&gt;
+</A></li>
+	<LI>Next message: <A HREF="007362.html">[Gpsd-dev] C++ wrapper: gps close and no-fix
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7361">[ date ]</a>
+              <a href="thread.html#7361">[ thread ]</a>
+              <a href="subject.html#7361">[ subject ]</a>
+              <a href="author.html#7361">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

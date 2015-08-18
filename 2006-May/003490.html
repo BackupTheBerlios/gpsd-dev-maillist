@@ -1,0 +1,278 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] The long-awaited buffering white paper
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20The%20long-awaited%20buffering%20white%20paper&In-Reply-To=%3Cp0623090ac0924cc86026%40%5B192.168.11.10%5D%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003488.html">
+   <LINK REL="Next"  HREF="003491.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] The long-awaited buffering white paper</H1>
+    <B>Robin L Darroch</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20The%20long-awaited%20buffering%20white%20paper&In-Reply-To=%3Cp0623090ac0924cc86026%40%5B192.168.11.10%5D%3E"
+       TITLE="[Gpsd-dev] The long-awaited buffering white paper">robin at spade-men.com
+       </A><BR>
+    <I>Thu May 18 19:40:28 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003488.html">[Gpsd-dev] The long-awaited buffering white paper
+</A></li>
+        <LI>Next message: <A HREF="003491.html">[Gpsd-dev] The long-awaited buffering white paper
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3490">[ date ]</a>
+              <a href="thread.html#3490">[ thread ]</a>
+              <a href="subject.html#3490">[ subject ]</a>
+              <a href="author.html#3490">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>At 11:42 -0400 18/5/06, Eric S. Raymond wrote:
+&gt;<i>Analyze, dissect, refute.  This will become part of HACKING when
+</I>&gt;<i>Berlios unjams itself enough to let me do checkins again.
+</I>
+First response: nice job!  If I hadn't turned blue holding my breath 
+for it, I'd say it was worth the wait... and in fact, it still was. :)
+
+For the most part, I'd say it covers the bases quite comprehensively. 
+However, there are a couple of bits I'd like to dissect, and one 
+important set of drawbacks that I'd like to refute.
+
+&gt;<i>2. When the accumulated data will be shipped to the user
+</I>
+This is indeed an important part of the design of gpsd, and must be 
+considered, but it is not the only way gpsd operates: the above 
+question applies to the &quot;push&quot; model of data transfer, as you get 
+when a client is in watcher (W) mode.  However, gpsd is equally 
+capable of using a &quot;pull&quot; model, sending responses on demand to 
+client queries such as &quot;P&quot;, &quot;V&quot;, &quot;O&quot; etc.  In this context, the 
+question of when data is shipped to the user is not for us to 
+determine: quite simply, data is shipped to the user *when the user 
+asks for it*.
+
+Ironically, taking this extra consideration into account very much 
+simplifies our overall decision-making process, because point 2 above 
+is not actually up to us... and as a result, any &quot;report then clear&quot; 
+model is impractical, as we never know when a client might ask for a 
+response (consider the case of two simultaneously connected clients, 
+one sending queries and the other in watcher mode - if we clear after 
+we ship the O message to the watcher, then the other client queries, 
+it gets nothing in response).  So, some of the options below 
+disappear immediately.  That does, however, mean that point 3 is THE 
+question.
+
+&gt;<i>3. When to invalidate some or all of the buffered data.
+</I>
+I believe I have a good answer to this, but I'll cover that in my 
+attempted &quot;refute&quot;, below.
+
+&gt;<i>**** Report then clear per packet
+</I>&gt;<i>
+</I>&gt;<i>**** Buffer all, report then clear on trigger
+</I>&gt;<i>
+</I>
+As discussed above, neither of these is a practical option for a 
+client-pull situation.
+
+&gt;<i>**** Buffer all, report on every packet, clear at start-of-cycle
+</I>&gt;<i>
+</I>&gt;<i>Here's a disadvantage: the client display, unless its does its own
+</I>&gt;<i>buffering, may flicker annoyingly.  The problem is this: suppose we
+</I>&gt;<i>get an altitude in a GGA packet, throw an O response at the client,
+</I>&gt;<i>and display it.  This happens to be late in the report cycle.  Start
+</I>&gt;<i>of cycle clears the buffer; a GPRMC arrives with no altitude in it.
+</I>&gt;<i>The altitude value in the client display flickers to &quot;not available&quot;,
+</I>&gt;<i>and won't be restored until the following GGA.
+</I>
+Not only is this a problem for watcher mode clients, but it can be a 
+much greater problem for query-based clients: clients in watcher mode 
+can at least buffer based on a semi-predictable sequence of 
+loss-then-reappearance of valid data, but for a query-based client, 
+the completeness of the response is effectively totally random.  It 
+is for that reason that I believe the current approach is not 
+acceptable, *however* I think the choice becomes easier if I can 
+refute the concerns raised below... and I'm pretty certain I can.
+
+&gt;<i>**** Buffer all, report on every packet, never clear data
+</I>&gt;<i>
+</I>&gt;<i>Has all the advantages of the previous policy and avoids the flicker
+</I>&gt;<i>problem.  However, it means the user will often see data that is up to one
+</I>&gt;<i>cycle time stale.   If the mode changes due to the device losing
+</I>&gt;<i>satellite lock, it will continue to report stale PVT data with
+</I>&gt;<i>only the changed mode field to indicate that it's no longer good.
+</I>&gt;<i>
+</I>&gt;<i>In the intermediate case where the device loses 3D lock but keeps
+</I>&gt;<i>2D lock, altitude could go bad without any indication but the mode.
+</I>
+I'll try to refute the concerns here as comprehensively as possible, 
+while keeping this reasonably concise (ok, I failed).  I realise that 
+many (most?) of the developers here have SiRF-II or other binary 
+devices, and therefore don't encounter old-school NMEA data any more, 
+so allow me to review the actual behaviour of what appears to be a 
+fairly typical NMEA device (I know, &quot;there's no such thing&quot;... but 
+the general principles should still hold).
+
+The Holux GM-210 sends the following set of sentences (in some order 
+- not necessarily the same order) every cycle, even when it has no 
+fix:
+
+$GPGSA
+$GPGSV (as many as required, every fifth cycle)
+$GPRMC
+$PGRME
+
+When it gets a fix, it adds a $GPGGA sentence to the beginning of 
+each cycle.  Here's typical output with no fix (in this case, after 
+losing a fix due to limited sky view):
+
+$GPRMC,163841,V,2024.1085,S,11835.9502,E,0.0000,-0.000,180506,,*01
+$GPGSA,A,1,,,,,,,,,,,,,,,,*32
+$PGRME,400.00,0.00,0.00*7B
+[GSV sentences snipped]
+$GPRMC,163842,V,2024.1085,S,11835.9502,E,0.0000,-0.000,180506,,*02
+
+compare the following just before it lost the fix (2D fix - marginal sky view):
+
+$GPGGA,163825,2024.1090,S,11835.9490,E,2,03,12.40,-130.7,M,-0.249,M,,*6F
+$GPRMC,163825,A,2024.1090,S,11835.9490,E,0.0000,-0.000,180506,,*1A
+$GPGSA,A,2,20,11,01,,,,,,,,,,0.0,12.4,0.0*07
+$PGRME,99.20,0.00,0.00*4D
+$GPGGA,163826,2024.1085,S,11835.9502,E,2,03,12.40,-130.7,M,-0.249,M,,*62
+
+The above data illustrates two important points:
+
+1) although the GGA sentence has disappeared when the fix was lost, 
+the RMC sentence was still sent every cycle, and explicitly 
+invalidates position, speed and track.  Furthermore, it sets status 
+to V (void), so we know the GPS has lost its fix.  When such a 
+sentence is received, gpsd already sets fix.mode to MODE_NO_FIX, and 
+therefore returns ? for all PVT data.  We immediately stop sending 
+any remaining obsolete data (i.e. altitude), although it hasn't 
+explicitly been removed from the buffer, and we won't send any PVT 
+data until the GPS reports a valid fix again.  When the GPS reports a 
+valid fix, we receive a GGA sentence, and the old altitude will be 
+overwritten.
+
+2) the GGA sentence reports altitude along with a 2D fix.  This is 
+crucial to understand: a GPS may well report an altitude of which it 
+is not sure (i.e. it knows its latitude and longitude accurately, but 
+is using DR calculations for altitude - this is because triangulation 
+of altitude requires more and/or better signals than triangulation of 
+latitude and longitude).  When this happens, the GPS reports an 
+altitude and reports a mode of &quot;2D fix&quot; along with it.  As such, the 
+only way to be faithful to what the GPS unit itself reports is to 
+pass on both the altitude and the fix mode to clients.  It is for 
+exactly this reason that I've submitted the &quot;O-mode&quot; patch for 
+consideration: because altitude data without the true GPS-reported 
+mode can never be assumed to be correct.  On the other hand, that 
+means it isn't our job to invalidate altitude if the fix mode drops 
+to 2D: the GPS reports it, and so should we.
+
+The mention of 3D vs 2D in the context of the &quot;never clear&quot; option is 
+slightly misleading: the current logic of clearing all fix data at 
+the start of a cycle does nothing to prevent passing on altitude from 
+a 2D fix, so whether or not we like that happening actually has 
+nothing to do with the proposed change from &quot;clear at start of cycle&quot; 
+to &quot;never clear&quot;.
+
+In summary, point by point:
+
+* &quot;the user will often see data that is up to one cycle time stale&quot; - 
+this is unavoidable with any client-pull arrangement, and hardly a 
+significant liability for server-push.  Up-to-one-cycle-time-stale 
+data is substantially preferable to reporting NaN for one or another 
+value, seemingly at random.
+
+* &quot;If the mode changes due to the device losing satellite lock, it 
+will continue to report stale PVT data with only the changed mode 
+field to indicate that it's no longer good.&quot; - not true.  When the 
+fix is lost, the very next cycle invalidates the fix mode (i.e. sets 
+MODE_NO_FIX), and gpsd stops sending PVT data.  Almost identical 
+behaviour results from disconnection of the GPS mid-stream: the 
+daemon realises it is no longer connected, and stops returning PVT 
+data in response to queries.
+
+* &quot;In the intermediate case where the device loses 3D lock but keeps 
+2D lock, altitude could go bad without any indication but the mode.&quot; 
+- this is no change from current behaviour, but is in fact the way it 
+should be, since that is what the GPS sends.  It is up to the client 
+to choose whether to use DR altitude data or not when the fix mode is 
+MODE_2D_FIX, but it should be made available to them as long as the 
+GPS continues to send it.  It is the responsibility of pull clients 
+to request fix mode along with altitude (i.e. &quot;PAM\n&quot;, not &quot;PA\n&quot;), 
+but we must include fix mode in the O response so that watcher mode 
+clients receive the essential data, hence my O-mode patch (which has 
+been posted to the list, as well as explained in detail off-list).
+
+&gt;<i>**** Buffer all, report on every packet, time out old data
+</I>
+Since I believe the above deals with the concerns of the &quot;never 
+clear&quot; approach, this seems unnecessarily complicated.  Unless 
+someone messes with the unit directly behind gpsd's back while gpsd 
+is running, the unit can be counted on to continue to send sentences 
+which clear or invalidate old data... and we've already discussed 
+what should happen to people silly enough to do that kind of messing 
+around. :)
+
+&gt;<i>*** There is no perfect option
+</I>
+Agreed - primarily because we can't, in reality, do any better than 
+the data the GPS unit sends.
+
+&gt;<i>This problem lurks behind many user bug reports and motivates some of
+</I>&gt;<i>the most difficult-to-understand code in the daemon.
+</I>
+Actually, having waded through much of the input-handling/buffering 
+code when dealing with earlier reported bugs, I have to say that I 
+think the approach taken in gpsd is remarkably straight-forward and 
+elegant.  By keeping one structure for newly received data and 
+another for existing data, then setting flags to handle how the two 
+will be combined, it seems to me that the daemon is very well placed 
+to handle almost any form of input, regardless of how ancient or 
+arcane the protocol.
+
+Anyway, I believe I've made my case reasonably clear.  Unless there 
+are further concerns not addressed above, the plaintiff rests.  In 
+fact, since it's 1:40am, the plaintiff is going to rest anyway!
+
+Cheers,
+Robin
+
+-- 
+
+-------------------------------------------------------------------------
+  Robin L. Darroch - PO Box 2715, South Hedland WA 6722 - +61 421 503 966
+       <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at darroch.id.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at nyca.org.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003488.html">[Gpsd-dev] The long-awaited buffering white paper
+</A></li>
+	<LI>Next message: <A HREF="003491.html">[Gpsd-dev] The long-awaited buffering white paper
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3490">[ date ]</a>
+              <a href="thread.html#3490">[ thread ]</a>
+              <a href="subject.html#3490">[ subject ]</a>
+              <a href="author.html#3490">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

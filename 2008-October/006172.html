@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] ncurses build failure
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2008-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ncurses%20build%20failure&In-Reply-To=%3Crmihc77cfpg.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006169.html">
+   <LINK REL="Next"  HREF="006177.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] ncurses build failure</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ncurses%20build%20failure&In-Reply-To=%3Crmihc77cfpg.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] ncurses build failure">gdt at ir.bbn.com
+       </A><BR>
+    <I>Mon Oct 20 19:57:15 CEST 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006169.html">[Gpsd-dev] -n
+</A></li>
+        <LI>Next message: <A HREF="006177.html">[Gpsd-dev] ncurses build failure
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6172">[ date ]</a>
+              <a href="thread.html#6172">[ thread ]</a>
+              <a href="subject.html#6172">[ subject ]</a>
+              <a href="author.html#6172">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+The head of svn failed to build on NetBSD/i386 4-stable, losing in cgps
+because HAVE_NCURSES_H wasn't defined.  This is because the test used
+AC_CHECK_HEADER instead of AC_CHECK_HEADERS, and only the latter is
+documented to #define things like HAVE_NCURSES_H.
+
+I also made the HAVE_NCURSES conditional less complicated, and required
+HAVE_NCURSES_H as well as finding the library.
+
+With this, I can build cgps.
+
+
+Also, it seems that only ncurses is needed, but there is ifdef support
+for curses.h and ncurses.h.  Is that because on some systems ncurses
+installs curses.h instead of ncurses.h?  If so, I should add a comment
+in configure.ac explaining that and not require ncurses.h.  Instead, we
+should perhaps test for curses.h.
+
+
+Index: configure.ac
+===================================================================
+--- configure.ac	(revision 4818)
++++ configure.ac	(working copy)
+@@ -242,11 +243,17 @@
+ fi
+ dnl End of X11 checks
+ 
+-AC_CHECK_HEADER(ncurses.h, ac_ncurses='yes', ac_ncurses='no')
+-AM_CONDITIONAL([HAVE_NCURSES], [test x&quot;$ac_ncurses&quot; = &quot;xyes&quot;])
+-AC_CHECK_LIB(ncurses, initscr, ac_ncurses_lib='yes', ac_ncurses_lib='no')
+-if test x&quot;$ac_ncurses_lib&quot; = &quot;xno&quot; -o x&quot;$ac_ncurses&quot; = &quot;xno&quot; ; then
+-  AC_MSG_WARN([Not including curses support])
++dnl Check for curses headers and libraries.  This is used to decide to
++dnl whether or not to build programs.  We define our own variables to
++dnl reduce the risk of breaking if autoconf changes (private) variable
++dnl names.
++AC_CHECK_HEADERS(ncurses.h)
++AC_CHECK_LIB(ncurses, initscr)
++if test x&quot;$ac_cv_header_ncurses_h&quot; = x&quot;no&quot; -o x&quot;$ac_cv_lib_ncurses_initscr&quot; = x&quot;no&quot; ; then
++  AC_MSG_WARN([Not including curses support])		   
++  AM_CONDITIONAL([HAVE_NCURSES],true)
++else
++  AM_CONDITIONAL([HAVE_NCURSES],false)
+ fi
+ 
+ dnl check for NMEA support
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 193 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20081020/f15a057e/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20081020/f15a057e/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006169.html">[Gpsd-dev] -n
+</A></li>
+	<LI>Next message: <A HREF="006177.html">[Gpsd-dev] ncurses build failure
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6172">[ date ]</a>
+              <a href="thread.html#6172">[ thread ]</a>
+              <a href="subject.html#6172">[ subject ]</a>
+              <a href="author.html#6172">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

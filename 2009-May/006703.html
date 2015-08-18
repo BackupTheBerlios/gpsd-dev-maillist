@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Potential bug/incorrect comment in gpsd/hex.c
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Potential%20bug/incorrect%20comment%20in%20gpsd/hex.c&In-Reply-To=%3C1241476645.3364.10.camel%40localhost%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="006704.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Potential bug/incorrect comment in gpsd/hex.c</H1>
+    <B>Joshua Lamorie</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Potential%20bug/incorrect%20comment%20in%20gpsd/hex.c&In-Reply-To=%3C1241476645.3364.10.camel%40localhost%3E"
+       TITLE="[Gpsd-dev] Potential bug/incorrect comment in gpsd/hex.c">jpl at xiphos.ca
+       </A><BR>
+    <I>Tue May  5 00:37:25 CEST 2009</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="006704.html">[Gpsd-dev] Potential bug/incorrect comment in gpsd/hex.c
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6703">[ date ]</a>
+              <a href="thread.html#6703">[ thread ]</a>
+              <a href="subject.html#6703">[ subject ]</a>
+              <a href="author.html#6703">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gidday there,
+
+I'm trying to use the binary control string method described in gpsd.8,
+section GPS DEVICE MANAGEMENT, to configure a Skytraq Venus 6 GPS.
+
+I'm still new to gpsd, but I think there is a bug in gpsd_hexpack (hex.c
++56).  There is a comment that says...
+
+/* hex2bin source string to destination - destination can be same as
+source */
+
+... however on line 64 there is a call to bzero() as follows ...
+
+bzero(dst, (int)len)
+
+... which is (obviously) clearing the destination.
+
+In the case of handle_control (gpsd.c +1387) the source and the
+destination for gpsd_hexpack() ARE the same, which means that the source
+data gets cleared and hex2bin starts failing on the first character.
+
+The only other place that gpsd_hexpack() is used is within gpsmon, and
+it appears that source and dest are not the same.
+
+I've read through the hackers guide, and I really appreciate the static
+memory allocation ethos.  Is this a problem, or am I missing something?
+
+Thanks in advance.
+
+Joshua
+
+
+-- 
+Xiphos Technologies Inc.
+T: 514.847.9474 x 227
+F: 514.847.9474
+
+________________________________________________________________________
+The information transmitted is intended only for the person or entity to
+which it is addressed and may contain confidential and/or privileged
+material. If you have received this in error, please contact the sender
+and delete this communication and any copy immediately. Thank you.
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="006704.html">[Gpsd-dev] Potential bug/incorrect comment in gpsd/hex.c
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6703">[ date ]</a>
+              <a href="thread.html#6703">[ thread ]</a>
+              <a href="subject.html#6703">[ subject ]</a>
+              <a href="author.html#6703">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

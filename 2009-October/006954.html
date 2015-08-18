@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] SVN 6397 issues JSON warnings and RPM catch 22
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20SVN%206397%20issues%20JSON%20warnings%20and%20RPM%20catch%2022&In-Reply-To=%3C183857.80952.qm%40web32506.mail.mud.yahoo.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006952.html">
+   <LINK REL="Next"  HREF="006963.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] SVN 6397 issues JSON warnings and RPM catch 22</H1>
+    <B>Michael R. Davis</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20SVN%206397%20issues%20JSON%20warnings%20and%20RPM%20catch%2022&In-Reply-To=%3C183857.80952.qm%40web32506.mail.mud.yahoo.com%3E"
+       TITLE="[Gpsd-dev] SVN 6397 issues JSON warnings and RPM catch 22">mrdvt92 at yahoo.com
+       </A><BR>
+    <I>Tue Oct 13 06:38:09 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006952.html">[Gpsd-dev] 2.40dev/SVN
+</A></li>
+        <LI>Next message: <A HREF="006963.html">[Gpsd-dev] SVN 6397 issues JSON warnings and RPM catch 22
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6954">[ date ]</a>
+              <a href="thread.html#6954">[ thread ]</a>
+              <a href="subject.html#6954">[ subject ]</a>
+              <a href="author.html#6954">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>GPSD Folks,
+1) Are these build warnings an issue?
+
+json.c: In function 'json_internal_read_object':
+json.c:116: warning: 'maxlen' may be used uninitialized in this function
+json.c:113: warning: 'value_quoted' may be used uninitialized in this function
+
+2) tar needs jsongen.py
+
+make[1]: *** No rule to make target `jsongen.py', needed by `ais_json.i'.  Stop.
+
+Looks like jsongen.py needs to be in the tar ball.
+
+3) I know that you guys hate putting generated files in the distribution but the packaging/gpsd.spec file needs to be added to the tar in order to be able to boot strap the rpmbuild process.
+
+$ ./autogen.sh
+$ make dist-rpm
+
+`make dist-rpm` will not work without the spec file.
+
+Here is the diff that I used to get things going.
+
+
+$ svn diff
+Index: Makefile.am
+===================================================================
+--- Makefile.am (revision 6397)
++++ Makefile.am (working copy)
+@@ -401,7 +401,10 @@
+        gpscap.ini \
+        packaging/etc_default_gpsd \
+        packaging/etc_init.d_gpsd \
+-       packaging/etc_init.d_gpsd_rpm
++       packaging/etc_init.d_gpsd_rpm \
++        packaging/gpsd.spec \
++        devtools/maskaudit \
++        jsongen.py
+ 
+ #dist-hook:
+ #      $(MKDIR_P) '$(distdir)/contrib' &amp;&amp; \
+
+I don't know what &quot;maskaudit&quot; is but I guess that will be cleaned up before shipping and I assume that jsongen.py was an oversight.  I have no idea if I put these in the correct section.
+
+Any reason we are pushing a Y every second now?  Is that coming from my BU-303?
+
+GPSD,O=?
+GPSD,Y=MID4 1255408358.640 11:5 11 90 0 0:6 12 309 32 0:27 47 118 0 0:15 47 46 42 0:29 11 199 0 0:21 76 268 0 0:18 54 304 36 0:22 22 285 0 0:3 6 316 0 0:9 39 142 0 0:26 24 228 0 0:
+GPSD,O=?
+GPSD,Y=MID4 1255408359.640 11:5 11 90 0 0:6 12 309 32 0:27 47 118 0 0:15 47 46 42 0:29 11 199 0 0:21 76 268 0 0:18 54 304 36 0:22 22 285 0 0:3 6 316 0 0:9 39 142 0 0:26 24 228 0 0:
+
+Thanks,
+Mike (mrdvt92)
+
+
+      
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006952.html">[Gpsd-dev] 2.40dev/SVN
+</A></li>
+	<LI>Next message: <A HREF="006963.html">[Gpsd-dev] SVN 6397 issues JSON warnings and RPM catch 22
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6954">[ date ]</a>
+              <a href="thread.html#6954">[ thread ]</a>
+              <a href="subject.html#6954">[ subject ]</a>
+              <a href="author.html#6954">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

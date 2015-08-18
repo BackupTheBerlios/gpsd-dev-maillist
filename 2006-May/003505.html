@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: remaining patches - summary
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20remaining%20patches%20-%20summary&In-Reply-To=%3C20060519115009.GA7246%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003506.html">
+   <LINK REL="Next"  HREF="003507.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: remaining patches - summary</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20remaining%20patches%20-%20summary&In-Reply-To=%3C20060519115009.GA7246%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Re: remaining patches - summary">esr at thyrsus.com
+       </A><BR>
+    <I>Fri May 19 13:50:09 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003506.html">[Gpsd-dev] PATCH:
+</A></li>
+        <LI>Next message: <A HREF="003507.html">[Gpsd-dev] Re: remaining patches - summary
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3505">[ date ]</a>
+              <a href="thread.html#3505">[ thread ]</a>
+              <a href="subject.html#3505">[ subject ]</a>
+              <a href="author.html#3505">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Copying to the dev list because people with experience of lots of devices
+might help settle a factual question.
+
+Robin L Darroch &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>&gt;:
+&gt;&gt;&gt;<i> The only way to determine the validity of GPS information is to use 
+</I>&gt;&gt;&gt;<i> the fix quality and mode indicators received from the GPS.  The fact 
+</I>&gt;&gt;&gt;<i> that a GPS unit (and in turn, gpsd) offers information such as 
+</I>&gt;&gt;&gt;<i> position or altitude is no guarantee that that information has been 
+</I>&gt;&gt;&gt;<i> accurately determined as part of a 3-dimensional fix (DR mode is a 
+</I>&gt;&gt;&gt;<i> perfect example of this, as is the return of altitude information 
+</I>&gt;&gt;&gt;<i> when only receiving a 2-D fix, as many GPS units will do). 
+</I>&gt;&gt;&gt;<i> Therefore, if O and W are to provide complete information to the 
+</I>&gt;&gt;&gt;<i> client (as they clearly aim to do), the O command output must include 
+</I>&gt;&gt;&gt;<i> mode along with P/V/T data.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>Can you think of any reason not to fix this at the server end, by
+</I>&gt;&gt;<i>forcing the altitude field to '?' if mode is not 3D?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>This would have the same effect (client never sees invalid altitude data)
+</I>&gt;&gt;<i>without adding a new field.
+</I>&gt;<i> 
+</I>&gt;<i> As I understand it, the aim of gpsd is to act as a &quot;neutral&quot; agent 
+</I>&gt;<i> for the GPS device: if the GPS reports something, we pass that on to 
+</I>&gt;<i> clients.  The GPS provides its best estimate of altitude when in 2D 
+</I>&gt;<i> mode, just as it provides its best estimate of position when in DR 
+</I>&gt;<i> mode.  To return ? for altitude if mode is not 3D means that we are 
+</I>&gt;<i> &quot;filtering&quot; the data from the GPS, and interfering with it before the 
+</I>&gt;<i> client can see it.  We don't currently return ? for position when the 
+</I>&gt;<i> GPS status indicates DR mode, so for consistency's sake we shouldn't 
+</I>&gt;<i> return ? for altitude when in 2D mode.
+</I>&gt;<i> 
+</I>&gt;<i> Also, for the purposes of clients using libgps, such filtering is 
+</I>&gt;<i> undesirable: the ideal case would be for a libgps-based client using 
+</I>&gt;<i> an O or W command to end up with the same thing in its gps.fix 
+</I>&gt;<i> structure as the daemon itself has... and the more we add in this 
+</I>&gt;<i> kind of logic, the less it behaves that way.
+</I>&gt;<i> 
+</I>&gt;<i> As a user of a GPS, I generally want as much information as it can 
+</I>&gt;<i> provide: an estimated altitude along with the fact that it only has a 
+</I>&gt;<i> 2D fix at this point in time is much more valuable to me than the 
+</I>&gt;<i> altitude suddenly going blank.
+</I>&gt;<i> 
+</I>&gt;<i> The key distinction here is that altitude data in 2D mode is 
+</I>&gt;<i> estimated, but not necessarily invalid.  Unless the GPS itself 
+</I>&gt;<i> returns a null value for the altitude field, it isn't really for us 
+</I>&gt;<i> to say that it is &quot;invalid&quot;.
+</I>
+This is the first I've heard of GPSes returning estimated altitudes 
+when mode is 2D.  Having a nasty suspicious nature and some awareness
+of the sorts of corners low-end units tend to cut, my reflex would be 
+to treat altitude as garbage unless the GPS affirms it's valid.
+
+Acting as a neutral agent is important, yes, but not passing the user
+bad data is even more important.  Can anyone address these questions:
+
+(a) What does NMEA 0183 say about this case?
+
+(b) What do the GPSes of your experience actually do?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003506.html">[Gpsd-dev] PATCH:
+</A></li>
+	<LI>Next message: <A HREF="003507.html">[Gpsd-dev] Re: remaining patches - summary
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3505">[ date ]</a>
+              <a href="thread.html#3505">[ thread ]</a>
+              <a href="subject.html#3505">[ subject ]</a>
+              <a href="author.html#3505">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,104 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: RTCM code has successfuly been pried loose
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20RTCM%20code%20has%20successfuly%20been%20pried%20loose&In-Reply-To=%3C87y87urcsp.fsf%40bonnet.wsrcc.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002617.html">
+   <LINK REL="Next"  HREF="002629.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: RTCM code has successfuly been pried loose</H1>
+    <B>Wolfgang S. Rupprecht</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20RTCM%20code%20has%20successfuly%20been%20pried%20loose&In-Reply-To=%3C87y87urcsp.fsf%40bonnet.wsrcc.com%3E"
+       TITLE="[Gpsd-dev] Re: RTCM code has successfuly been pried loose">wolfgang+gnus20050725 at dailyplanet.dontspam.wsrcc.com
+       </A><BR>
+    <I>Mon Jul 25 19:55:02 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002617.html">[Gpsd-dev] RTCM code has successfuly been pried loose
+</A></li>
+        <LI>Next message: <A HREF="002629.html">[Gpsd-dev] Re: RTCM code has successfuly been pried loose
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2626">[ date ]</a>
+              <a href="thread.html#2626">[ thread ]</a>
+              <a href="subject.html#2626">[ subject ]</a>
+              <a href="author.html#2626">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&quot;Eric S. Raymond&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at snark.thyrsus.com</A>&gt; writes:
+&gt;<i> I am fairly sure that the preamble is at the same location in both 
+</I>&gt;<i> subframe and RTCM packets, but my attempts to write a test for it that 
+</I>&gt;<i> doesn't depend on the RTCM bitfields have failed.  Wolfgang, if it's
+</I>&gt;<i> possible to write a common test that just uses bit shift and mask
+</I>&gt;<i> operations, we could get rid of at least one functional hook.
+</I>
+If RTCM and subframes turn out to use compatible message structs,
+shouldn't we just add the subframe to the mama-of-a-union that
+describes the rtcm messages?  I really worry about describing the
+preamble in terms that don't derive from the struct definition.  It
+means typo's can be introduced that the compiler can't catch for us.
+It also makes both-endian code harder to maintain since the shifts are
+different.
+
+I have some big-endian code working on a sparc-64/obsd.  That should
+be a worst case test.  Being a lazy git, I wrote a hack perl script to
+invert each of the bitfields in the struct and generate a big-endian
+version of the RTCM structs.  The upside is absolutely no increase in
+run-time cost.  The downside is either two hand maintained sets of
+structs that must track, or a perl script to generate the BE version
+of the structs.
+
+I couldn't bring myself to even think of doing run-time bit-shifting.
+Another problem was I didn't understand your bitreverse() function.
+The &quot;value&quot; term was never introduced (typo / same variable as the
+&quot;unsinged x&quot; input parameter???)  The best I could make out it
+inverted each bit in the bitfield.  Thats not right, so I probably
+didn't understand the intention of the code correctly.  (A
+bit-inversion within the bitfields isn't the inversion thats wanted.
+The most-significant-bits still are at &lt;&lt; that end of the big-endian
+register.  We need to flip the bitfield locations within the 32-bit
+words, but keep the order of the bits within the bitfields the same.)
+
+If that approach is ok with you I'll fold it into the current svn and
+send you diffs.  I still owe you diffs for the decoder armoring in the
+face of parity errors.  I haven't forgotten.
+
+-wolfgang
+-- 
+Wolfgang S. Rupprecht                <A HREF="http://www.wsrcc.com/wolfgang/">http://www.wsrcc.com/wolfgang/</A>
+      Microsoft Vista - because &quot;Virus Installer&quot; was too long.
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002617.html">[Gpsd-dev] RTCM code has successfuly been pried loose
+</A></li>
+	<LI>Next message: <A HREF="002629.html">[Gpsd-dev] Re: RTCM code has successfuly been pried loose
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2626">[ date ]</a>
+              <a href="thread.html#2626">[ thread ]</a>
+              <a href="subject.html#2626">[ subject ]</a>
+              <a href="author.html#2626">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

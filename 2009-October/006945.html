@@ -1,0 +1,183 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] git issues and questions
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20git%20issues%20and%20questions&In-Reply-To=%3C4ACCB7EB.8080507%40wildgooses.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006943.html">
+   <LINK REL="Next"  HREF="006946.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] git issues and questions</H1>
+    <B>Ed W</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20git%20issues%20and%20questions&In-Reply-To=%3C4ACCB7EB.8080507%40wildgooses.com%3E"
+       TITLE="[Gpsd-dev] git issues and questions">lists at wildgooses.com
+       </A><BR>
+    <I>Wed Oct  7 17:46:51 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006943.html">[Gpsd-dev] git issues and questions
+</A></li>
+        <LI>Next message: <A HREF="006946.html">[Gpsd-dev] git issues and questions
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6945">[ date ]</a>
+              <a href="thread.html#6945">[ thread ]</a>
+              <a href="subject.html#6945">[ subject ]</a>
+              <a href="author.html#6945">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Eric S. Raymond wrote:
+&gt;<i> Ed W &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">lists at wildgooses.com</A>&gt;:
+</I>&gt;<i>   
+</I>&gt;&gt;<i> Not an advocation either way, but I have migrated quite a few simple SVN  
+</I>&gt;&gt;<i> projects up to github and largely speaking it's a fairly painless  
+</I>&gt;&gt;<i> process.  It depends on your requirements to have an absolutely perfect  
+</I>&gt;&gt;<i> migration straight away, but the actual commits migrate one to one, the  
+</I>&gt;&gt;<i> issues are largely with:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> - matching commiter svn names with an email address that git uses (easy  
+</I>&gt;&gt;<i> if you have few committers)
+</I>&gt;&gt;<i>     
+</I>&gt;<i>
+</I>&gt;<i> Hm.  How does git svn handle this issue?
+</I>&gt;<i>   
+</I>
+As Greg says you use a mapping file, eg something like this is a good 
+import &quot;script&quot;
+
+git-svn clone -A ./git.authors --stdlayout  <A HREF="svn://blah">svn://blah</A>
+
+
+&gt;&gt;<i> - branches - generally fine if it's a trunk/release kind of setup. I  
+</I>&gt;&gt;<i> found a few screwy things where sometimes the source svn repo appeared  
+</I>&gt;&gt;<i> corrupt, but no one really noticed before
+</I>&gt;&gt;<i>     
+</I>&gt;<i>
+</I>&gt;<i> We have no branches.  We do have tags.  One question I've been curious
+</I>&gt;<i> about is whaty svn-to-git conversion does to SVN tags.  Do they turn into
+</I>&gt;<i> branches, or do they turn into symbolic revision name a la RCS/CVS?
+</I>&gt;<i> I would consider the latter preferable.
+</I>&gt;<i>   
+</I>
+Git has cheap branching, so everything is a branch.  That said I believe 
+it has some makeup to gloss over certain types of branches and call them 
+&quot;tags&quot;, but in practice they all behave like branches.  I would need to 
+do a trial import to see what the importer does without tweaking, but 
+git-svn is in massive production use around the world so imagine 
+anything you want it to do is possible...
+
+Note pretty much anything can be treated as a branch in git.  So for 
+example you can take a commit reference and use that a &quot;branch&quot; to 
+checkout, or diff against, or whatever...  Unbelievably powerful really
+
+
+&gt;<i> I have a script in the gpsd repo at devtools/editcomment that I can use to fix
+</I>&gt;<i> typos in old revision comments.  How would you implement that in git?  If I
+</I>&gt;<i> were to do such a tweak, what would thge implications be for push-pull-merge
+</I>&gt;<i> operations? 
+</I>&gt;<i>   
+</I>
+Git will let you rewrite history as much as you like - if you so desire...
+
+However, beware that once someone else pulls down your changes then 
+&quot;editing&quot; a commit is going to cause them pain to sync back with you.  
+What this means in practice is that you tend to work like:
+
+- Create a branch, hack, hack, commit lots and tend to commit in smaller 
+bite sized chunks than you would with svn (git gives you tools to commit 
+even just *parts* of the diff to files!)
+- If you have been hacking a lot then create a new merge branch and use 
+this to bring trunk and your hack branch to a release quality
+- Switch to trunk and pull in either all your merge branch, or 
+alternatively just cherry pick bits from any other branch including 
+remote branches pulled in from other contributors
+- This is all done on your local repo, once you are happy that trunk is 
+how you want it then you push it up to your distribution server.  From 
+that point you prefer never to edit a commit - instead you will only 
+send new commits
+
+So the point is you have a lot of new tools to branch and code in much 
+smaller chunks locally.  This gives you a much higher commit quality 
+(well at least for me it's transformed my commits from mega chunks to 
+smaller bite sized things which each tell a story).  But once you push 
+changes public you don't edit them again
+
+&gt;<i> Sanooj maintains an unofficial git mirror now, which was a good thing
+</I>&gt;<i> during the berlios site outage.
+</I>&gt;<i>   
+</I>
+I suspect you should just evaluate his repo for quality and then switch 
+to that if it's good?
+
+
+&gt;&gt;<i> Keep a copy of the old  
+</I>&gt;&gt;<i> svn repo for historical purposes/backup
+</I>&gt;&gt;<i>     
+</I>&gt;<i>
+</I>&gt;<i> I'd do the latter anyway.  I'm still disinclined to combine a version-control
+</I>&gt;<i> changeover with a site migration, unless we're moving to a site dedicated
+</I>&gt;<i> to a single VCS such as github or bitbucket.
+</I>&gt;<i>   
+</I>
+Sounds safe - however, I think if you don't change you never will... I 
+personally would argue that everyone is going to go through a whole 
+bunch of upheaval when you move, so you might as well keep going and 
+break more...
+
+I could be wrong, but I always found changing the svn repo url a bit of 
+a pain... I think tortoisesvn had a utility to do it, but I wouldn't 
+personally know how to do it from the commandline.
+
+My 2p would be that since everyone has to update their RPM/ebuild's, 
+plus fix their svn repos, etc, etc - why not go the whole hog and do all 
+your pent up changes in one go?  Presumably people are more forgiving of 
+breakages right now on the grounds that everything is up in the air at 
+the moment?
+
+However, since you now picked a destination for the site - does gna 
+support git?  Never looked myself?  This alone probably determines your 
+choices quite a bit?
+
+My 2p is still that since you are changing never everything you should 
+continue to spoil everyone's day and pick your final VCS system also...
+
+Good luck
+
+Ed W
+
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091007/db11015c/attachment.html">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091007/db11015c/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006943.html">[Gpsd-dev] git issues and questions
+</A></li>
+	<LI>Next message: <A HREF="006946.html">[Gpsd-dev] git issues and questions
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6945">[ date ]</a>
+              <a href="thread.html#6945">[ thread ]</a>
+              <a href="subject.html#6945">[ subject ]</a>
+              <a href="author.html#6945">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

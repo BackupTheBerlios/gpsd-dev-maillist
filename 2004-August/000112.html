@@ -1,0 +1,147 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Remaining gpsd issues
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Remaining%20gpsd%20issues&In-Reply-To=%3C200408302210.44749.remco%40rvt.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000111.html">
+   <LINK REL="Next"  HREF="000113.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Remaining gpsd issues</H1>
+    <B>Remco Treffkorn</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Remaining%20gpsd%20issues&In-Reply-To=%3C200408302210.44749.remco%40rvt.com%3E"
+       TITLE="[Gpsd-dev] Remaining gpsd issues">remco at rvt.com
+       </A><BR>
+    <I>Tue Aug 31 07:10:44 CEST 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000111.html">[Gpsd-dev] Remaining gpsd issues
+</A></li>
+        <LI>Next message: <A HREF="000113.html">[Gpsd-dev] Remaining gpsd issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#112">[ date ]</a>
+              <a href="thread.html#112">[ thread ]</a>
+              <a href="subject.html#112">[ subject ]</a>
+              <a href="author.html#112">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Monday 30 August 2004 20:12, Eric S. Raymond wrote:
+&gt;<i> My to-do list for 2.0 is about accomplished, and the code seems to have
+</I>&gt;<i> survived review on this list.   Here are the remaining issues before we can
+</I>&gt;<i> ship 2.0, on which I am officially yelling for help:
+</I>&gt;<i>
+</I>&gt;<i> 1. The shared-library mess
+</I>&gt;<i>
+</I>&gt;<i> Ugh.  libtool makes me want to puke, but I am being forced to the
+</I>&gt;<i> conclusion that we may have to use it.  Can I get a patch from somebody
+</I>&gt;<i> that understands this crap that will
+</I>&gt;<i>
+</I>&gt;<i> (a) Arrange for both libgps.a and libgpsd.a to be installed as shared
+</I>&gt;<i> libraries
+</I>&gt;<i>
+</I>&gt;<i> (b) Do the right things to gpsd.spec.in so RPM will know about them.
+</I>&gt;<i>
+</I>&gt;<i> (c) And, ideally, beat libtool senseless until it puts the libraries in
+</I>&gt;<i> the *current* directory, where they're visible, instead of hiding them
+</I>&gt;<i> in that evil .libs thing...
+</I>&gt;<i>
+</I>
+Yup, life's a bitch. Now I remember why I did not go there. It's hard.
+
+&gt;<i> 2. gps interface needs a tweak
+</I>&gt;<i>
+</I>&gt;<i> Changing the timestamps to ISO8601 format with optional trailing fractional
+</I>&gt;<i> seconds made them a bit longer.  The text fields on the data panel in gps
+</I>&gt;<i> need to be widened a few charcters to accommodate this.  Despite having
+</I>&gt;<i> successfully added two fields to that panel, I have been unable to figure
+</I>&gt;<i> out where the size of these text widgets is set.
+</I>&gt;<i>
+</I>&gt;<i> Is the person who wrote gps still around?  Would somebody other than me
+</I>&gt;<i> please take a look at the Motif code in gps in case I've missed something
+</I>&gt;<i> stupid and obvious?
+</I>&gt;<i>
+</I>
+This would be me. I was quite up on Motif a decade ago. I am very happy that I 
+was able to forget most of it. 
+If things don't get too wild I'll have a look on the week end.
+
+&gt;<i> 3. Testing on EarthMate and TripMate
+</I>&gt;<i>
+</I>&gt;<i> Would somebody please test the device types that aren't straight NMEA?
+</I>&gt;<i> (This translates as: Hey, you, Russ!  Get off your tuchis! :-))
+</I>&gt;<i>
+</I>
+Caught me again. This time I am not going to plead the fifth. I remember what 
+I did. I am just not going to do it again. I doubt that there are more than 
+three people out there using those. Let them file bug reports.
+
+&gt;<i> 4. The strange math problem in gpsprobe
+</I>&gt;<i>
+</I>&gt;<i> I have a Python script I'd like to ship with 2.0, called gsprobe.  It
+</I>&gt;<i> watches the NMEA from a GPS and tries to deduce things about the GPS.
+</I>&gt;<i> It generates a gnuplot scattergram of fixes you can use to empirically
+</I>&gt;<i> check accuracy against the reported HDOP.
+</I>&gt;<i>
+</I>&gt;<i> However, something is awry in my calculation of the actual uncertainty
+</I>&gt;<i> of position, going from degrees of uncertainty to meters.  I posted about
+</I>&gt;<i> this earlier today.  Help!
+</I>&gt;<i>
+</I>
+The first time I tackled that it was a challenge, this now sounds like a 
+chore ;-)
+I wish I had the time.
+
+&gt;<i> 5. Should PRWIZCH support drop out entirely?
+</I>&gt;<i>
+</I>&gt;<i> I asked this question before and nobody answered.  At the moment I have the
+</I>&gt;<i> PRWIZCH handling conditioned out.  I'd like to drop it entirely -- the
+</I>&gt;<i> information it gives is redundant with the SNRs in GPGSV, and the Zodiac
+</I>&gt;<i> chipset reported GSVs.
+</I>&gt;<i>
+</I>&gt;<i> Does anyone know any good reason not to just drop this code?
+</I>
+It is only redundant if you have more than one source giving you the same 
+information. Are there devices giving you only PRWIZCH and not any of the 
+others? In other words, is it really always redundant?
+
+P.s.: ' I asked this question before and nobody answered'? I certainly have 
+not seen the question. And I get doubles on every message to the list.
+
+-- 
+Remco Treffkorn (RT445)
+HAM DC2XT
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000111.html">[Gpsd-dev] Remaining gpsd issues
+</A></li>
+	<LI>Next message: <A HREF="000113.html">[Gpsd-dev] Remaining gpsd issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#112">[ date ]</a>
+              <a href="thread.html#112">[ thread ]</a>
+              <a href="subject.html#112">[ subject ]</a>
+              <a href="author.html#112">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

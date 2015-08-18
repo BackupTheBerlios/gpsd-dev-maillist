@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Slightly off-topic: GpsDrive
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Slightly%20off-topic%3A%20GpsDrive&In-Reply-To=%3C91981b3e0511041038w49d13336g%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003123.html">
+   <LINK REL="Next"  HREF="003125.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Slightly off-topic: GpsDrive</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Slightly%20off-topic%3A%20GpsDrive&In-Reply-To=%3C91981b3e0511041038w49d13336g%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Slightly off-topic: GpsDrive">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Fri Nov  4 19:38:10 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003123.html">[Gpsd-dev] Slightly off-topic: GpsDrive
+</A></li>
+        <LI>Next message: <A HREF="003125.html">[Gpsd-dev] LeadTek GSP9813
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3124">[ date ]</a>
+              <a href="thread.html#3124">[ thread ]</a>
+              <a href="subject.html#3124">[ subject ]</a>
+              <a href="author.html#3124">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 04/11/05, Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt; wrote:
+&gt;<i> -----BEGIN PGP SIGNED MESSAGE-----
+</I>&gt;<i> Hash: SHA1
+</I>&gt;<i>
+</I>&gt;<i> Yo All!
+</I>&gt;<i>
+</I>&gt;<i> Only slightly off topic.  Looks like now even GpsDrive is getting the
+</I>&gt;<i> attention of the hackers.  Here is a disclosure on how to hack a box
+</I>&gt;<i> tunning GpsDrive....
+</I>&gt;<i>
+</I>&gt;<i> Gotta be carefull out there....
+</I>&gt;<i>
+</I>&gt;<i> RGDS
+</I>&gt;<i> GARY
+</I>
+Indeed. yay people who weren't paying attention 3 years ago when
+format string bugs were all the rage.
+
+We've used a few techniques to make sure gpsd is not vulnerable to
+format string bugs:
+* manual inspection - recursive grep for printf and look for unsafe
+format strings (ie missing &quot;%s&quot;)
+* instrumented C libraries - some operating systems warn you when you
+try to use unsafe format strings
+* bounds-checking compilers - some compilers compare the length of the
+format with the length of the buffer (if known at compile time)
+* static code analysis with lint/splint - duh!
+
+We also use runtime protection where possible:
+* not running as root
+* we don't do anything crazy that would conflict with stack-smash protectors
+* we don't do anything crazy that would conflict with non-exec pages.
+
+There are plenty of good fuzzers out there for abusing formatted I/O,
+but a quick way is to use &quot;%x&quot; or &quot;%s&quot; or &quot;%n&quot; as input and see if
+something gets horribly confused.
+
+--
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003123.html">[Gpsd-dev] Slightly off-topic: GpsDrive
+</A></li>
+	<LI>Next message: <A HREF="003125.html">[Gpsd-dev] LeadTek GSP9813
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3124">[ date ]</a>
+              <a href="thread.html#3124">[ thread ]</a>
+              <a href="subject.html#3124">[ subject ]</a>
+              <a href="author.html#3124">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

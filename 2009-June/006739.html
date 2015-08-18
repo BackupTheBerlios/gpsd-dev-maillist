@@ -1,0 +1,118 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Is manual configuration still needed for Bluetooth?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Is%20manual%20configuration%20still%20needed%20for%20Bluetooth%3F&In-Reply-To=%3C20090603111053.GA30872%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="006740.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Is manual configuration still needed for Bluetooth?</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Is%20manual%20configuration%20still%20needed%20for%20Bluetooth%3F&In-Reply-To=%3C20090603111053.GA30872%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Is manual configuration still needed for Bluetooth?">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Jun  3 13:10:53 CEST 2009</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="006740.html">[Gpsd-dev] Bug in GPS I suspect (with workaround)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6739">[ date ]</a>
+              <a href="thread.html#6739">[ thread ]</a>
+              <a href="subject.html#6739">[ subject ]</a>
+              <a href="author.html#6739">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Belarted reply to maul from a month ago...
+
+Lukasz Stelmach &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">stlman at poczta.fm</A>&gt;:
+&gt;<i> Of course, neither GNOME requires it. It is all about scanning for
+</I>&gt;<i> nearby devices, presenting a list and asking users to chose a device.
+</I>&gt;<i> It won't probably be a bad call to assume cli users can follow the
+</I>&gt;<i> old path with pencil-and-paper while those who can't make it most
+</I>&gt;<i> probably have an environment that provides BT GUI (e.g. gnome-bluetooth).
+</I>
+That does seem like a reasonable assumption.
+
+&gt;<i> &gt;&gt; [*] Since there is no act of putting a plug into a socket with BT
+</I>&gt;<i> &gt;&gt; devices it is not possible to run automatic detection. It is *always*
+</I>&gt;<i> &gt;&gt; a computer that initiates a connection to such simple devices like
+</I>&gt;<i> &gt;&gt; GPS receivers. So it has to know what it is trying to connect to.
+</I>&gt;<i> &gt;&gt; All the PDAs I have seen have some interface to find and select
+</I>&gt;<i> &gt;&gt; the device you would use later on.
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; That means, I think, that we need to write some little tool that
+</I>&gt;<i> &gt; starts gpsd (if necessary) and pokes a command down its control 
+</I>&gt;<i> &gt; port to tell it that it has a Bluetooth device in its pool.  For
+</I>&gt;<i> &gt; the sake of discussion let's call it &quot;gpsattach&quot;.
+</I>&gt;<i> 
+</I>&gt;<i> I'd rather it was able to do the detecion on its own and pass the results
+</I>&gt;<i> to gpsd, which most probably was started at boot time. This way it seems
+</I>&gt;<i> easier to avoid many problems with permisions and such.
+</I>
+gpsd is not in fact normally started at boot time, at least not on
+udev-capable Linux systems.  Rather, it is launched by a script run by
+udev when a USB device hotplug event occurs.  This script sends the
+name of the USB device down the gpsd control channel; gpsd then samples
+the data from the device to see if it's acctually a GPS, closing it if
+it is not.
+
+I wonder if we could recruit udev to do our Bluetooth wakeup for us.  The
+scenario I'm imagining is this: 
+
+1. User (or gpsd package installation) tweaks /etc/bluetooth/rfcomm.conf
+so that when he activates his Bluetooth GPS with bluegnome or whatever, 
+it gets bound to a device named btgps0, rather than the generic rfcomm0.
+
+2. We write a udev rule that detects btgps0 going active and hands it
+to gpsd.hotplug.wrapper just as though it were a wired USB device.
+
+This way we wouldn't have to write gpsattach or anything equivalent,
+and gpsd would not need to know anything special about Blurtooth devices.
+
+On a related topic: Adorian Ardelean got Bluetooth working using information
+from this blog entry:
+
+<A HREF="http://blogs.srijan.in/2008/01/19/bluetooth-gps-devices-with-linux/">http://blogs.srijan.in/2008/01/19/bluetooth-gps-devices-with-linux/</A>
+
+Some things I read in there suggested that portions of ou bluetooth
+instructions at &lt;<A HREF="http://gpsd.berlios.de/bt.html">http://gpsd.berlios.de/bt.html</A>&gt; may be out-of-date -
+in particular, one of the commenters claims bluz is obsolete and not
+needed.  Would you please look at that page and ship me a patch
+updating it?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="006740.html">[Gpsd-dev] Bug in GPS I suspect (with workaround)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6739">[ date ]</a>
+              <a href="thread.html#6739">[ thread ]</a>
+              <a href="subject.html#6739">[ subject ]</a>
+              <a href="author.html#6739">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

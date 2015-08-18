@@ -1,0 +1,171 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] One of your Type 8 tests appears wrong
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20One%20of%20your%20Type%208%20tests%20appears%20wrong&In-Reply-To=%3C338060.45414.qm%40web51407.mail.re2.yahoo.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007732.html">
+   <LINK REL="Next"  HREF="007735.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] One of your Type 8 tests appears wrong</H1>
+    <B>Kurt Schwehr</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20One%20of%20your%20Type%208%20tests%20appears%20wrong&In-Reply-To=%3C338060.45414.qm%40web51407.mail.re2.yahoo.com%3E"
+       TITLE="[Gpsd-dev] One of your Type 8 tests appears wrong">kurtschwehr at yahoo.com
+       </A><BR>
+    <I>Sun May  9 14:33:41 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007732.html">[Gpsd-dev] One of your Type 8 tests appears wrong
+</A></li>
+        <LI>Next message: <A HREF="007735.html">[Gpsd-dev] One of your Type 8 tests appears wrong
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7734">[ date ]</a>
+              <a href="thread.html#7734">[ thread ]</a>
+              <a href="subject.html#7734">[ subject ]</a>
+              <a href="author.html#7734">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>It's awesome to have other people looking at AIS data at this level.  My overly long winded response follow, but to summarize, ESR is right.
+
+-kurt
+
+Not only did the NMEA sentences come from different the two different VHF channels, you also need to match the sequence number in the forth CSV group (here 6 then 5).  BTW, looking at your first sentence and using my ais_bin_msgs.py, that first line looks to be US Military position info (know as blue force encrypted, or in the US &quot;hawkeye&quot;).  My code assumes a USCG type station and Unix UTC timestamp, so I faked those here:
+
+cat &lt;&lt; EOF &gt; tmp.log
+!AIVDM,2,1,6,B,85MwpIiKf6&lt;M7FdjukGh=9B73IpCcMckto=3DlNcU6:,0*04,rrnirgal,123456789
+!AIVDM,2,2,5,A,?59R6P573,0*25,rrnirgal,123456789
+EOF
+
+ais_bin_msgs.py tmp.txt
+366 56 366999655 rrnirgal
+
+This means that transmitter w/ MMSI of 366999655 sent a US message of DAC=366, FI=56.  High numbered FI's appear to be the blue force data, but I have a claim from a USCG contractor that they encrypt the whole payload including the DAC and FI.  I'm leaning towards just DAC 366 with FI's of 56 and 57 being the encrypted packets.
+
+Here are some DAC/FI/MMSI's that I pulled from my logs.  MMSIs that are shorter, like 3665002, are shore side basestations, AtoN's, or sometimes a class A transmitter w/ blueforce being used as a shore side (this is what I've done for the last year and a half with USCG permission on Cape Cod).
+
+1 11 587895       # IMO Circ 236 Met/Hydro message
+366 16 3665002
+1 11 587895
+1 11 587895
+366 56 369493626
+366 57 369493626
+366 57 367916000
+366 16 3665002
+366 56 369493314
+366 57 367916000
+366 56 366999650
+366 56 369493614
+366 56 369493314
+366 57 369493614
+366 57 366999649
+366 56 366999661
+366 1 3665002
+366 1 0
+366 56 367950000
+366 56 366999640
+366 56 369493458
+366 56 366999658
+366 56 366999759
+366 16 0
+366 33 3699101
+366 57 366999658
+366 57 366999656
+366 16 3665002
+
+An example valid msg 8 from my logs w/ USCG metadata:
+
+!AIVDM,2,1,6,A,8&gt;qc9wiKf&gt;d=Cq5r0mdew:?DLq&gt;1LmhHrsqmBCKnJ50,0*30,b003660465,1273276851
+!AIVDM,2,2,6,A,3OLc=UCRp,0*4A,b003660465,1273276851
+
+W/O USCG metadata:
+
+!AIVDM,2,1,6,A,8&gt;qc9wiKf&gt;d=Cq5r0mdew:?DLq&gt;1LmhHrsqmBCKnJ50,0*30
+!AIVDM,2,2,6,A,3OLc=UCRp,0*4A,b003660465
+
+Which is:
+
+366 56 999999999   # With an MMSI miss-entered into their AIS Class A blueforce unit
+
+
+
+----- Original Message ----
+From: Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at snark.thyrsus.com</A>&gt;
+To: Mike Greene &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">a.minor.threat at gmail.com</A>&gt;
+Cc: Kurt Schwehr &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">schwehr at ccom.unh.edu</A>&gt;; <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>
+Sent: Sun, May 9, 2010 7:34:55 AM
+Subject: [Gpsd-dev] One of your Type 8 tests appears wrong
+
+Contributor Nirgal &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">contact_gpsd at nirgal.com</A>&gt; points out that one if
+the Type 8 test pairs you gave me appears wrong.  This one:
+
+!AIVDM,2,1,6,B,85MwpIiKf6&lt;M7FdjukGh=9B73IpCcMckto=3DlNcU6:,0*04
+!AIVDM,2,2,5,A,?59R6P573,0*25
+#       Message Type:       8
+#       Repeat Indicator:   0
+#       MMSI:               366999655
+#       Application ID:     23480
+#       Binary Data:        256:631d1d6b32f735f03494870d9e13addaf3f373435347ab94628f1498868051c3
+
+The problem is that the first and second packet fragments are shipped
+on different channels.
+
+With the channel in the first fragment corrected to &quot;A', my Python an
+C decoders agree on the following:
+
+Message Type             : 8
+Repeat Indicator         : 0
+MMSI                     : 366999712
+Application ID           : 23480
+Data                     : 256:3a53dbb7be4a773137f87d7b0445f040dea05d93f59378319
+4ae9b9d9dbe05fb
+
+How did you generate this test?  And do you have any independent
+check on it?
+-- 
+        &lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+As with the Christian religion, the worst advertisement for Socialism
+is its adherents.
+    -- George Orwell 
+_______________________________________________
+Gpsd-dev mailing list
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+
+
+
+      
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007732.html">[Gpsd-dev] One of your Type 8 tests appears wrong
+</A></li>
+	<LI>Next message: <A HREF="007735.html">[Gpsd-dev] One of your Type 8 tests appears wrong
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7734">[ date ]</a>
+              <a href="thread.html#7734">[ thread ]</a>
+              <a href="subject.html#7734">[ subject ]</a>
+              <a href="author.html#7734">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] ntp-pps
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntp-pps&In-Reply-To=%3C20060913070301.GA5539%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004314.html">
+   <LINK REL="Next"  HREF="004316.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] ntp-pps</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntp-pps&In-Reply-To=%3C20060913070301.GA5539%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] ntp-pps">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Sep 13 09:03:01 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004314.html">[Gpsd-dev] ntp-pps
+</A></li>
+        <LI>Next message: <A HREF="004316.html">[Gpsd-dev] ntp-pps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4315">[ date ]</a>
+              <a href="thread.html#4315">[ thread ]</a>
+              <a href="subject.html#4315">[ subject ]</a>
+              <a href="author.html#4315">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+&gt;<i> I have been digging in to the new packet handling.  I think I see why
+</I>&gt;<i> gpsdata.fix.mode is zero most of the time thereby blocking the ntp-pps
+</I>&gt;<i> pulse.
+</I>&gt;<i> 
+</I>&gt;<i> Every time gpsd_poll() is called the gpsdata.fix is cleared right at the
+</I>&gt;<i> top.  Then gpsdata.fix.mode is set only when a packet that contains the
+</I>&gt;<i> fix mode is received.
+</I>&gt;<i> 
+</I>&gt;<i> In my case that leaves the gpsdata.fix.mode at zero about 90% of the time.
+</I>&gt;<i> The GPS-18/LVC sends all the data at the start of the second and ends
+</I>&gt;<i> with the GPGSV record which has no fix mode.  Then there is a long pause
+</I>&gt;<i> before the next packets are received.  So gpsdata.fix.mode is zero most
+</I>&gt;<i> of the time and the ntp-pps pules is locked out.
+</I>
+Yes, I think this dignosis is correct and logically equivalent to the one 
+I just sent you.  
+ 
+&gt;<i> How does this look to you as a direction for a solution.  Change this:
+</I>&gt;<i> 
+</I>&gt;<i> gps_mask_t gpsd_poll(struct gps_device_t *session)
+</I>&gt;<i> /* update the stuff in the scoreboard structure */
+</I>&gt;<i> {
+</I>&gt;<i>     ssize_t newlen;
+</I>&gt;<i> 
+</I>&gt;<i>     gps_clear_fix(&amp;session-&gt;gpsdata.fix);
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> To this:
+</I>&gt;<i> 
+</I>&gt;<i> gps_mask_t gpsd_poll(struct gps_device_t *session)
+</I>&gt;<i> /* update the stuff in the scoreboard structure */
+</I>&gt;<i> {
+</I>&gt;<i>     ssize_t newlen;
+</I>&gt;<i> 
+</I>&gt;<i>     int saved_mode = session-&gt;gpsdata.fix.mode;
+</I>&gt;<i>     gps_clear_fix(&amp;session-&gt;gpsdata.fix);
+</I>&gt;<i>     session-&gt;gpsdata.fix.mode = saved_mode;
+</I>&gt;<i> 
+</I>&gt;<i> This is prolly not the real, final, solution but it seems to work for
+</I>&gt;<i> me.   Mostly I am unsure how this fits in to the new vision for keeping
+</I>&gt;<i> the fix data and the J patch.
+</I>&gt;<i> 
+</I>&gt;<i> This seems to work partly because, at least in my case, the PPS
+</I>&gt;<i> pulse comes JUST before the first NMEA of the new cycle.  So the
+</I>&gt;<i> mode status is clearly valid by then.  Any suggestions anyone?
+</I>
+This will work when the PPS timing is as you describe, but the 
+latchmode logic I describe previously should be more robust
+if PPS comes in at other times.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004314.html">[Gpsd-dev] ntp-pps
+</A></li>
+	<LI>Next message: <A HREF="004316.html">[Gpsd-dev] ntp-pps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4315">[ date ]</a>
+              <a href="thread.html#4315">[ thread ]</a>
+              <a href="subject.html#4315">[ subject ]</a>
+              <a href="author.html#4315">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

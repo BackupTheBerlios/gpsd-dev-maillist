@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Patch fixing time conversion on Mac OS X
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Patch%20fixing%20time%20conversion%20on%20Mac%20OS%20X&In-Reply-To=%3C10277E75-85E6-4CB5-9685-FAC91A446600%40ledford.cc%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007150.html">
+   <LINK REL="Next"  HREF="007140.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Patch fixing time conversion on Mac OS X</H1>
+    <B>Michael Ledford</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Patch%20fixing%20time%20conversion%20on%20Mac%20OS%20X&In-Reply-To=%3C10277E75-85E6-4CB5-9685-FAC91A446600%40ledford.cc%3E"
+       TITLE="[Gpsd-dev] Patch fixing time conversion on Mac OS X">michael at ledford.cc
+       </A><BR>
+    <I>Sat Nov 21 21:30:36 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007150.html">[Gpsd-dev] 2.90 `make dist-rpm` - SVN 6577
+</A></li>
+        <LI>Next message: <A HREF="007140.html">[Gpsd-dev] Patch fixing time conversion on Mac OS X
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7139">[ date ]</a>
+              <a href="thread.html#7139">[ thread ]</a>
+              <a href="subject.html#7139">[ subject ]</a>
+              <a href="author.html#7139">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hello,
+
+Running the regression tests on Mac OS 10.6 brought up some errors  
+converting the time correctly as follows.
+
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:3471724787.004,&quot;ept&quot;:0.005}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:-823242508.996,&quot;ept&quot;:0.005}
+
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:3471724788.004,&quot;ept&quot;:0.005}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:-823242507.996,&quot;ept&quot;:0.005}
+
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:3471724789.004,&quot;ept&quot;:0.005}
++{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:-823242506.996,&quot;ept&quot;:0.005}
+
+What was happening is the mkgmtime() function had an internal variable  
+that used the system defined time_t type and also used that as the  
+return type. On Mac OS X 10.5 and 10.6 time_t is defined as a long.  
+Too short for the values being calculated. Presented here is a patch  
+to change the internal variable and return type of mkgmtime() to be an  
+unsigned long. I considered moving from time_t to clock_t, but I felt  
+it was best to be more explicit about the length of the value.  
+However, feel free to use clock_t if deemed more appropriate, it is  
+defined as unsigned long on Mac OS X.
+
+Sincerely,
+Michael
+
+-------------- next part --------------
+An embedded and charset-unspecified text was scrubbed...
+Name: mkgmtime_diff.txt
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091121/a80a222e/attachment.txt">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20091121/a80a222e/attachment.txt</A>&gt;
+-------------- next part --------------
+
+
+
+Index: gpsutils.c
+===================================================================
+--- gpsutils.c	(revision 6578)
++++ gpsutils.c	(working copy)
+@@ -148,11 +148,11 @@
+      /*@i1@*/return(tv.tv_sec + tv.tv_usec*1e-6);
+  }
+
+-time_t mkgmtime(register struct tm *t)
++unsigned long mkgmtime(register struct tm *t)
+  /* struct tm to seconds since Unix epoch */
+  {
+      register int year;
+-    register time_t result;
++    register unsigned long result;
+      static const int cumdays[MONTHSPERYEAR] =
+      {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
+
+Index: gps.h
+===================================================================
+--- gps.h	(revision 6578)
++++ gps.h	(working copy)
+@@ -1009,7 +1009,7 @@
+  extern char *gps_show_transfer(int);
+  extern void gps_enable_debug(int, FILE *);
+
+-extern time_t mkgmtime(register struct tm *);
++extern unsigned long mkgmtime(register struct tm *);
+  extern double timestamp(void);
+  extern double iso8601_to_unix(char *);
+  extern /*@observer@*/char *unix_to_iso8601(double t, /*@ out @*/ 
+char[], size_t len);
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007150.html">[Gpsd-dev] 2.90 `make dist-rpm` - SVN 6577
+</A></li>
+	<LI>Next message: <A HREF="007140.html">[Gpsd-dev] Patch fixing time conversion on Mac OS X
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7139">[ date ]</a>
+              <a href="thread.html#7139">[ thread ]</a>
+              <a href="subject.html#7139">[ subject ]</a>
+              <a href="author.html#7139">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

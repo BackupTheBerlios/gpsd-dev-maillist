@@ -1,0 +1,155 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program updated.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20Single-writer/many-reader%20consistency%3A%0A%20Test%20program%20updated.&In-Reply-To=%3C4D931107.10306%40tmsw.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009170.html">
+   <LINK REL="Next"  HREF="009182.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program updated.</H1>
+    <B>Terje Mathisen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20Single-writer/many-reader%20consistency%3A%0A%20Test%20program%20updated.&In-Reply-To=%3C4D931107.10306%40tmsw.no%3E"
+       TITLE="[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program updated.">terje at tmsw.no
+       </A><BR>
+    <I>Wed Mar 30 13:16:23 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009170.html">[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified
+</A></li>
+        <LI>Next message: <A HREF="009182.html">[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9185">[ date ]</a>
+              <a href="thread.html#9185">[ thread ]</a>
+              <a href="subject.html#9185">[ subject ]</a>
+              <a href="author.html#9185">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Terje Mathisen wrote:
+&gt;<i> Dave Hart wrote:
+</I>&gt;&gt;<i> On Tue, Mar 29, 2011 at 5:54 AM, Gary E. Miller&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt; wrote:
+</I>&gt;&gt;&gt;<i> The files say .cpp, but it looks like plain C. &#194; What am I missing?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> That most C compiles as C++ just fine? Terje tossed it together using
+</I>&gt;&gt;<i> a Visual Studio new project wizard which defaults to .cpp filename and
+</I>&gt;&gt;<i> he didn't bother to rename it, is my guess. I didn't even think about
+</I>&gt;<i>
+</I>&gt;<i> That's absolutely correct:
+</I>&gt;<i>
+</I>&gt;<i> Most of my q&amp;d C code is C(++), basically plain C with a few of the more
+</I>&gt;<i> useful syntax cleanups from C++, i.e. like the ability to declare
+</I>&gt;<i> variables upon first use, and single-line comments etc.
+</I>&gt;<i>
+</I>&gt;<i> For a production program I would definitely clean it up. :-)
+</I>
+I've updated the test program to be pure C, and so that it now accepts 
+cmd line parameters for number of threads, nr of timestamp slots and 
+seconds to run.
+
+I have also aligned the timestamps on a 64-byte boundary, so that when 
+the writer is updating one record, all the readers can still read the 
+previous one, without forcing the cache line to bounce back&amp;forth 
+between them.
+
+With 8 such buffers the writer can update 15 million times per second, 
+while the readers show a 0.01% retry rate. Dropping down to 4 buffers 
+increases the retry rate to nearly 9%:
+
+C:&gt;shm-test.exe -t 10 -n 4 -b 8
+Testing with 8 buffer slots, 4 threads for 10 seconds
+Writer affinity = 1, old = f
+Reader 1 affinity = e, old = f
+Reader 2 affinity = e, old = f
+Reader 3 affinity = e, old = f
+Done waiting 10 seconds
+
+All threads done! (i = 0)
+Writer:
+158887012 iterations, 1.5889e+007 iterations/second
+Thread 1:
+145237131 iterations, 74140284 updating 2604 retries 0 errors
+Thread 2:
+261964371 iterations, 65223303 updating 17985 retries 0 errors
+Thread 3:
+268689494 iterations, 67451007 updating 16879 retries 0 errors
+Reader totals:
+675890996 iterations, 206814594 updating 37468 retries 0 errors
+Reader totals:
+6.7589e+007 iterations/second, 30.60% updating  0.01% retries 0.000% errors
+
+C:&gt;shm-test.exe -t 10 -n 4 -b 4
+Testing with 4 buffer slots, 4 threads for 10 seconds
+Writer affinity = 1, old = f
+Reader 1 affinity = e, old = f
+Reader 2 affinity = e, old = f
+Reader 3 affinity = e, old = f
+Done waiting 10 seconds
+
+All threads done! (i = 9)
+Writer:
+154333505 iterations, 1.5433e+007 iterations/second
+Thread 1:
+252654335 iterations, 63512529 updating 21460308 retries 0 errors
+Thread 2:
+116489834 iterations, 68217408 updating 12011315 retries 0 errors
+Thread 3:
+245540974 iterations, 62312089 updating 20920159 retries 0 errors
+Reader totals:
+614685143 iterations, 194042026 updating 54391782 retries 0 errors
+Reader totals:
+6.1469e+007 iterations/second, 31.57% updating  8.85% retries 0.000% errors
+
+The files are still at <A HREF="http://norloff.org/ntp/shm-test/">http://norloff.org/ntp/shm-test/</A>
+
+&gt;<i>
+</I>&gt;&gt;<i> it. I should have given the distinction in finer points of volatile
+</I>&gt;&gt;<i> between C and C++.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Looking forward to a POSIX port...
+</I>
+Still waiting for the time to do this one. :-)
+
+Terje
+&gt;<i>
+</I>&gt;<i> So do I, as I said I'll write it if I have to.
+</I>&gt;<i>
+</I>&gt;<i> Terje
+</I>
+
+-- 
+- &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Terje at tmsw.no</A>&gt;
+&quot;almost all programming can be viewed as an exercise in caching&quot;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009170.html">[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified
+</A></li>
+	<LI>Next message: <A HREF="009182.html">[Gpsd-dev] [ntp:hackers] Single-writer/many-reader consistency: Test program written &amp; verified
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9185">[ date ]</a>
+              <a href="thread.html#9185">[ thread ]</a>
+              <a href="subject.html#9185">[ subject ]</a>
+              <a href="author.html#9185">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

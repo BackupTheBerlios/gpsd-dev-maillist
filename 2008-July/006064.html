@@ -1,0 +1,628 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-commit-watch] r4727 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2008-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20r4727%20-%20trunk&In-Reply-To=%3C487649D2.9050604%40gritch.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006063.html">
+   <LINK REL="Next"  HREF="006065.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-commit-watch] r4727 - trunk</H1>
+    <B>Jeff Francis</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20r4727%20-%20trunk&In-Reply-To=%3C487649D2.9050604%40gritch.org%3E"
+       TITLE="[Gpsd-dev] [Gpsd-commit-watch] r4727 - trunk">jeff at gritch.org
+       </A><BR>
+    <I>Thu Jul 10 19:41:38 CEST 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006063.html">[Gpsd-dev] Leapsecond coming up end of the year
+</A></li>
+        <LI>Next message: <A HREF="006065.html">[Gpsd-dev] [Gpsd-commit-watch] r4727 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6064">[ date ]</a>
+              <a href="thread.html#6064">[ thread ]</a>
+              <a href="subject.html#6064">[ subject ]</a>
+              <a href="author.html#6064">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>/bin/bash ./libtool --tag=CC   --mode=compile gcc -DHAVE_CONFIG_H 
+-I.     -g -O2 -Wall -Wcast-align -Wmissing-declarations 
+-Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type 
+-D_GNU_SOURCE  -MT rtcm3.lo -MD -MP -MF .deps/rtcm3.Tpo -c -o rtcm3.lo 
+rtcm3.c
+ gcc -DHAVE_CONFIG_H -I. -g -O2 -Wall -Wcast-align 
+-Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes 
+-Wpointer-arith -Wreturn-type -D_GNU_SOURCE -MT rtcm3.lo -MD -MP -MF 
+.deps/rtcm3.Tpo -c rtcm3.c  -fPIC -DPIC -o .libs/rtcm3.o
+rtcm3.c:189: error: width of 'ecef_x' exceeds its type
+rtcm3.c:194: error: width of 'ecef_y' exceeds its type
+rtcm3.c:197: error: width of 'ecef_z' exceeds its type
+rtcm3.c:210: error: width of 'ecef_x' exceeds its type
+rtcm3.c:215: error: width of 'ecef_y' exceeds its type
+rtcm3.c:218: error: width of 'ecef_z' exceeds its type
+make[1]: *** [rtcm3.lo] Error 1
+make[1]: Leaving directory `/usr/local/src/gpsd'
+make: *** [all] Error 2
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jfrancis at truck</A>:/usr/local/src/gpsd$ uname -a
+Linux truck 2.6.22-15-generic #1 SMP Tue Jun 10 09:21:34 UTC 2008 i686 
+GNU/Linux
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jfrancis at truck</A>:/usr/local/src/gpsd$ cat /etc/lsb-release
+DISTRIB_ID=Ubuntu
+DISTRIB_RELEASE=7.10
+DISTRIB_CODENAME=gutsy
+DISTRIB_DESCRIPTION=&quot;Ubuntu 7.10&quot;
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jfrancis at truck</A>:/usr/local/src/gpsd$
+
+
+
+
+esr at BerliOS wrote:
+&gt;<i> Author: esr
+</I>&gt;<i> Date: 2008-07-10 16:28:54 +0200 (Thu, 10 Jul 2008)
+</I>&gt;<i> New Revision: 4727
+</I>&gt;<i>
+</I>&gt;<i> Added:
+</I>&gt;<i>    trunk/rtcm3.c
+</I>&gt;<i> Modified:
+</I>&gt;<i>    trunk/Makefile.am
+</I>&gt;<i>    trunk/drivers.c
+</I>&gt;<i>    trunk/gps.h
+</I>&gt;<i>    trunk/gpsd.h-tail
+</I>&gt;<i> Log:
+</I>&gt;<i> Rudimentary RTCM104v3 support compiles and splints clean.  
+</I>&gt;<i> BNow to actually test it...
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Modified: trunk/Makefile.am
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- trunk/Makefile.am	2008-07-10 13:13:02 UTC (rev 4726)
+</I>&gt;<i> +++ trunk/Makefile.am	2008-07-10 14:28:54 UTC (rev 4727)
+</I>&gt;<i> @@ -129,6 +129,7 @@
+</I>&gt;<i>  	report.c \
+</I>&gt;<i>  	isgps.c \
+</I>&gt;<i>  	rtcm2.c \
+</I>&gt;<i> +	rtcm3.c \
+</I>&gt;<i>  	srecord.c \
+</I>&gt;<i>  	bsd-base64.c \
+</I>&gt;<i>  	strl.c \
+</I>&gt;<i>
+</I>&gt;<i> Modified: trunk/drivers.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- trunk/drivers.c	2008-07-10 13:13:02 UTC (rev 4726)
+</I>&gt;<i> +++ trunk/drivers.c	2008-07-10 14:28:54 UTC (rev 4727)
+</I>&gt;<i> @@ -786,7 +786,7 @@
+</I>&gt;<i>  
+</I>&gt;<i>  static gps_mask_t rtcm104v3_analyze(struct gps_device_t *session)
+</I>&gt;<i>  {
+</I>&gt;<i> -    // FIXME: Add a real unpacking function
+</I>&gt;<i> +    rtcm3_unpack(&amp;session-&gt;gpsdata.rtcm3, (char *)session-&gt;packet.inbuffer);
+</I>&gt;<i>      gpsd_report(LOG_RAW, &quot;RTCM 3.x packet type 0x%02x length %d words: %s\n&quot;,
+</I>&gt;<i>  		session-&gt;gpsdata.rtcm3.type,
+</I>&gt;<i>  		session-&gt;gpsdata.rtcm3.length,
+</I>&gt;<i>
+</I>&gt;<i> Modified: trunk/gps.h
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- trunk/gps.h	2008-07-10 13:13:02 UTC (rev 4726)
+</I>&gt;<i> +++ trunk/gps.h	2008-07-10 14:28:54 UTC (rev 4727)
+</I>&gt;<i> @@ -365,7 +365,8 @@
+</I>&gt;<i>  	    unsigned char iode;
+</I>&gt;<i>  	    /* ephemeris fields, not scaled */
+</I>&gt;<i>  	    unsigned int t_sub_oc;
+</I>&gt;<i> -	    unsigned char a_sub_f2;
+</I>&gt;<i> +	    signed int a_sub_f2;
+</I>&gt;<i> +	    signed int a_sub_f1;
+</I>&gt;<i>  	    signed int a_sub_f0;
+</I>&gt;<i>  	    unsigned int iodc;
+</I>&gt;<i>  	    signed int C_sub_rs;
+</I>&gt;<i>
+</I>&gt;<i> Modified: trunk/gpsd.h-tail
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- trunk/gpsd.h-tail	2008-07-10 13:13:02 UTC (rev 4726)
+</I>&gt;<i> +++ trunk/gpsd.h-tail	2008-07-10 14:28:54 UTC (rev 4727)
+</I>&gt;<i> @@ -114,6 +114,8 @@
+</I>&gt;<i>  extern bool rtcm2_repack(struct rtcm2_t *, isgps30bits_t *);
+</I>&gt;<i>  extern void rtcm2_output_magnavox(isgps30bits_t *, FILE *);
+</I>&gt;<i>  
+</I>&gt;<i> +extern void rtcm3_unpack(/*@out@*/struct rtcm3_t *, char *);
+</I>&gt;<i> +
+</I>&gt;<i>  /* Next, declarations for the core library... */
+</I>&gt;<i>  
+</I>&gt;<i>  /* factors for converting among confidence interval units */
+</I>&gt;<i>
+</I>&gt;<i> Added: trunk/rtcm3.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- trunk/rtcm3.c	2008-07-10 13:13:02 UTC (rev 4726)
+</I>&gt;<i> +++ trunk/rtcm3.c	2008-07-10 14:28:54 UTC (rev 4727)
+</I>&gt;<i> @@ -0,0 +1,451 @@
+</I>&gt;<i> +/*****************************************************************************
+</I>&gt;<i> +
+</I>&gt;<i> +This is a decoder for RTCM-104 3.x, a serial protocol used for
+</I>&gt;<i> +broadcasting pseudorange corrections from differential-GPS reference
+</I>&gt;<i> +stations.  The applicable specification is RTCM 10403.1: RTCM Paper
+</I>&gt;<i> +177-2006-SC104-STD.  This obsolesces the esrlier RTCM-104 2.x
+</I>&gt;<i> +specifications. The specification document is proprietary; ordering 
+</I>&gt;<i> +instructions are accessible from &lt;<A HREF="http://www.rtcm.org/">http://www.rtcm.org/</A>&gt;
+</I>&gt;<i> +under &quot;Publications&quot;.  
+</I>&gt;<i> +
+</I>&gt;<i> +Unike the RTCM 2.x protocol, RTCM3.x does not use the strange
+</I>&gt;<i> +sliding-bit-window IS-GPS-200 protocol as a transport layer, but is a
+</I>&gt;<i> +self-contained byte-oriented packet protocol.  Packet recognition is
+</I>&gt;<i> +handled in the GPSD packet-getter state machine; this code is
+</I>&gt;<i> +concerned with unpacking the packets into well-behaved C structures,
+</I>&gt;<i> +coping with odd field lengths and fields that may overlap byte
+</I>&gt;<i> +boudaries.  These report structures live in gps.h.
+</I>&gt;<i> +
+</I>&gt;<i> +Note that the unpacking this module does is probably useful only for
+</I>&gt;<i> +RTCM reporting and diagnostic tools.  It is not necessary when
+</I>&gt;<i> +passing RTCM corrections to a GPS, which normally should just be
+</I>&gt;<i> +passed an entire correction packet for processing by their internal
+</I>&gt;<i> +firmware.
+</I>&gt;<i> +
+</I>&gt;<i> +*****************************************************************************/
+</I>&gt;<i> +
+</I>&gt;<i> +#include &lt;sys/types.h&gt;
+</I>&gt;<i> +#include &lt;unistd.h&gt;
+</I>&gt;<i> +#include &lt;stdlib.h&gt;
+</I>&gt;<i> +#include &lt;string.h&gt;
+</I>&gt;<i> +#include &lt;stdbool.h&gt;
+</I>&gt;<i> +#include &lt;stdio.h&gt;
+</I>&gt;<i> +#include &lt;assert.h&gt;
+</I>&gt;<i> +#include &lt;arpa/inet.h&gt;	/* for ntohl(3) and friends */
+</I>&gt;<i> +
+</I>&gt;<i> +#include &quot;gpsd_config.h&quot;
+</I>&gt;<i> +#include &quot;gpsd.h&quot;
+</I>&gt;<i> +
+</I>&gt;<i> +#ifdef RTCM104V3_ENABLE
+</I>&gt;<i> +
+</I>&gt;<i> +/*
+</I>&gt;<i> + * Structures for interpreting words in an RTCM-104 3.x packet Note,
+</I>&gt;<i> + * these structures are overlayed on the raw packet data in order to
+</I>&gt;<i> + * decode them into bitfields; this will fail horribly if your C
+</I>&gt;<i> + * compiler ever introduces padding between or before bit fields, or
+</I>&gt;<i> + * between 8-bit-aligned bitfields and character arrays.
+</I>&gt;<i> + *
+</I>&gt;<i> + * (In practice, the only class of machines on which this is likely
+</I>&gt;<i> + * to fail are word-aligned architectures without barrel shifters.
+</I>&gt;<i> + * Very few of these are left in 2008.)
+</I>&gt;<i> + */
+</I>&gt;<i> +#pragma pack(1)		/* try to tell the compiler not to pad at all */
+</I>&gt;<i> +
+</I>&gt;<i> +/*
+</I>&gt;<i> + * These structures mostly parallel the rtcm3 report structures in
+</I>&gt;<i> + * gps.h.  The differences are that some structures have to be twinned
+</I>&gt;<i> + * because the GPS/Galileo versions can't have the extra channel field
+</I>&gt;<i> + * in them that the GLONASS version does, or because some packed bit
+</I>&gt;<i> + * lengths differ.
+</I>&gt;<i> + *
+</I>&gt;<i> + * The bitfield widths 
+</I>&gt;<i> + */
+</I>&gt;<i> +
+</I>&gt;<i> +struct rtcm3_msg_rtk_hdr_t {	/* header data from 1001, 1002, 1003, 1004 */
+</I>&gt;<i> +    uint station_id:12;		/* Reference Station ID (DF003) */
+</I>&gt;<i> +    uint time:30;		/* GPS Epoch Time (TOW) (DF004) in ms */
+</I>&gt;<i> +    uint sync:1;		/* Synchronous GNSS Message Flag (DF005) */
+</I>&gt;<i> +    uint satcount:5;		/* # Satellite Signals Processed (DF006) */
+</I>&gt;<i> +    uint smoothing:1;		/* Divergence-free Smoothing Indicator (DF007)*/
+</I>&gt;<i> +    uint interval:3;		/* Smoothing Interval (DF008) */
+</I>&gt;<i> +};
+</I>&gt;<i> +
+</I>&gt;<i> +struct rtcm3_msg_basic_rtk_t {
+</I>&gt;<i> +    uint indicator:1;		/* Indicator (DF010) */
+</I>&gt;<i> +    uint pseudorange:24;	/* Pseudorange (DF011) */
+</I>&gt;<i> +    uint rangediff:20;		/* PhaseRange &#8211; Pseudorange in meters (DF012) */
+</I>&gt;<i> +    uint locktime:7;		/* Lock time Indicator (DF013) */
+</I>&gt;<i> +};
+</I>&gt;<i> +
+</I>&gt;<i> +struct rtcm3_msg_t_extended_rtk {
+</I>&gt;<i> +    uint indicator:1;		/* Indicator (DF010) */
+</I>&gt;<i> +    uint pseudorange:24;	/* Pseudorange (DF011) */
+</I>&gt;<i> +    uint rangediff:20;		/* PhaseRange &#8211; Pseudorange in meters (DF012) */
+</I>&gt;<i> +    uint locktime:7;		/* Lock time Indicator (DF013) */
+</I>&gt;<i> +    uint ambiguity:8;		/* Pseudorange Modulus Ambiguity (DF014)*/
+</I>&gt;<i> +    uint CNR:8;			/* Carrier-to-Noise Ratio (DF015) */
+</I>&gt;<i> +};
+</I>&gt;<i> +
+</I>&gt;<i> +struct rtcm3_msg_glonass_rtk_hdr_t {	/* header data from 1009, 1010, 1011, 1012 */
+</I>&gt;<i> +    uint station_id:12;		/* Reference Station ID (DF003) */
+</I>&gt;<i> +    uint time:27;		/* GLONASS Epoch Time in ms (DF034) */
+</I>&gt;<i> +    uint sync:1;		/* Synchronous GNSS Message Flag (DF005) */
+</I>&gt;<i> +    uint satcount:5;		/* # Satellite Signals Processed (DF006) */
+</I>&gt;<i> +    uint smoothing:1;		/* Divergence-free Smoothing Indicator (DF007)*/
+</I>&gt;<i> +    uint interval:3;		/* Smoothing Interval (DF008) */
+</I>&gt;<i> +};
+</I>&gt;<i> +
+</I>&gt;<i> +struct rtcm3_msg_basic_glonass_rtk_t {
+</I>&gt;<i> +    uint indicator:1;		/* Indicator (DF039) */
+</I>&gt;<i> +    uint channel:5;		/* Satellite Frequency Channel Number (DF040)*/	
+</I>&gt;<i> +    uint pseudorange:25;	/* Pseudorange (DF041) */
+</I>&gt;<i> +    uint rangediff:20;		/* PhaseRange &#8211; Pseudorange in meters (DF042)*/
+</I>&gt;<i> +    uint locktime:7;		/* Lock time Indicator (DF043) */
+</I>&gt;<i> +};
+</I>&gt;<i> +
+</I>&gt;<i> +struct rtcm3_msg_extended_glonass_rtk_t {
+</I>&gt;<i> +    uint indicator:1;		/* Indicator (DF010) */
+</I>&gt;<i> +    uint channel:5;		/* Satellite Frequency Channel Number (DF040)*/	
+</I>&gt;<i> +    uint pseudorange:25;	/* Pseudorange (DF041) */
+</I>&gt;<i> +    uint rangediff:20;		/* PhaseRange &#8211; Pseudorange in meters (DF042) */
+</I>&gt;<i> +    uint locktime:7;		/* Lock time Indicator (DF043) */
+</I>&gt;<i> +    uint ambiguity:8;		/* Pseudorange Modulus Ambiguity (DF044)*/
+</I>&gt;<i> +    uint CNR:8;			/* Carrier-to-Noise Ratio (DF045) */
+</I>&gt;<i> +};
+</I>&gt;<i> +
+</I>&gt;<i> +struct rtcm3_msg_network_rtk_header_t {
+</I>&gt;<i> +    uint msgnum:12;		/* Message number (DF002) */
+</I>&gt;<i> +    uint network_id:8;		/* Network ID (DF059) */
+</I>&gt;<i> +    uint subnetwork_id:4;	/* Subnetwork ID (DF072) */
+</I>&gt;<i> +    uint time:23;		/* GPS Epoch Time (TOW) in ms (DF065) */
+</I>&gt;<i> +    uint multimesg:1;		/* GPS Multiple Message Indicator (DF066) */
+</I>&gt;<i> +    uint master_id:12;		/* Master Reference Station ID (DF060) */
+</I>&gt;<i> +    uint aux_id:12;		/* Auxilary Reference Station ID (DF061) */
+</I>&gt;<i> +    uint satcount:4;		/* # of GPS satellites (DF067) */
+</I>&gt;<i> +};
+</I>&gt;<i> +
+</I>&gt;<i> +struct rtcm3_msg_correction_diff_t {
+</I>&gt;<i> +    uint ident:6;		/* satellite ID (DF068) */
+</I>&gt;<i> +    uint ambiguity:2;		/* Ambiguity status flag (DF074) */
+</I>&gt;<i> +    uint nonsync:3;		/* Non Sync Count (DF075) */
+</I>&gt;<i> +    int geometric_diff:17;	/* Geometric Carrier Phase 
+</I>&gt;<i> +				   Correction Difference (DF070) */
+</I>&gt;<i> +    uint iode:8;		/* GPS IODE (DF071) */
+</I>&gt;<i> +    uint ionospheric_diff:17;	/* Ionospheric Carrier Phase 
+</I>&gt;<i> +				   Correction Difference (DF069) */
+</I>&gt;<i> +};
+</I>&gt;<i> +
+</I>&gt;<i> +struct rtcm3_msg_t {
+</I>&gt;<i> +    /* frame header */
+</I>&gt;<i> +    uint preamble:8;	/* fixed, 0xD3 */
+</I>&gt;<i> +    uint version:6;	/* reserved version field, fixed to 0 in 3.1 */
+</I>&gt;<i> +    uint length:10;	/* payload length, inclusive of checksum */
+</I>&gt;<i> +
+</I>&gt;<i> +    /* type field */
+</I>&gt;<i> +    uint type:12;	/* RTCM3 message type */
+</I>&gt;<i> +
+</I>&gt;<i> +    union {
+</I>&gt;<i> +	/* 1001-1013 were present in the 3.0 version */
+</I>&gt;<i> +	struct {
+</I>&gt;<i> +	    struct rtcm3_msg_rtk_hdr_t	header;
+</I>&gt;<i> +	    struct {
+</I>&gt;<i> +		uint satellite_id:6;	/* GPS satellite ID (DF009) */
+</I>&gt;<i> +		struct rtcm3_msg_basic_rtk_t L1;
+</I>&gt;<i> +	    } rtk_data[RTCM3_MAX_SATELLITES];
+</I>&gt;<i> +	} rtcm3_msg_t_1001;
+</I>&gt;<i> +	struct {
+</I>&gt;<i> +	    struct rtcm3_msg_rtk_hdr_t	header;
+</I>&gt;<i> +	    struct {
+</I>&gt;<i> +		uint satellite_id:6;	/* GPS satellite ID (DF009) */
+</I>&gt;<i> +		struct rtcm3_msg_t_extended_rtk L1;
+</I>&gt;<i> +	    } rtk_data[RTCM3_MAX_SATELLITES];
+</I>&gt;<i> +	} rtcm3_msg_t_1002;
+</I>&gt;<i> +	struct {
+</I>&gt;<i> +	    struct rtcm3_msg_rtk_hdr_t	header;
+</I>&gt;<i> +	    struct {
+</I>&gt;<i> +		uint satellite_id:6;	/* GPS satellite ID (DF009) */
+</I>&gt;<i> +		struct rtcm3_msg_basic_rtk_t L1;
+</I>&gt;<i> +		struct rtcm3_msg_basic_rtk_t L2;
+</I>&gt;<i> +	    } rtk_data[RTCM3_MAX_SATELLITES];
+</I>&gt;<i> +	} rtcm3_msg_t_1003;
+</I>&gt;<i> +	struct {
+</I>&gt;<i> +	    struct rtcm3_msg_rtk_hdr_t header;
+</I>&gt;<i> +	    struct {
+</I>&gt;<i> +		uint satellite_id:6;	/* GPS satellite ID (DF009) */
+</I>&gt;<i> +		struct rtcm3_msg_t_extended_rtk L1;
+</I>&gt;<i> +		struct rtcm3_msg_t_extended_rtk L2;
+</I>&gt;<i> +	    } rtk_data[RTCM3_MAX_SATELLITES];
+</I>&gt;<i> +	} rtcm3_msg_t_1004;
+</I>&gt;<i> +	struct {
+</I>&gt;<i> +	    uint station_id:12;		/* Reference Station ID (DF003) */
+</I>&gt;<i> +	    uint reserved1:6;		/* Reserved for ITRF Realization 
+</I>&gt;<i> +					   Year (DF021) */
+</I>&gt;<i> +	    uint gps_indicator:1;	/* GPS Indicator (DF022) */
+</I>&gt;<i> +	    uint glonass_indicator:1;	/* GLONASS Indicator (DF023) */
+</I>&gt;<i> +	    uint galileo_indicator:1;	/* Reserved for Galileo Indicator
+</I>&gt;<i> +					   (DF024) */
+</I>&gt;<i> +	    uint reference_station:1;	/* Reference Station Indicator
+</I>&gt;<i> +					   (DF141) */
+</I>&gt;<i> +	    long int ecef_x:38;		/* Antenna Reference point ECEF-X
+</I>&gt;<i> +					   (DF025) */
+</I>&gt;<i> +	    uint single_receiver:1;	/* Single Receiver Oscillator Indicator
+</I>&gt;<i> +					   (DF142) */
+</I>&gt;<i> +	    uint reserved2:1;		/* Reserved (DF001) */
+</I>&gt;<i> +	    long int ecef_y:38;		/* Antenna Reference point ECEF-X
+</I>&gt;<i> +					   (DF026) */
+</I>&gt;<i> +	    uint reserved3:1;		/* Reserved (DF001) */
+</I>&gt;<i> +	    long int ecef_z:38;		/* Antenna Reference point ECEF-Z
+</I>&gt;<i> +					   (DF026) */
+</I>&gt;<i> +	} rtcm3_msg_t_1005;
+</I>&gt;<i> +	struct {
+</I>&gt;<i> +	    uint station_id:12;		/* Reference Station ID (DF003) */
+</I>&gt;<i> +	    uint reserved1:6;		/* Reserved for ITRF Realization 
+</I>&gt;<i> +					   Year (DF021) */
+</I>&gt;<i> +	    uint gps_indicator:1;	/* GPS Indicator (DF022) */
+</I>&gt;<i> +	    uint glonass_indicator:1;	/* GLONASS Indicator (DF023) */
+</I>&gt;<i> +	    uint galileo_indicator:1;	/* Reserved for Galileo Indicator
+</I>&gt;<i> +					   (DF024) */
+</I>&gt;<i> +	    uint reference_station:1;	/* Reference Station Indicator
+</I>&gt;<i> +					   (DF141) */
+</I>&gt;<i> +	    long int ecef_x:38;		/* Antenna Reference point ECEF-X
+</I>&gt;<i> +					   (DF025) */
+</I>&gt;<i> +	    uint single_receiver:1;	/* Single Receiver Oscillator Indicator
+</I>&gt;<i> +					   (DF142) */
+</I>&gt;<i> +	    uint reserved2:1;		/* Reserved (DF001) */
+</I>&gt;<i> +	    long int ecef_y:38;		/* Antenna Reference point ECEF-X
+</I>&gt;<i> +					   (DF026) */
+</I>&gt;<i> +	    uint reserved3:1;		/* Reserved (DF001) */
+</I>&gt;<i> +	    long int ecef_z:38;		/* Antenna Reference point ECEF-Z
+</I>&gt;<i> +					   (DF026) */
+</I>&gt;<i> +	    uint height:16;		/* Antenna height (DF028) */
+</I>&gt;<i> +	} rtcm3_msg_t_1006;
+</I>&gt;<i> +	struct {
+</I>&gt;<i> +	    uint station_id:12;		/* Reference Station ID (DF003) */
+</I>&gt;<i> +	    uint counter:8;		/* Descriptor Counter (DF029) */
+</I>&gt;<i> +	    /*
+</I>&gt;<i> +	     * The spec designers screwed up here; they put the Setup
+</I>&gt;<i> +	     * ID field after the variable-length descriptor string so
+</I>&gt;<i> +	     * it doesn't have a fixed bit offset from start of
+</I>&gt;<i> +	     * message.  The unpacking code will have to mine the
+</I>&gt;<i> +	     * byte out of the part of the data that descriptor[] overlays.
+</I>&gt;<i> +	     */
+</I>&gt;<i> +	    char descriptor[RTCM3_MAX_DESCRIPTOR+2];	/* Descriptor (DF030) */
+</I>&gt;<i> +	} rtcm3_msg_t_1007;
+</I>&gt;<i> +	struct {
+</I>&gt;<i> +	    /* 
+</I>&gt;<i> +	     * And a similar design error here. There are actually two 
+</I>&gt;<i> +	     * variable-length descriptors in this message and two fixed-
+</I>&gt;<i> +	     * length fields between them.
+</I>&gt;<i> +	     */ 
+</I>&gt;<i> +	    uint station_id:12;		/* Reference Station ID (DF003) */
+</I>&gt;<i> +	    uint counter:8;		/* Descriptor Counter (DF029) */
+</I>&gt;<i> +	    char rawdata[64];
+</I>&gt;<i> +	} rtcm3_msg_t_1008;
+</I>&gt;<i> +	struct {
+</I>&gt;<i> +	    struct rtcm3_msg_glonass_rtk_hdr_t	header;
+</I>&gt;<i> +	    struct {
+</I>&gt;<i> +		uint satellite_id:6;	/* GLONASS Satellite ID (DF038) */
+</I>&gt;<i> +		struct rtcm3_msg_basic_glonass_rtk_t L1;
+</I>&gt;<i> +	    } rtk_data[RTCM3_MAX_SATELLITES];
+</I>&gt;<i> +	} rtcm3_msg_t_1009;
+</I>&gt;<i> +	struct {
+</I>&gt;<i> +	    struct rtcm3_msg_glonass_rtk_hdr_t	header;
+</I>&gt;<i> +	    struct {
+</I>&gt;<i> +		uint satellite_id:6;	/* GLONASS Satellite ID (DF038) */
+</I>&gt;<i> +		struct rtcm3_msg_extended_glonass_rtk_t L1;
+</I>&gt;<i> +	    } rtk_data[RTCM3_MAX_SATELLITES];
+</I>&gt;<i> +	} rtcm3_msg_t_1010;
+</I>&gt;<i> +	struct {
+</I>&gt;<i> +	    struct rtcm3_msg_glonass_rtk_hdr_t	header;
+</I>&gt;<i> +	    struct {
+</I>&gt;<i> +		uint satellite_id:6;	/* GLONASS Satellite ID (DF038) */
+</I>&gt;<i> +		struct rtcm3_msg_extended_glonass_rtk_t L1;
+</I>&gt;<i> +		struct rtcm3_msg_extended_glonass_rtk_t L2;
+</I>&gt;<i> +	    } rtk_data[RTCM3_MAX_SATELLITES];
+</I>&gt;<i> +	} rtcm3_msg_t_1011;
+</I>&gt;<i> +	struct {
+</I>&gt;<i> +	    struct rtcm3_msg_glonass_rtk_hdr_t	header;
+</I>&gt;<i> +	    struct {
+</I>&gt;<i> +		uint satellite_id:6;	/* GLONASS Satellite ID (DF038) */
+</I>&gt;<i> +		struct rtcm3_msg_extended_glonass_rtk_t L1;
+</I>&gt;<i> +		struct rtcm3_msg_extended_glonass_rtk_t L2;
+</I>&gt;<i> +	    } rtk_data[RTCM3_MAX_SATELLITES];
+</I>&gt;<i> +	} rtcm3_msg_t_1012;
+</I>&gt;<i> +	struct {
+</I>&gt;<i> +	    uint msgnum:12;		/* Message number (DF002) */
+</I>&gt;<i> +	    uint station_id:12;		/* Reference Station ID (DF003) */
+</I>&gt;<i> +	    uint mjd:16;		/* Modified Julian Day (MJD) Number
+</I>&gt;<i> +					   (DF051)*/
+</I>&gt;<i> +	    uint sod:17;		/* Seconds of Day (UTC) (DF052) */
+</I>&gt;<i> +	    uint ncount:5;		/* Count of announcements (DF053) */
+</I>&gt;<i> +	    uint leapsecs:8;		/* Leap Seconds, GPS-UTC (DF053) */
+</I>&gt;<i> +	    struct {
+</I>&gt;<i> +		uint id:12;		/* ID (DF055) */
+</I>&gt;<i> +		uint sync:1;		/* Sync flag (DF056) */
+</I>&gt;<i> +		uint interval:16;	/* transmission interval (DF057) */
+</I>&gt;<i> +	    } announcements[RTCM3_MAX_ANNOUNCEMENTS];
+</I>&gt;<i> +	} rtcm3_msg_t_1013;
+</I>&gt;<i> +	/* 1014-1017 were added in the 3.1 version */
+</I>&gt;<i> +	struct {
+</I>&gt;<i> +	    uint msgnum:12;		/* Message number (DF002) */
+</I>&gt;<i> +	    uint network_id:8;		/* Network ID (DF059) */
+</I>&gt;<i> +	    uint subnetwork_id:8;	/* Network ID (DF072) */
+</I>&gt;<i> +	    uint stationcount:5;	/* # auxiliary stations transmitted
+</I>&gt;<i> +					   (DF058)*/
+</I>&gt;<i> +	    uint master_id:12;		/* Master Reference Station ID
+</I>&gt;<i> +					   (DF060) */
+</I>&gt;<i> +	    uint aux_id:12;		/* Auxilary Reference Station ID
+</I>&gt;<i> +					  (DF061) */
+</I>&gt;<i> +	    int d_lat:20;		/* Aux-Master Delta Latitude (DF062) */	
+</I>&gt;<i> +	    int d_lon:21;		/* Aux-Master Delta Longitude (DF063)*/	
+</I>&gt;<i> +	    int d_alt:23;		/* Aux-Master Delta Height (DF064) */	
+</I>&gt;<i> +	} rtcm3_msg_t_1014;
+</I>&gt;<i> +	struct {
+</I>&gt;<i> +	    struct rtcm3_msg_network_rtk_header_t	header;
+</I>&gt;<i> +	    struct {
+</I>&gt;<i> +		uint ident:6;		/* satellite ID (DF068) */
+</I>&gt;<i> +		uint ambiguity:2;	/* Ambiguity status flag (DF074) */
+</I>&gt;<i> +		uint nonsync:3;		/* Non Sync Count (DF075) */
+</I>&gt;<i> +		uint ionospheric_diff:17;	/* Ionospheric Carrier Phase 
+</I>&gt;<i> +						   Correction Difference 
+</I>&gt;<i> +						   (DF069) */
+</I>&gt;<i> +	    } corrections[RTCM3_MAX_SATELLITES];
+</I>&gt;<i> +	} rtcm3_msg_t_1015;
+</I>&gt;<i> +	struct {
+</I>&gt;<i> +	    struct rtcm3_msg_network_rtk_header_t	header;
+</I>&gt;<i> +	    struct {
+</I>&gt;<i> +		uint ident:6;		/* satellite ID (DF068) */
+</I>&gt;<i> +		uint ambiguity:2;	/* Ambiguity status flag (DF074) */
+</I>&gt;<i> +		uint nonsync:3;		/* Non Sync Count (DF075) */
+</I>&gt;<i> +		int geometric_diff:17;	/* Geometric Carrier Phase 
+</I>&gt;<i> +					   Correction Difference (DF070) */
+</I>&gt;<i> +		uint iode:8;		/* GPS IODE (DF071) */
+</I>&gt;<i> +	    } corrections[RTCM3_MAX_SATELLITES];
+</I>&gt;<i> +	} rtcm3_msg_t_1016;
+</I>&gt;<i> +	struct {
+</I>&gt;<i> +	    struct rtcm3_msg_network_rtk_header_t	header;
+</I>&gt;<i> +	    struct {
+</I>&gt;<i> +		uint ident:6;		/* satellite ID (DF068) */
+</I>&gt;<i> +		uint ambiguity:2;	/* Ambiguity status flag (DF074) */
+</I>&gt;<i> +		uint nonsync:3;		/* Non Sync Count (DF075) */
+</I>&gt;<i> +		int geometric_diff:17;	/* Geometric Carrier Phase 
+</I>&gt;<i> +					   Correction Difference (DF070) */
+</I>&gt;<i> +		uint iode:8;		/* GPS IODE (DF071) */
+</I>&gt;<i> +		uint ionospheric_diff:17;	/* Ionospheric Carrier Phase 
+</I>&gt;<i> +						   Correction Difference 
+</I>&gt;<i> +						   (DF069) */
+</I>&gt;<i> +	    } corrections[RTCM3_MAX_SATELLITES];
+</I>&gt;<i> +	} rtcm3_msg_t_1017;
+</I>&gt;<i> +	struct {
+</I>&gt;<i> +	    uint msgnum:12;	/* Message number (DF002) */
+</I>&gt;<i> +	    uint ident:6;	/* Satellite ID (DF009) */
+</I>&gt;<i> +	    uint week:10;	/* GPS Week Number (DF076) */
+</I>&gt;<i> +	    uint sv_accuracy;	/* GPS SV ACCURACY (DF077) */
+</I>&gt;<i> +	    uint code:2;	/* GPS CODE ON L2 (DF078) */
+</I>&gt;<i> +	    uint idot:14;	/* GPS IDOT (DF079) */
+</I>&gt;<i> +	    uint iode;		/* GPS IODE (DF071) */
+</I>&gt;<i> +	    /* ephemeris fields, not scaled */
+</I>&gt;<i> +	    uint t_sub_oc:16;
+</I>&gt;<i> +	    signed int a_sub_f2:8;
+</I>&gt;<i> +	    signed int a_sub_f1:16;
+</I>&gt;<i> +	    signed int a_sub_f0:22;
+</I>&gt;<i> +	    uint iodc:10;
+</I>&gt;<i> +	    signed int C_sub_rs:16;
+</I>&gt;<i> +	    signed int delta_sub_n:16;
+</I>&gt;<i> +	    signed int M_sub_0:32;
+</I>&gt;<i> +	    signed int C_sub_uc:16;
+</I>&gt;<i> +	    uint e:32;
+</I>&gt;<i> +	    signed int C_sub_us:16;
+</I>&gt;<i> +	    uint sqrt_sub_A:32;
+</I>&gt;<i> +	    uint t_sub_oe:16;
+</I>&gt;<i> +	    signed int C_sub_ic:16;
+</I>&gt;<i> +	    signed int OMEGA_sub_0:32;
+</I>&gt;<i> +	    signed int C_sub_is:16;
+</I>&gt;<i> +	    signed int i_sub_0:32;
+</I>&gt;<i> +	    signed int C_sub_rc:16;
+</I>&gt;<i> +	    signed int argument_of_perigee:32;
+</I>&gt;<i> +	    signed int omegadot:24;
+</I>&gt;<i> +	    signed int t_sub_GD:8;
+</I>&gt;<i> +	    uint sv_health:6;
+</I>&gt;<i> +	    uint P_data:1;
+</I>&gt;<i> +	    uint fit_interval:1;
+</I>&gt;<i> +	} rtcm3_msg_t_1019;
+</I>&gt;<i> +	struct {
+</I>&gt;<i> +	    uint msgnum:12;	/* Message number */
+</I>&gt;<i> +	    uint ident:6;	/* Satellite ID */
+</I>&gt;<i> +	    uint channel:5;	/* Satellite Frequency Channel Number */
+</I>&gt;<i> +	    /* ephemeris fields, not scaled */
+</I>&gt;<i> +	    uint C_sub_n1;
+</I>&gt;<i> +	    uint health_avAilability_indicator:1;
+</I>&gt;<i> +	    uint P1:2;
+</I>&gt;<i> +	    unsigned short t_sub_k:12;
+</I>&gt;<i> +	    uint msb_of_B_sub_n:1;
+</I>&gt;<i> +	    uint P2:1;
+</I>&gt;<i> +	    uint t_sub_b:7;
+</I>&gt;<i> +	    signed int x_sub_n_t_of_t_sub_b_prime:24;
+</I>&gt;<i> +	    signed int x_sub_n_t_of_t_sub_b:27;
+</I>&gt;<i> +	    signed int x_sub_n_t_of_t_sub_b_prime_prime:5;
+</I>&gt;<i> +	    signed int y_sub_n_t_of_t_sub_b_prime:24;
+</I>&gt;<i> +	    signed int y_sub_n_t_of_t_sub_b:27;
+</I>&gt;<i> +	    signed int y_sub_n_t_of_t_sub_b_prime_prime:5;
+</I>&gt;<i> +	    signed int z_sub_n_t_of_t_sub_b_prime:24;
+</I>&gt;<i> +	    signed int z_sub_n_t_of_t_sub_b:27;
+</I>&gt;<i> +	    signed int z_sub_n_t_of_t_sub_b_prime_prime:5;
+</I>&gt;<i> +	    uint P3:1;
+</I>&gt;<i> +	    signed int gamma_sub_n_of_t_sub_b:11;
+</I>&gt;<i> +	    uint MP:2;
+</I>&gt;<i> +	    uint Ml_n:1;
+</I>&gt;<i> +	    signed int tau_n_of_t_sub_b:22;
+</I>&gt;<i> +	    signed int M_delta_tau_sub_n:5;
+</I>&gt;<i> +	    uint E_sub_n:5;
+</I>&gt;<i> +	    uint MP4:1;
+</I>&gt;<i> +	    uint MF_sub_T:4;
+</I>&gt;<i> +	    uint MN_sub_T:11;
+</I>&gt;<i> +	    uint MM:2;
+</I>&gt;<i> +	    uint additioinal_data_availability:1;
+</I>&gt;<i> +	    uint N_sup_A:11;
+</I>&gt;<i> +	    uint tau_sub_c:32;
+</I>&gt;<i> +	    uint M_N_sub_4:5;
+</I>&gt;<i> +	    signed int M_tau_sub_GPS:22;
+</I>&gt;<i> +	    uint M_l_sub_n:1;
+</I>&gt;<i> +	    //uint reserved:7;
+</I>&gt;<i> +	} rtcm3_msg_t_1020;
+</I>&gt;<i> +	struct {
+</I>&gt;<i> +	    uint msgnum:12;		/* Message number (DF002) */
+</I>&gt;<i> +	    uint station_id:12;		/* Reference Station ID (DF003) */
+</I>&gt;<i> +	    uint mjd:16;		/* Modified Julian Day (MJD) Number
+</I>&gt;<i> +					   (DF051) */
+</I>&gt;<i> +	    uint sod:17;		/* Seconds of Day (UTC) (DF052) */
+</I>&gt;<i> +	    uint len:7;			/* # Chars to follow (DF138) */
+</I>&gt;<i> +	    uint unicode_units:8;	/* # Unicode units (DF139) */
+</I>&gt;<i> +	    unsigned char text[128];
+</I>&gt;<i> +	} rtcm3_msg_t_1029;
+</I>&gt;<i> +    };
+</I>&gt;<i> +};
+</I>&gt;<i> +
+</I>&gt;<i> +/* scaling constants for RTCM3 real number types */
+</I>&gt;<i> +#define PSEUDORANGE_RESOLUTION		0.2	/* DF011 */
+</I>&gt;<i> +#define PSEUDORANGE_DIFF_RESOLUTION	0.0005	/* DF012 */
+</I>&gt;<i> +#define CARRIER_NOISE_RATIO_UNITS	0.25	/* DF015 */
+</I>&gt;<i> +#define ANTENNA_HEIGHT_RESOLUTION	0.0001	/* DF025-027 */
+</I>&gt;<i> +#define ANTENNA_DEGREE_RESOLUTION	25e-6	/* DF062 */
+</I>&gt;<i> +#define GPS_EPOCH_TIME_RESOLUTION	0.1	/* DF065 */
+</I>&gt;<i> +#define PHASE_CORRECTION_RESOLUTION	0.5	/* DF069-070 */
+</I>&gt;<i> +
+</I>&gt;<i> +/* Other magic values */
+</I>&gt;<i> +#define INVALID_PSEUDORANGE		0x80000	/* DF012 */
+</I>&gt;<i> +
+</I>&gt;<i> +void rtcm3_unpack(/*@out@*/struct rtcm3_t *tp, char *buf)
+</I>&gt;<i> +/* break out the raw bits into the scaled report-structure fields */
+</I>&gt;<i> +{
+</I>&gt;<i> +    struct rtcm3_msg_t *msg = (struct rtcm3_msg_t *)buf;
+</I>&gt;<i> +
+</I>&gt;<i> +    assert(msg-&gt;preamble == 0xD3);
+</I>&gt;<i> +    assert(msg-&gt;version == 0x00);
+</I>&gt;<i> +    tp-&gt;type = msg-&gt;type;
+</I>&gt;<i> +    tp-&gt;length = msg-&gt;length;
+</I>&gt;<i> +
+</I>&gt;<i> +    // FIXME: Decoding of packet content goes here
+</I>&gt;<i> +}
+</I>&gt;<i> +
+</I>&gt;<i> +#endif /* RTCM104V3_ENABLE */
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-commit-watch mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-commit-watch at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-commit-watch">https://lists.berlios.de/mailman/listinfo/gpsd-commit-watch</A>
+</I>&gt;<i>   
+</I>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006063.html">[Gpsd-dev] Leapsecond coming up end of the year
+</A></li>
+	<LI>Next message: <A HREF="006065.html">[Gpsd-dev] [Gpsd-commit-watch] r4727 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6064">[ date ]</a>
+              <a href="thread.html#6064">[ thread ]</a>
+              <a href="subject.html#6064">[ subject ]</a>
+              <a href="author.html#6064">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

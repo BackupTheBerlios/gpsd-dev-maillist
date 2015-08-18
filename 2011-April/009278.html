@@ -1,0 +1,950 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Please test the new scons-based build system -	here's how
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Please%20test%20the%20new%20scons-based%20build%20system%20-%0A%09here%27s%20how&In-Reply-To=%3CA16A8933-43AF-42BD-A915-00BE606FAF28%40ledford.cc%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009255.html">
+   <LINK REL="Next"  HREF="009252.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Please test the new scons-based build system -	here's how</H1>
+    <B>Michael Ledford</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Please%20test%20the%20new%20scons-based%20build%20system%20-%0A%09here%27s%20how&In-Reply-To=%3CA16A8933-43AF-42BD-A915-00BE606FAF28%40ledford.cc%3E"
+       TITLE="[Gpsd-dev] Please test the new scons-based build system -	here's how">michael at ledford.cc
+       </A><BR>
+    <I>Sat Apr  9 22:23:38 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009255.html">[Gpsd-dev] Please test the new scons-based build system - here's how
+</A></li>
+        <LI>Next message: <A HREF="009252.html">[Gpsd-dev] Use of const qualifier in gpsd_data()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9278">[ date ]</a>
+              <a href="thread.html#9278">[ thread ]</a>
+              <a href="subject.html#9278">[ subject ]</a>
+              <a href="author.html#9278">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+On Apr 5, 2011, at 4:12 PM, Eric Raymond wrote:
+
+&gt;<i> I neglect to give directions in my previous.
+</I>&gt;<i> 
+</I>&gt;<i> 'scons -c' or 'scons --clean' to remove derived files.
+</I>&gt;<i> 
+</I>&gt;<i> 'scons' or 'scons build' to build everything.
+</I>&gt;<i> 
+</I>&gt;<i> From the header of the recipe.
+</I>
+I haven't had time to dig in and see if I can solve this but wanted to report building with scons fails on Mac OS X 10.6.7 with Xcode 3.2.5. The output is attached below.
+
+Michael
+
+
+$ scons
+scons: Reading SConscript files ...
+Checking whether the C++ compiler worksyes
+Checking for C function daemon()... yes
+Checking for C function strlcpy()... yes
+Checking for C function strlcat()... yes
+Checking for C library ncurses... yes
+Checking for libusb-1.0... no
+Checking for C library librt... no
+Checking for bluez... no
+Checking for C header file sys/timepps.h... no
+Checking for chrpath... no
+Checking for C library libbluez... no
+libbluez not found, bluez cannot be enabled.
+Checking that xsltproc can make man pages... no
+Neither xsltproc nor xmlto found, documentation cannot be built.
+Checking for QtNetwork... no
+scons: done reading SConscript files.
+scons: Building targets ...
+rm -f gpsd.h &amp;&amp; echo &quot;/* This file is generated. Do not hand-hack it! */&quot; &gt; gpsd.h &amp;&amp; cat gpsd.h-head &gt;&gt; gpsd.h &amp;&amp; cat gpsd_config.h &gt;&gt; gpsd.h &amp;&amp; cat gpsd.h-tail &gt;&gt; gpsd.h &amp;&amp; chmod a-w gpsd.h
+rm -f revision.h &amp;&amp; /usr/bin/python2.6 -c 'from datetime import datetime; print &quot;#define REVISION \&quot;%s\&quot;\n&quot; % (datetime.now().isoformat()[:-4])' &gt; revision.h &amp;&amp; chmod a-w revision.h
+gcc -o gpsd.o -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -pthread gpsd.c
+gpsd.c: In function 'set_serial':
+gpsd.c:910: warning: format '%d' expects type 'int', but argument 3 has type 'speed_t'
+gpsd.c: In function 'main':
+gpsd.c:1839: warning: 'daemon' is deprecated (declared at /usr/include/stdlib.h:289)
+gcc -o ntpshm.o -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -pthread ntpshm.c
+ntpshm.c:273: warning: 'ntpshm_pps' defined but not used
+gcc -o shmexport.o -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -pthread shmexport.c
+gcc -o dbusexport.o -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -pthread dbusexport.c
+gcc -o bits.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC bits.c
+gcc -o bsd-base64.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC bsd-base64.c
+gcc -o crc24q.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC crc24q.c
+gcc -o gpsd_json.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC gpsd_json.c
+gcc -o isgps.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC isgps.c
+gcc -o libgpsd_core.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC libgpsd_core.c
+libgpsd_core.c: In function 'gpsd_poll':
+libgpsd_core.c:894: warning: format '%d' expects type 'int', but argument 6 has type 'speed_t'
+gcc -o net_dgpsip.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC net_dgpsip.c
+gcc -o net_gnss_dispatch.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC net_gnss_dispatch.c
+gcc -o net_ntrip.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC net_ntrip.c
+rm -f packet_names.h &amp;&amp; sed -e '/^ *\([A-Z][A-Z0-9_]*\),/s// &quot;&quot;,/' &lt; packet_states.h &gt; packet_names.h &amp;&amp; chmod a-w packet_names.h
+gcc -o packet.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC packet.c
+gcc -o pseudonmea.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC pseudonmea.c
+gcc -o serial.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC serial.c
+serial.c: In function 'gpsd_set_speed':
+serial.c:306: warning: format '%u' expects type 'unsigned int', but argument 3 has type 'speed_t'
+gcc -o srecord.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC srecord.c
+gcc -o subframe.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC subframe.c
+/usr/bin/python2.6 leapsecond.py -f leapseconds.cache
+/usr/bin/python2.6 leapsecond.py -h leapseconds.cache &gt; timebase.h
+gcc -o timebase.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC timebase.c
+gcc -o drivers.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC drivers.c
+gcc -o driver_aivdm.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC driver_aivdm.c
+gcc -o driver_evermore.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC driver_evermore.c
+driver_evermore.c: In function 'evermore_speed':
+driver_evermore.c:553: warning: format '%u' expects type 'unsigned int', but argument 3 has type 'speed_t'
+gcc -o driver_garmin.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC driver_garmin.c
+driver_garmin.c:604: warning: 'PrintUSBPacket' defined but not used
+gcc -o driver_garmin_txt.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC driver_garmin_txt.c
+gcc -o driver_geostar.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC driver_geostar.c
+gcc -o driver_italk.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC driver_italk.c
+gcc -o driver_navcom.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC driver_navcom.c
+gcc -o driver_nmea.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC driver_nmea.c
+gcc -o driver_oncore.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC driver_oncore.c
+gcc -o driver_rtcm2.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC driver_rtcm2.c
+gcc -o driver_rtcm3.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC driver_rtcm3.c
+gcc -o driver_sirf.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC driver_sirf.c
+driver_sirf.c: In function 'sirfbin_speed':
+driver_sirf.c:208: warning: format '%d' expects type 'int', but argument 3 has type 'speed_t'
+gcc -o driver_superstar2.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC driver_superstar2.c
+gcc -o driver_tsip.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC driver_tsip.c
+gcc -o driver_ubx.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC driver_ubx.c
+gcc -o driver_zodiac.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -D_GNU_SOURCE -O2 -fPIC driver_zodiac.c
+gcc -o libgpsd.dylib -dynamiclib bits.os bsd-base64.os crc24q.os gpsd_json.os isgps.os libgpsd_core.os net_dgpsip.os net_gnss_dispatch.os net_ntrip.os packet.os pseudonmea.os serial.os srecord.os subframe.os timebase.os drivers.os driver_aivdm.os driver_evermore.os driver_garmin.os driver_garmin_txt.os driver_geostar.os driver_italk.os driver_navcom.os driver_nmea.os driver_oncore.os driver_rtcm2.os driver_rtcm3.os driver_sirf.os driver_superstar2.os driver_tsip.os driver_ubx.os driver_zodiac.os -L. -lncurses
+Undefined symbols:
+  &quot;_gpsd_report&quot;, referenced from:
+      _json_sky_dump in gpsd_json.os
+      _isgps_parity in isgps.os
+      _isgps_decode in isgps.os
+      _isgps_decode in isgps.os
+      _isgps_decode in isgps.os
+      _isgps_decode in isgps.os
+      _isgps_decode in isgps.os
+      _isgps_decode in isgps.os
+      _isgps_decode in isgps.os
+      _isgps_decode in isgps.os
+      _isgps_decode in isgps.os
+      _isgps_decode in isgps.os
+      _gpsd_run_device_hook in libgpsd_core.os
+      _gpsd_run_device_hook in libgpsd_core.os
+      _gpsd_run_device_hook in libgpsd_core.os
+      _gpsd_run_device_hook in libgpsd_core.os
+      _gpsd_open in libgpsd_core.os
+      _gpsd_open in libgpsd_core.os
+      _gpsd_open in libgpsd_core.os
+      _gpsd_open in libgpsd_core.os
+      _gpsd_open in libgpsd_core.os
+      _gpsd_open in libgpsd_core.os
+      _gpsd_open in libgpsd_core.os
+      _gpsd_open in libgpsd_core.os
+      _gpsd_open in libgpsd_core.os
+      _gpsd_deactivate in libgpsd_core.os
+      _gpsd_switch_driver in libgpsd_core.os
+      _gpsd_switch_driver in libgpsd_core.os
+      _gpsd_switch_driver in libgpsd_core.os
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_activate in libgpsd_core.os
+      _gpsd_activate in libgpsd_core.os
+      _gpsd_activate in libgpsd_core.os
+      _dgpsip_report in net_dgpsip.os
+      _dgpsip_report in net_dgpsip.os
+      _dgpsip_open in net_dgpsip.os
+      _dgpsip_open in net_dgpsip.os
+      _dgpsip_open in net_dgpsip.os
+      _rtcm_relay in net_gnss_dispatch.os
+      _rtcm_relay in net_gnss_dispatch.os
+      _ntrip_report in net_ntrip.os
+      _ntrip_report in net_ntrip.os
+      _ntrip_field_iterate in net_ntrip.os
+      _ntrip_open in net_ntrip.os
+      _ntrip_open in net_ntrip.os
+      _ntrip_open in net_ntrip.os
+      _ntrip_open in net_ntrip.os
+      _ntrip_open in net_ntrip.os
+      _ntrip_open in net_ntrip.os
+      _ntrip_open in net_ntrip.os
+      _ntrip_open in net_ntrip.os
+      _ntrip_open in net_ntrip.os
+      _ntrip_open in net_ntrip.os
+      _ntrip_open in net_ntrip.os
+      _ntrip_open in net_ntrip.os
+      _ntrip_open in net_ntrip.os
+      _ntrip_open in net_ntrip.os
+      _ntrip_open in net_ntrip.os
+      _ntrip_open in net_ntrip.os
+      _ntrip_open in net_ntrip.os
+      _ntrip_open in net_ntrip.os
+      _ntrip_open in net_ntrip.os
+      _character_pushback in packet.os
+      _packet_discard in packet.os
+      _packet_accept in packet.os
+      _packet_accept in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_get in packet.os
+      _packet_get in packet.os
+      _packet_get in packet.os
+      _packet_get in packet.os
+      _packet_get in packet.os
+      _gpsd_close in serial.os
+      _gpsd_write in serial.os
+      _gpsd_set_raw in serial.os
+      _gpsd_set_speed in serial.os
+      _gpsd_serial_open in serial.os
+      _gpsd_serial_open in serial.os
+      _gpsd_serial_open in serial.os
+      _gpsd_serial_open in serial.os
+      _gpsd_serial_open in serial.os
+      _gpsd_serial_open in serial.os
+      _subframe_almanac in subframe.os
+      _gpsd_interpret_subframe in subframe.os
+      _gpsd_interpret_subframe in subframe.os
+      _gpsd_interpret_subframe in subframe.os
+      _gpsd_interpret_subframe in subframe.os
+      _gpsd_interpret_subframe in subframe.os
+      _gpsd_interpret_subframe in subframe.os
+      _gpsd_interpret_subframe in subframe.os
+      _gpsd_interpret_subframe in subframe.os
+      _gpsd_interpret_subframe in subframe.os
+      _gpsd_interpret_subframe in subframe.os
+      _gpsd_interpret_subframe in subframe.os
+      _gpsd_interpret_subframe in subframe.os
+      _gpsd_interpret_subframe in subframe.os
+      _gpsd_interpret_subframe in subframe.os
+      _gpsd_interpret_subframe in subframe.os
+      _gpsd_interpret_subframe_raw in subframe.os
+      _gpsd_interpret_subframe_raw in subframe.os
+      _gpsd_interpret_subframe_raw in subframe.os
+      _gpsd_interpret_subframe_raw in subframe.os
+      _gpsd_gpstime_resolve in timebase.os
+      _gpsd_utc_resolve in timebase.os
+      _gpsd_time_init in timebase.os
+      _gpsd_time_init in timebase.os
+      _gpsclock_event_hook in drivers.os
+      _rtcm104v3_analyze in drivers.os
+      _rtcm104v2_analyze in drivers.os
+      _oceanserver_send in drivers.os
+      _oceanserver_send in drivers.os
+      _tnt_control_send in drivers.os
+      _tnt_send in drivers.os
+      _tnt_send in drivers.os
+      _nmea_event_hook in drivers.os
+      _nmea_event_hook in drivers.os
+      _nmea_event_hook in drivers.os
+      _nmea_event_hook in drivers.os
+      _nmea_event_hook in drivers.os
+      _nmea_event_hook in drivers.os
+      _nmea_event_hook in drivers.os
+      _nmea_event_hook in drivers.os
+      _nmea_event_hook in drivers.os
+      _generic_parse_input in drivers.os
+      _generic_parse_input in drivers.os
+      _generic_parse_input in drivers.os
+      _generic_parse_input in drivers.os
+      _processMTK3301 in drivers.os
+      _processMTK3301 in drivers.os
+      _processMTK3301 in drivers.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _aivdm_decode in driver_aivdm.os
+      _evermore_speed in driver_evermore.os
+      _evermore_nmea_config in driver_evermore.os
+      _evermore_protocol in driver_evermore.os
+      _evermore_mode in driver_evermore.os
+      _evermore_rate_switcher in driver_evermore.os
+      _evermore_parse in driver_evermore.os
+      _evermore_parse in driver_evermore.os
+      _evermore_parse in driver_evermore.os
+      _evermore_parse in driver_evermore.os
+      _evermore_parse in driver_evermore.os
+      _evermore_parse in driver_evermore.os
+      _evermore_parse in driver_evermore.os
+      _evermore_parse in driver_evermore.os
+      _evermore_parse in driver_evermore.os
+      _evermore_parse in driver_evermore.os
+      _evermore_parse in driver_evermore.os
+      _evermore_parse in driver_evermore.os
+      _garmin_switcher in driver_garmin.os
+      _garmin_switcher in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _PrintSERPacket in driver_garmin.os
+      _Build_Send_SER_Packet in driver_garmin.os
+      _Build_Send_SER_Packet in driver_garmin.os
+      _garmin_event_hook in driver_garmin.os
+      _garmin_event_hook in driver_garmin.os
+      _garmin_event_hook in driver_garmin.os
+      _garmin_ser_parse in driver_garmin.os
+      _garmin_ser_parse in driver_garmin.os
+      _garmin_ser_parse in driver_garmin.os
+      _garmin_ser_parse in driver_garmin.os
+      _garmin_ser_parse in driver_garmin.os
+      _garmin_ser_parse in driver_garmin.os
+      _garmin_ser_parse in driver_garmin.os
+      _garmin_ser_parse in driver_garmin.os
+      _garmin_ser_parse in driver_garmin.os
+      _garmin_ser_parse in driver_garmin.os
+      _garmin_ser_parse in driver_garmin.os
+      _garmin_ser_parse in driver_garmin.os
+      _garmin_ser_parse in driver_garmin.os
+      _garmin_ser_parse in driver_garmin.os
+      _garmin_ser_parse in driver_garmin.os
+      _garmin_ser_parse in driver_garmin.os
+      _gar_int_decode in driver_garmin_txt.os
+      _gar_int_decode in driver_garmin_txt.os
+      _gar_int_decode in driver_garmin_txt.os
+      _gar_int_decode in driver_garmin_txt.os
+      _gar_decode in driver_garmin_txt.os
+      _gar_decode in driver_garmin_txt.os
+      _gar_decode in driver_garmin_txt.os
+      _gar_decode in driver_garmin_txt.os
+      _garmintxt_parse in driver_garmin_txt.os
+      _garmintxt_parse in driver_garmin_txt.os
+      _garmintxt_parse in driver_garmin_txt.os
+      _garmintxt_parse in driver_garmin_txt.os
+      _garmintxt_parse in driver_garmin_txt.os
+      _geostar_write in driver_geostar.os
+      _geostar_mode in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_parse_input in driver_geostar.os
+      _geostar_detect in driver_geostar.os
+      _geostar_detect in driver_geostar.os
+      _italk_parse_input in driver_italk.os
+      _italk_parse_input in driver_italk.os
+      _italk_parse_input in driver_italk.os
+      _italk_parse_input in driver_italk.os
+      _italk_parse_input in driver_italk.os
+      _italk_parse_input in driver_italk.os
+      _italk_parse_input in driver_italk.os
+      _italk_parse_input in driver_italk.os
+      _italk_parse_input in driver_italk.os
+      _italk_parse_input in driver_italk.os
+      _italk_parse_input in driver_italk.os
+      _italk_parse_input in driver_italk.os
+      _italk_parse_input in driver_italk.os
+      _italk_parse_input in driver_italk.os
+      _italk_parse_input in driver_italk.os
+      _italk_parse_input in driver_italk.os
+      _italk_parse_input in driver_italk.os
+      _italk_parse_input in driver_italk.os
+      _italk_parse_input in driver_italk.os
+      _italk_parse_input in driver_italk.os
+      _italk_parse_input in driver_italk.os
+      _italk_parse_input in driver_italk.os
+      _italk_parse_input in driver_italk.os
+      _italk_parse_input in driver_italk.os
+      _navcom_control_send in driver_navcom.os
+      _navcom_send_cmd in driver_navcom.os
+      _navcom_speed in driver_navcom.os
+      _navcom_speed in driver_navcom.os
+      _navcom_cmd_0x1c in driver_navcom.os
+      _navcom_cmd_0x1c in driver_navcom.os
+      _navcom_cmd_0x20 in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _nmea_add_checksum in driver_nmea.os
+      _nmea_parse in driver_nmea.os
+      _nmea_parse in driver_nmea.os
+      _nmea_parse in driver_nmea.os
+      _nmea_parse in driver_nmea.os
+      _nmea_parse in driver_nmea.os
+      _nmea_parse in driver_nmea.os
+      _processOHPR in driver_nmea.os
+      _processTNTHTM in driver_nmea.os
+      _processPGRME in driver_nmea.os
+      _register_fractional_time in driver_nmea.os
+      _processGPGBS in driver_nmea.os
+      _processGPGBS in driver_nmea.os
+      _processGPGST in driver_nmea.os
+      _processGPZDA in driver_nmea.os
+      _processGPZDA in driver_nmea.os
+      _processGPZDA in driver_nmea.os
+      _processGPZDA in driver_nmea.os
+      _processGPZDA in driver_nmea.os
+      _processGPZDA in driver_nmea.os
+      _processPASHR in driver_nmea.os
+      _processPASHR in driver_nmea.os
+      _processPASHR in driver_nmea.os
+      _processGPGLL in driver_nmea.os
+      _processGPGLL in driver_nmea.os
+      _processGPRMC in driver_nmea.os
+      _processGPRMC in driver_nmea.os
+      _processGPRMC in driver_nmea.os
+      _processGPRMC in driver_nmea.os
+      _processGPRMC in driver_nmea.os
+      _processGPGSV in driver_nmea.os
+      _processGPGSV in driver_nmea.os
+      _processGPGSV in driver_nmea.os
+      _processGPGSV in driver_nmea.os
+      _processGPGSV in driver_nmea.os
+      _processGPGSV in driver_nmea.os
+      _processGPGSV in driver_nmea.os
+      _processGPGSA in driver_nmea.os
+      _processGPGSA in driver_nmea.os
+      _processGPGSA in driver_nmea.os
+      _processGPGGA in driver_nmea.os
+      _processGPGGA in driver_nmea.os
+      _oncore_control_send in driver_oncore.os
+      _oncore_parse_input in driver_oncore.os
+      _oncore_parse_input in driver_oncore.os
+      _oncore_parse_input in driver_oncore.os
+      _oncore_parse_input in driver_oncore.os
+      _oncore_parse_input in driver_oncore.os
+      _oncore_parse_input in driver_oncore.os
+      _oncore_parse_input in driver_oncore.os
+      _oncore_parse_input in driver_oncore.os
+      _oncore_parse_input in driver_oncore.os
+      _oncore_parse_input in driver_oncore.os
+      _oncore_parse_input in driver_oncore.os
+      _oncore_parse_input in driver_oncore.os
+      _oncore_parse_input in driver_oncore.os
+      _oncore_parse_input in driver_oncore.os
+      _oncore_parse_input in driver_oncore.os
+      _rtcm3_unpack in driver_rtcm3.os
+      _sirf_write in driver_sirf.os
+      _sirfbin_speed in driver_sirf.os
+      _sirfbin_speed in driver_sirf.os
+      _sirfbin_event_hook in driver_sirf.os
+      _sirfbin_event_hook in driver_sirf.os
+      _sirfbin_event_hook in driver_sirf.os
+      _sirfbin_event_hook in driver_sirf.os
+      _sirfbin_event_hook in driver_sirf.os
+      _sirfbin_event_hook in driver_sirf.os
+      _sirfbin_event_hook in driver_sirf.os
+      _sirfbin_event_hook in driver_sirf.os
+      _sirfbin_event_hook in driver_sirf.os
+      _sirfbin_event_hook in driver_sirf.os
+      _sirfbin_event_hook in driver_sirf.os
+      _sirf_get in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _superstar2_write in driver_superstar2.os
+      _superstar2_parse_input in driver_superstar2.os
+      _superstar2_parse_input in driver_superstar2.os
+      _superstar2_parse_input in driver_superstar2.os
+      _superstar2_parse_input in driver_superstar2.os
+      _superstar2_parse_input in driver_superstar2.os
+      _superstar2_parse_input in driver_superstar2.os
+      _superstar2_parse_input in driver_superstar2.os
+      _superstar2_parse_input in driver_superstar2.os
+      _superstar2_parse_input in driver_superstar2.os
+      _superstar2_parse_input in driver_superstar2.os
+      _superstar2_parse_input in driver_superstar2.os
+      _superstar2_parse_input in driver_superstar2.os
+      _superstar2_parse_input in driver_superstar2.os
+      _superstar2_parse_input in driver_superstar2.os
+      _tsip_write in driver_tsip.os
+      _tsip_mode in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_detect in driver_tsip.os
+      _tsip_detect in driver_tsip.os
+      _ubx_write in driver_ubx.os
+      _ubx_rate in driver_ubx.os
+      _ubx_event_hook in driver_ubx.os
+      _ubx_event_hook in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _parse_input in driver_ubx.os
+      _zodiac_spew in driver_zodiac.os
+      _zodiac_spew in driver_zodiac.os
+      _zodiac_analyze in driver_zodiac.os
+      _zodiac_analyze in driver_zodiac.os
+      _zodiac_analyze in driver_zodiac.os
+      _zodiac_analyze in driver_zodiac.os
+      _zodiac_analyze in driver_zodiac.os
+      _zodiac_analyze in driver_zodiac.os
+      _zodiac_analyze in driver_zodiac.os
+      _zodiac_analyze in driver_zodiac.os
+  &quot;_gps_merge_fix&quot;, referenced from:
+      _gpsd_poll in libgpsd_core.os
+  &quot;_netlib_errstr&quot;, referenced from:
+      _gpsd_open in libgpsd_core.os
+      _gpsd_open in libgpsd_core.os
+  &quot;_unix_to_iso8601&quot;, referenced from:
+      _json_noise_dump in gpsd_json.os
+      _json_tpv_dump in gpsd_json.os
+      _json_sky_dump in gpsd_json.os
+      _json_device_dump in gpsd_json.os
+      _gpsd_utc_resolve in timebase.os
+      _gpsd_time_init in timebase.os
+  &quot;_mkgmtime&quot;, referenced from:
+      _gpsd_utc_resolve in timebase.os
+      _garmintxt_parse in driver_garmin_txt.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _zodiac_analyze in driver_zodiac.os
+  &quot;_netlib_connectsock&quot;, referenced from:
+      _gpsd_open in libgpsd_core.os
+      _gpsd_open in libgpsd_core.os
+      _dgpsip_open in net_dgpsip.os
+      _ntrip_open in net_ntrip.os
+      _ntrip_open in net_ntrip.os
+  &quot;_timestamp&quot;, referenced from:
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_clear in libgpsd_core.os
+      _gpsd_clear in libgpsd_core.os
+      _rtcm_relay in net_gnss_dispatch.os
+  &quot;_gpsd_hexdump_wrapper&quot;, referenced from:
+      _packet_discard in packet.os
+      _packet_accept in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_parse in packet.os
+      _packet_get in packet.os
+      _gpsd_write in serial.os
+      _rtcm104v3_analyze in drivers.os
+      _rtcm104v2_analyze in drivers.os
+      _aivdm_decode in driver_aivdm.os
+      _evermore_parse in driver_evermore.os
+      _evermore_parse in driver_evermore.os
+      _evermore_parse in driver_evermore.os
+      _evermore_parse in driver_evermore.os
+      _evermore_parse in driver_evermore.os
+      _evermore_parse in driver_evermore.os
+      _PrintSERPacket in driver_garmin.os
+      _Build_Send_SER_Packet in driver_garmin.os
+      _garmintxt_parse in driver_garmin_txt.os
+      _geostar_write in driver_geostar.os
+      _italk_parse_input in driver_italk.os
+      _navcom_control_send in driver_navcom.os
+      _navcom_send_cmd in driver_navcom.os
+      _navcom_parse in driver_navcom.os
+      _oncore_control_send in driver_oncore.os
+      _oncore_parse_input in driver_oncore.os
+      _oncore_parse_input in driver_oncore.os
+      _rtcm3_unpack in driver_rtcm3.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _sirf_parse in driver_sirf.os
+      _superstar2_write in driver_superstar2.os
+      _superstar2_parse_input in driver_superstar2.os
+      _tsip_write in driver_tsip.os
+      _ubx_write in driver_ubx.os
+      _parse_input in driver_ubx.os
+  &quot;_wgs84_separation&quot;, referenced from:
+      _PrintSERPacket in driver_garmin.os
+      _processGPGGA in driver_nmea.os
+      _oncore_parse_input in driver_oncore.os
+      _oncore_parse_input in driver_oncore.os
+      _sirf_parse in driver_sirf.os
+      _tsip_parse_input in driver_tsip.os
+      _tsip_parse_input in driver_tsip.os
+  &quot;_gps_clear_fix&quot;, referenced from:
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_init in libgpsd_core.os
+      _gpsd_init in libgpsd_core.os
+      _gpsd_init in libgpsd_core.os
+  &quot;_ecef_to_wgs84fix&quot;, referenced from:
+      _evermore_parse in driver_evermore.os
+      _italk_parse_input in driver_italk.os
+      _sirf_parse in driver_sirf.os
+      _parse_input in driver_ubx.os
+  &quot;_gpsd_hexdump&quot;, referenced from:
+      _json_aivdm_dump in gpsd_json.os
+      _json_aivdm_dump in gpsd_json.os
+      _json_aivdm_dump in gpsd_json.os
+      _json_aivdm_dump in gpsd_json.os
+      _json_aivdm_dump in gpsd_json.os
+      _json_aivdm_dump in gpsd_json.os
+  &quot;_earth_distance&quot;, referenced from:
+      _gpsd_poll in libgpsd_core.os
+      _gpsd_poll in libgpsd_core.os
+ld: symbol(s) not found
+collect2: ld returned 1 exit status
+scons: *** [libgpsd.dylib] Error 1
+scons: building terminated because of errors.
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009255.html">[Gpsd-dev] Please test the new scons-based build system - here's how
+</A></li>
+	<LI>Next message: <A HREF="009252.html">[Gpsd-dev] Use of const qualifier in gpsd_data()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9278">[ date ]</a>
+              <a href="thread.html#9278">[ thread ]</a>
+              <a href="subject.html#9278">[ subject ]</a>
+              <a href="author.html#9278">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

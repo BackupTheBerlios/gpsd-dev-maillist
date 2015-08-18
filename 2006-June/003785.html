@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] connection problems with Garmin eTrex
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20connection%20problems%20with%20Garmin%20eTrex&In-Reply-To=%3C1150028506.6517.14.camel%40mother.subnetz.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003792.html">
+   <LINK REL="Next"  HREF="003786.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] connection problems with Garmin eTrex</H1>
+    <B>Tilman Koschnick</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20connection%20problems%20with%20Garmin%20eTrex&In-Reply-To=%3C1150028506.6517.14.camel%40mother.subnetz.org%3E"
+       TITLE="[Gpsd-dev] connection problems with Garmin eTrex">til at subnetz.org
+       </A><BR>
+    <I>Sun Jun 11 14:21:46 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003792.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+        <LI>Next message: <A HREF="003786.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3785">[ date ]</a>
+              <a href="thread.html#3785">[ thread ]</a>
+              <a href="subject.html#3785">[ subject ]</a>
+              <a href="author.html#3785">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sat, 2006-06-10 at 23:53 -0400, Eric S. Raymond wrote:
+&gt;<i> I think this is going to involve either (a) inserting delays all around the 
+</I>&gt;<i> baud-rate change until we figure out what works, or (b) lengthening the
+</I>&gt;<i> sample size until the packet sniffer always syncs up, or (c) both.
+</I>
+For now, I followed Rob's advice and introduced a delay right after the
+tcflush() in gpsd_set_speed:
+
+Index: serial.c
+===================================================================
+--- serial.c    (revision 3331)
++++ serial.c    (working copy)
+@@ -98,6 +98,7 @@
+        if (tcsetattr(session-&gt;gpsdata.gps_fd, TCSANOW,
+&amp;session-&gt;ttyset) != 0)
+            return;
+        (void)tcflush(session-&gt;gpsdata.gps_fd, TCIOFLUSH);
++       (void)usleep(500000);
+     }
+     gpsd_report(1, &quot;speed %d, %d%c%d\n&quot;, speed, 9-stopbits, parity,
+stopbits);
+
+A fixed delay of 50ms is not enough. With 100 and 200ms, it's much
+better, gpsd slips past the right speed only about 1 in 20 times -
+before it was under 1 in 10.
+
+With 500ms, I haven't seen an error yet. This is probably rather longer
+than you'd like, but at least solves the problem for me (so far - I keep
+testing). It certainly much longer than the delay CK suggested, 30ms at
+4800 - I'm switching from 9600 to 4800.
+
+Something else I should try?
+
+Cheers, Til
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 307 bytes
+Desc: This is a digitally signed message part
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20060611/e7c80a47/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20060611/e7c80a47/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003792.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+	<LI>Next message: <A HREF="003786.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3785">[ date ]</a>
+              <a href="thread.html#3785">[ thread ]</a>
+              <a href="subject.html#3785">[ subject ]</a>
+              <a href="author.html#3785">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

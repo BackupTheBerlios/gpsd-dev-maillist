@@ -1,0 +1,104 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] endless loop, 100% cpu
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20endless%20loop%2C%20100%25%20cpu&In-Reply-To=%3C200505151625.34728.remco%40rvt.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001669.html">
+   <LINK REL="Next"  HREF="001672.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] endless loop, 100% cpu</H1>
+    <B>Remco Treffkorn</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20endless%20loop%2C%20100%25%20cpu&In-Reply-To=%3C200505151625.34728.remco%40rvt.com%3E"
+       TITLE="[Gpsd-dev] endless loop, 100% cpu">remco at rvt.com
+       </A><BR>
+    <I>Mon May 16 01:25:34 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001669.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+        <LI>Next message: <A HREF="001672.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1671">[ date ]</a>
+              <a href="thread.html#1671">[ thread ]</a>
+              <a href="subject.html#1671">[ subject ]</a>
+              <a href="author.html#1671">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sunday 15 May 2005 15:31, Rob Janssen wrote:
+&gt;<i> The plain NMEA driver does not (yet) call the function to put received
+</I>&gt;<i> time in NTP SHM.
+</I>&gt;<i> It could be added.
+</I>&gt;<i>
+</I>&gt;<i> W.r.t. SiRF: there are several messages from SiRF receivers, some are in
+</I>&gt;<i> GPS time and some in UTC.  The code has 4 possible sources, it picks one
+</I>&gt;<i> of them depending on what it receives (which depends on firmware version).
+</I>&gt;<i> It looks like in your case it has picked a wrong source.
+</I>&gt;<i> On my receiver it works OK, and I think it also does on Eric's.
+</I>&gt;<i> So this has to be debugged...
+</I>&gt;<i>
+</I>
+This is what I get with your patch with sirf disabled.
+This looks about right to me, does it?
+
+     remote           refid      st t when poll reach   delay   offset  jitter
+==============================================================================
+ SHM(0)          .GPS0.           0 l   13   16    7    0.000  -674.67  28.906
+ 0x50a13f43.boan 212.54.64.203    3 u   45   64    1  192.302   -3.397   0.004
+ time.uswo.net   198.82.1.201     3 u   44   64    1  105.233    2.488   0.004
+ LOCAL(0)        LOCAL(0)        10 l   43   64    1    0.000    0.000   0.004
+ clock2.redhat.c .CDMA.           1 u   42   64    1   84.129    0.369   0.004
+
+After a while we go and blame everybody else :-)
+
+     remote           refid      st t when poll reach   delay   offset  jitter
+==============================================================================
+*SHM(0)          .GPS0.           0 l   14   16  177    0.000   -3.201  12.380
+ 0x50a13f43.boan 212.54.64.203    3 u    4   64    3  191.228  632.129   4.172
+ time.uswo.net   198.82.1.201     3 u    2   64    3  101.515  640.568   0.069
+ LOCAL(0)        LOCAL(0)        10 l    5   64    3    0.000    0.000   0.004
+ clock2.redhat.c .CDMA.           1 u    1   64    3   86.908  637.869   3.658
+
+Just out of curiosity, why does SHM get the highest priority?
+
+At this point it would help to know which firmware version I am running.
+How can I find out?
+
+-- 
+Remco Treffkorn (RT445)
+HAM DC2XT
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001669.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+	<LI>Next message: <A HREF="001672.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1671">[ date ]</a>
+              <a href="thread.html#1671">[ thread ]</a>
+              <a href="subject.html#1671">[ subject ]</a>
+              <a href="author.html#1671">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

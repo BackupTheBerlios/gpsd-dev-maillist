@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] (no subject)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%28no%20subject%29&In-Reply-To=%3CPine.LNX.4.62.0501312154460.13348%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000581.html">
+   <LINK REL="Next"  HREF="000583.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] (no subject)</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%28no%20subject%29&In-Reply-To=%3CPine.LNX.4.62.0501312154460.13348%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] (no subject)">gem at rellim.com
+       </A><BR>
+    <I>Tue Feb  1 06:56:59 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000581.html">[Gpsd-dev] (no subject)
+</A></li>
+        <LI>Next message: <A HREF="000583.html">[Gpsd-dev] Re: (no subject)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#582">[ date ]</a>
+              <a href="thread.html#582">[ thread ]</a>
+              <a href="subject.html#582">[ subject ]</a>
+              <a href="author.html#582">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Eric!
+
+Boy, that was fast. Thanks
+
+On Tue, 1 Feb 2005, Eric S. Raymond wrote:
+
+&gt;<i> There have been hints of trouble with GSV parsing, but nothing reproducible.
+</I>&gt;<i> If you take this data, extracted from your report, and feed it to gpsd using
+</I>&gt;<i> the -T l option, does the core dump reproduce?
+</I>&gt;<i>
+</I>&gt;<i> $GPGSV,2,1,07,04,57,069,40,09,41,221,00,24,44,055,42,05,63,303,45*7C
+</I>&gt;<i> $GPGSV,2,2,07,02,63,171,00,17,38,189,38,30,29,306,45*44
+</I>
+I put those two line is a file called &quot;tmp&quot;.  Then ran this:
+
+# gpsd -D 2 -n -T l -p tmp
+gpsd: launching (Version 2.9)
+gpsd: listening on port 2947
+gpsd: opening GPS data source at tmp
+gpsd: gpsd_activate: opened GPS (4)
+gpsd: &lt;= GPS: $GPGSV,2,1,07,04,57,069,40,09,41,221,00,24,44,055,42,05,63,303,45*7C
+gpsd: &lt;= GPS: $GPGSV,2,2,07,02,63,171,00,17,38,189,38,30,29,306,45*44
+Segmentation fault
+
+
+gdb gives me the same backtrace:
+
+Program received signal SIGSEGV, Segmentation fault.
+0x400706e1 in __strtol_internal () from /lib/libc.so.6
+(gdb) bt
+#0  0x400706e1 in __strtol_internal () from /lib/libc.so.6
+#1  0x4003baaa in update_field_i (field=0x0, dest=0x804e1e4) at stdlib.h:317
+#2  0x4003c2f9 in processGPGSV (count=16, field=0xbfffaca0, out=0x804e1e4)
+    at nmea_parse.c:401
+#3  0x4003c64c in nmea_parse (sentence=0x5 &lt;Address 0x5 out of bounds&gt;,
+    outdata=0x0) at nmea_parse.c:500
+#4  0x4003cb1a in gpsd_NMEA_handle_message (session=0x804e058,
+    sentence=0x40040400 &quot;$GPGSV,2,2,07,02,63,171,00,17,38,189,38,30,29,306,45*44&quot;) at drivers.c:18
+#5  0x4003cbdf in nmea_handle_input (session=0x804e058) at drivers.c:52
+#6  0x4003e891 in gpsd_poll (session=0x804e058) at libgpsd_core.c:155
+#7  0x0804a5b3 in main (argc=8, argv=0xbfffdfd4) at gpsd.c:590
+#8  0x40058d06 in __libc_start_main () from /lib/libc.so.6
+
+So I would say this is solidly reproduceable.
+
+What next?
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.2.3 (GNU/Linux)
+
+iD8DBQFB/xou8KZibdeR3qURAhJnAKCcTBVGDvUlBdt+ne8UNP5C4sE62gCfW0LB
+EyAMXqPkae0XSM6ymFC0SP4=
+=fIv+
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000581.html">[Gpsd-dev] (no subject)
+</A></li>
+	<LI>Next message: <A HREF="000583.html">[Gpsd-dev] Re: (no subject)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#582">[ date ]</a>
+              <a href="thread.html#582">[ thread ]</a>
+              <a href="subject.html#582">[ subject ]</a>
+              <a href="author.html#582">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

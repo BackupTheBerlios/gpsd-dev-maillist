@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] printf like functions with variable argument lists
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20printf%20like%20functions%20with%20variable%20argument%20lists&In-Reply-To=%3C20090106094644.GA2663%40s%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006260.html">
+   <LINK REL="Next"  HREF="006236.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] printf like functions with variable argument lists</H1>
+    <B>Sascha Wessel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20printf%20like%20functions%20with%20variable%20argument%20lists&In-Reply-To=%3C20090106094644.GA2663%40s%3E"
+       TITLE="[Gpsd-dev] printf like functions with variable argument lists">wessel at nefkom.net
+       </A><BR>
+    <I>Tue Jan  6 10:46:44 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006260.html">[Gpsd-dev] [Gpsd-users] Heads-up: gpsd 2.38 coming soon
+</A></li>
+        <LI>Next message: <A HREF="006236.html">[Gpsd-dev] printf like functions with variable argument lists
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6234">[ date ]</a>
+              <a href="thread.html#6234">[ thread ]</a>
+              <a href="subject.html#6234">[ subject ]</a>
+              <a href="author.html#6234">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+sometimes my gpsd segfaults due to an inconsistency between
+gpsd_report's arguments and its printf style format string argument.
+
+After adding a declaration to allow gcc to check the arguments in calls
+to gpsd_report for consistency, a couple of bugs show up:
+
+$ svn diff
+Index: gpsd.h-tail
+===================================================================
+--- gpsd.h-tail (revision 4904)
++++ gpsd.h-tail (working copy)
+@@ -432,7 +432,7 @@
+ extern void gpsd_wrap(struct gps_device_t *);
+
+ /* caller should supply this */
+-void gpsd_report(int, const char *, ...);
++__attribute__((__format__(__printf__, 2, 3))) void gpsd_report(int, const char *, ...);
+
+ #ifdef S_SPLINT_S
+ extern bool finite(double);
+
+$ make &gt; /dev/null
+ntpshm.c: In function &#8216;getShmTime&#8217;:
+ntpshm.c:66: warning: too few arguments for format
+ntrip.c: In function &#8216;ntrip_report&#8217;:
+ntrip.c:469: warning: too many arguments for format
+sirf.c: In function &#8216;sirf_msg_errors&#8217;:
+sirf.c:215: warning: format &#8216;%ld&#8217; expects type &#8216;long int&#8217;, but argument 4 has type &#8216;unsigned int&#8217;
+sirf.c:219: warning: too many arguments for format
+sirf.c: In function &#8216;sirf_parse&#8217;:
+sirf.c:698: warning: format &#8216;%3.f&#8217; expects type &#8216;double&#8217;, but argument 6 has type &#8216;int&#8217;
+isgps.c: In function &#8216;isgps_decode&#8217;:
+isgps.c:212: warning: format &#8216;%d&#8217; expects type &#8216;int&#8217;, but argument 3 has type &#8216;long unsigned int&#8217;
+isgps.c:212: warning: too few arguments for format
+garmin.c: In function &#8216;PrintSERPacket&#8217;:
+garmin.c:434: warning: format &#8216;%ld&#8217; expects type &#8216;long int&#8217;, but argument 16 has type &#8216;int32_t&#8217;
+garmin.c:449: warning: format &#8216;%9lu&#8217; expects type &#8216;long unsigned int&#8217;, but argument 4 has type &#8216;uint32_t&#8217;
+garmin.c: In function &#8216;garmin_ser_parse&#8217;:
+garmin.c:872: warning: too many arguments for format
+garmin.c:942: warning: too many arguments for format
+garmin.c:955: warning: too many arguments for format
+navcom.c: In function &#8216;handle_0x83&#8217;:
+navcom.c:356: warning: format &#8216;%lu&#8217; expects type &#8216;long unsigned int&#8217;, but argument 4 has type &#8216;u_int32_t&#8217;
+navcom.c:368: warning: format &#8216;%u&#8217; expects type &#8216;unsigned int&#8217;, but argument 3 has type &#8216;long unsigned int&#8217;
+navcom.c: In function &#8216;handle_0x86&#8217;:
+navcom.c:844: warning: format &#8216;%d&#8217; expects type &#8216;int&#8217;, but argument 6 has type &#8216;int *&#8217;
+navcom.c: In function &#8216;handle_0xef&#8217;:
+navcom.c:1143: warning: format &#8216;%f&#8217; expects type &#8216;double&#8217;, but argument 8 has type &#8216;int32_t&#8217;
+gpsflash.c: In function &#8216;expect&#8217;:
+gpsflash.c:294: warning: format &#8216;%d&#8217; expects type &#8216;int&#8217;, but argument 4 has type &#8216;time_t&#8217;
+gpsd.c: In function &#8216;passivesock&#8217;:
+gpsd.c:279: warning: too few arguments for format
+
+
+Searching for function declarations with variable argument lists
+returns a total of 29 lines. It would be nice if someone could
+check them: $ grep '\.\.\.\s*)' `find . -name '*.[ch]'`
+
+
+Greetings,
+Sascha
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006260.html">[Gpsd-dev] [Gpsd-users] Heads-up: gpsd 2.38 coming soon
+</A></li>
+	<LI>Next message: <A HREF="006236.html">[Gpsd-dev] printf like functions with variable argument lists
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6234">[ date ]</a>
+              <a href="thread.html#6234">[ thread ]</a>
+              <a href="subject.html#6234">[ subject ]</a>
+              <a href="author.html#6234">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

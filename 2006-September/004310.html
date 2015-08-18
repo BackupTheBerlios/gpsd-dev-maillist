@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Blocking issues for gpsd release
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Blocking%20issues%20for%20gpsd%20release&In-Reply-To=%3C20060913062521.GC5173%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004307.html">
+   <LINK REL="Next"  HREF="004277.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Blocking issues for gpsd release</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Blocking%20issues%20for%20gpsd%20release&In-Reply-To=%3C20060913062521.GC5173%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Blocking issues for gpsd release">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Sep 13 08:25:21 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004307.html">[Gpsd-dev] Blocking issues for gpsd release
+</A></li>
+        <LI>Next message: <A HREF="004277.html">[Gpsd-dev] gpsd &amp; Mac OS X launchd(8)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4310">[ date ]</a>
+              <a href="thread.html#4310">[ thread ]</a>
+              <a href="subject.html#4310">[ subject ]</a>
+              <a href="author.html#4310">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+&gt;<i> The PPS pulse may come too early in the present cycle to count on
+</I>&gt;<i> knowing the fix state of the current cycle. So we need to use the
+</I>&gt;<i> mode from the last full fix.  Ideally we could keep the last 4 fixes
+</I>&gt;<i> but that seems overkill to me.
+</I>&gt;<i> 
+</I>&gt;<i> Eric:  What with the recent changes this must be fresh in your
+</I>&gt;<i> mind. With the new system how can I tell whether the last full cycle
+</I>&gt;<i> reported a fix?
+</I>&gt;<i> 
+</I>&gt;<i> I see that gpsd_error_model() uses oldfix.  Is there a way to access
+</I>&gt;<i> that in the pps thread?
+</I>
+No, oldfix is now per-user storage, because all the merging and policy 
+stuff is now done to per-user buffers.
+
+Here's what needs to happen:
+
+You need to add a new member to the session structure -- for the sake
+of argument, we'll call it &quot;latchmode&quot;.
+
+This member has to be cleared at start of cycle. When a packet reports
+a nonzero mode, set it, in libgpsd_core.c:gpsd_poll().
+
+In the PPS code, test latchmode.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004307.html">[Gpsd-dev] Blocking issues for gpsd release
+</A></li>
+	<LI>Next message: <A HREF="004277.html">[Gpsd-dev] gpsd &amp; Mac OS X launchd(8)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4310">[ date ]</a>
+              <a href="thread.html#4310">[ thread ]</a>
+              <a href="subject.html#4310">[ subject ]</a>
+              <a href="author.html#4310">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

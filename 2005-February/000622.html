@@ -1,0 +1,86 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd now hunts baud rates
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20now%20hunts%20baud%20rates&In-Reply-To=%3C200502131556.j1DFuIrj016222%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000621.html">
+   <LINK REL="Next"  HREF="000623.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd now hunts baud rates</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20now%20hunts%20baud%20rates&In-Reply-To=%3C200502131556.j1DFuIrj016222%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] gpsd now hunts baud rates">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Sun Feb 13 16:56:18 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000621.html">[Gpsd-dev] Serial-programming hell
+</A></li>
+        <LI>Next message: <A HREF="000623.html">[Gpsd-dev] Re: gpsd now hunts baud rates
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#622">[ date ]</a>
+              <a href="thread.html#622">[ thread ]</a>
+              <a href="subject.html#622">[ subject ]</a>
+              <a href="author.html#622">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>This morning I changed the repository version so that when speaking to 
+an NMEA device it will hunt through baud rates 4800, 9600, 19200, and
+38400 and sync to the first for which it can read recognizable data 
+from the GPS.  Autoconfiguration is a *good* thing.
+
+While debugging this, I discovered that I need to let the device
+settle for no less than 1.25 seconds after a baud rate change, or 
+I'll get garbage in the buffer.  
+
+(Also, mysteriously, I find that doing the baud rate change with
+TCSAFLUSH is not sufficient to clean out the serial input buffer --
+but tcflush() will do it.)
+
+For those who understand serial programming better than I, a question:
+what are the input variables in this settle time?  Is it likely to be just
+a function of UART performance, or does host-processor speed matter?
+
+I have a fast machine; I need to understand whether I should raise
+this number for people with slower ones.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+Men trained in arms from their infancy, and animated by the love of liberty,
+will afford neither a cheap or easy conquest.
+        -- From the Declaration of the Continental Congress, July 1775.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000621.html">[Gpsd-dev] Serial-programming hell
+</A></li>
+	<LI>Next message: <A HREF="000623.html">[Gpsd-dev] Re: gpsd now hunts baud rates
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#622">[ date ]</a>
+              <a href="thread.html#622">[ thread ]</a>
+              <a href="subject.html#622">[ subject ]</a>
+              <a href="author.html#622">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

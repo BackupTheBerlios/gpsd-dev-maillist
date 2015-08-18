@@ -1,0 +1,91 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Flaky subtype display and asynchronous notifications
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Flaky%20subtype%20display%20and%20asynchronous%20notifications&In-Reply-To=%3C20061031231001.GB10162%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="004854.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Flaky subtype display and asynchronous notifications</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Flaky%20subtype%20display%20and%20asynchronous%20notifications&In-Reply-To=%3C20061031231001.GB10162%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Flaky subtype display and asynchronous notifications">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Nov  1 00:10:01 CET 2006</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="004854.html">[Gpsd-dev] gpsd_ppsmonitor()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4853">[ date ]</a>
+              <a href="thread.html#4853">[ thread ]</a>
+              <a href="subject.html#4853">[ subject ]</a>
+              <a href="author.html#4853">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+&gt;<i> Gonna have the sme problem with the garmin.  There are some info strings
+</I>&gt;<i> the Garmin just sends when it feels like it and you can not force them.
+</I>&gt;<i> 
+</I>&gt;<i> Send/expect is just a bit too linear for where gpsd is at now.  Need to
+</I>&gt;<i> think more non-modal.  Not that I have a solution either.  Maybe set a
+</I>&gt;<i> flag that you are  waiting for an event and not close the gps until the
+</I>&gt;<i> flags are cleared or a timeout is hit.
+</I>&gt;<i> 
+</I>&gt;<i> Something like this could work for a one-shot fix mode too.  Wake up
+</I>&gt;<i> the GPS, wait for a good fix (or 4), ship the resultsand  go to sleep.
+</I>
+Actually, I found a really easy solution which however doesn't generalize.
+
+There's a DEVICEID_SET bit in the set-members mask which, up to now, has 
+only been used by the client-side library to flag the arrival of a fresh I
+response from the daemon.
+
+I've committed code which makes the SiRF driver return this in the
+validity mask for a sentence when the sentence is a firmware-version
+response that updates subtype.  
+
+I have also tweaked the Evermore driver to conditionally set
+DEVICEID_SET in the validity mask of the nav data sentence, which
+includes a version number field and updates subtype.  The conditional
+set is done only if the subtype buffer was previously empty.
+
+Finally, in the gpsd main loop, the code now checks to see if DEVICEID_SET
+was in the validity mask for the last sentence on a channel.  If so, an
+I notification is emitted to all channel watchers.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="004854.html">[Gpsd-dev] gpsd_ppsmonitor()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4853">[ date ]</a>
+              <a href="thread.html#4853">[ thread ]</a>
+              <a href="subject.html#4853">[ subject ]</a>
+              <a href="author.html#4853">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

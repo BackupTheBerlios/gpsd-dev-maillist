@@ -1,0 +1,105 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Altitude%20not%20always%20being%20reported&In-Reply-To=%3C20060517155653.GH11825%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003450.html">
+   <LINK REL="Next"  HREF="003452.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Altitude%20not%20always%20being%20reported&In-Reply-To=%3C20060517155653.GH11825%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported">esr at thyrsus.com
+       </A><BR>
+    <I>Wed May 17 17:56:53 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003450.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+        <LI>Next message: <A HREF="003452.html">[Gpsd-dev] Patch for compilation problems with RTCM104_SERVICE defined
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3451">[ date ]</a>
+              <a href="thread.html#3451">[ thread ]</a>
+              <a href="subject.html#3451">[ subject ]</a>
+              <a href="author.html#3451">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+&gt;<i> With &quot;buffering&quot;, one could collect all data from a single fix (sent in
+</I>&gt;<i> multiple messages from the receiver) in a single unit, and present it to
+</I>&gt;<i> the clients (or make available for polling) as a consistent set.  So
+</I>&gt;<i> position, velocity, error information etc all comes from a single fix.
+</I>&gt;<i> Maybe it would be better called &quot;double buffering&quot; as there is one buffer
+</I>&gt;<i> that holds a valid dataset for the clients, and one that is collecting the
+</I>&gt;<i> next dataset from the receiver messages.
+</I>&gt;<i> 
+</I>&gt;<i> This is not the same as the buffer we have now, because that is updated
+</I>&gt;<i> incrementally.  when it is not cleared at start of cycle it may hold a
+</I>&gt;<i> position from one fix, and velocity from the previous fix, for example. 
+</I>&gt;<i> (depending on the protocol in use, and the way it splits the data into
+</I>&gt;<i> different message types)
+</I>&gt;<i> 
+</I>&gt;<i> As mentioned before, there are (at least) these issues with double buffering:
+</I>&gt;<i> - it introduces a delay between what the receiver sends and what the
+</I>&gt;<i> client sees
+</I>&gt;<i> - it is difficult to know when you have collected all data the receiver
+</I>&gt;<i> will send for this fix, especially when you want the abovementioned delay
+</I>&gt;<i> to be small
+</I>&gt;<i> - the cycletime may be different for each message type, so not all cycles
+</I>&gt;<i> contain all data.  the decision whether to keep old data from previous
+</I>&gt;<i> fixes needs to be made, including the issue of what to do when certain
+</I>&gt;<i> data is no longer received (invalidate or keep last received value
+</I>&gt;<i> forever).
+</I>&gt;<i> 
+</I>&gt;<i> A double-buffering mechanism in fact implemented in gpsd, but only between
+</I>&gt;<i> the driver and the main fix buffer.  When gps_merge_fix is not called for
+</I>&gt;<i> every message, and the message flags are somehow collected until the end
+</I>&gt;<i> of the cycle, we would have the required buffer.  This is, however, not
+</I>&gt;<i> easy to implement.
+</I>
+And Rob puts his finger unerringly on why the thought of adding more
+buffering logic in the daemon frightens me.  &quot;Not easy&quot; is an 
+understatement -- &quot;total revolving bitch that will spawn subtle 
+timing-dependent bugs we'd be chasing for the next year&quot; would be 
+more accurate.
+
+I understand the demand for better buffering.  I just quail at the thought
+of what it's going to do to our stability and bug rates while we're
+getting it right.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003450.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+	<LI>Next message: <A HREF="003452.html">[Gpsd-dev] Patch for compilation problems with RTCM104_SERVICE defined
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3451">[ date ]</a>
+              <a href="thread.html#3451">[ thread ]</a>
+              <a href="subject.html#3451">[ subject ]</a>
+              <a href="author.html#3451">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

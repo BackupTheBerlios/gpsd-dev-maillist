@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-users] Can't connect TNTC
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-users%5D%20Can%27t%20connect%20TNTC&In-Reply-To=%3C91981b3e0610230855n11c41b12o7c48bc5ff7c6a995%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004558.html">
+   <LINK REL="Next"  HREF="004569.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-users] Can't connect TNTC</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-users%5D%20Can%27t%20connect%20TNTC&In-Reply-To=%3C91981b3e0610230855n11c41b12o7c48bc5ff7c6a995%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [Gpsd-users] Can't connect TNTC">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Mon Oct 23 17:55:21 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004558.html">[Gpsd-dev] [Gpsd-users] Can't connect TNTC
+</A></li>
+        <LI>Next message: <A HREF="004569.html">[Gpsd-dev] [Gpsd-users] Can't connect TNTC
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4559">[ date ]</a>
+              <a href="thread.html#4559">[ thread ]</a>
+              <a href="subject.html#4559">[ subject ]</a>
+              <a href="author.html#4559">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 10/23/06, Massimo Burcheri &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">burcheri at fgan.de</A>&gt; wrote:
+&gt;<i> Am Freitag, den 20.10.2006, 09:19 -0600 schrieb Chris Kuethe:
+</I>&gt;<i> &gt; a number, so sscanf stops. As the field right after PTNTHM is &quot;?&quot;
+</I>&gt;<i> &gt; sscanf stops there and doesn't try convert the rest of the message.
+</I>&gt;<i>
+</I>&gt;<i> But there is no &quot;?&quot; in the message:
+</I>&gt;<i>
+</I>&gt;<i> $PTNTHTM,283.4,N,-2.9,N,29.2,N,54.0,4656*23
+</I>
+GPSD,O=PTNTHTM ? 0.005 ? ? 59.10 ? ? 285.1000 10.700 -2.400 ? ? ? 3
+
+In the 'O' message that is generated from PTHTHM there is. And clients
+trying to parse that message would fail.
+
+&gt;<i> &gt; What about using other messages, like &quot;IAVT&quot;.
+</I>&gt;<i> What is that? I didn't find something on google with &quot;iavt nmea&quot;.
+</I>&gt;<i> An NMEA sentence?
+</I>
+Gpsd will accept combination commands - &quot;SPAMQTV&quot; for example - check
+the manpage to see what that would produce.
+
+# echo IAVT | nc 127.0.0.1 2947
+GPSD,I=True North,A=59.100,V=20.799,T=285.1000
+
+&gt;<i> &gt; Maybe we could zero the fields, and hope that truenorth users read the
+</I>&gt;<i> &gt; docs to see what's meaningful?
+</I>&gt;<i>
+</I>&gt;<i> I see, you're not talking about the implementation of truenorth.c.
+</I>&gt;<i> I forwarded this message to all the people who were involved with TNTC
+</I>&gt;<i> in the past. Is there anyone who could modify the TNTC interface to get
+</I>&gt;<i> it working?
+</I>
+Truenorth.c seems to be working well enough. It's the NMEA parser
+whose behaviour needs to be investigated. I think it's doing the job
+correctly.
+
+&gt;<i> Currently with Rev. 3612 I get a bit more, but not correct:
+</I>&gt;<i> ...
+</I>&gt;<i> Of course I can decide which values are the right one for me but the
+</I>&gt;<i> values are wrong.
+</I>
+I now direct you to the source code... nmea_parse.c:494. Read and
+understand. Cgps will try convert whatever it gets back from gpsd into
+the units you want. As I think we've said before, we're stuffing the
+data we get back from the truenorth into fields not designed to hold
+those quantities.
+
+This was a bit of a tough decision because we're a) pretty much out of
+single letter commands in gpsd protocol v3 and b) extending an
+existing message is likely break older clients in a very big way.
+Thus, we just stuff the quantities into a message, pass it on, and let
+you convert them.
+
+I will leave it to Jeff to decide if he wants to extend cgps to have a
+unitless-display-of-wire-protocol mode, perhaps invoked by
+GPSD_UNITS=&quot;none&quot;.
+
+CK
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004558.html">[Gpsd-dev] [Gpsd-users] Can't connect TNTC
+</A></li>
+	<LI>Next message: <A HREF="004569.html">[Gpsd-dev] [Gpsd-users] Can't connect TNTC
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4559">[ date ]</a>
+              <a href="thread.html#4559">[ thread ]</a>
+              <a href="subject.html#4559">[ subject ]</a>
+              <a href="author.html#4559">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,144 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Single-writer/many-reader consistency
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3C4D8E5F5A.4090008%40tmsw.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009105.html">
+   <LINK REL="Next"  HREF="009112.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Single-writer/many-reader consistency</H1>
+    <B>Terje Mathisen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3C4D8E5F5A.4090008%40tmsw.no%3E"
+       TITLE="[Gpsd-dev] Single-writer/many-reader consistency">terje at tmsw.no
+       </A><BR>
+    <I>Sat Mar 26 22:49:14 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009105.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+        <LI>Next message: <A HREF="009112.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9110">[ date ]</a>
+              <a href="thread.html#9110">[ thread ]</a>
+              <a href="subject.html#9110">[ subject ]</a>
+              <a href="author.html#9110">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Dave Hart wrote:
+&gt;<i> On Sat, Mar 26, 2011 at 7:36 PM, Eric Raymond&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt;  wrote:
+</I>&gt;&gt;<i> It's the same painful tradeoff that tz and I and other discussants
+</I>&gt;&gt;<i> have been grappling with for the last week in one way or another. &#194; The
+</I>&gt;&gt;<i> methods that provably prevent corrupt data have nasty blocking failure
+</I>&gt;&gt;<i> modes; the methods that don't have scary worst-case behavior may
+</I>&gt;&gt;<i> produce intermittent data corruption in the *normal* case if the underlying
+</I>&gt;&gt;<i> hardware messes with operation order enough.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I am by no means sure I know where to land. &#194; I have working seqlocks
+</I>&gt;&gt;<i> now and am oscillating back and forth about whether to scrap that and go
+</I>&gt;&gt;<i> with semaphores. &#194; I was almost ready to do it until two things happened:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> (a) tz pointed out correctly that in a semaphore-based approach, readers
+</I>&gt;&gt;<i> have to assert as well as writers - otherwise writer can start an update while
+</I>&gt;&gt;<i> reader is still reading.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> (b) I then realized that under a correct semaphore implementation,
+</I>&gt;&gt;<i> anybody dying while semaphore is asserted starves everybody else
+</I>&gt;&gt;<i> (which we should have remembered from Operating Systems 101). &#194; This is
+</I>&gt;&gt;<i> a very practical problem because while we haven't had a crash bug in
+</I>&gt;&gt;<i> gpsd since something like 2005, I can't say the same thing about all
+</I>&gt;&gt;<i> the clients out there!
+</I>&gt;<i>
+</I>&gt;<i> Thanks for your clear summary of the dilemma.
+</I>&gt;<i>
+</I>&gt;&gt;<i> This is pushing me back towards sticking with the working seqlock.
+</I>&gt;&gt;<i> But *that* means I have to either deal with the pile of nonportable
+</I>&gt;&gt;<i> hair that is memory barriers or expensively checksum the data.
+</I>&gt;<i>
+</I>&gt;<i> If you do checksum, ISTR CRC32 isn't terribly strong for 8k.  MD5 is
+</I>&gt;<i> widely-available and reasonably fast, and for this purpose, I beieve
+</I>&gt;<i> its cryptographic weakness is any reason to avoid it.
+</I>&gt;<i>
+</I>&gt;&gt;<i> Yes, I've been listening to Terje too. &#194; The problem is that his proposal
+</I>&gt;&gt;<i> is complicated enough to make my head hurt - and I plain don't trust
+</I>&gt;&gt;<i> complicated algorithms in cases like this, they tend to have holes
+</I>&gt;&gt;<i> where nobody is looking and be difficult to *maintain* correctness of
+</I>&gt;&gt;<i> even if they started out correct.
+</I>&gt;<i>
+</I>&gt;<i> The cost of 4 payload copies is trivial for refclock_shm.c, and CRC32
+</I>&gt;<i> is more than sufficient to detect corruption and could be layered in
+</I>&gt;<i> for belt-and-suspenders detection of problems with the lock-free ring
+</I>&gt;<i> buffer approach.  The tradeoffs for gpsd are different.
+</I>&gt;<i>
+</I>&gt;<i> Personally, my head isn't hurting thinking about the approach Terje
+</I>&gt;<i> describes for refclock_shm.  I have used similar approaches for
+</I>&gt;<i> producer/consumer lockless queueing repeatedly in the past.  That was
+</I>&gt;<i> usually solving a slightly different problem, with a single or several
+</I>&gt;<i> consumers that dequeue items, but it's easier with a more
+</I>&gt;<i> broadcast-like arrangement of single writer, multiple readers who
+</I>&gt;<i> never change shared memory, only examine.
+</I>
+I started writing hw interrupt drivers in 1982, at that time I had to 
+&quot;compile&quot; them in DEBUG.EXE, then embed the resulting hex bytes in my 
+Modula2 source code. :-)
+
+I got the idea for a 32-bit counter that is used to index into a small 
+power-of-two array from work I've been discussing in UseNet, on comp.arch:
+
+Using a locked fetch_and_adds (XADD on x86) makes it possible to have 
+multiple writers and multiple readers, and as long as the buffer size is 
+larger than the number of readers/writers, you can setup a queue where 
+nobody ever has to spin, where a hung reader or writer will only affect 
+the single entry being read/written by that process, and as long as the 
+queue is neither full nor empty, no process ever has to go to sleep.
+
+(BTW, XADD [ebx],eax will fetch the current value in [EBX] and return it 
+in EAX, while [EBX] ends up being incremented by the incoming value in 
+EAX. I.e. with EAX = 1 you increment the memory counter.)
+
+AFAIR we came up with a total of 6 separate counters needed (write ptr, 
+read ptr, valid entries, free entries plus two more which I don't recall 
+just now but were needed to guard against special failure modes...
+
+What we have here in shm with a single writer and one or multiple shared 
+readers is much, much simpler.
+
+Terje
+-- 
+- &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Terje at tmsw.no</A>&gt;
+&quot;almost all programming can be viewed as an exercise in caching&quot;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009105.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+	<LI>Next message: <A HREF="009112.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9110">[ date ]</a>
+              <a href="thread.html#9110">[ thread ]</a>
+              <a href="subject.html#9110">[ subject ]</a>
+              <a href="author.html#9110">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

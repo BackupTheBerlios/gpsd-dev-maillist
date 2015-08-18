@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: SiRF-II binary has some curious holes in its capabilities.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20SiRF-II%20binary%20has%20some%20curious%20holes%20in%20its%20capabilities.&In-Reply-To=%3C20050301231510.GA1154%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000759.html">
+   <LINK REL="Next"  HREF="000765.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: SiRF-II binary has some curious holes in its capabilities.</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20SiRF-II%20binary%20has%20some%20curious%20holes%20in%20its%20capabilities.&In-Reply-To=%3C20050301231510.GA1154%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Re: SiRF-II binary has some curious holes in its capabilities.">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Mar  2 00:15:10 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000759.html">[Gpsd-dev] Re: SiRF-II binary has some curious holes in its capabilities.
+</A></li>
+        <LI>Next message: <A HREF="000765.html">[Gpsd-dev] Re: SiRF-II binary has some curious holes in its capabilities.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#760">[ date ]</a>
+              <a href="thread.html#760">[ thread ]</a>
+              <a href="subject.html#760">[ subject ]</a>
+              <a href="author.html#760">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Chris Kuethe &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">ckuethe at ualberta.ca</A>&gt;:
+&gt;<i> &gt;gpsd: GNI payload length 91: 
+</I>&gt;<i> &gt;290000000001200ef1a1e600000000000000000000000017dcd1fed2fc7e19000030ff00003e38000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+</I>&gt;<i> &gt;gpsd: NAV Type: 00
+</I>&gt;<i> &gt;gpsd: Status = 0, mode = 1
+</I>&gt;<i> &gt;gpsd: GPS Week: 288  TOW: 250716646
+</I>&gt;<i> &gt;gpsd: UTC: 1985-08-12T01:26:6.460
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;The ID and payload length match the docs, but that's the end of the 
+</I>&gt;<i> &gt;happiness.
+</I>&gt;<i> &gt;Note the obviously wrong GPS week value.  The UTC date isn't from the UTC
+</I>&gt;<i> &gt;fields but computed from week/TOW value.
+</I>&gt;<i> 
+</I>&gt;<i> eek.
+</I>&gt;<i> 
+</I>&gt;<i> the week is right. it is gps week 287. it is extended gps week 1317.
+</I>&gt;<i> time of week is in milliseconds.
+</I>
+Oh -- you mean I'm getting original GPS weeks rather than extended weeks?
+That I can cope with.  I successfully wrote code to convert those to UTC
+when interpreting message 2.
+
+&gt;<i> In my issue of 2.3.1ES, most of that packet was zeroed out.
+</I>
+Interesting...
+ 
+&gt;<i> Feeding it to my decoders:
+</I>&gt;<i> # ./testdecode 
+</I>&gt;<i> 00 00 00 00  01 20 0e f1 
+</I>&gt;<i> a1 e6 00 00  00 00 00 00 
+</I>&gt;<i> 00 00 00 00  00 00 17 dc 
+</I>&gt;<i> d1 fe d2 fc  7e 19 00 00 
+</I>&gt;<i> 30 ff 00 00  3e 38 00 00 
+</I>&gt;<i> 00 00 00 00  00 00 00 00 
+</I>&gt;<i> 00 00 00 00  00 00 00 00 
+</I>&gt;<i> 00 00 00 00  00 00 00 00 
+</I>&gt;<i> 00 00 00 00  00 00 00 00 
+</I>&gt;<i> 00 00 00 00  00 00 00 00 
+</I>&gt;<i> 00 00 00 00  00 00
+</I>&gt;<i> 
+</I>&gt;<i> 0 Geodetic Navigation Data [41]
+</I>&gt;<i>         Nav Validity: Valid
+</I>&gt;<i>         Nav Type: 0x0000 - No Nav Solution, Trickle Power Off, No Altitude 
+</I>&gt;<i>         Hold, SiRFDrive Off, DGPS Corrections Off, GPS-only solution
+</I>&gt;<i>         Extended Week Number 288
+</I>&gt;<i>         TOW: 250716.646
+</I>&gt;<i>         UTC Time: 00/00/00 00:00:00.000
+</I>&gt;<i>         SVs Used in Fix:
+</I>&gt;<i>         Latitude: 40.034765
+</I>&gt;<i>         Longitude: -75.520458
+</I>&gt;<i>         Altitude Above Elipsoid: 125.43m
+</I>&gt;<i>         Altitude Above Mean Sea Level: 159.28m
+</I>&gt;<i>         Datum: WGS-84 (0)
+</I>&gt;<i>         Speed Over Ground: 0.00m/s
+</I>&gt;<i>         Course Over Ground: 0.00deg
+</I>&gt;<i>         Magnetic Variation: 0
+</I>&gt;<i>         Climb Rate: 0.00m/s
+</I>&gt;<i>         Clock Bias: 0.00m/s
+</I>&gt;<i>         Clock Drift: 0.00m/s
+</I>&gt;<i>         SVs: 0
+</I>&gt;<i>         HDOP: 0.0
+</I>&gt;<i>         Reserved: 0
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> &gt;My firmware version is 231.000.000ES-01-39.  Am I screwed?
+</I>&gt;<i> 
+</I>&gt;<i> Mostly.
+</I>
+But, you know, that packet disassembly doesn't look bad.  OK, so
+UTC is zero.  But the position/velocity data looks right.  The HDOP
+of 0.0 is the only other part that looks bogus.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000759.html">[Gpsd-dev] Re: SiRF-II binary has some curious holes in its capabilities.
+</A></li>
+	<LI>Next message: <A HREF="000765.html">[Gpsd-dev] Re: SiRF-II binary has some curious holes in its capabilities.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#760">[ date ]</a>
+              <a href="thread.html#760">[ thread ]</a>
+              <a href="subject.html#760">[ subject ]</a>
+              <a href="author.html#760">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

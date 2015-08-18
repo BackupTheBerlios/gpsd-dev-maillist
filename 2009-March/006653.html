@@ -1,0 +1,181 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Build system patches to support VPATH builds (passes	'make distcheck')
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Build%20system%20patches%20to%20support%20VPATH%20builds%20%28passes%0A%09%27make%20distcheck%27%29&In-Reply-To=%3C49C474FE.1090602%40bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006690.html">
+   <LINK REL="Next"  HREF="006656.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Build system patches to support VPATH builds (passes	'make distcheck')</H1>
+    <B>Richard Hansen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Build%20system%20patches%20to%20support%20VPATH%20builds%20%28passes%0A%09%27make%20distcheck%27%29&In-Reply-To=%3C49C474FE.1090602%40bbn.com%3E"
+       TITLE="[Gpsd-dev] Build system patches to support VPATH builds (passes	'make distcheck')">rhansen at bbn.com
+       </A><BR>
+    <I>Sat Mar 21 06:02:54 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006690.html">[Gpsd-dev] [Gpsd-commit-watch] r5430 - in trunk: . www
+</A></li>
+        <LI>Next message: <A HREF="006656.html">[Gpsd-dev] Build system patches to support VPATH builds (passes 'make distcheck')
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6653">[ date ]</a>
+              <a href="thread.html#6653">[ thread ]</a>
+              <a href="subject.html#6653">[ subject ]</a>
+              <a href="author.html#6653">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi all,
+
+Attached are some build system patches (against svn r5509):
+
+* pass-distcheck.patch
+
+This patch modifies Makefile.am and setup.py so that 'make distcheck' 
+passes.  This patch makes it possible to do VPATH builds (putting build 
+products in a separate directory from the unpacked tarball).
+
+Note that I have NOT tested dist-rpm.
+
+The most awkward part of this patch is the changes to setup.py. 
+Python's distutils package does not have built-in support for VPATH 
+builds, which significantly complicates things.  Interestingly, Python's 
+own build system supposedly supports VPATH builds even though it uses 
+distutils.  Python's setup.py script subclasses several of the distutils 
+packages, so the VPATH magic must happen somewhere in those hundreds of 
+lines of code.  I'll investigate further when I have the time.  For now, 
+the changes to setup.py are fairly minimal and should work.
+
+The rest of the patches address issues I noticed while creating the 
+above patch:
+
+* manpages.patch
+
+This patch makes several changes related to the man pages:
+   - the man pages are now installed even if HAVE_XSLT_PROCESSOR is false
+   - all man pages are built when running &quot;make dist&quot; and included in 
+the resulting tarball, even if Python or rtcm104v2 are disabled
+   - redundant dependency rules were deleted
+   - the man pages without corresponding .xml files now have a build rule
+
+* ac_require-fix.patch
+
+Autoconf has a longstanding bug in AC_REQUIRE that causes out-of-order 
+macro expansion problems.  This patch works around the Autoconf bug.  I 
+noticed strange shell errors when running configure with 
+'--disable-python', and some quick googling revealed the problem and the 
+workaround.
+
+* autogen-field-splitting.patch
+
+This prevents autogen.sh from doing field splitting on the parameters 
+passed to configure.  Before, running the following:
+   $ ./autogen.sh CC=&quot;ccache gcc&quot;
+would call configure like this:
+   ./configure CC=ccache gcc
+Notice the two separate parameters:  &quot;CC=ccache&quot; and &quot;gcc&quot;.  Now 
+autogen.sh calls configure like this:
+   ./configure &quot;CC=ccache gcc&quot;
+
+* setup.py-exit-on-make-error.patch
+
+This patch causes setup.py to exit with a non-zero return code if the 
+call to make fails.
+
+* use-correct-make-command.patch
+
+setup.py was hardcoded to always use 'make', even if the top-level make 
+was something different, like 'gmake'.  This patch causes setup.py to 
+use the proper make command.
+
+* python-dependencies.patch
+
+This patch adds missing dependencies related to the Python modules.
+
+-Richard
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: ac_require-fix.patch
+Type: text/x-patch
+Size: 1113 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090321/5a7b71c4/attachment.bin">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090321/5a7b71c4/attachment.bin</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: autogen-field-splitting.patch
+Type: text/x-patch
+Size: 243 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090321/5a7b71c4/attachment-0001.bin">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090321/5a7b71c4/attachment-0001.bin</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: manpages.patch
+Type: text/x-patch
+Size: 2607 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090321/5a7b71c4/attachment-0002.bin">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090321/5a7b71c4/attachment-0002.bin</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: pass-distcheck.patch
+Type: text/x-patch
+Size: 2415 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090321/5a7b71c4/attachment-0003.bin">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090321/5a7b71c4/attachment-0003.bin</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: python-dependencies.patch
+Type: text/x-patch
+Size: 997 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090321/5a7b71c4/attachment-0004.bin">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090321/5a7b71c4/attachment-0004.bin</A>&gt;
+-------------- next part --------------
+An embedded and charset-unspecified text was scrubbed...
+Name: series
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090321/5a7b71c4/attachment.ksh">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090321/5a7b71c4/attachment.ksh</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: setup.py-exit-on-make-error.patch
+Type: text/x-patch
+Size: 572 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090321/5a7b71c4/attachment-0005.bin">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090321/5a7b71c4/attachment-0005.bin</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: use-correct-make-command.patch
+Type: text/x-patch
+Size: 893 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090321/5a7b71c4/attachment-0006.bin">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090321/5a7b71c4/attachment-0006.bin</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006690.html">[Gpsd-dev] [Gpsd-commit-watch] r5430 - in trunk: . www
+</A></li>
+	<LI>Next message: <A HREF="006656.html">[Gpsd-dev] Build system patches to support VPATH builds (passes 'make distcheck')
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6653">[ date ]</a>
+              <a href="thread.html#6653">[ thread ]</a>
+              <a href="subject.html#6653">[ subject ]</a>
+              <a href="author.html#6653">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

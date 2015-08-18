@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Big patch coming, unless somebody says boo
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Big%20patch%20coming%2C%20unless%20somebody%20says%20boo&In-Reply-To=%3C91981b3e0611292251v2d9383d7ya24791d2a3e9bc93%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005335.html">
+   <LINK REL="Next"  HREF="005339.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Big patch coming, unless somebody says boo</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Big%20patch%20coming%2C%20unless%20somebody%20says%20boo&In-Reply-To=%3C91981b3e0611292251v2d9383d7ya24791d2a3e9bc93%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Big patch coming, unless somebody says boo">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Thu Nov 30 07:51:08 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005335.html">[Gpsd-dev] Big patch coming, unless somebody says boo
+</A></li>
+        <LI>Next message: <A HREF="005339.html">[Gpsd-dev] Big patch coming, unless somebody says boo
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5336">[ date ]</a>
+              <a href="thread.html#5336">[ thread ]</a>
+              <a href="subject.html#5336">[ subject ]</a>
+              <a href="author.html#5336">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 11/29/06, Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> Chris Kuethe &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">chris.kuethe at gmail.com</A>&gt;:
+</I>&gt;<i> The goal, as you probably conjectured, is to make adding new
+</I>&gt;<i> regression tests less of a pain in the tuchus. To that end, I've
+</I>&gt;<i> decided I don't want to maintain two packet sniffers (one in C and one
+</I>&gt;<i> in Python) anymore.
+</I>&gt;<i>
+</I>&gt;<i> So I'm going to disentangle the C packet sniffer from the rest of the code
+</I>&gt;<i> and figure out some way to glue it into gpsfake.  This patch is the first
+</I>&gt;<i> (and most difficult) step in the process.
+</I>
+And since the C sniffer is the one that gets way more use, we may as
+well try reuse it (python bindings) ... right?
+
+Indeed, adding protocols to gpsfake is a pain. I think you might want
+to revisit the format. For my local playback engine, i just have
+(optionally) timestamped hexdumps. It's protocol-independent and
+allows me to preserve timing characteristics (if necessary, which so
+far it isn't). You can put plaintext metadata in # comments, but
+unless you're implementing a conversation protocol (like garmin) you
+can just spew packets at some fraction/multiple of realtime speed.
+
+&gt;<i> &gt; And are you going to compile with all possible driver combinations? it
+</I>&gt;<i> &gt; doesn't take that long, especially if you script it. :)
+</I>&gt;<i>
+</I>&gt;<i> Yeah?  Show me the script :-).
+</I>
+script sent via private mail. anyone else who wants a copy can have
+one, it's just a bunch of nested loops to set up the --enable and
+--disable flags...
+
+585 builds in 4hr on my 1.8GHz pentium4 laptop. use of a ramdisk
+doesn't help much - i've got a pretty big cache on my disk, my
+filesystem cache is turn up as well, and the filesystem is mounted
+asynchronous, so there's not a lot of cause to beat up on the disk. so
+it'll take probably 16hr to test all 11 supported drivers (italk/itrax
+aren't supported drivers yet).  This'll get right painful when we get
+up to 13 or 14 drivers and that's looking like a very real possibility
+in the near term.
+
+&gt;<i> &gt; Hah! 3 hours west of you means I'm still awake.
+</I>&gt;<i>
+</I>&gt;<i> I suppose so.  Reckoned without hacker scheduling, I did.  Do you have
+</I>&gt;<i> any particular time preference?
+</I>
+It's never a good time to break anything. It's always a good time to
+fix something properly.
+
+&gt;<i> &gt; I've got other fluff to work on.
+</I>&gt;<i> I hope figuring out why the TSIP driver seems to start ignoring the
+</I>&gt;<i> stuff gpsfake throws at it is on the list somewhere.  And if you can
+</I>&gt;<i> determine that instead it's gpsfake that is somehow screwing up, that
+</I>&gt;<i> would be useful too.
+</I>
+Knee-jerk reaction, it's gpsfake - this doesn't happen reading from a
+fifo or a real gps. Knee-jerk reaction, it's the daemon. it's job is
+to process packets, and quite frankly, it ain't.
+
+Are we sure that gpsfake isn't subtly corrupting things
+(byte-stuffing?). Is the tty being naughty?
+
+&gt;<i> We've *got* to have a regression-test infrastructure that's sound,
+</I>&gt;<i> especially if we're going to start adding new drivers like crazy after
+</I>&gt;<i> 2.34.
+</I>
+Indeed. I now have a prototype framework to compile with every
+combination of every supported driver. And by noon tomorrow, I should
+have a test log that proves that r4029 compiles with any combination
+of drivers.
+
+Then we get to make sure I can &quot;make regress&quot; and get $? == 0 if all
+went well. Then speed it up. With 15 drivers, it'll take me a week of
+uninterruped builds in a ramdisk to just compile test everything to
+say nothing of actually running 8200 passes through the regression
+suite.
+
+How badly do you want 100% test coverage prior to release?
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005335.html">[Gpsd-dev] Big patch coming, unless somebody says boo
+</A></li>
+	<LI>Next message: <A HREF="005339.html">[Gpsd-dev] Big patch coming, unless somebody says boo
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5336">[ date ]</a>
+              <a href="thread.html#5336">[ thread ]</a>
+              <a href="subject.html#5336">[ subject ]</a>
+              <a href="author.html#5336">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

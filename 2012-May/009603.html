@@ -1,0 +1,87 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] broken compile on !linux
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2012-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20broken%20compile%20on%20%21linux&In-Reply-To=%3CCAGHP0p%2BO_P_S98Y69EOOL28V1Uri0y9F2CPqe2YZEBD-61dbPg%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009602.html">
+   <LINK REL="Next"  HREF="009604.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] broken compile on !linux</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20broken%20compile%20on%20%21linux&In-Reply-To=%3CCAGHP0p%2BO_P_S98Y69EOOL28V1Uri0y9F2CPqe2YZEBD-61dbPg%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] broken compile on !linux">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Mon May 14 21:51:03 CEST 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009602.html">[Gpsd-dev] [gpsd-dev][PATCH]Spell checking
+</A></li>
+        <LI>Next message: <A HREF="009604.html">[Gpsd-dev] broken compile on !linux
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9603">[ date ]</a>
+              <a href="thread.html#9603">[ thread ]</a>
+              <a href="subject.html#9603">[ subject ]</a>
+              <a href="author.html#9603">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>nmea2000 depends on linux/can.h - this allows me to just type &quot;scons&quot;
+and build. ok to commit?
+
+diff --git a/SConstruct b/SConstruct
+index 120d8ef..e01076e 100644
+--- a/SConstruct
++++ b/SConstruct
+@@ -488,6 +488,14 @@ else:
+     confdefs.append(&quot;/* #undef HAVE_SYS_TIMEPPS_H */\n&quot;)
+     announce(&quot;You do not have kernel PPS available.&quot;)
+
++if config.CheckHeader(&quot;linux/can.h&quot;):
++    confdefs.append(&quot;#define HAVE_LINUX_CAN_H 1\n&quot;)
++    announce(&quot;You have kernel CANbus available.&quot;)
++else:
++    confdefs.append(&quot;/* #undef HAVE_LINUX_CAN_H */\n&quot;)
++    announce(&quot;You do not have kernel CANbus available.&quot;)
++    env[&quot;nmea2000&quot;] = False
++
+ # check function after libraries, because some function require library
+ # for example clock_gettime() require librt on Linux
+ for f in (&quot;daemon&quot;, &quot;strlcpy&quot;, &quot;strlcat&quot;, &quot;clock_gettime&quot;):
+
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009602.html">[Gpsd-dev] [gpsd-dev][PATCH]Spell checking
+</A></li>
+	<LI>Next message: <A HREF="009604.html">[Gpsd-dev] broken compile on !linux
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9603">[ date ]</a>
+              <a href="thread.html#9603">[ thread ]</a>
+              <a href="subject.html#9603">[ subject ]</a>
+              <a href="author.html#9603">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

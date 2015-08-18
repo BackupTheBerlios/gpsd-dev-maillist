@@ -1,0 +1,103 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [gpsd-dev at lists.berlios.de] [Gpsd-commit-watch]	Project gpsd at BerliOS branch, master,	updated. release-2.94-228-g4174de6
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bgpsd-dev%40lists.berlios.de%5D%20%5BGpsd-commit-watch%5D%0A%09Project%20gpsd%20at%20BerliOS%20branch%2C%20master%2C%0A%09updated.%20release-2.94-228-g4174de6&In-Reply-To=%3CAANLkTinvV8lMbR2KSYhkEC3I7C0iygiU15-6saR7dUxI%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007859.html">
+   <LINK REL="Next"  HREF="007847.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [gpsd-dev at lists.berlios.de] [Gpsd-commit-watch]	Project gpsd at BerliOS branch, master,	updated. release-2.94-228-g4174de6</H1>
+    <B>Olivier Cornu</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bgpsd-dev%40lists.berlios.de%5D%20%5BGpsd-commit-watch%5D%0A%09Project%20gpsd%20at%20BerliOS%20branch%2C%20master%2C%0A%09updated.%20release-2.94-228-g4174de6&In-Reply-To=%3CAANLkTinvV8lMbR2KSYhkEC3I7C0iygiU15-6saR7dUxI%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [gpsd-dev at lists.berlios.de] [Gpsd-commit-watch]	Project gpsd at BerliOS branch, master,	updated. release-2.94-228-g4174de6">o.cornu at gmail.com
+       </A><BR>
+    <I>Tue Jun  1 12:26:15 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007859.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+        <LI>Next message: <A HREF="007847.html">[Gpsd-dev] [gpsd-dev at lists.berlios.de] [Gpsd-commit-watch]	Project gpsd at BerliOS branch, master,	updated. release-2.94-228-g4174de6
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7846">[ date ]</a>
+              <a href="thread.html#7846">[ thread ]</a>
+              <a href="subject.html#7846">[ subject ]</a>
+              <a href="author.html#7846">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Mon, May 31, 2010 at 16:01, Olivier Cornu &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">o.cornu at gmail.com</A>&gt; wrote:
+&gt;&gt;<i> I suspect only the regression suite is broken and the gpsd core is
+</I>&gt;&gt;<i> fine (minus the above mentioned UDP bug). Likely, the regression
+</I>&gt;&gt;<i> framework &#160;somehow uses packet_get() and makes assumptions that the 16
+</I>&gt;&gt;<i> bytes patch has just broken.
+</I>
+Although the patch has been reverted i suppose we're still tracking
+this bug, as it might bite us again while we attempt other fixes...
+
+In case you've missed it on #gpsd: Sanooj straced this bug back to
+fake.py using packet_get() to grab 16 bytes and going &quot;wtf is this? go
+away!&quot;.
+Apparently, it assumes packet_get() will read a full packet in a
+single call. It used to work as it reads from a log file (it no longer
+does with the 16 bytes patch).
+
+On the other hand, gps_poll (as well as the main loop design) assumes
+packet_get() will never read 2 packets in a single call. It used to
+work as well when limited to RS232, it does not with USB/BT serial
+ports.
+Finally, Remco recently found that the Linux kernel layer expects
+packet_get() to read a full UDP datagram in one call. In theory, the
+max data size of such a datagram is around 2^16 bytes; in practice, i
+don't know what we use them for so i can't tell.
+
+Anyway, packet_get is at least assumed to:
+ - always read a packet in one go
+ - never read 2+ packets in one go
+In a packet world where LARGEST&gt;=2*SMALLEST, the packet_get function
+cannot exist.
+
+Overall, there seem to be too many different (and mainly silent)
+assumptions made about the widely used packet_get. It probably can't
+be as generic/ubiquitous as it is expected to be.
+It shouldn't be too hard to fix though. The longest part probably will
+be identifying what those silent assumptions actually are.
+
+
+Cheers,
+
+-- 
+Olivier
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007859.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+	<LI>Next message: <A HREF="007847.html">[Gpsd-dev] [gpsd-dev at lists.berlios.de] [Gpsd-commit-watch]	Project gpsd at BerliOS branch, master,	updated. release-2.94-228-g4174de6
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7846">[ date ]</a>
+              <a href="thread.html#7846">[ thread ]</a>
+              <a href="subject.html#7846">[ subject ]</a>
+              <a href="author.html#7846">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

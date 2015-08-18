@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Choosing the prototype device correctly
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Choosing%20the%20prototype%20device%20correctly&In-Reply-To=%3C20061218220157.GA2883%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005464.html">
+   <LINK REL="Next"  HREF="005467.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Choosing the prototype device correctly</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Choosing%20the%20prototype%20device%20correctly&In-Reply-To=%3C20061218220157.GA2883%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Choosing the prototype device correctly">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Dec 18 23:01:57 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005464.html">[Gpsd-dev] Imminent gpsd release warning
+</A></li>
+        <LI>Next message: <A HREF="005467.html">[Gpsd-dev] Choosing the prototype device correctly
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5466">[ date ]</a>
+              <a href="thread.html#5466">[ thread ]</a>
+              <a href="subject.html#5466">[ subject ]</a>
+              <a href="author.html#5466">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;:
+&gt;<i> That's much better.  I read some of the code and made the following
+</I>&gt;<i> diff.  Some of this might be wrong, but I'm guessing that the
+</I>&gt;<i> combination of me not knowing things and making a guess and you being
+</I>&gt;<i> able to tell what I did wrong quickly will be helpful.
+</I>
+Yes, I'm about to merge in most of your changes.
+ 
+&gt;<i> I realize what I said about group read/write is verbose, but on
+</I>&gt;<i> reading your text I expected that if I did 'chgrp gps /dev/dty00
+</I>&gt;<i> /dev/dtyU0' and then started gpsd with those two the right thing would
+</I>&gt;<i> happen.  Instead, it seems it will look for /dev/ttyS0 (which it won't
+</I>&gt;<i> find on NetBSD - that's a Linux name), but if it did it would use that
+</I>&gt;<i> group.
+</I>
+I would welcome a patch for gpsd.c from you that changed this:
+
+/*
+ * The name of a tty device from which to pick up whatever the local
+ * owning group for tty devices is.  Used when we drop privileges.
+ */
+#define PROTO_TTY &quot;/dev/ttyS0&quot;
+
+to something like this:
+
+/*
+ * The name of a tty device from which to pick up whatever the local
+ * owning group for tty devices is.  Used when we drop privileges.
+ */
+#ifdef XXXXXXXX
+#define PROTO_TTY &quot;/dev/tty00&quot;	/* correct for NetBSD */
+#else
+#define PROTO_TTY &quot;/dev/ttyS0&quot;	/* correct for Linux */
+#endif /* */
+
+I'd do this myself, but I don't know the right thing to substitute for
+XXXXXXXX.
+
+Chris Kuethe, what should this code look like to do the right thing on OpenBSD?
+
+&gt;<i> Also, the source code seems to chmod g+rw the device files it opens,
+</I>&gt;<i> but this isn't documented.
+</I>
+I'll add a note to that effect.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005464.html">[Gpsd-dev] Imminent gpsd release warning
+</A></li>
+	<LI>Next message: <A HREF="005467.html">[Gpsd-dev] Choosing the prototype device correctly
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5466">[ date ]</a>
+              <a href="thread.html#5466">[ thread ]</a>
+              <a href="subject.html#5466">[ subject ]</a>
+              <a href="author.html#5466">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

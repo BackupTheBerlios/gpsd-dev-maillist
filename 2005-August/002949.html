@@ -1,0 +1,96 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: Navman Jupiter Support
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20Navman%20Jupiter%20Support&In-Reply-To=%3C5905.213.84.187.156.1124352075.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002946.html">
+   <LINK REL="Next"  HREF="002948.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: Navman Jupiter Support</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20Navman%20Jupiter%20Support&In-Reply-To=%3C5905.213.84.187.156.1124352075.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] Re: Navman Jupiter Support">gpsd at xs4all.nl
+       </A><BR>
+    <I>Thu Aug 18 10:01:15 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002946.html">[Gpsd-dev] Re: Navman Jupiter Support
+</A></li>
+        <LI>Next message: <A HREF="002948.html">[Gpsd-dev] Navman Jupiter Support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2949">[ date ]</a>
+              <a href="thread.html#2949">[ thread ]</a>
+              <a href="subject.html#2949">[ subject ]</a>
+              <a href="author.html#2949">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> I do not know how to get the channel number.  Am I missing something?
+</I>&gt;<i> Or are you assumeing that the postiion in the GPGSV statements maps
+</I>&gt;<i> to channel number?
+</I>
+I think in protocols where you have no information about the channel
+number you can use a method like that.  It will not be worse than what we
+have now.
+In binary protocols the channel numbers are either explicitly available,
+or are implicit in that the message contains an array of information items
+where each position in the array corresponds with a channel.
+In the current drivers such arrays are scanned and only the active
+channels are copied into the gpsdata arrays (usually by using two index
+variables, one in the message and one in gpsdata, and incrementing the
+second one only after seeing an active channel).
+By removing that second index and copying everything to the same index
+position in gpsdata as where it was found in the message, we simplify the
+code and reduce problems.
+
+Using PRN as an index is kind of difficult.  When I receive a message that
+says &quot;channel #3 receives PRN #16  (az=128 el=30 signal=40dB)&quot; I can store
+that in element #16 of the array, but what about the previous use of that
+channel?  Maybe the same channel was used for PRN #30 before, and element
+30 of the array still has that data.  Then we would have to scan every
+time to see if the same channelnumber was used for a different satellite
+before.
+
+Besides that, at least the Jupiter Zodiac software can use more than one
+channel for the same PRN.  During startup, it first loads the same PRN to
+all channels and starts hunting for the signal.  It changes the PRN every
+few seconds, but puts it in all channels.  Presumably each channel is
+hunting at a different code phase angle, all of them in parallel.
+This would be no problem when using the channel number as an index, but
+with PRN as index all info would overwrite the same entry.
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002946.html">[Gpsd-dev] Re: Navman Jupiter Support
+</A></li>
+	<LI>Next message: <A HREF="002948.html">[Gpsd-dev] Navman Jupiter Support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2949">[ date ]</a>
+              <a href="thread.html#2949">[ thread ]</a>
+              <a href="subject.html#2949">[ subject ]</a>
+              <a href="author.html#2949">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

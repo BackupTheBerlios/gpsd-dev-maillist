@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Garmin binary serial
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Garmin%20binary%20serial&In-Reply-To=%3C20061014221115.GB4680%40www.%7C%FA%15%40%7C%FA%15%40%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004668.html">
+   <LINK REL="Next"  HREF="004540.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Garmin binary serial</H1>
+    <B>Jeff Francis</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Garmin%20binary%20serial&In-Reply-To=%3C20061014221115.GB4680%40www.%7C%FA%15%40%7C%FA%15%40%3E"
+       TITLE="[Gpsd-dev] Garmin binary serial">jeff at gritch.org
+       </A><BR>
+    <I>Sun Oct 15 00:11:15 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004668.html">[Gpsd-dev] refactoring
+</A></li>
+        <LI>Next message: <A HREF="004540.html">[Gpsd-dev] Garmin binary serial
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4539">[ date ]</a>
+              <a href="thread.html#4539">[ thread ]</a>
+              <a href="subject.html#4539">[ subject ]</a>
+              <a href="author.html#4539">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>  I've been playing with the Garmin binary serial stuff as Gary has
+been hacking on it.  Put the latest SVN on the truck computer today,
+switched out the SiRF hockey puck for the Garmin hockey puck, and went
+to Home Depot.  Lo and behold, it worked, though the speed was off (in
+mph) by about a factor of two.  At 60mph indicated on the speedometer,
+gpsd was telling me I was going 116.7mph.  That's a factor of 1.945.
+That number sounded vaguely familiar, and I figured I might get lucky
+and it's a constant in gps.h.  Sure enough, in gps.h:
+
+#define MPS_TO_KNOTS   1.9438445    /* Meters per second to knots */
+
+  I grepped quickly through garmin.c to see if MPS_TO_KNOTS showed up,
+and oddly enough, it didn't.  As a second try, I grepped for 1.9, and
+found this:
+
+      // convert lat/lon to knots
+      session-&gt;gpsdata.fix.speed
+          = hypot(pvt-&gt;lon_vel, pvt-&gt;lat_vel) * 1.9438445;
+
+  Aha!  Now in all fairness, I've done absolutely zero analysis of the
+code yet, but I have a strong suspicion that there's a units mismatch
+somewhere, and that changing the code the following will fix it:
+
+      // convert lat/lon to knots
+      session-&gt;gpsdata.fix.speed
+          = hypot(pvt-&gt;lon_vel, pvt-&gt;lat_vel);
+
+  ...But I haven't looked to make sure that's a sane change, and not
+just a happy/lucky coincidence.  FYI.
+
+
+-- 
++--------------------------+------------------------------------------+
+|<i>   Jeff Francis - N0GQ    | Calvin:  How come you know so much?      |
+</I>|<i> Snohomish, WA USA, Earth |                                          |
+</I>|<i>     <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>      | Calvin's Dad:  It's all in the book you  |
+</I>|<i>  <A HREF="http://blog.gritch.org">http://blog.gritch.org</A>  | get when you become a father.            |
+</I>+--------------------------+------------------------------------------+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004668.html">[Gpsd-dev] refactoring
+</A></li>
+	<LI>Next message: <A HREF="004540.html">[Gpsd-dev] Garmin binary serial
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4539">[ date ]</a>
+              <a href="thread.html#4539">[ thread ]</a>
+              <a href="subject.html#4539">[ subject ]</a>
+              <a href="author.html#4539">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

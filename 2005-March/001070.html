@@ -1,0 +1,95 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Design issue -- date computations
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Design%20issue%20--%20date%20computations&In-Reply-To=%3C16fd0064e27ffcbcf3fe80379d0e9f62%40qwest.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001059.html">
+   <LINK REL="Next"  HREF="001071.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Design issue -- date computations</H1>
+    <B>Dan Oetting</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Design%20issue%20--%20date%20computations&In-Reply-To=%3C16fd0064e27ffcbcf3fe80379d0e9f62%40qwest.net%3E"
+       TITLE="[Gpsd-dev] Design issue -- date computations">dan_oetting at qwest.net
+       </A><BR>
+    <I>Sat Mar 26 06:33:31 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001059.html">[Gpsd-dev] Re: [Gpsd-users] Design issue -- date computations
+</A></li>
+        <LI>Next message: <A HREF="001071.html">[Gpsd-dev] Design issue -- date computations
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1070">[ date ]</a>
+              <a href="thread.html#1070">[ thread ]</a>
+              <a href="subject.html#1070">[ subject ]</a>
+              <a href="author.html#1070">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Mar 25, 2005, at 10:32 AM, Eric S. Raymond wrote:
+
+&gt;<i> The fundamental problem is that NMEA 0183 does not supply full dates.
+</I>&gt;<i> Three sentences in the repertoire gpsd recognizes conntain date
+</I>&gt;<i> fields; GPGGA/GPGLL date fields supply hhmmss.ss (with the trailing
+</I>&gt;<i> .ss part optional), GPRMC adds ddmmyy but gives only a two-digit year
+</I>&gt;<i> lacking a century part.  You can deduce the reason for this from the
+</I>&gt;<i> fact that NMEA 0183 was specified for 4800bps; it was designed when
+</I>&gt;<i> serial bandwidth was scarce and precious.
+</I>
+You simply need to keep track of the last known time.
+
+When a sentence with only time comes in (GPGGA/GPGLL), you can easily 
+see if it's the start of a new day because the new time will be 24 
+hours less than the saved time.  You should then increment the saved 
+day when you store the new time.
+
+To set the century when first setting the saved day:
+1. If a valid sentence with a 4 digit year ($GPZDA?) has been seen use 
+it to set day and time.
+2. if the system clock is &quot;close enough&quot; to the GPS time, use the 
+century from the system time.
+3. Otherwize, assume the year is in the range 1973...2072 (the first 
+100 years of NEMA data).
+
+This should cover most of the bases because historical data can simply 
+be tagged with a sentence containing the valid 4 digit year, The system 
+clock should be good enough unless it reset to the EPOC (1970 or 
+whatever PCs use). And I don't think many of us will care much after 
+2072 what problems some retro-geek has when trying to use software that 
+hasn't been updated in the last 50 years.
+
+-- Dan Oetting
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001059.html">[Gpsd-dev] Re: [Gpsd-users] Design issue -- date computations
+</A></li>
+	<LI>Next message: <A HREF="001071.html">[Gpsd-dev] Design issue -- date computations
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1070">[ date ]</a>
+              <a href="thread.html#1070">[ thread ]</a>
+              <a href="subject.html#1070">[ subject ]</a>
+              <a href="author.html#1070">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

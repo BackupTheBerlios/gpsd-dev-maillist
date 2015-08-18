@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> No subject
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2012-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20No%20subject&In-Reply-To=%3Cmailman.9.1331732998.2473.gpsd-dev%40lists.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001855.html">
+   <LINK REL="Next"  HREF="002558.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>No subject</H1>
+    <B></B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20No%20subject&In-Reply-To=%3Cmailman.9.1331732998.2473.gpsd-dev%40lists.berlios.de%3E"
+       TITLE="No subject">
+       </A><BR>
+    <I>Wed Mar 14 14:49:41 CET 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001855.html">No subject
+</A></li>
+        <LI>Next message: <A HREF="002558.html">No subject
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2272">[ date ]</a>
+              <a href="thread.html#2272">[ thread ]</a>
+              <a href="subject.html#2272">[ subject ]</a>
+              <a href="author.html#2272">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>VMIN = 0 and VTIME = 0
+
+    This is a completely non-blocking read - the call is satisfied
+    immediately directly from the driver's input queue. If data are
+    available, it's transferred to the caller's buffer up to nbytes and
+    returned. Otherwise zero is immediately returned to indicate &quot;no
+    data&quot;. We'll note that this is &quot;polling&quot; of the serial port, and it's
+    almost always a bad idea. If done repeatedly, it can consume enormous
+    amounts of processor time and is highly inefficient. Don't use this
+    mode unless you really, really know what you're doing.
+
+VMIN = 0 and VTIME &gt; 0
+
+    This is a pure timed read. If data are available in the input queue,
+    it's transferred to the caller's buffer up to a maximum of nbytes, and
+    returned immediately to the caller. Otherwise the driver blocks until
+    data arrives, or when VTIME tenths expire from the start of the
+    call. If the timer expires without data, zero is returned. A single
+    byte is sufficient to satisfy this read call, but if more is available
+    in the input queue, it's returned to the caller. Note that this is an
+    overall timer, not an intercharacter one.  VMIN &gt; 0 and VTIME &gt; 0
+
+VMIN &gt; 0 and VTIME &gt; 0
+
+    A read() is satisfied when either VMIN characters have been
+    transferred to the caller's buffer, or when VTIME tenths expire
+    between characters. Since this timer is not started until the first
+    character arrives, this call can block indefinitely if the serial line
+    is idle. This is the most common mode of operation, and we consider
+    VTIME to be an intercharacter timeout, not an overall one. This call
+    should never return zero bytes read.
+
+VMIN &gt; 0 and VTIME = 0
+
+    This is a counted read that is satisfied only when at least VMIN
+    characters have been transferred to the caller's buffer - there is no
+    timing component involved. This read can be satisfied from the
+    driver's input queue (where the call could return immediately), or by
+    waiting for new data to arrive: in this respect the call could block
+    indefinitely. We believe that it's undefined behavior if nbytes is
+    less then VMIN.
+
+It doesn't look to me like VMIN=1 is needed, given that this is already
+a blocking read, but it can't hurt either. Done.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001855.html">No subject
+</A></li>
+	<LI>Next message: <A HREF="002558.html">No subject
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2272">[ date ]</a>
+              <a href="thread.html#2272">[ thread ]</a>
+              <a href="subject.html#2272">[ subject ]</a>
+              <a href="author.html#2272">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

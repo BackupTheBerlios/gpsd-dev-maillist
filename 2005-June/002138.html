@@ -1,0 +1,124 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Rob's second architecture bug
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Rob%27s%20second%20architecture%20bug&In-Reply-To=%3C14042.213.84.187.156.1118776792.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002128.html">
+   <LINK REL="Next"  HREF="002145.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Rob's second architecture bug</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Rob%27s%20second%20architecture%20bug&In-Reply-To=%3C14042.213.84.187.156.1118776792.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] Rob's second architecture bug">gpsd at xs4all.nl
+       </A><BR>
+    <I>Tue Jun 14 21:19:52 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002128.html">[Gpsd-dev] Rob's second architecture bug
+</A></li>
+        <LI>Next message: <A HREF="002145.html">[Gpsd-dev] _NOT_VALID values that are in fact valid.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2138">[ date ]</a>
+              <a href="thread.html#2138">[ thread ]</a>
+              <a href="subject.html#2138">[ subject ]</a>
+              <a href="author.html#2138">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;&gt;<i> The new version is worse.  It clears data immediately when certain flags
+</I>&gt;&gt;<i> are not set.  But that should not happen because we want to accumulate
+</I>&gt;&gt;<i> data over a cycle.
+</I>&gt;<i>
+</I>&gt;<i> Did you read the comment that says &quot;Thus, we never clear 2D or 3D
+</I>&gt;<i> position data here unless the mode has gone from 3D to 2D.&quot;?  I just
+</I>&gt;<i> added (or lower)&quot; to clarify it.  So position data does in fact
+</I>&gt;<i> accumulate over a cycle, and is cleared only when a mode change
+</I>&gt;<i> invalidates it.  If this is different than you intention, tell me how.
+</I>
+I am referring to statements like this in handle_packet:
+    if ((session-&gt;gpsdata.set &amp; TIME_SET)==0)
+        session-&gt;gpsdata.sentence_time = TIME_NOT_VALID;
+    if ((session-&gt;gpsdata.set &amp; SPEED_SET)==0)
+        session-&gt;gpsdata.fix.speed = SPEED_NOT_VALID;
+    if ((session-&gt;gpsdata.set &amp; TRACK_SET)==0)
+        session-&gt;gpsdata.fix.track = TRACK_NOT_VALID;
+    if ((session-&gt;gpsdata.set &amp; CLIMB_SET)==0)
+        session-&gt;gpsdata.fix.climb = SPEED_NOT_VALID;
+
+Those immediately invalidate this data when a packet arrives that does not
+have that specific flag set.  But sometimes receivers send packets that do
+not set those flags, but it is not good to clear out all those values.
+(for example, I have debug packets enabled in my SiRF receiver and it
+sends regular  0xff packets)
+
+&gt;<i> In any case, the real purpose of that change was to make sure that the
+</I>&gt;<i> logic for any whole-cycle data aggregation we do is in only one place
+</I>&gt;<i> and can be understood and modified as a unit.
+</I>
+The idea of aggregation is OK but it should have a memory of one cycle,
+not one packet.
+This will of course always be difficult when the daemon has no idea about
+cycles.
+
+When you don't want a timeout for each separate value (which makes things
+complicated), I think the least that can be done is to have a detection of
+timestamp change.  handle_packet should somehow detect that the timestamp
+has changed (maybe only check the integral part to cover those receivers
+that change the timestamp for each message?) and when that occurs wipe out
+all old information?
+
+I think the fix data will have to be double-buffered in this case.
+Move all fix data into a single structure (part is already in there),
+define two of those structures in the device struct, and let the parser
+write in one of them and the handle_packet move the data to the second
+struct.
+(it will have to be verified that no drivers write data without setting
+the corresponding flag).
+handle_packet can first check if there is time difference between the
+parsed data and the accumulated data, and if so it can wipe the
+accumulated data.  Then it proceeds to copy the newly parsed data into the
+accumulated data, and calculate any derivatives.
+Of course the O output is built from the accumulated data.  Preferably
+after the last message from a cycle that builds it has been parsed.
+A convenient point to do that is just before it is wiped because of a
+timestamp change.  Then you certainly have a consistent set of data, but
+it of course introduces a latency.
+
+This way the data accumulates during a cycle but old data cannot remain.
+Of course, a different (longer) cycle has to be defined for SV visibility
+info.
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002128.html">[Gpsd-dev] Rob's second architecture bug
+</A></li>
+	<LI>Next message: <A HREF="002145.html">[Gpsd-dev] _NOT_VALID values that are in fact valid.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2138">[ date ]</a>
+              <a href="thread.html#2138">[ thread ]</a>
+              <a href="subject.html#2138">[ subject ]</a>
+              <a href="author.html#2138">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

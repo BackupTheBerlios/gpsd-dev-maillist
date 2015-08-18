@@ -1,0 +1,261 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev]  GPSD Update errors
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%20GPSD%20Update%20errors&In-Reply-To=%3C29555967.post%40talk.nabble.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008128.html">
+   <LINK REL="Next"  HREF="008132.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev]  GPSD Update errors</H1>
+    <B>Connie C</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%20GPSD%20Update%20errors&In-Reply-To=%3C29555967.post%40talk.nabble.com%3E"
+       TITLE="[Gpsd-dev]  GPSD Update errors">cciarleg at umd.edu
+       </A><BR>
+    <I>Fri Aug 27 21:41:40 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008128.html">[Gpsd-dev] Uninitialised members in struct gps_data_t
+</A></li>
+        <LI>Next message: <A HREF="008132.html">[Gpsd-dev] GPSD Update errors
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8131">[ date ]</a>
+              <a href="thread.html#8131">[ thread ]</a>
+              <a href="subject.html#8131">[ subject ]</a>
+              <a href="author.html#8131">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Hi all,
+
+posted this in the wrong forum before--
+
+Im trying to compile some old code with the new mods to GPSD.  I've updated
+my gpsd and libgps-dev.  Im still having compiler errors though:
+
+MyGPS.cpp: In function &#8216;int gps_set_callback(gps_data_t*, void
+(*)(gps_data_t*, char*, size_t), pthread_t*)&#8217;:
+MyGPS.cpp:122: error: &#8216;WATCH_ENABLE&#8217; was not declared in this scope
+MyGPS.cpp:122: error: &#8216;gps_stream&#8217; was not declared in this scope
+MyGPS.cpp:124: error: invalid conversion from &#8216;void (*)(gps_data_t*, char*,
+size_t)&#8217; to &#8216;void (*)(gps_data_t*, char*, size_t, int)&#8217;
+MyGPS.cpp:127: error: invalid conversion from &#8216;void (*)(gps_data_t*, char*,
+size_t)&#8217; to &#8216;void (*)(gps_data_t*, char*, size_t, int)&#8217;
+make: *** [MyGPS.o] Error 1
+
+
+I really liked the old version of callback and the threading so Im trying to
+keep that integrated into my code.  My program looks like:
+
+#include &lt;iostream&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;ctype.h&gt;
+#include &lt;cstdlib&gt;
+#include &lt;errno.h&gt;
+#include &lt;gps.h&gt;
+
+using namespace std;
+
+const float altfactor = METERS_TO_FEET;
+const float speedfactor = MPS_TO_MPH;
+int callback_running;
+
+pthread_mutex_t gpsmutex=PTHREAD_MUTEX_INITIALIZER;
+gps_fix_t my_fix;
+int ndata;
+
+struct gps_data_t *gpsdata;
+pthread_t handler;
+
+int gps_set_callback(struct gps_data_t *gpsdata, void (*callback)(struct
+gps_data_t *sentence, char *buf, size_t len),pthread_t *handler);
+static /*@null@*/void *poll_gpsd(void *args);
+
+void myfunction(struct gps_data_t *sentence, char *buf, size_t len)
+{
+
+        if(callback_running!=0)
+                return;
+        callback_running=1;
+        pthread_mutex_lock(&amp;gpsmutex);
+        const gps_fix_t &amp; f = sentence-&gt;fix;
+
+        my_fix=f;
+        //time=sentence-&gt;fix.time;
+        callback_running=0;
+        pthread_mutex_unlock(&amp;gpsmutex);
+        //extern const int ndata;
+    ndata=1;
+
+}
+
+int gpsd_init()
+{
+  char *server = &quot;localhost&quot;, *port = DEFAULT_GPSD_PORT;
+  char *err_str = NULL;
+  callback_running=0;
+
+  /* Open the stream to gpsd. */
+  gpsdata = gps_open(server, port);
+  if (!gpsdata) {
+    switch ( errno ) {
+    case NL_NOSERVICE:  err_str = &quot;can't get service entry&quot;; break;
+    case NL_NOHOST:     err_str = &quot;can't get host entry&quot;; break;
+    case NL_NOPROTO:    err_str = &quot;can't get protocol entry&quot;; break;
+    case NL_NOSOCK:     err_str = &quot;can't create socket&quot;; break;
+    case NL_NOSOCKOPT:  err_str = &quot;error SETSOCKOPT SO_REUSEADDR&quot;; break;
+    case NL_NOCONNECT:  err_str = &quot;can't connect to host&quot;; break;
+    default:    err_str = &quot;Unknown&quot;; break;
+    }
+    (void)fprintf( stderr,
+                   &quot;cgps: no gpsd running or network error: %d, %s\n&quot;,
+                   errno, err_str);
+    return -1;
+  }
+
+  if ((gps_set_callback(gpsdata, &amp;myfunction, &amp;handler))!=0)
+  {
+      fprintf(stderr,&quot;Unable to create gps thread\n&quot;);
+      return -1;
+  }
+ 
+  return 0;
+}
+
+void close_gps(){
+  pthread_mutex_lock(&amp;gpsmutex);
+  //gps_del_callback(gpsdata, &amp;handler);
+  gps_close(gpsdata);
+  pthread_mutex_unlock(&amp;gpsmutex);
+}
+
+int main(void)
+{
+        double lat,lon,alt,gpsmode,gpstime,stat;
+        lat=0.00;
+        lon=0.00;
+        alt=0.00;
+        gpsmode=0.00;
+        gpstime=0.00;
+        stat=0.00;
+        ndata=0;
+        if(gpsd_init()!=0){printf(&quot;GPSD Init Failed\n&quot;);}
+       
+        while(true)
+        {
+                if(ndata==1) //if new data
+                {
+                        lon=my_fix.longitude;
+                        lat=my_fix.latitude;
+                        alt=my_fix.altitude;
+                        gpsmode=my_fix.mode;
+                        gpstime=my_fix.time;
+                        stat=gpsdata-&gt;status;
+                        ndata=0;
+                }
+        }
+}
+       
+//changed thread_hook to raw_hook b/c thread_hook no loger exists
+//raw_hook is unused so this is possible-if raw_hook is needed for something
+else do not use
+int gps_set_callback(struct gps_data_t *gpsdata,
+                     void (*callback)(struct gps_data_t *sentence, char
+*buf, size_t len),
+                     pthread_t *handler)
+/* set an asynchronous callback and launch a thread for it */
+{
+    (void)gps_stream(gpsdata, WATCH_ENABLE, NULL); /* ensure gpsd is in
+watcher mode, so we'll have data to read */
+    if (gpsdata-&gt;raw_hook != NULL) {
+        gpsdata-&gt;raw_hook = callback;
+        return 0;
+    }
+    gpsdata-&gt;raw_hook = callback;
+
+    /* start the thread which will read data from gpsd */
+    /*@ -unrecog (splint has no pthread declarations as yet */
+    return pthread_create(handler,NULL,poll_gpsd,(void*)gpsdata);
+    /*@ +unrecog @*/
+}
+
+static /*@null@*/void *poll_gpsd(void *args)
+/* helper for the thread launcher */
+{
+    int oldtype, oldstate;
+    int res;
+    struct gps_data_t *gpsdata;
+
+    /* set thread parameters */
+    /*@ -compdef @*/
+    /*@ -unrecog (splint has no pthread declarations as yet) @*/
+    (void)pthread_setcancelstate(PTHREAD_CANCEL_ENABLE,&amp;oldstate);
+    (void)pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS,&amp;oldtype); /* we
+want to be canceled also when blocked on gps_poll() */
+    /*@ +unrecog @*/
+    /*@ +compdef @*/
+    gpsdata = (struct gps_data_t *) args;
+    do {
+        res = gps_poll(gpsdata); /* this is not actually polling */
+    } while
+        (res == 0);
+    /* if we are here an error occured with gpsd */
+    return NULL;
+}
+
+
+and a really simple makefile:
+
+CC = g++
+DEBUG = -g
+CFLAGS = -Wall -c $(DEBUG)
+LFLAGS = -Wall $(DEBUG)
+
+MyGPS.o: MyGPS.cpp
+        $(CC) $(LFLAGS) MyGPS.cpp -lgps -pthread -lstdc++
+
+Im using ubuntu 8.04.  
+
+Thanks in advance!
+
+-- 
+View this message in context: <A HREF="http://old.nabble.com/GPSD-Update-errors-tp29555967p29555967.html">http://old.nabble.com/GPSD-Update-errors-tp29555967p29555967.html</A>
+Sent from the GPSd - Dev mailing list archive at Nabble.com.
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008128.html">[Gpsd-dev] Uninitialised members in struct gps_data_t
+</A></li>
+	<LI>Next message: <A HREF="008132.html">[Gpsd-dev] GPSD Update errors
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8131">[ date ]</a>
+              <a href="thread.html#8131">[ thread ]</a>
+              <a href="subject.html#8131">[ subject ]</a>
+              <a href="author.html#8131">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

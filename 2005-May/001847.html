@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] making gosdrive haoot
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20making%20gosdrive%20haoot&In-Reply-To=%3C22915.213.84.187.156.1116877377.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001846.html">
+   <LINK REL="Next"  HREF="001848.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] making gosdrive haoot</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20making%20gosdrive%20haoot&In-Reply-To=%3C22915.213.84.187.156.1116877377.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] making gosdrive haoot">gpsd at xs4all.nl
+       </A><BR>
+    <I>Mon May 23 21:42:57 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001846.html">[Gpsd-dev] making gosdrive haoot
+</A></li>
+        <LI>Next message: <A HREF="001848.html">[Gpsd-dev] making gosdrive haoot
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1847">[ date ]</a>
+              <a href="thread.html#1847">[ thread ]</a>
+              <a href="subject.html#1847">[ subject ]</a>
+              <a href="author.html#1847">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> Following a flurry of minor bugs, the queue is now clear.
+</I>&gt;<i>
+</I>&gt;<i> One of those bugs exposed a problem in gpsdrive, which however I doubt
+</I>&gt;<i> gpsdrive will fix because the bug hews to the letter of the NMEA
+</I>&gt;<i> standard. Since I consider to be among our most important client apps.
+</I>&gt;<i> I want to ship 2.26 ASAP.
+</I>&gt;<i>
+</I>&gt;<i> If you have any urgent bugs or issues for 2.26, speak up now.
+</I>
+Would it be possible to be a little more patient and allow people to send
+in reports and/or to find problems?
+I see an urge to release a new version every week, which does not seem to
+be warranted by new features.
+I doubt that the audience is looking for a new version to install.
+When you want to have an easily accessed version for people to try the
+newest fixes, I think it is better to put a &quot;nightly build&quot; up for
+download.
+
+My opinion is that a current priority should be to walk through the code
+to find possible inconsistencies, to try to validate returned data, and to
+investigate the functionality we are trying to provide and see what things
+are still missing there.
+
+Examples are:
+
+- validate that all received values are correctly scaled to the documented
+units.  I have been busy with this but then someone else still found an
+error (NMEA speed)
+
+- check that &quot;xxx_NOT_VALID&quot; values are outside the normal range for that
+value.  check if we could use magic values like &quot;nan&quot; instead of arbitrary
+constant values
+
+- work a bit on the demo applications to provide a good first experience
+after installation, and also make them more useful for our own testing
+
+
+There also are some problems that need additional investigation.
+For example, when having two receivers connected and disconnecting one,
+when a packet error occurs the program starts to hunt for correct data
+from that specific receiver and completely forgets about the other.
+It also does not handle client requests anymore.
+Of course this is because while doing packet_sniff the program does not
+walk through the main select loop.  I think we either need to modify the
+packet_sniff code so that it becomes part of the main loop, or we change
+to multithreading and start a separate thread  for every receiver while
+the main loop concentrates on handling the clients.
+
+I have also noticed today that while the system is heavily loaded the
+program can be forced into such an error situation where it ends up doing
+packet_sniff all the time and not recovering.  Because the usleep in
+packet_sniff is very small, the CPU usage is high, and the heavy loading
+problem is worsened.
+
+
+At the moment I am working on a driver for my Trimble receiver.  It
+handles a few received packets, but I need to decode more and also handle
+the sending of control packets (to enable sending of other messages).  I
+will require a day or two to finish it.
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001846.html">[Gpsd-dev] making gosdrive haoot
+</A></li>
+	<LI>Next message: <A HREF="001848.html">[Gpsd-dev] making gosdrive haoot
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1847">[ date ]</a>
+              <a href="thread.html#1847">[ thread ]</a>
+              <a href="subject.html#1847">[ subject ]</a>
+              <a href="author.html#1847">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

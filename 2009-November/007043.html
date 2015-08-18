@@ -1,0 +1,117 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd bug 15348, ntpshm interlocks
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20bug%2015348%2C%20ntpshm%20interlocks&In-Reply-To=%3Calpine.DEB.1.10.0911120033500.20851%40org-pc51.fy.chalmers.se%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007006.html">
+   <LINK REL="Next"  HREF="007044.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd bug 15348, ntpshm interlocks</H1>
+    <B>H&#229;kan Johansson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20bug%2015348%2C%20ntpshm%20interlocks&In-Reply-To=%3Calpine.DEB.1.10.0911120033500.20851%40org-pc51.fy.chalmers.se%3E"
+       TITLE="[Gpsd-dev] gpsd bug 15348, ntpshm interlocks">f96hajo at chalmers.se
+       </A><BR>
+    <I>Thu Nov 12 00:36:38 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007006.html">[Gpsd-dev] gpsd bug 15348, ntpshm interlocks
+</A></li>
+        <LI>Next message: <A HREF="007044.html">[Gpsd-dev] gpsd bug 15348, ntpshm interlocks
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7043">[ date ]</a>
+              <a href="thread.html#7043">[ thread ]</a>
+              <a href="subject.html#7043">[ subject ]</a>
+              <a href="author.html#7043">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+applied, then reverted, with statement
+
+&quot;This patch is invalid.  There are two possible modes to shmTime, mode 0
+and mode 1.  We use mode 1, while the patch thinks we use mode 0.
+
+Reference the ntpd source code, refclock_shm.c, line 70.&quot;
+
+Which I presume would be the following:
+
+         int    mode; /* 0 - if valid set
+                       *       use values,
+                       *       clear valid
+                       * 1 - if valid set
+                       *       if count before and after read of values is equal,
+                       *         use values
+                       *       clear valid
+                       */
+
+What is wrong?
+
+H&#229;kan
+
+
+On Thu, 5 Nov 2009, H&#229;kan Johansson wrote:
+
+&gt;<i>
+</I>&gt;<i> I believe the bug report 15348 and fix to be correct.  What one may append
+</I>&gt;<i> to the discussion is that the variable 'valid' is dual-use:
+</I>&gt;<i>
+</I>&gt;<i> - make sure that the same measurement is not used twice, ensured as ntpd
+</I>&gt;<i>   clears it after each use.
+</I>&gt;<i>
+</I>&gt;<i> - make sure that ntpd cannot read values while gpsd is making an update.
+</I>&gt;<i>   (this is new)
+</I>&gt;<i>
+</I>&gt;<i> A sequence of events which realistically (but with low probability) could
+</I>&gt;<i> trigger such a thing:
+</I>&gt;<i>
+</I>&gt;<i> - NTPD makes a full read, sets valid = 0.
+</I>&gt;<i>   (shortly thereafter:)
+</I>&gt;<i> - GPSD writes a new value, finishing by setting valid = 1
+</I>&gt;<i>   (almost 1 s passes...)
+</I>&gt;<i>   (then by chance, GPSD makes it before NTPD:)
+</I>&gt;<i> - GPSD starts to write values, increases count, valid is still 1
+</I>&gt;<i>   (during the write operation, the write is interrupted:)
+</I>&gt;<i> - NTPD makes a full read.  it can, as valid is 1 and count does not change
+</I>&gt;<i>   sets valid = 0.
+</I>&gt;<i> - GPSD gets back, and finishes the write, increases count, sets valid to 1
+</I>&gt;<i>
+</I>&gt;<i> and from this point, it can actually continue, goto 'almost 1 s passes'.
+</I>&gt;<i> ntpd could thus get a continous stream of bad, but correlated, data.
+</I>&gt;<i>
+</I>&gt;<i> Patch works for me.
+</I>&gt;<i>
+</I>&gt;<i> Cheers,
+</I>&gt;<i> H&#229;kan
+</I></PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007006.html">[Gpsd-dev] gpsd bug 15348, ntpshm interlocks
+</A></li>
+	<LI>Next message: <A HREF="007044.html">[Gpsd-dev] gpsd bug 15348, ntpshm interlocks
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7043">[ date ]</a>
+              <a href="thread.html#7043">[ thread ]</a>
+              <a href="subject.html#7043">[ subject ]</a>
+              <a href="author.html#7043">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

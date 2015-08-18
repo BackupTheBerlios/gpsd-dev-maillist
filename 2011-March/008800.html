@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] make dist-rpm testing
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20make%20dist-rpm%20testing&In-Reply-To=%3C289385.41116.qm%40web32503.mail.mud.yahoo.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008798.html">
+   <LINK REL="Next"  HREF="008801.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] make dist-rpm testing</H1>
+    <B>Michael R. Davis</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20make%20dist-rpm%20testing&In-Reply-To=%3C289385.41116.qm%40web32503.mail.mud.yahoo.com%3E"
+       TITLE="[Gpsd-dev] make dist-rpm testing">mrdvt92 at yahoo.com
+       </A><BR>
+    <I>Sun Mar 13 02:57:20 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008798.html">[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-1015-g299c211
+</A></li>
+        <LI>Next message: <A HREF="008801.html">[Gpsd-dev] make dist-rpm testing
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8800">[ date ]</a>
+              <a href="thread.html#8800">[ thread ]</a>
+              <a href="subject.html#8800">[ subject ]</a>
+              <a href="author.html#8800">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>GPSD Folks,
+I had some time this weekend to to test `make dist-rpm` on Fedora 12.
+
+Three Issues: 
+  1) Extra /usr/lib64/libQgpsmm.prl file - assume that the /usr/lib64/libQgpsmm.prl file is supposed to be in the libQgpsmm package as opposed to a miss-installed file.
+  2) Tilde not supported in file naming version.  Removed ~dev.   
+  3) RPM spec file &quot;Release&quot; should be reset to 1 after every release of the &quot;upstream&quot; package.
+
+Otherwise it worked and I have attached my work arounds below.  I have some patching to do with Perl(Net::GPSD3) as well to support new &quot;time&quot; format in JSON.
+
+Other issues:
+It appears that none of the ./www file are being installed.  We could buld them into packages quite easily. Just let me know what you think people want.  I was actually thinking about putting together a smaple Perl script to put in the distro just to pull in the perl-Net-GPSD3 package.
+
+I also thought that we are going to split out gpsd-clients into gpsd-clients-cli and gpsd-clients-gui.  Do we want to do that now?
+
+Thanks,
+Mike
+
+
+---
+
+diff --git a/configure.ac b/configure.ac
+index 7af7bb3..7a21920 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -1,7 +1,7 @@
+ dnl This file is Copyright (c)2010 by the GPSD project
+ dnl BSD terms apply: see the file COPYING in the distribution root for details.
+
+-AC_INIT(gpsd, 2.96~dev, [<A HREF="http://developer.berlios.de/bugs/?group_id=2116">http://developer.berlios.de/bugs/?group_id=2116</A>], ,
++AC_INIT(gpsd, 2.96, [<A HREF="http://developer.berlios.de/bugs/?group_id=2116">http://developer.berlios.de/bugs/?group_id=2116</A>], ,
+        [<A HREF="http://gpsd.berlios.de/">http://gpsd.berlios.de/</A>])
+ AM_INIT_AUTOMAKE
+ dnl AC_PREFIX_PROGRAM(gcc)
+diff --git a/packaging/rpm/gpsd.spec.in b/packaging/rpm/gpsd.spec.in
+index 7923414..7af9f97 100644
+--- a/packaging/rpm/gpsd.spec.in
++++ b/packaging/rpm/gpsd.spec.in
+@@ -2,7 +2,7 @@
+
+ Name: gpsd
+ Version: @VERSION@
+-Release: 3%{?dist}
++Release: 1%{?dist}
+ Summary: Service daemon for mediating access to a GPS
+
+ Group: System Environment/Daemons
+@@ -178,6 +178,7 @@ fi
+ %files -n libQgpsmm
+ %defattr(-,root,root,-)
+ %{_qt4_libdir}/libQgpsmm.so*
++%{_qt4_libdir}/libQgpsmm.prl
+
+ %files clients
+ %defattr(-,root,root,-)
+@@ -202,6 +203,9 @@ fi
+ %{_datadir}/gpsd/gpsd-logo.png
+
+ %changelog
++* Sat Mar 12 2011 Michael R. Davis &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mrdvt at cpan.org</A>&gt; - 2.96-1
++- Added libQgpsmm.prl
++
+ * Mon Jul 05 2010 Michael R. Davis &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mrdvt at cpan.org</A>&gt; - 2.95-3
+ - Updated to move rpm files to packaging/rpm folder
+ - Renamed gpsd-qt to libQgpsmm
+
+
+
+      
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008798.html">[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch, master, updated. release-2.95-1015-g299c211
+</A></li>
+	<LI>Next message: <A HREF="008801.html">[Gpsd-dev] make dist-rpm testing
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8800">[ date ]</a>
+              <a href="thread.html#8800">[ thread ]</a>
+              <a href="subject.html#8800">[ subject ]</a>
+              <a href="author.html#8800">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

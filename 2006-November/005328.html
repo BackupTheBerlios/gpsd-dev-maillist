@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] bug or self-indulgent refactoring?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20bug%20or%20self-indulgent%20refactoring%3F&In-Reply-To=%3C91981b3e0611282127n65d0ab79w521346ef4797afbb%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005327.html">
+   <LINK REL="Next"  HREF="005329.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] bug or self-indulgent refactoring?</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20bug%20or%20self-indulgent%20refactoring%3F&In-Reply-To=%3C91981b3e0611282127n65d0ab79w521346ef4797afbb%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] bug or self-indulgent refactoring?">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Wed Nov 29 06:27:58 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005327.html">[Gpsd-dev] bug or self-indulgent refactoring?
+</A></li>
+        <LI>Next message: <A HREF="005329.html">[Gpsd-dev] Data in trunk/test/trimble-lassen_iq-3dfix.log doesn't	look right
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5328">[ date ]</a>
+              <a href="thread.html#5328">[ thread ]</a>
+              <a href="subject.html#5328">[ subject ]</a>
+              <a href="author.html#5328">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 11/28/06, Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> Chris Kuethe &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">chris.kuethe at gmail.com</A>&gt;:
+</I>&gt;<i> &gt; i know this morning i said no refactoring, but i think this might
+</I>&gt;<i> &gt; border on a bug fix:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; in driver.c there's a some code to do things like set up shm segments
+</I>&gt;<i> &gt; for ntpd and set line disciplines for openntpd. some of this may need
+</I>&gt;<i> &gt; to be done as root. i'm thinking i may need move the privilege
+</I>&gt;<i> &gt; dropping to happen after these time support activities.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; i also think that i may need to hange setuid to seteuid so gpsd can
+</I>&gt;<i> &gt; flip its privileges up and down to redo this setup every time a
+</I>&gt;<i> &gt; receiver...
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; comments?
+</I>&gt;<i>
+</I>&gt;<i> If it will fix PPS, do it.  However...
+</I>&gt;<i>
+</I>&gt;<i> You shouldn't need to muck with seteuid().  Shm setup is one exactly once,
+</I>&gt;<i> than the shared-memory segments are passed aroind as needed after
+</I>&gt;<i> priv dropping.
+</I>
+I already put this in private mail, but I'll put it on the list so
+everyone knows what I'm up to.
+
+The ioctl to activate the nmea line discipline is root-only. The ioctl
+to activate the tty timestamping is not. While I can defer the
+timestamping until after the device is identified, I can't do that
+with the line discipline because we've already dropped privilege.
+
+I'm thinking I'll have to split the privdrop into separate blocks for
+setgid and setuid, and move the setuid to someplace just after the
+open() call. Somewhere between the open() and setuid() i turn on the
+nmea line discipline, so that if the device does happen to be NMEA,
+the kernel is ready for it.
+
+CK
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005327.html">[Gpsd-dev] bug or self-indulgent refactoring?
+</A></li>
+	<LI>Next message: <A HREF="005329.html">[Gpsd-dev] Data in trunk/test/trimble-lassen_iq-3dfix.log doesn't	look right
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5328">[ date ]</a>
+              <a href="thread.html#5328">[ thread ]</a>
+              <a href="subject.html#5328">[ subject ]</a>
+              <a href="author.html#5328">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

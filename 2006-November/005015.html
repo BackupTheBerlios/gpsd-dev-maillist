@@ -1,0 +1,232 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Garmin Binary
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Garmin%20Binary&In-Reply-To=%3Cej2bsq%24fk4%241%40sea.gmane.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004931.html">
+   <LINK REL="Next"  HREF="005018.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Garmin Binary</H1>
+    <B>Eivind Tagseth</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Garmin%20Binary&In-Reply-To=%3Cej2bsq%24fk4%241%40sea.gmane.org%3E"
+       TITLE="[Gpsd-dev] Garmin Binary">eivindt-gmane at multinet.no
+       </A><BR>
+    <I>Fri Nov 10 18:11:53 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004931.html">[Gpsd-dev] Garmin Binary
+</A></li>
+        <LI>Next message: <A HREF="005018.html">[Gpsd-dev] Garmin Binary
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5015">[ date ]</a>
+              <a href="thread.html#5015">[ thread ]</a>
+              <a href="subject.html#5015">[ subject ]</a>
+              <a href="author.html#5015">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Eivind Tagseth wrote:
+&gt;<i> Gary E. Miller wrote:
+</I>&gt;&gt;<i> -----BEGIN PGP SIGNED MESSAGE-----
+</I>&gt;&gt;<i> Hash: SHA1
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Yo Eivind!
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I notice you have an X series Garmin:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On Mon, 6 Nov 2006, Eivind Tagseth wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> gpsd: Garmin Product ID: 292, SoftVer: 3.00
+</I>&gt;&gt;&gt;<i> gpsd: Garmin Product Desc: GPSMap60CX Software Version 3.00
+</I>&gt;&gt;<i> What version garmin_gps do you have?  I noticed in the 0.28 version of
+</I>&gt;&gt;<i> that driver that a fix for the X series was added.  Do you have that?
+</I>&gt;&gt;<i>
+</I>&gt;<i> I'm running the stock linux 2.6.18.1 version, which is 0.23.  Quite old 
+</I>&gt;<i> then.  I'll try upgrading and retest (don't have my gps here, so I'll 
+</I>&gt;<i> have to do that later).
+</I>
+I've tried with the latest version of garmin_gps (v 0.28) and see no 
+change at all.
+
+I've tried removing some log statements to see what triggers the error.
+
+in garmin_ser_parse, there are two for loops iterating buf and data_buf,
+gpsd_reporting each character.
+
+If I replace _both_ these loops with an unconditional usleep(100), gpsd
+works fine, even with -D1
+
+If I replace the first loop with usleep(200) and remove the last loop, 
+it also works.
+
+If I remove the first loop, and replace the last loop with usleep(200) 
+it doesn't work.  If I replace it with usleep(300), it works.
+
+If I replace the first loop with usleep(100) and remove the last loop,
+it works _sometimes_, with usleep(300) it seems to work every time.
+
+If I remove both loops and the usleeps, and add a usleep(300) _after_ 
+the call to Send_ACK, it doesn't work.  But if I usleep(400), it works 
+_sometimes_.
+
+Not sure if this helps or confuses.
+
+
+Here's the debug output of garmin_gps with debugging enabled _without_ 
+any sleeps (not working) -- only the output generated when connecting to 
+gpsd with xgps:
+
+Nov 10 17:59:10 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: garmin_open 
+- port 0
+Nov 10 17:59:10 [kernel] garmin_gps ttyUSB0: garmin_write - length = 16, 
+data = 4b 6e 10 01 02 00 00 00 04 00 00 00 01 00 00 00
+Nov 10 17:59:10 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: garmin_write 
+- processing private request 2
+Nov 10 17:59:10 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: pkt_clear
+Nov 10 17:59:10 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: garmin_write 
+- mode set to 1
+Nov 10 17:59:10 [kernel] garmin_gps ttyUSB0: garmin_write - length = 6, 
+data = 10 fe 00 02 10 03
+Nov 10 17:59:10 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: gsp_receive 
+- dle=0 skip=0 size=0 count=6
+Nov 10 17:59:10 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: non-masked 
+DLE at 0 - restarting
+Nov 10 17:59:10 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: packet 
+complete - id=0xFE.
+Nov 10 17:59:10 [kernel] garmin_gps ttyUSB0: gsp_rec_packet - length = 
+3, data = fe 00 02
+Nov 10 17:59:10 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: 
+garmin_write_bulk - port 0, state 5
+Nov 10 17:59:10 [kernel] garmin_gps ttyUSB0: garmin_write_bulk - length 
+= 12, data = 14 00 00 00 fe 00 00 00 00 00 00 00
+Nov 10 17:59:10 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: pkt_clear
+Nov 10 17:59:10 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: gsp_send_ack 
+- pkt-id: 0xFE.
+Nov 10 17:59:10 [kernel] garmin_gps ttyUSB0: send_to_tty - length = 8, 
+data = 10 06 02 fe 00 fa 10 03
+Nov 10 17:59:10 [kernel] garmin_gps ttyUSB0: garmin_write - length = 8, 
+data = 10 0a 02 31 00 c3 10 03
+Nov 10 17:59:10 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: gsp_receive 
+- dle=0 skip=4096 size=10 count=8
+Nov 10 17:59:10 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: non-masked 
+DLE at 0 - restarting
+Nov 10 17:59:10 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: packet 
+complete - id=0xA.
+Nov 10 17:59:10 [kernel] garmin_gps ttyUSB0: gsp_rec_packet - length = 
+5, data = 0a 02 31 00 c3
+Nov 10 17:59:10 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: 
+garmin_write_bulk - port 0, state 11
+Nov 10 17:59:10 [kernel] garmin_gps ttyUSB0: garmin_write_bulk - length 
+= 14, data = 14 00 00 00 0a 00 00 00 02 00 00 00 31 00
+Nov 10 17:59:10 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: pkt_clear
+Nov 10 17:59:10 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: gsp_send_ack 
+- pkt-id: 0xA.
+Nov 10 17:59:10 [kernel] garmin_gps ttyUSB0: send_to_tty - length = 8, 
+data = 10 06 02 0a 00 ee 10 03
+Nov 10 17:59:10 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: 
+garmin_write_bulk_callback - port 0
+                 - Last output repeated twice -
+
+
+When adding usleep(500) after Send_ACK, gpsd works, and I get this output:
+
+Nov 10 18:00:40 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: garmin_open 
+- port 0
+Nov 10 18:00:40 [kernel] garmin_gps ttyUSB0: garmin_write - length = 16, 
+data = 4b 6e 10 01 02 00 00 00 04 00 00 00 01 00 00 00
+Nov 10 18:00:40 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: garmin_write 
+- processing private request 2
+Nov 10 18:00:40 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: pkt_clear
+Nov 10 18:00:40 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: garmin_write 
+- mode set to 1
+Nov 10 18:00:40 [kernel] garmin_gps ttyUSB0: garmin_write - length = 6, 
+data = 10 fe 00 02 10 03
+Nov 10 18:00:40 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: gsp_receive 
+- dle=0 skip=0 size=0 count=6
+Nov 10 18:00:40 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: non-masked 
+DLE at 0 - restarting
+Nov 10 18:00:40 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: packet 
+complete - id=0xFE.
+Nov 10 18:00:40 [kernel] garmin_gps ttyUSB0: gsp_rec_packet - length = 
+3, data = fe 00 02
+Nov 10 18:00:40 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: 
+garmin_write_bulk - port 0, state 5
+Nov 10 18:00:40 [kernel] garmin_gps ttyUSB0: garmin_write_bulk - length 
+= 12, data = 14 00 00 00 fe 00 00 00 00 00 00 00
+Nov 10 18:00:40 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: pkt_clear
+Nov 10 18:00:40 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: gsp_send_ack 
+- pkt-id: 0xFE.
+Nov 10 18:00:40 [kernel] garmin_gps ttyUSB0: send_to_tty - length = 8, 
+data = 10 06 02 fe 00 fa 10 03
+Nov 10 18:00:40 [kernel] garmin_gps ttyUSB0: garmin_write - length = 8, 
+data = 10 0a 02 31 00 c3 10 03
+Nov 10 18:00:40 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: gsp_receive 
+- dle=0 skip=4096 size=10 count=8
+Nov 10 18:00:40 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: non-masked 
+DLE at 0 - restarting
+Nov 10 18:00:40 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: packet 
+complete - id=0xA.
+Nov 10 18:00:40 [kernel] garmin_gps ttyUSB0: gsp_rec_packet - length = 
+5, data = 0a 02 31 00 c3
+Nov 10 18:00:40 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: 
+garmin_write_bulk - port 0, state 11
+Nov 10 18:00:40 [kernel] garmin_gps ttyUSB0: garmin_write_bulk - length 
+= 14, data = 14 00 00 00 0a 00 00 00 02 00 00 00 31 00
+Nov 10 18:00:40 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: pkt_clear
+Nov 10 18:00:40 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: gsp_send_ack 
+- pkt-id: 0xA.
+Nov 10 18:00:40 [kernel] garmin_gps ttyUSB0: send_to_tty - length = 8, 
+data = 10 06 02 0a 00 ee 10 03
+Nov 10 18:00:40 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: 
+garmin_write_bulk_callback - port 0
+                 - Last output repeated twice -
+Nov 10 18:00:40 [kernel] garmin_gps ttyUSB0: garmin_read_int_callback - 
+length = 12, data = 00 00 00 00 02 00 00 00 00 00 00 00
+Nov 10 18:00:40 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: 
+garmin_read_int_callback - bulk data available.
+Nov 10 18:00:40 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: 
+garmin_read_int_callback - pkt ignored (1)
+Nov 10 18:00:40 [kernel] /tmp/garmin_gps-0.28/garmin_gps.c: 
+garmin_read_bulk_callback - port 0
+
+As far as I can see, these are exactly the same until &quot;- Last output 
+repeated twice -&quot; where the non-working version just stops.
+
+
+
+Eivind
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004931.html">[Gpsd-dev] Garmin Binary
+</A></li>
+	<LI>Next message: <A HREF="005018.html">[Gpsd-dev] Garmin Binary
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5015">[ date ]</a>
+              <a href="thread.html#5015">[ thread ]</a>
+              <a href="subject.html#5015">[ subject ]</a>
+              <a href="author.html#5015">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

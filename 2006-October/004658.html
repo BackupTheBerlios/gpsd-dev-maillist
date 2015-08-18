@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] NTP, bathymetry, Garmin binary bug
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20NTP%2C%20bathymetry%2C%20Garmin%20binary%20bug&In-Reply-To=%3C200610251529.k9PFTAFv027345%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004655.html">
+   <LINK REL="Next"  HREF="004662.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] NTP, bathymetry, Garmin binary bug</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20NTP%2C%20bathymetry%2C%20Garmin%20binary%20bug&In-Reply-To=%3C200610251529.k9PFTAFv027345%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] NTP, bathymetry, Garmin binary bug">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Oct 25 17:29:10 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004655.html">[Gpsd-dev] gpspipes, O message based on RMC or GGA fix
+</A></li>
+        <LI>Next message: <A HREF="004662.html">[Gpsd-dev] NTP, bathymetry, Garmin binary bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4658">[ date ]</a>
+              <a href="thread.html#4658">[ thread ]</a>
+              <a href="subject.html#4658">[ subject ]</a>
+              <a href="author.html#4658">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Trying to get closure on some stuff in my mailbox...
+
+1. NTP time syncing and magic delays
+
+Gary Miller and Rob Janssen had a long email debate about this.  It
+seems to have been resolved, or at least died down.  I'm not aware of
+any changes that currently need to be made.  If anyone knows differently,
+please tell me.
+
+2. Bathymetry.
+
+Carl Brown requested support for the NMEA INDPT sentence.  A test load
+for an NMEA device that emits it has been added to the tests directory, but 
+code for parsing INPDT has not been added.  I agree with the list consensus
+that adding support for this seems a reasonable extension of what GPSD does.
+
+The simple, obvious solution would be to simply report water depth in
+the altitude field, unless we think somebody is going to mount
+bathymeters on airplanes.  Gary Miller observed that there are three
+'altitudes' at issue:
+
+        altitude of GPS.
+        depth of transducer
+        offset of transducer to water line.
+
+But &quot;offset of transducer to water line&quot; is a fixed offset that, according
+to <A HREF="http://www.humminbird.com/normal.asp?id=853,">http://www.humminbird.com/normal.asp?id=853,</A> has to be programmed into
+the bathymetric devices by the customer behind gpsd's back.
+
+I say screw it, gpsd can report the sum of the two as altitude.  This
+avoids opening up a *huge* can of worms about extending the gpsd
+protocol.
+
+But this decision opens up a (smaller) can of worms.  In theory, we could
+now have situations in which the GPS has 'altitude' when it doesn't have
+a lat/lon fix!  
+
+Admittedly this is unlikely.  You'd have to be on the water without a
+sky view before it could happen.  But the assumption that having
+altititude implies a valid 2D fix is probably wired into gpsd in several
+places and will have to be sniffed out and removed.
+
+3. Kernel-level bug affecting Garmin binary driver
+
+There were two long threads about problems with the Garmin binary 
+driver that apparently turned out to be due to a kernel-level bug
+in Linux.  Have we worked up a bug report we can pass to the 
+kernel gang?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+Don't ever think you know what's right for the other person.
+He might start thinking he knows what's right for you.
+	-- Paul Williams, `Das Energi'
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004655.html">[Gpsd-dev] gpspipes, O message based on RMC or GGA fix
+</A></li>
+	<LI>Next message: <A HREF="004662.html">[Gpsd-dev] NTP, bathymetry, Garmin binary bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4658">[ date ]</a>
+              <a href="thread.html#4658">[ thread ]</a>
+              <a href="subject.html#4658">[ subject ]</a>
+              <a href="author.html#4658">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

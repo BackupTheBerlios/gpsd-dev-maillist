@@ -1,0 +1,216 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Couple of bugs
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Couple%20of%20bugs&In-Reply-To=%3C4A8D4CDD.3090505%40wildgooses.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006800.html">
+   <LINK REL="Next"  HREF="006803.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Couple of bugs</H1>
+    <B>Ed W</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Couple%20of%20bugs&In-Reply-To=%3C4A8D4CDD.3090505%40wildgooses.com%3E"
+       TITLE="[Gpsd-dev] Couple of bugs">lists at wildgooses.com
+       </A><BR>
+    <I>Thu Aug 20 15:17:17 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006800.html">[Gpsd-dev] pulse rate
+</A></li>
+        <LI>Next message: <A HREF="006803.html">[Gpsd-dev] Couple of bugs
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6801">[ date ]</a>
+              <a href="thread.html#6801">[ thread ]</a>
+              <a href="subject.html#6801">[ subject ]</a>
+              <a href="author.html#6801">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi, I observe a couple of mis-features in gpsd 2.39 (udev 141, kernel 
+2.6.29, uclibc+busybox, BU-353 gps):
+
+- Get an &quot;error&quot; response from gpsd admin socket when trying to use the 
+hotplug script (manually) to add a new device.  I altered the script to 
+syslog the reply from gpsd and its always an ERROR if I start gpsd 
+without the &quot;-N&quot; param, eg as it's started by the hotplug script, but it 
+returns an OK if I start it first on the console with a &quot;-N&quot; param... 
+
+# gpsd -N -F /var/run/gpsd.sock
+Aug 20 13:07:47 localhost daemon.info gpsd.hotplug: 
+gpsd_control(action=add, arg=/dev/ttyUSB6)
+Aug 20 13:07:47 localhost daemon.info gpsd.hotplug: reached a running gpsd
+Aug 20 13:07:47 localhost daemon.info gpsd.hotplug: gpsd result: OK
+
+# gpsd -F /var/run/gpsd.sock
+Aug 20 13:08:06 localhost daemon.info gpsd.hotplug: 
+gpsd_control(action=add, arg=/dev/ttyUSB6)
+Aug 20 13:08:06 localhost daemon.info gpsd.hotplug: reached a running gpsd
+Aug 20 13:08:06 localhost daemon.info gpsd.hotplug: gpsd result: ERROR
+
+I haven't tried to crack open the code to look at this, but perhaps a 
+probable cause occurs to someone immediately?
+
+
+- My udev &quot;remove&quot; rule is not running correctly (pl2303, uncomment 
+first two lines in default udev rules).  The &quot;add&quot; works ok, but the 
+remove fails.  Looking at udevadm I really don't see why?  (log files at 
+the end).  Anyone see why this might be failing?
+
+
+- I just noticed that once I plug/unplug my GPS it only works the first 
+two times.  After the third plug I'm back to getting ERROR as the 
+result.  Further once I terminate gpsd I get a kernel oops (syslog 
+output at the end).  Note it only oops's as I terminate gpsd. 
+
+Remember in this scenario the devices are only ever added and never 
+removed from gpsd even though the device goes away, this means that gpsd 
+is keeping open a file which the kernel has deleted
+
+
+
+Udev log
+
+
+UDEV  [1250772953.300112] add      
+/devices/pci0000:00/0000:00:0f.4/usb2/2-1/2-1:1.0/ttyUSB3/tty/ttyUSB3 (tty)
+UDEV_LOG=3
+ACTION=add
+DEVPATH=/devices/pci0000:00/0000:00:0f.4/usb2/2-1/2-1:1.0/ttyUSB3/tty/ttyUSB3
+SUBSYSTEM=tty
+SEQNUM=1896
+ID_PORT=0
+ID_PATH=pci-0000:00:0f.4-usb-0:1:1.0
+ID_VENDOR=Prolific_Technology_Inc.
+ID_VENDOR_ENC=Prolific\x20Technology\x20Inc.
+ID_VENDOR_ID=067b
+ID_MODEL=USB-Serial_Controller
+ID_MODEL_ENC=USB-Serial\x20Controller
+ID_MODEL_ID=2303
+ID_REVISION=0300
+ID_SERIAL=Prolific_Technology_Inc._USB-Serial_Controller
+ID_TYPE=generic
+ID_BUS=usb
+ID_USB_INTERFACES=:ff0000:
+ID_USB_INTERFACE_NUM=00
+ID_USB_DRIVER=pl2303
+ID_IFACE=00
+DEVNAME=/dev/ttyUSB3
+MAJOR=188
+MINOR=3
+DEVLINKS=/dev/gps3
+
+
+UDEV  [1250773177.469216] remove   
+/devices/pci0000:00/0000:00:0f.4/usb2/2-1/2-1:1.0/ttyUSB3/tty/ttyUSB3 (tty)
+UDEV_LOG=3
+ACTION=remove
+DEVPATH=/devices/pci0000:00/0000:00:0f.4/usb2/2-1/2-1:1.0/ttyUSB3/tty/ttyUSB3
+SUBSYSTEM=tty
+SEQNUM=1905
+DEVNAME=/dev/ttyUSB3
+ID_PORT=0
+ID_PATH=pci-0000:00:0f.4-usb-0:1:1.0
+ID_VENDOR=Prolific_Technology_Inc.
+ID_VENDOR_ENC=Prolific\x20Technology\x20Inc.
+ID_VENDOR_ID=067b
+ID_MODEL=USB-Serial_Controller
+ID_MODEL_ENC=USB-Serial\x20Controller
+ID_MODEL_ID=2303
+ID_REVISION=0300
+ID_SERIAL=Prolific_Technology_Inc._USB-Serial_Controller
+ID_TYPE=generic
+ID_BUS=usb
+ID_USB_INTERFACES=:ff0000:
+ID_USB_INTERFACE_NUM=00
+ID_USB_DRIVER=pl2303
+ID_IFACE=00
+MAJOR=188
+MINOR=3
+DEVLINKS=/dev/gps3
+
+
+
+Kernel oops in syslog, obviously fairly useless without symbols, but 
+actually I'm not sure what causes the Tainted flag... I use 
+grsec+pax+aufs patches
+
+[15866.776647] ---[ end trace 4291e23e68a944ec ]---
+[15866.950810] BUG: unable to handle kernel NULL pointer dereference at 
+(null)
+[15866.950810] IP: [&lt;005d7ce0&gt;] 0x5d7ce0
+[15866.950810] *pde = 00000000
+[15866.950810] Oops: 0000 [#6]
+[15866.950810] last sysfs file: 
+/sys/devices/pci0000:00/0000:00:0f.4/usb2/idVendor
+[15866.950810] Modules linked in: pl2303 ath5k pcspkr usbserial mac80211 
+cfg80211
+[15866.950810]
+[15866.950810] Pid: 5691, comm: gpsd Tainted: G      D    
+(2.6.29.6-grsec-wrap #11)
+[15866.950810] EIP: 0060:[&lt;005d7ce0&gt;] EFLAGS: 00010046 CPU: 0
+[15866.950810] EAX: cf8a00e0 EBX: 00000246 ECX: ceedfeb0 EDX: 00000000
+[15866.950810] ESI: cfb7f200 EDI: 00002328 EBP: ceedfed0 ESP: ceedfe9c
+[15866.950810]  DS: 0068 ES: 0068 FS: 0000 GS: 0000 SS: 0068
+[15866.950810] Process gpsd (pid: 5691, ti=ceede000 task=cf8a00e0 
+task.ti=ceede000)
+[15866.950810] Stack:
+[15866.950810]  00000000 cee5ec00 00000000 cf8a00e0 0001aa25 cee5ecf0 
+cee5ecf0 00000282
+[15866.950810]  00000000 ceedfed0 cfb7f240 cfb7f200 d08c23e0 ceedfef4 
+005ae42d d08c24a0
+[15866.950810]  cfb56f60 cf885260 cee5ec00 cee5ec00 00000000 00000000 
+ceedff64 00265ebd
+[15866.950810] Call Trace:
+[15866.950810]  [&lt;0001aa25&gt;] ? 0x01aa25
+[15866.950810]  [&lt;005ae42d&gt;] ? 0x5ae42d
+[15866.950810]  [&lt;00265ebd&gt;] ? 0x265ebd
+[15866.950810]  [&lt;0000545c&gt;] ? 0x00545c
+[15866.950810]  [&lt;005ae6c4&gt;] ? 0x5ae6c4
+[15866.950810]  [&lt;00266cb3&gt;] ? 0x266cb3
+[15866.950810]  [&lt;00266353&gt;] ? 0x266353
+[15866.950810]  [&lt;000669d3&gt;] ? 0x0669d3
+[15866.950810]  [&lt;000668cd&gt;] ? 0x0668cd
+[15866.950810]  [&lt;00070aef&gt;] ? 0x070aef
+[15866.950810]  [&lt;00003e16&gt;] ? 0x003e16
+[15866.950810]  [&lt;0000545c&gt;] ? 0x00545c
+[15866.950810] Code: 05 f0 00 00 00 bf 28 23 00 00 c7 45 d4 00 00 00 00 
+c7 45 dc 25 aa 01 00 e8 53 4c a5 ff a1 80 30 40 c1 c7 00 01 00 00 00 8b 
+55 cc &lt;8b&gt; 02 e8 aa f3 ff ff 85 c0 74 2c 85 ff 74 28 a1 80 30 40 c1 8b
+[15866.950810] EIP: [&lt;005d7ce0&gt;]  SS:ESP 0068:ceedfe9c
+[15866.950810] ---[ end trace 4291e23e68a944ed ]---
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006800.html">[Gpsd-dev] pulse rate
+</A></li>
+	<LI>Next message: <A HREF="006803.html">[Gpsd-dev] Couple of bugs
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6801">[ date ]</a>
+              <a href="thread.html#6801">[ thread ]</a>
+              <a href="subject.html#6801">[ subject ]</a>
+              <a href="author.html#6801">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

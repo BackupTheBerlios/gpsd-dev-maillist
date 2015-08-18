@@ -1,0 +1,120 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Signal cleanup
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Signal%20cleanup&In-Reply-To=%3C46ED50BD.3030409%40knitter.ch%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005774.html">
+   <LINK REL="Next"  HREF="005776.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Signal cleanup</H1>
+    <B>Andreas Stricker</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Signal%20cleanup&In-Reply-To=%3C46ED50BD.3030409%40knitter.ch%3E"
+       TITLE="[Gpsd-dev] Signal cleanup">andy at knitter.ch
+       </A><BR>
+    <I>Sun Sep 16 17:50:21 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005774.html">[Gpsd-dev] [PATCH] don't stop execution if getprotobyname() fails
+</A></li>
+        <LI>Next message: <A HREF="005776.html">[Gpsd-dev] Signal cleanup
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5775">[ date ]</a>
+              <a href="thread.html#5775">[ thread ]</a>
+              <a href="subject.html#5775">[ subject ]</a>
+              <a href="author.html#5775">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Hi Chris
+
+I just was a bit astonished when I updated the trunk with
+modifications to the signaling in gpsd. You've already
+cleaned up the signal handler and replaced it with a simple
+flag too.
+I should really mention what task I'm working on... ;-)
+
+Unfortunately, your change suffers from the same problem
+as my changes. The simple code at the end terminates gpsd
+with an error. The old implementation survives this.
+I know it's not nice to send HUPs that fast. But gpsd
+should not terminate by a race condition.
+
+gpsd: closing GPS=/dev/ttyUSB0 (4)
+gpsd: gpsd restarted by SIGHUP
+gpsd: GPS device /dev/ttyUSB0 nonexistent or can't be read
+gpsd: select: Bad file descriptor
+
+I'm try to solve this with sigaction() and its signal
+masks. If I'm successful I'll send a patch.
+
+I've already removed the longjmp.
+
+Cheers, Andy
+
+- --- 8&lt; --------------------------------------------------
+#include &lt;stdio.h&gt;
+#include &lt;signal.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;time.h&gt;
+
+int main(int argc, char *argv[])
+{
+    int pid = atoi(argv[1]);
+    printf(&quot;killing %d\n&quot;, pid);
+    struct timespec s;
+
+    for (;;) {
+        kill(pid, SIGHUP);
+        s.tv_sec = 0;
+        s.tv_nsec = 10000;
+        nanosleep(&amp;s, NULL);
+    }
+    return 0;
+}
+- --- 8&lt; --------------------------------------------------
+
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.7 (GNU/Linux)
+
+iD8DBQFG7VC7bJa6vxmEnbARArHNAJ9CzXHWodQw9SSAVl7RY5Xzgs8A1QCeL1SE
+33SuTndrMEzZ2mP83OuZLDA=
+=yiHK
+-----END PGP SIGNATURE-----
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005774.html">[Gpsd-dev] [PATCH] don't stop execution if getprotobyname() fails
+</A></li>
+	<LI>Next message: <A HREF="005776.html">[Gpsd-dev] Signal cleanup
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5775">[ date ]</a>
+              <a href="thread.html#5775">[ thread ]</a>
+              <a href="subject.html#5775">[ subject ]</a>
+              <a href="author.html#5775">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

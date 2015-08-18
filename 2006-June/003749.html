@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] connection problems with Garmin eTrex
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20connection%20problems%20with%20Garmin%20eTrex&In-Reply-To=%3C20060610220942.GC28391%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003779.html">
+   <LINK REL="Next"  HREF="003747.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] connection problems with Garmin eTrex</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20connection%20problems%20with%20Garmin%20eTrex&In-Reply-To=%3C20060610220942.GC28391%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] connection problems with Garmin eTrex">esr at thyrsus.com
+       </A><BR>
+    <I>Sun Jun 11 00:09:42 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003779.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+        <LI>Next message: <A HREF="003747.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3749">[ date ]</a>
+              <a href="thread.html#3749">[ thread ]</a>
+              <a href="subject.html#3749">[ subject ]</a>
+              <a href="author.html#3749">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Tilman Koschnick &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">til at subnetz.org</A>&gt;:
+&gt;<i> &gt; I'll try another converter with a differnt chip, and attaching the eTrex
+</I>&gt;<i> &gt; directly to a good old serial port, and see if it makes a difference.
+</I>&gt;<i> 
+</I>&gt;<i> The other converter has a different vendor id, but turns out to be a
+</I>&gt;<i> pl2303 as well:
+</I>&gt;<i> Bus 002 Device 005: ID 0557:2008 ATEN International Co., Ltd UC-232A
+</I>&gt;<i> Serial Port [pl2303]
+</I>&gt;<i> 
+</I>&gt;<i> Same problem.
+</I>&gt;<i> 
+</I>&gt;<i> Absolutely no problems when I attach the GPS directly to a serial port.
+</I>&gt;<i> No garbage when cat'ing from the device either after I switched speeds.
+</I>&gt;<i> 
+</I>&gt;<i> So my bet is that there is a buffer in the converter that needs to be
+</I>&gt;<i> cleared first, and not too short sentences. This is supported by the
+</I>&gt;<i> fact that I didn't find a log yet that doesn't work with gpsfake.
+</I>
+That is rather suggestive, isn't it?  Maybe we really are tripping over
+some odd pl2303 behavior.  Could be a bug, or could be &quot;correct&quot; behavior
+we don't understand well.  Neither would surprise me; low-level device
+programming is like that.
+
+&gt;<i> Is there a way to clear the buffer after switching speeds? Otherwise, I
+</I>&gt;<i> guess the time spent at each speed really just needs to be longer.
+</I>
+gpsd's own buffer does get cleared.  The problem may be that we need to clear
+the pl2303's FIFO buffer, or give it some hysteresis time after reprogramming
+the pl2302, or something.
+
+Oh, now *that's* interesting.  Look at the code for the 'B' command.
+
+			/* 
+			 * Allow the control string time to register at the
+			 * GPS before we do the baud rate switch, which 
+			 * effectively trashes the UART's buffer.
+			 *
+			 * This definitely fails below 40 milliseconds on a
+			 * BU-303b. 50ms is also verified by Chris Kuethe on 
+			 *        Pharos iGPS360 + GSW 2.3.1ES + prolific
+			 *        Rayming TN-200 + GSW 2.3.1 + ftdi
+			 *        Rayming TN-200 + GSW 2.3.2 + ftdi
+			 * so it looks pretty solid.
+			 *
+			 * The minimum delay time is probably constant
+			 * across any given type of UART.
+			 */
+			(void)tcdrain(whoami-&gt;device-&gt;gpsdata.gps_fd);
+			(void)usleep(50000);
+			gpsd_set_speed(whoami-&gt;device, (speed_t)i,
+				(unsigned char)whoami-&gt;device-&gt;gpsdata.parity,
+				whoami-&gt;device-&gt;gpsdata.stopbits);
+
+I remember we had to go through some poin to figure out this was needed.
+I'm wondering now if I shouldn't move the tcpdrain() and delay inside
+the baud-rate-change function?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003779.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+	<LI>Next message: <A HREF="003747.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3749">[ date ]</a>
+              <a href="thread.html#3749">[ thread ]</a>
+              <a href="subject.html#3749">[ subject ]</a>
+              <a href="author.html#3749">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

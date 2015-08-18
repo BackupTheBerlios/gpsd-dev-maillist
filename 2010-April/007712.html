@@ -1,0 +1,95 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Garbage in gpsdecode output
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Garbage%20in%20gpsdecode%20output&In-Reply-To=%3C201004261013.03256.contact_gpsd%40nirgal.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007711.html">
+   <LINK REL="Next"  HREF="007713.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Garbage in gpsdecode output</H1>
+    <B>Nirgal</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Garbage%20in%20gpsdecode%20output&In-Reply-To=%3C201004261013.03256.contact_gpsd%40nirgal.com%3E"
+       TITLE="[Gpsd-dev] Garbage in gpsdecode output">contact_gpsd at nirgal.com
+       </A><BR>
+    <I>Mon Apr 26 11:12:57 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007711.html">[Gpsd-dev] Garbage in gpsdecode output
+</A></li>
+        <LI>Next message: <A HREF="007713.html">[Gpsd-dev] Garbage in gpsdecode output
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7712">[ date ]</a>
+              <a href="thread.html#7712">[ thread ]</a>
+              <a href="subject.html#7712">[ subject ]</a>
+              <a href="author.html#7712">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Monday 26 April 2010 09:16:59 Bernd Zeimetz wrote:
+&gt;<i> The gpsd project is using git since several weeks now. You might want to clone
+</I>&gt;<i> <A HREF="git://git.berlios.de/gpsd">git://git.berlios.de/gpsd</A>
+</I>&gt;<i> instead of using svn.
+</I>
+Ops, ok.
+
+I still have the problem, but I now have a different patch.
+
+Reminder:
+It looks that size of aivdm packets is now checked for inconsistencies. This is great. However, when the length is invalid, the ais structure is returned with uninitialised data, like ship dimensions that are out of range.
+
+Example:
+!AIVDM,2,1,6,B,5HIC=@02;6roUKOWGN0EHE:<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">1DpU at DB2222222216JI</A>::N5&lt;8NHhPDPiC,0*28
+!AIVDM,2,2,6,B,00000000000,2*21
+
+Yields:
+5,1,563400000,3221223859,1,.N=&#65533; (&#65533;&#65533;@&#65533;&#65533;&#65533;&#65533;&#65533;&#65533;0&#65533;&#65533;&#65533;&#65533;&#65533;$&#65533;&#65533;&#65533;&#65533;'&#65533;&#65533;,@&#65533;&#65533;&#65533;&#65533;&#65533;&#65533;0&#65533;&#65533;&#65533;&#65533;&#65533;$&#65533;&#65533;&#65533;&#65533;'&#65533;&#65533;,0,12461048,117,0,1,3221219264,3083802796-3085452632T3082693368:4294967295Z,3085967348,,2
+
+After applying the attached patch:
+5,1,563400000,0,0,,,0,0,0,0,0,0,00-00T00:00Z,0,,0
+
+Not perfect, but much better. (Ideally, default value for eta should be 00-00T24:60Z for example)
+
+Please review and apply the patch to the repository if that's ok.
+
+Or maybe it would be better to simply zero fill the ais buffer before the switch/case? This might be usefull for partial messages.
+Or just discard such messages?
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: driver_aivdm.c.diff
+Type: text/x-diff
+Size: 7642 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100426/e6f9fefe/attachment.diff">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100426/e6f9fefe/attachment.diff</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007711.html">[Gpsd-dev] Garbage in gpsdecode output
+</A></li>
+	<LI>Next message: <A HREF="007713.html">[Gpsd-dev] Garbage in gpsdecode output
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7712">[ date ]</a>
+              <a href="thread.html#7712">[ thread ]</a>
+              <a href="subject.html#7712">[ subject ]</a>
+              <a href="author.html#7712">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

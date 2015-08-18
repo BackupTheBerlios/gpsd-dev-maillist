@@ -1,0 +1,146 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Imminent gpsd release warning
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Imminent%20gpsd%20release%20warning&In-Reply-To=%3C91981b3e0612141320n66cff3c9hbe6f46170e57d7f8%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005422.html">
+   <LINK REL="Next"  HREF="005425.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Imminent gpsd release warning</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Imminent%20gpsd%20release%20warning&In-Reply-To=%3C91981b3e0612141320n66cff3c9hbe6f46170e57d7f8%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Imminent gpsd release warning">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Thu Dec 14 22:20:11 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005422.html">[Gpsd-dev] Imminent gpsd release warning
+</A></li>
+        <LI>Next message: <A HREF="005425.html">[Gpsd-dev] Imminent gpsd release warning
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5424">[ date ]</a>
+              <a href="thread.html#5424">[ thread ]</a>
+              <a href="subject.html#5424">[ subject ]</a>
+              <a href="author.html#5424">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 12/14/06, Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt; wrote:
+&gt;<i> Given the warning, I thought I'd test on NetBSD.  2.33 runs fine from
+</I>&gt;<i> pkgsrc.
+</I>&gt;<i>
+</I>&gt;<i> I built the head of svn from this morning on NetBSD-current i386,
+</I>&gt;<i> running autogen.sh and then configured passing CPPFLAGS/LDFLAGS to
+</I>&gt;<i> include /usr/pkg and --enable-dbus.
+</I>
+There is a tarball at <A HREF="http://prdownload.berlios.de/gpsd/gpsd-2.34.tar.gz.">http://prdownload.berlios.de/gpsd/gpsd-2.34.tar.gz.</A>
+This is what I plan on shipping as 2.34
+
+&gt;<i> Aside from sirfmom, it built with 'make' (BSD make).  There were a
+</I>
+It builds find with openbsd's make.
+
+&gt;<i> number of warnings (I can supply the full list, but I presume everyone
+</I>&gt;<i> else is seeing this), all about array subscripts:
+</I>&gt;<i> gpsd.c: In function 'gpsd_report':
+</I>&gt;<i> gpsd.c:164: warning: array subscript has type 'char'
+</I>&gt;<i> gpsd.c:164: warning: array subscript has type 'char'
+</I>
+Nope, not seeing this.
+
+&gt;<i> sirfmon included curses.h, and then something which pulled in
+</I>&gt;<i> ncurses.h, which caused vast failures.  I note that all the other
+</I>&gt;<i> programs that use curses use ncurses.h and link with ncurses, so:
+</I>&gt;<i> ...
+</I>&gt;<i> I don't have a sirf to test, but with this all builds fine.
+</I>
+Keep that as a local patch - I'll adjust configure et al. after unlock.
+
+&gt;<i> The other problem was that configuring like
+</I>&gt;<i>
+</I>&gt;<i>         LDFLAGS=&quot;-L/usr/pkg/lib -R/usr/pkg/lib&quot; \
+</I>&gt;<i>         CPPFLAGS=&quot;-I/usr/pkg/include&quot; ./configure --enable-dbus
+</I>&gt;<i>
+</I>&gt;<i> installed into /usr.  This is very ugly, requiring me to clean up
+</I>&gt;<i> after this package put stuff in the base system where it doesn't
+</I>&gt;<i> belong.  Autoconf documented standard behavior is to put things in
+</I>&gt;<i> /usr/local if --prefix is not given, so gpsd's behavior is a serious
+</I>&gt;<i> violation of the Principle of Least Astonishment.  README and INSTALL
+</I>&gt;<i> both fail to mention this misbehavior.  I realize that on many Linux
+</I>&gt;<i> systems people put everything in /usr, but this should still be only
+</I>&gt;<i> programs managed by packaging systems, which are surely supplying a
+</I>&gt;<i> prefix (pkgsrc supplies --prefix=/usr/pkg).  The following patch fixes
+</I>&gt;<i> the problem:
+</I>
+I'm going to point the finger at autoconfuse... I build for test
+purposes into /home/gpsd or /tmp/gpsd, and package into /usr/local,
+and auto* makes files appear where I expect. By doing the install as
+me, I'd see all kinds of failures to install because ckuethe (uid !=
+0) can't write to /usr or /usr/local
+
+Again, remind me after unlock. I'd prefer it if not every distro had a
+half-dozen patches, so I'm happy to work with you on this, but it's
+too late to start making changes this big...
+
+&gt;<i> Starting gpsd with no arguments causes it to crash:
+</I>&gt;<i> ...
+</I>&gt;<i> Reading the code, I don't see how report_mutex is ever initialized;
+</I>&gt;<i> locking or unlocking an uninitialized mutex is documented to result in
+</I>&gt;<i> undefined behavior.
+</I>
+patch added... i don't have the pps on, maybe that's why i never hit this.
+
+&gt;<i> minor comments:
+</I>&gt;<i>
+</I>&gt;<i> INSTALL commingles how to build the software and how to run it.  It
+</I>&gt;<i> would be good to document building separately.  The prerequisites
+</I>&gt;<i> aren't listed clearly.  It seems to be C++, pthreads, ncurses, and
+</I>&gt;<i> optionally dbus.
+</I>&gt;<i>
+</I>&gt;<i> For running, the document talks about device permissions enabling read
+</I>&gt;<i> even after gpsd drops root.  It doesn't say what uid it changes to,
+</I>&gt;<i> and if it still needs to write, but then talks about group write and
+</I>&gt;<i> the same group, but doesn't say if that's configured or searched for.
+</I>&gt;<i> I don't know the answers, but a few sentences of clarity would be
+</I>&gt;<i> helpful.
+</I>
+drops uid to &quot;nobody&quot;, or &quot;_gpsd&quot; for the openbsd port&quot;
+
+As to the documentation, I'll let Eric address that.
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005422.html">[Gpsd-dev] Imminent gpsd release warning
+</A></li>
+	<LI>Next message: <A HREF="005425.html">[Gpsd-dev] Imminent gpsd release warning
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5424">[ date ]</a>
+              <a href="thread.html#5424">[ thread ]</a>
+              <a href="subject.html#5424">[ subject ]</a>
+              <a href="author.html#5424">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

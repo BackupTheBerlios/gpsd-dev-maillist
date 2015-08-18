@@ -1,0 +1,188 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Cross compiling gpsd for Xscale Problems
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Cross%20compiling%20gpsd%20for%20Xscale%20Problems&In-Reply-To=%3CF0679C9F2304124DAF813304510F84400E84FF%40msiexch01.marvell.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005782.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Cross compiling gpsd for Xscale Problems</H1>
+    <B>Alexander Wolfson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Cross%20compiling%20gpsd%20for%20Xscale%20Problems&In-Reply-To=%3CF0679C9F2304124DAF813304510F84400E84FF%40msiexch01.marvell.com%3E"
+       TITLE="[Gpsd-dev] Cross compiling gpsd for Xscale Problems">awolfson at marvell.com
+       </A><BR>
+    <I>Wed Oct 31 23:37:00 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005782.html">[Gpsd-dev] Cross compiling gpsd for Xscale Problems
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5785">[ date ]</a>
+              <a href="thread.html#5785">[ thread ]</a>
+              <a href="subject.html#5785">[ subject ]</a>
+              <a href="author.html#5785">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi All,
+
+I tried the latest SVN version -r 4440 and it compiled successfully under scratchbox.
+
+My device is a Sirf III based evaluation receiver.
+
+Now it starts but then stacks during the probe of the Navman (I modified the code so it prints the location) 
+
+
+/usr/local/sbin # ./gpsd -NTnD 1000 /dev/ttyS0
+gpsd.c[1371]:main()gpsd: launching (Version 2.35beta)
+gpsd.c[1380]:main()gpsd: listening on port 2947
+ntpshm.c[66]:getShmTime()gpsd: shmat(1076137996,0,0) succeeded
+ntpshm.c[66]:getShmTime()gpsd: shmat(1076137996,0,0) succeeded
+ntpshm.c[66]:getShmTime()gpsd: shmat(1076137996,0,0) succeeded
+ntpshm.c[66]:getShmTime()gpsd: shmat(1076137996,0,0) succeeded
+gpsd.c[1436]:main()gpsd: running with effective group ID 0
+gpsd.c[1437]:main()gpsd: running with effective user ID 0
+serial.c[214]:gpsd_open()gpsd: opening GPS data source at '/dev/ttyS0'
+serial.c[181]:gpsd_set_speed()gpsd: speed 4800, 8N1
+navcom.c[87]:navcom_send_cmd()gpsd: Navcom: command dump: 0299661c0800040200001203
+serial.c[278]:gpsd_write()gpsd: =&gt; GPS: 0299661c0800040200001203
+navcom.c[155]:navcom_cmd_0x1c()gpsd: Navcom: sent command 0x1c (Test Support Block)
+navcom.c[158]:navcom_cmd_0x1c()gpsd: Navcom: command 0x1c mode = 02, length = 0
+navcom.c[87]:navcom_send_cmd()gpsd: Navcom: command dump: 029966200e000001ae02000071000000f203
+serial.c[278]:gpsd_write()gpsd: =&gt; GPS: 029966200e000001ae02000071000000f203
+navcom.c[114]:navcom_cmd_0x20()gpsd: Navcom: sent command 0x20 (Data Request) - data block id = ae at rate 00
+navcom.c[87]:navcom_send_cmd()gpsd: Navcom: command dump: 029966200e00000186020a0071000000d003
+
+The odd thing is that the same code compliled for X86 Linux PC works with the same device.
+
+I tried stty -F /dev/ttyS0 raw
+
+but it did not help.
+
+Does anybody knows how to approach that pronlem. Is it a known problem?
+
+Thanks,
+
+Alex
+
+
+-----Original Message-----
+From: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev-bounces at lists.berlios.de</A> on behalf of Alexander Wolfson
+Sent: Mon 10/29/2007 2:52 PM
+To: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>
+Subject: [Gpsd-dev] Cross compiling gpsd for Xscale Problems
+ 
+Hi All,
+ 
+I described the steps that I took for cross compiling gpsd in some sort
+of How to draft in the previous Email
+Unfortunately I still have building and execution problems:
+ 
+I hope somebody on this list will be abele to help.
+ 
+Thanks in advance,
+ 
+Alex
+======================================
+ 
+Script:
+======
+ 
+#!/bin/bash
+pushd gpsd-2.34
+./autogen.sh \
+--disable-python \
+--disable-tsip \
+--disable-fv18 \
+--disable-tripmate \
+--disable-earthmate \
+--disable-evermore \
+--disable-rtcm104 \
+--disable-ntrip \
+--disable-profiling \
+--disable-dbus \
+--disable-X11 \
+--without-x
+make
+popd
+ 
+
+Compiling gpsd errors
+===============
+ 
+creating gpsd
+python setup.py build_ext --inplace
+running build_ext
+building 'gpspacket' extension
+/scratchbox/compilers/host-gcc/bin/gcc
+-specs=/scratchbox/compilers/host-gcc/host-gcc.specs -pthread
+-fno-strict-aliasing -DNDEBUG -g -O3 -Wall -Wstrict-prototypes -fPIC
+-I/scratchbox/tools/include/python2.3 -c hex.c -o
+build/temp.linux-arm-2.3/hex.o
+/scratchbox/compilers/cs2005q3.2-glibc2.5-arm/bin/sbox-arm-linux-as:
+unrecognized option `-Qy'
+error: command '/scratchbox/compilers/host-gcc/bin/gcc' failed with exit
+status 1
+make[1]: *** [gpspacket.so] Error 1
+make[1]: Leaving directory `/home/awolfson/gps/gpsd-2.34'
+make: *** [all] Error 2
+[sbox-Zylonite: ~/gps/gpsd-2.34] &gt;
+ 
+Execution problems
+==================
+ 
+Build failed but there are binaries already built in .libs
+ 
+In order to get easier tracable information in gpsd.h I modified
+ 
+#define GPSD_REPORT(debug_mask, fmt, args...) fprintf(stderr,
+&quot;%s[%d]:%s()&quot;, __FILE__, __LINE__, __FUNCTION__
+),gpsd_report(debug_mask, fmt, ## args)
+/* caller should supply this */
+void gpsd_report(int, const char *, ...);
+ 
+and changed gpsd_report to GPSD_REPORT in all files. 
+Now I have information about source position in all messages.
+ 
+I started gpsd in telnet session by:
+ 
+/gps # ./gpsd -n -N -D10000 /dev/ttyS0
+ 
+and started 
+ 
+/gps # ./gpspipe -w
+ 
+in another telnet window.
+ 
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005782.html">[Gpsd-dev] Cross compiling gpsd for Xscale Problems
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5785">[ date ]</a>
+              <a href="thread.html#5785">[ thread ]</a>
+              <a href="subject.html#5785">[ subject ]</a>
+              <a href="author.html#5785">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

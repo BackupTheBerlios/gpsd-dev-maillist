@@ -1,0 +1,127 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] regress-driver fixes
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20regress-driver%20fixes&In-Reply-To=%3C1275826874-14389-1-git-send-email-bbolli%40ewanet.ch%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007880.html">
+   <LINK REL="Next"  HREF="007879.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] regress-driver fixes</H1>
+    <B>Beat Bolli</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20regress-driver%20fixes&In-Reply-To=%3C1275826874-14389-1-git-send-email-bbolli%40ewanet.ch%3E"
+       TITLE="[Gpsd-dev] [PATCH] regress-driver fixes">bbolli at ewanet.ch
+       </A><BR>
+    <I>Sun Jun  6 14:21:14 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007880.html">[Gpsd-dev] multipacket fix: ublox works
+</A></li>
+        <LI>Next message: <A HREF="007879.html">[Gpsd-dev] [PATCH] regress-driver fixes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7876">[ date ]</a>
+              <a href="thread.html#7876">[ thread ]</a>
+              <a href="subject.html#7876">[ subject ]</a>
+              <a href="author.html#7876">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>These changes are necessary on my 32-bit Linux to make the
+tests work again after the GPSD_HOME addition.
+
+The fake.py changes is needed in case GPSD_HOME is not set at all
+(my initial problem); the 2nd hunk exports GPSD_HOME for subprocesses
+of regress-driver and uses it internally.
+---
+ gps/fake.py    |    2 +-
+ regress-driver |    8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/gps/fake.py b/gps/fake.py
+index a9c37cf..69ea655 100644
+--- a/gps/fake.py
++++ b/gps/fake.py
+@@ -284,7 +284,7 @@ class DaemonInstance:
+         self.spawncmd = None
+ 
+ 	# Look for gpsd in GPSD_HOME env variable
+-	if os.environ['GPSD_HOME'] :
++	if os.environ.get('GPSD_HOME'):
+             for path in os.environ['GPSD_HOME'].split(':'):
+                 _spawncmd = &quot;%s/gpsd&quot; % path
+                 if os.path.isfile(_spawncmd) and os.access(_spawncmd, os.X_OK):
+diff --git a/regress-driver b/regress-driver
+index 6cc040c..8fdd4d4 100755
+--- a/regress-driver
++++ b/regress-driver
+@@ -29,7 +29,7 @@ if [ -d ${py_libdir} ] &amp;&amp; [ -d ${py_scriptdir} ]; then
+ 
+     PATH=${py_scriptdir}:${PATH}
+ fi
+-export PATH
++export GPSD_HOME PATH
+ 
+ mode=regress
+ testing=daemon
+@@ -82,7 +82,7 @@ case $mode in
+ 	    then
+ 		case $testing in
+ 		daemon) gpsfake -s 38400 -1 -p $opts ${f} | ${GPSFILTER} ${ALTFILTER} &gt;${TMP}/test-$$.chk ;;
+-		clientlib) libgps -b &lt;${f} &gt;${TMP}/test-$$.chk ;;
++		clientlib) $GPSD_HOME/libgps -b &lt;${f} &gt;${TMP}/test-$$.chk ;;
+ 		esac
+ 		sed -n &lt;${f}.chk &gt;${TMP}/log-copy-$$.chk ${ALTFILTER} -e 'p';
+ 		sed -n &lt;${TMP}/test-$$.chk &gt;${TMP}/test-whole-$$.chk ${ALTFILTER} -e 'p';
+@@ -122,7 +122,7 @@ case $mode in
+         for f in $*; do
+ 	    case $testing in 
+             daemon) gpsfake -s 38400 -1 -p $opts ${f} | ${GPSFILTER} &gt;${f}.chk;;
+-	    clientlib) libgps -b &lt;${f} &gt;${f}.chk ;;
++	    clientlib) $GPSD_HOME/libgps -b &lt;${f} &gt;${f}.chk ;;
+             esac
+         done
+         status=0
+@@ -132,7 +132,7 @@ case $mode in
+         for f in $*; do
+ 	    case $testing in 
+             daemon) gpsfake -s 38400 -1 -p $opts ${f} | ${GPSFILTER} ;;
+-            clientlib) libgps -b &lt;${f} ;;
++            clientlib) $GPSD_HOME/libgps -b &lt;${f} ;;
+             esac
+         done
+         status=0
+-- 
+1.7.1
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007880.html">[Gpsd-dev] multipacket fix: ublox works
+</A></li>
+	<LI>Next message: <A HREF="007879.html">[Gpsd-dev] [PATCH] regress-driver fixes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7876">[ date ]</a>
+              <a href="thread.html#7876">[ thread ]</a>
+              <a href="subject.html#7876">[ subject ]</a>
+              <a href="author.html#7876">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

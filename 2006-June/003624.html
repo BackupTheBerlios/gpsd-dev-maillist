@@ -1,0 +1,200 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Re%3A%20accuracy%20in%20conversion%20from%0A%20meters/sec%20to%20knots&In-Reply-To=%3Cp06230915c0ad531e5456%40%5B192.168.1.6%5D%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003621.html">
+   <LINK REL="Next"  HREF="003635.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots</H1>
+    <B>Robin L Darroch</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Re%3A%20accuracy%20in%20conversion%20from%0A%20meters/sec%20to%20knots&In-Reply-To=%3Cp06230915c0ad531e5456%40%5B192.168.1.6%5D%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots">robin at spade-men.com
+       </A><BR>
+    <I>Thu Jun  8 07:03:06 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003621.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+        <LI>Next message: <A HREF="003635.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3624">[ date ]</a>
+              <a href="thread.html#3624">[ thread ]</a>
+              <a href="subject.html#3624">[ subject ]</a>
+              <a href="author.html#3624">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>At 23:57 -0400 7/6/06, Eric S. Raymond wrote:
+&gt;<i>Robin L Darroch &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>&gt;:
+</I>&gt;&gt;<i>  I hate to reopen the case, but there has to be an appeal process: and
+</I>&gt;&gt;<i>  here's why.  GPSd supports more than just the W command.  If it
+</I>&gt;&gt;<i>  supported nothing but Watcher mode clients, I'd accept your argument.
+</I>&gt;&gt;<i>  However, one of the best things about GPSd is it allows clients to
+</I>&gt;&gt;<i>  ASK for data.  By keeping &quot;clear at start of cycle&quot; logic, we kill
+</I>&gt;&gt;<i>  all such attempts to use query-based clients, because they can never
+</I>&gt;&gt;<i>  know whether they'll be unlucky enough to query just after the start
+</I>&gt;&gt;<i>  of the cycle or not.  Only PUSHED data delivered under policy 1 can
+</I>&gt;&gt;<i>  be used to simulate PUSHED data delivered under policy 2 (although it
+</I>&gt;&gt;<i>  can be a right pain to do so) - but PULLED data delivered under
+</I>&gt;&gt;<i>  policy 1 is useless.
+</I>&gt;<i>
+</I>&gt;<i>I don't buy it.
+</I>&gt;<i>
+</I>&gt;<i>If the client is lucky (which will always be the case for the 80% of
+</I>&gt;<i>SiRF devices out there) no problem.
+</I>&gt;<i>
+</I>&gt;<i>If the client is &quot;unlucky&quot;, this just means they get a response saying
+</I>&gt;<i>there is no data.  This is the *correct* response, because gpsd cannot
+</I>&gt;<i>yet deliver valid data in the current cycle.  Holding over data from
+</I>&gt;<i>the last cycle would be worse than useless, it would be actively
+</I>&gt;<i>misleading.  The fact that asking half a second later might give
+</I>&gt;<i>you a response with the same valid data as the previous cycle doesn't
+</I>&gt;<i>meean it's OK to pretend gpsd knows that before it happens.
+</I>
+Not to be belligerent, but I don't buy it.
+
+Pull-mode clients shouldn't NEED to know about cycles... because we 
+pretty much invented them.  Yes, the GPS returns a timestamp along 
+with data in certain sentences, and it is certainly open to a 
+*client* to decide that it only wants to use data from the very 
+latest timestamp... however, the very simplest GPSd client connecting 
+to GPSd could just connect once, make one query to find out &quot;where 
+are we and how are we moving?&quot;, and that's that.  By insisting on 
+discarding data at a time we've arbitrarily decided to call the 
+&quot;start of cycle&quot;, we destroy that functionality.  Note that there is 
+a HUGELY important distinction I'm trying (repeatedly) to draw here: 
+I'm not saying that GPSd should ever return *explicitly* invalidated 
+data to a client.  For example, the following would be WRONG:
+
+GPS-&gt;gpsd: track=090
+GPS-&gt;gpsd: track=UNKNOWN
+client-&gt;gpsd: track?
+gpsd-&gt;client: track=90
+
+That is not what I'm saying we should do: I'm saying we should not 
+act as if a new timestamp *implicitly* invalidates data not included 
+in the sentence that just arrived with the new timestamp... because 
+there doesn't seem to be any actual evidence that it should.
+
+&gt;<i>Push vs. pull is pretty much irrelevant here.  In either case, if you want to
+</I>&gt;<i>hold old data, you can do so in the client -- whereas, if the daemon were
+</I>&gt;<i>to hold data by default, it would be impossible to tell when it was stale.
+</I>
+I would agree if there were any additional &quot;holding&quot; going on - but 
+there isn't.  New sentences overwrite all the data received in 
+previous sentences of the same type (and any matching data from 
+different types of sentences), and any interruption to the flow of 
+sentences (either through loss of fix or disconnection of GPS) 
+immediately prevents GPSd from returning old data.  It is only our 
+decision that a new timestamp implicitly invalidates all previous fix 
+data which is at issue here.
+
+We have several layers here before we even look at the logic internal 
+to the client:
+
+1) input from GPS
+2) ongoing storage of fix data
+3) responding to clients
+4) libgps
+
+We already have filtering logic in step 3 which maintains the 
+integrity of our responses to the client: regardless of whether or 
+not we clear at start of cycle, no response will ever be sent which 
+includes old data that has been invalidated by an appropriate 
+sentence from the GPS, or including old data despite the loss of the 
+GPS fix or the GPS connection.  My argument is that we should not 
+*discard* data between steps 1 and 2 when unrelated data arrives with 
+a new timestamp.
+
+&gt;<i>You are still free to submit a patch that implements selection of a
+</I>&gt;<i>no-clear policy.  But that will not be the default.
+</I>
+Well, you're the boss.  What bothers me a little here is that none of 
+the people arguing against me have actually suffered from the 
+problem, and nor do they stand to lose anything by adopting my 
+solution.  You have a directory of test data, but I don't believe 
+you've tried running it through either the patched or the unpatched 
+version, whereas I have a working GPS unit that actually returns the 
+kind of data in question.  The only people affected by our choice 
+here are those with non-binary devices, and they stand only to lose 
+data from the decision to clear-at-start-of-cycle.  What's more, the 
+current CASOS logic DOESN'T DO WHAT IT IS SUPPOSED TO.  The timestamp 
+checking and updating logic is missing from the GGA parser 
+altogether, so if the unit in question has GGA at the start of the 
+cycle, then what we currently have is &quot;clear in the middle of the 
+cycle&quot;, and we're ALWAYS returning both old data and 
+incorrectly-invalidated NaNs (i.e. the data from the GGA received at 
+the start of the cycle is discarded when the RMC arrives later in the 
+same cycle).
+
+In summary, we have an academic argument to support an existing logic 
+that - even if we accept it is better in theory, is currently broken 
+in practice - running against a real-world-based argument with a 
+working fix in active deployment... why does the real world suddenly 
+lose out?
+
+But I think I'm making too much of this, for which I apologise... 
+it's hard to relinquish a position that I've been arguing for, when 
+the solution could easily be to treat BOTH positions as correct 
+(depending on user expectations or requirements).  I don't object in 
+principle to CaSoS logic being an option, although I think very few 
+people will actually want it (no-one yet has: remember, it doesn't 
+currently work, but no-one has asked for it).  Indeed, I will very 
+happily write a command-line switch to ENABLE CaSoS, with &quot;never 
+clear&quot; as the default.  Why should the default matter?  Because 
+NON-EXPERT users will generally use as few command-line switches as 
+they can get away with to get it working, and those are the same 
+users that will be baffled by the artificial jitter introduced by 
+CaSoS (and also, on account of willingness to invest in 
+better-quality equipment, are much more likely to have an &quot;old&quot; unit 
+that is adversely affected by that logic).  On the other hand, the 
+expert users will generally figure out *exactly* what switches to use 
+to get *exactly* the behaviour they want... and if they want all data 
+invalidated at start-of-cycle, then they can choose that.
+
+As I say, I'll very happily write the patch for that... is that 
+acceptable?  Beyond that, I have no objections to a release. :)
+
+Cheers,
+Robin
+-- 
+
+-------------------------------------------------------------------------
+  Robin L. Darroch - PO Box 2715, South Hedland WA 6722 - +61 421 503 966
+       <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at darroch.id.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at nyca.org.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003621.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+	<LI>Next message: <A HREF="003635.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3624">[ date ]</a>
+              <a href="thread.html#3624">[ thread ]</a>
+              <a href="subject.html#3624">[ subject ]</a>
+              <a href="author.html#3624">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

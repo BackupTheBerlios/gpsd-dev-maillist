@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-users] Direct access to PPS transition time
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-users%5D%20Direct%20access%20to%20PPS%20transition%20time&In-Reply-To=%3C20110829124305.GG1566%40localhost%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009469.html">
+   <LINK REL="Next"  HREF="009471.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-users] Direct access to PPS transition time</H1>
+    <B>Miroslav Lichvar</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-users%5D%20Direct%20access%20to%20PPS%20transition%20time&In-Reply-To=%3C20110829124305.GG1566%40localhost%3E"
+       TITLE="[Gpsd-dev] [Gpsd-users] Direct access to PPS transition time">mlichvar at redhat.com
+       </A><BR>
+    <I>Mon Aug 29 14:43:05 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009469.html">[Gpsd-dev] Hurricane Irene is abating and 3.2 is shipped.
+</A></li>
+        <LI>Next message: <A HREF="009471.html">[Gpsd-dev] [Gpsd-users] Direct access to PPS transition time
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9470">[ date ]</a>
+              <a href="thread.html#9470">[ thread ]</a>
+              <a href="subject.html#9470">[ subject ]</a>
+              <a href="author.html#9470">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Fri, Aug 26, 2011 at 11:03:41PM -0400, Wouter Pelgrum wrote:
+&gt;<i> The accuracy as reported by chronyc is in the micro-seconds level:
+</I>&gt;<i> 	datacollect:~ # chronyc sources
+</I>&gt;<i> 	210 Number of sources = 3
+</I>&gt;<i> 	MS Name/IP address           Stratum Poll LastRx Last sample
+</I>&gt;<i> 	============================================================================
+</I>&gt;<i> 	#? NMEA                          0    4      7  -2136us[-2136us] +/-  101ms
+</I>&gt;<i> 	#* PPSc                          0    4      9  +5550ns[+5996ns] +/- 1818ns
+</I>&gt;<i> 	#+ PPSp                          0    4      9  +5472ns[+5917ns] +/- 1816ns
+</I>&gt;<i> And pretty much equal for the SHM1 (PPSc) as for the SOCK (PPSp).
+</I>&gt;<i> 
+</I>&gt;<i> Are these accuracies typical? 
+</I>&gt;<i> The 1PPS accuracy of my GPS receiver (Survey-grade NovAtel OEM-V3) is ns-level (jitter should be marginal, couple ns at most)
+</I>
+Does your kernel support LinuxPPS? (look for KPPS messages in
+gpsd -D 5 output). Your dispersion numbers look more like the
+userspace timestamping.
+
+Here is what I get here with Garmin 18x LVC:
+
+MS Name/IP address           Stratum Poll LastRx Last sample
+============================================================================
+#* SOC1                          0    4     12    -97ns[ -130ns] +/-  185ns
+
+Name/IP Address            NP  NR  Span  Frequency  Freq Skew  Offset  Std Dev
+==============================================================================
+SOC1                       11   9   152     -0.000      0.007     -1ns   218ns
+
+&gt;<i> Yesterday I had a problem with chrony-gpsd after a reboot, chrony did not see any PPS via SHM1, only NMEA (SHM0). It required a restart of gpsd to get it to work. Could this be a related issue (I wasn't using SOCK)?
+</I>&gt;<i> In other words: is the startup order only a concern for SOCK or also for other connections?
+</I>
+Only for SOCK. With SHM it should work either way.
+
+&gt;<i> I also execute a setserial script 
+</I>&gt;<i> 	setserial /dev/ttyS0 uart 16550A port 0x03f8 irq 4 baud_base 115200 spd_normal skip_test low_latency
+</I>&gt;<i> Is that still needed with gpsd to get optimal performance?
+</I>
+That probably affects only the NMEA timing.
+
+-- 
+Miroslav Lichvar
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009469.html">[Gpsd-dev] Hurricane Irene is abating and 3.2 is shipped.
+</A></li>
+	<LI>Next message: <A HREF="009471.html">[Gpsd-dev] [Gpsd-users] Direct access to PPS transition time
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9470">[ date ]</a>
+              <a href="thread.html#9470">[ thread ]</a>
+              <a href="subject.html#9470">[ subject ]</a>
+              <a href="author.html#9470">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

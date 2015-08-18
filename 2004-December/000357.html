@@ -1,0 +1,405 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] gps.c rework resubmit
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20gps.c%20rework%20resubmit&In-Reply-To=%3C20041213025359.GA32087%40us.netrek.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000356.html">
+   <LINK REL="Next"  HREF="000358.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] gps.c rework resubmit</H1>
+    <B>James Cameron</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20gps.c%20rework%20resubmit&In-Reply-To=%3C20041213025359.GA32087%40us.netrek.org%3E"
+       TITLE="[Gpsd-dev] [PATCH] gps.c rework resubmit">quozl at us.netrek.org
+       </A><BR>
+    <I>Mon Dec 13 03:53:59 CET 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000356.html">[Gpsd-dev] [PATCH] some portability issues with gpsd
+</A></li>
+        <LI>Next message: <A HREF="000358.html">[Gpsd-dev] [PATCH] gps.c rework resubmit
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#357">[ date ]</a>
+              <a href="thread.html#357">[ thread ]</a>
+              <a href="subject.html#357">[ subject ]</a>
+              <a href="author.html#357">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>G'day Eric,
+
+Have you been able to merge my patch to gps.c yet?  It both removes the
+use of alarm(2) and reworks the widget relationships to display better.
+
+Here's the patch again relative to current anon SVN.
+
+-- 
+James Cameron    mailto:<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">quozl at us.netrek.org</A>     <A HREF="http://quozl.netrek.org/">http://quozl.netrek.org/</A>
+-------------- next part --------------
+Index: gps.c
+===================================================================
+--- gps.c	(revision 1117)
++++ gps.c	(working copy)
+@@ -4,7 +4,6 @@
+ #include &lt;ctype.h&gt;
+ #include &lt;unistd.h&gt;
+ #include &lt;errno.h&gt;
+-#include &lt;signal.h&gt;
+ #include &lt;math.h&gt;
+ #include &lt;Xm/Xm.h&gt;
+ #include &lt;Xm/MwmUtil.h&gt;
+@@ -35,25 +34,14 @@
+ extern void draw_graphics(struct gps_data_t *gpsdata);
+ extern void redraw();
+ 
+-static Widget lxbApp, data_panel, satellite_list, satellite_diagram, status;
+-static Widget rowColumn_10, rowColumn_11, rowColumn_12, rowColumn_13;
++static Widget lxbApp, form, left, right;
++static Widget satellite_list, satellite_diagram, status;
++static Widget rowColumn_11, rowColumn_12, rowColumn_13;
+ static Widget rowColumn_14, rowColumn_15, rowColumn_16, rowColumn_17;
+ static Widget rowColumn_18, quitbutton;
+ static Widget text_1, text_2, text_3, text_4, text_5, text_6, text_7;
+ static Widget label_1, label_2, label_3, label_4, label_5, label_6, label_7;
+ 
+-String fallback_resources[] = {
+-    &quot;*gpsdata.time.label.labelString: Time     &quot;,
+-    &quot;*gpsdata.latitude.label.labelString: Latitude &quot;,
+-    &quot;*gpsdata.longitude.label.labelString: Longitude&quot;,
+-    &quot;*gpsdata.altitude.label.labelString: Altitude &quot;,
+-    &quot;*gpsdata.speed.label.labelString: Speed    &quot;,
+-    &quot;*gpsdata.track.label.labelString: Course   &quot;,
+-    &quot;*gpsdata.fix_status.label.labelString: Status   &quot;,
+-    &quot;*gpsdata.quit.label.labelString: Quit&quot;,
+-    NULL
+-};
+-
+ static GC gc;
+ 
+ static void quit_cb()
+@@ -85,7 +73,7 @@
+     XmString string;
+ 
+     /* the root application window */
+-    XtSetArg(args[0], XmNgeometry, &quot;630x460&quot;);
++    XtSetArg(args[0], XmNgeometry, &quot;620x470&quot;);
+     XtSetArg(args[1], XmNresizePolicy, XmRESIZE_NONE);
+     XtSetArg(args[2], XmNallowShellResize, False);
+     XtSetArg(args[3], XmNdeleteResponse, XmDO_NOTHING);
+@@ -93,45 +81,58 @@
+ 	     MWM_FUNC_RESIZE | MWM_FUNC_MOVE | MWM_FUNC_MINIMIZE | MWM_FUNC_MAXIMIZE);
+     XtSetValues(lxbApp, args, 5);
+ 
+-#define LEFTSIDE_WIDTH	205
+-    /* the data panel */
+-    XtSetArg(args[0], XmNrubberPositioning, False);
+-    XtSetArg(args[1], XmNresizePolicy, XmRESIZE_NONE);
+-    XtSetArg(args[2], XmNwidth, LEFTSIDE_WIDTH);
+-    data_panel = XtCreateManagedWidget(&quot;gpsdata&quot;, xmFormWidgetClass, lxbApp, args, 3);
++    /* a form to assist with geometry negotiation */
++    form = XtVaCreateManagedWidget(&quot;form&quot;, xmFormWidgetClass, lxbApp,
++					 NULL);
+ 
++    /* the left half of the screen */
++    left = XtVaCreateManagedWidget(&quot;left&quot;, xmRowColumnWidgetClass, form,
++				   XmNleftAttachment, XmATTACH_FORM,
++				   XmNtopAttachment, XmATTACH_FORM,
++				   NULL);
++    
++    /* the right half of the screen */
++    right = XtVaCreateManagedWidget(&quot;right&quot;, xmRowColumnWidgetClass, form,
++				    XmNleftAttachment, XmATTACH_WIDGET,
++				    XmNleftWidget, left,
++				    XmNtopAttachment, XmATTACH_FORM,
++				    NULL);
++
++    /* the application status bar */
++    status = XtVaCreateManagedWidget(&quot;status&quot;, xmTextFieldWidgetClass, form,
++				     XmNcursorPositionVisible, False,
++				     XmNeditable, False,
++				     XmNmarginHeight, 1,
++				     XmNhighlightThickness, 0,
++				     XmNshadowThickness, 1,
++				     XmNleftAttachment, XmATTACH_FORM,
++				     XmNrightAttachment, XmATTACH_FORM,
++				     XmNtopAttachment, XmATTACH_WIDGET,
++				     XmNtopWidget, left,
++				     NULL);
++
+     /* satellite location and SNR data panel */
+ #define FRAMEHEIGHT	220
+-    XtSetArg(args[0], XmNbackground, get_pixel(lxbApp, &quot;snow&quot;));
+-    XtSetArg(args[1], XmNleftOffset, 10);
+-    XtSetArg(args[2], XmNtopOffset, 10);
+-    XtSetArg(args[3], XmNbottomAttachment, XmATTACH_NONE);
+-    XtSetArg(args[4], XmNleftAttachment, XmATTACH_FORM);
+-    XtSetArg(args[5], XmNtopAttachment, XmATTACH_FORM);
+-    XtSetArg(args[6], XmNheight, FRAMEHEIGHT);
+-    XtSetArg(args[7], XmNwidth, LEFTSIDE_WIDTH);
+-    XtSetArg(args[8], XmNlistSizePolicy, XmCONSTANT);
+-    XtSetArg(args[9], XmNhighlightThickness, 0);
+-    XtSetArg(args[10], XmNlistSpacing, 4);
+-    satellite_list = XtCreateManagedWidget(&quot;satellite_list&quot;, xmListWidgetClass, data_panel, args, 11);
++#define LEFTSIDE_WIDTH	205
++    satellite_list =
++      XtVaCreateManagedWidget(&quot;satellite_list&quot;, xmListWidgetClass, left,
++			      XmNbackground, get_pixel(lxbApp, &quot;snow&quot;),
++			      XmNheight, FRAMEHEIGHT,
++			      XmNwidth, LEFTSIDE_WIDTH,
++			      XmNlistSizePolicy, XmCONSTANT,
++			      XmNhighlightThickness, 0,
++			      XmNlistSpacing, 4,
++			      NULL);
+ 
+     /* the satellite diagram */
+ #define SATDIAG_SIZE	400
+-    XtSetArg(args[0], XmNbottomAttachment, XmATTACH_NONE);
+-    XtSetArg(args[1], XmNleftOffset, 10);
+-    XtSetArg(args[2], XmNrightOffset, 10);
+-    XtSetArg(args[3], XmNbackground, get_pixel(lxbApp, &quot;snow&quot;));
+-    XtSetArg(args[4], XmNy, 10);
+-    XtSetArg(args[5], XmNx, 80);
+-    XtSetArg(args[6], XmNrightAttachment, XmATTACH_NONE);
+-    XtSetArg(args[7], XmNtopOffset, 10);
+-    XtSetArg(args[8], XmNrightAttachment, XmATTACH_FORM);
+-    XtSetArg(args[9], XmNtopAttachment, XmATTACH_FORM);
+-    XtSetArg(args[10], XmNresizePolicy, XmRESIZE_NONE);
+-    XtSetArg(args[11], XmNheight, SATDIAG_SIZE);
+-    XtSetArg(args[12], XmNwidth, SATDIAG_SIZE);
+-    satellite_diagram = XtCreateManagedWidget(&quot;satellite_diagram&quot;,
+-			     xmDrawingAreaWidgetClass, data_panel, args, 13);
++    satellite_diagram = 
++      XtVaCreateManagedWidget(&quot;satellite_diagram&quot;,
++			      xmDrawingAreaWidgetClass, right, 
++			      XmNbackground, get_pixel(lxbApp, &quot;snow&quot;),
++			      XmNheight, SATDIAG_SIZE,
++			      XmNwidth, SATDIAG_SIZE,
++			      NULL);
+     gcv.foreground = BlackPixelOfScreen(XtScreen(satellite_diagram));
+     gc = XCreateGC(XtDisplay(satellite_diagram),
+ 	RootWindowOfScreen(XtScreen(satellite_diagram)), GCForeground, &amp;gcv);
+@@ -139,51 +140,24 @@
+     XtAddCallback(satellite_diagram, XmNexposeCallback, redraw, NULL);
+ 
+     /* the data display */
+-    XtSetArg(args[0], XmNtopOffset, 10);
+-    XtSetArg(args[1], XmNbottomOffset, 10);
+-    XtSetArg(args[2], XmNrightOffset, 10);
+-    XtSetArg(args[3], XmNleftOffset, 10);
+-    XtSetArg(args[4], XmNorientation, XmVERTICAL);
+-    XtSetArg(args[5], XmNrightAttachment, XmATTACH_WIDGET);
+-    XtSetArg(args[6], XmNrightWidget, satellite_diagram);
+-    XtSetArg(args[7], XmNbottomAttachment, XmATTACH_NONE);	/* XXX */
+-    XtSetArg(args[8], XmNleftAttachment, XmATTACH_FORM);
+-    XtSetArg(args[9], XmNtopAttachment, XmATTACH_WIDGET);
+-    XtSetArg(args[10], XmNtopWidget, satellite_list);
+-    XtSetArg(args[11], XmNheight, 12);
+-    rowColumn_10 = XtCreateManagedWidget(&quot;rowColumn_10&quot;, xmRowColumnWidgetClass, data_panel, args, 12);
+-
+     XtSetArg(args[0], XmNorientation, XmHORIZONTAL);
+-    XtSetArg(args[1], XmNleftAttachment, XmATTACH_FORM);
+-    XtSetArg(args[2], XmNrightAttachment, XmATTACH_NONE);
+-    XtSetArg(args[3], XmNtopAttachment, XmATTACH_WIDGET);
+-    XtSetArg(args[4], XmNbottomAttachment, XmATTACH_NONE);
+-    XtSetArg(args[5], XmNrightWidget, satellite_diagram);
+-    XtSetArg(args[6], XmNtopWidget, rowColumn_10);
+-    rowColumn_11 = XtCreateManagedWidget(&quot;time&quot;, xmRowColumnWidgetClass, data_panel, args, 7);
++    rowColumn_11 = XtCreateManagedWidget(&quot;time&quot;, xmRowColumnWidgetClass, left, args, 1);
+ 
+-    XtSetArg(args[6], XmNtopWidget, rowColumn_11);
+-    rowColumn_12 = XtCreateManagedWidget(&quot;latitude&quot;, xmRowColumnWidgetClass, data_panel, args, 7);
+-    XtSetArg(args[6], XmNtopWidget, rowColumn_12);
+-    rowColumn_13 = XtCreateManagedWidget(&quot;longitude&quot;, xmRowColumnWidgetClass, data_panel, args, 7);
+-    XtSetArg(args[6], XmNtopWidget, rowColumn_13);
+-    rowColumn_14 = XtCreateManagedWidget(&quot;altitude&quot;, xmRowColumnWidgetClass, data_panel, args, 7);
+-    XtSetArg(args[6], XmNtopWidget, rowColumn_14);
+-    rowColumn_15 = XtCreateManagedWidget(&quot;speed&quot;, xmRowColumnWidgetClass, data_panel, args, 7);
+-    XtSetArg(args[6], XmNtopWidget, rowColumn_15);
+-    rowColumn_16 = XtCreateManagedWidget(&quot;track&quot;, xmRowColumnWidgetClass, data_panel, args, 7);
+-    XtSetArg(args[6], XmNtopWidget, rowColumn_16);
+-    rowColumn_17 = XtCreateManagedWidget(&quot;fix_status&quot;, xmRowColumnWidgetClass, data_panel, args, 7);
+-    XtSetArg(args[6], XmNtopWidget, rowColumn_17);
+-    rowColumn_18 = XtCreateManagedWidget(&quot;quit&quot;, xmRowColumnWidgetClass, data_panel, args, 7);
++    rowColumn_12 = XtCreateManagedWidget(&quot;latitude&quot;, xmRowColumnWidgetClass, left, args, 1);
++    rowColumn_13 = XtCreateManagedWidget(&quot;longitude&quot;, xmRowColumnWidgetClass, left, args, 1);
++    rowColumn_14 = XtCreateManagedWidget(&quot;altitude&quot;, xmRowColumnWidgetClass, left, args, 1);
++    rowColumn_15 = XtCreateManagedWidget(&quot;speed&quot;, xmRowColumnWidgetClass, left, args, 1);
++    rowColumn_16 = XtCreateManagedWidget(&quot;track&quot;, xmRowColumnWidgetClass, left, args, 1);
++    rowColumn_17 = XtCreateManagedWidget(&quot;fix_status&quot;, xmRowColumnWidgetClass, left, args, 1);
++    rowColumn_18 = XtCreateManagedWidget(&quot;quit&quot;, xmRowColumnWidgetClass, left, args, 1);
+ 
+-    label_1 = XtCreateManagedWidget(&quot;label&quot;, xmLabelWidgetClass, rowColumn_11, args, 0);
+-    label_2 = XtCreateManagedWidget(&quot;label&quot;, xmLabelWidgetClass, rowColumn_12, args, 0);
+-    label_3 = XtCreateManagedWidget(&quot;label&quot;, xmLabelWidgetClass, rowColumn_13, args, 0);
+-    label_4 = XtCreateManagedWidget(&quot;label&quot;, xmLabelWidgetClass, rowColumn_14, args, 0);
+-    label_5 = XtCreateManagedWidget(&quot;label&quot;, xmLabelWidgetClass, rowColumn_15, args, 0);
+-    label_6 = XtCreateManagedWidget(&quot;label&quot;, xmLabelWidgetClass, rowColumn_16, args, 0);
+-    label_7 = XtCreateManagedWidget(&quot;label&quot;, xmLabelWidgetClass, rowColumn_17, args, 0);
++    label_1 = XtCreateManagedWidget(&quot;Time     &quot;, xmLabelWidgetClass, rowColumn_11, args, 0);
++    label_2 = XtCreateManagedWidget(&quot;Latitide &quot;, xmLabelWidgetClass, rowColumn_12, args, 0);
++    label_3 = XtCreateManagedWidget(&quot;Longitude&quot;, xmLabelWidgetClass, rowColumn_13, args, 0);
++    label_4 = XtCreateManagedWidget(&quot;Altitude &quot;, xmLabelWidgetClass, rowColumn_14, args, 0);
++    label_5 = XtCreateManagedWidget(&quot;Speed    &quot;, xmLabelWidgetClass, rowColumn_15, args, 0);
++    label_6 = XtCreateManagedWidget(&quot;Course   &quot;, xmLabelWidgetClass, rowColumn_16, args, 0);
++    label_7 = XtCreateManagedWidget(&quot;Status   &quot;, xmLabelWidgetClass, rowColumn_17, args, 0);
+ 
+     XtSetArg(args[0], XmNcursorPositionVisible, False);
+     XtSetArg(args[1], XmNeditable, False);
+@@ -206,26 +180,16 @@
+     text_7 = XtCreateManagedWidget(&quot;text_7&quot;, xmTextFieldWidgetClass,
+ 				   rowColumn_17, args, 6);
+ 
+-    quitbutton = XtCreateManagedWidget(&quot;label&quot;,
++    quitbutton = XtCreateManagedWidget(&quot;Quit&quot;,
+ 			 xmPushButtonWidgetClass, rowColumn_18, args, 0);
+     XtAddCallback(quitbutton, XmNactivateCallback, quit_cb, NULL);
+ 
+-    status = XtVaCreateManagedWidget(&quot;status&quot;, xmTextFieldWidgetClass, data_panel,
+-				     XmNcursorPositionVisible, False,
+-				     XmNeditable, False,
+-				     XmNmarginHeight, 1,
+-				     XmNhighlightThickness, 0,
+-				     XmNshadowThickness, 1,
+-				     XmNleftAttachment, XmATTACH_FORM,
+-				     XmNrightAttachment, XmATTACH_FORM,
+-				     XmNbottomAttachment, XmATTACH_FORM,
+-				     NULL);
+-
+     XtRealizeWidget(lxbApp);
+     delw = XmInternAtom(XtDisplay(lxbApp), &quot;WM_DELETE_WINDOW&quot;, False);
+     XmAddWMProtocolCallback(lxbApp, delw,
+ 			    (XtCallbackProc)quit_cb, (XtPointer)NULL);
+ 
++    /* create empty list items to be replaced on update */
+     string = XmStringCreateSimple(&quot; &quot;);
+     for (i = 0; i &lt; MAXCHANNELS; i++)
+ 	XmListAddItem(satellite_list, string, i+1);
+@@ -237,16 +201,25 @@
+  */
+ 
+ static struct gps_data_t *gpsdata;
+-static int timer;	/* time since last state change in seconds*/
++static time_t timer;	/* time of last state change */
+ static int state = 0;	/* or MODE_NO_FIX=1, MODE_2D=2, MODE_3D=3 */
++XtAppContext app;
++XtIntervalId timeout;
+ 
+-static void handle_input(XtPointer client_data, int *source, XtInputId * id)
++static void handle_input(XtPointer client_data, int *source, XtInputId *id)
+ {
+     gps_poll(gpsdata);
+ }
+ 
++static void handle_time_out(XtPointer client_data, XtIntervalId *ignored)
++/* runs when there is no data for a while */
++{
++    XmTextFieldSetString(status, &quot;no data arriving&quot;);
++    XmTextFieldSetString(text_7, &quot;UNKNOWN&quot;);
++}
++
+ static void update_panel(char *message)
+-/* gets done both on alarm ticks and on each sentence */
++/* runs on each sentence */
+ {
+     int i, newstate;
+     XmString string[12];
+@@ -306,42 +279,19 @@
+ 	}
+     }
+     if (newstate != state) {
+-	timer = 0;
++	timer = time(NULL);
+ 	state = newstate;
+     }
+-    sprintf(s + strlen(s), &quot; (%d secs)&quot;, timer);
++    sprintf(s + strlen(s), &quot; (%d secs)&quot;, (int) (time(NULL) - timer));
+     XmTextFieldSetString(text_7, s);
+     draw_graphics(gpsdata);
+-}
+ 
+-static void update_display(char *message)
+-/* only gets done on sentence receipt, not alarm ticks */
+-{
+-    sigset_t	allsigs;
+-
+-    /*
+-     * The Motif canvas widget seems to react badly to incoming alarm signals.
+-     * The symptom is that the satellite-display background will sometimes 
+-     * flash odd colors when SIGALRM comes in.  Prevent this.  We'll get the
+-     * alarm when the redraw is done.
+-     */
+-    sigfillset(&amp;allsigs);
+-    sigprocmask(SIG_BLOCK, &amp;allsigs, NULL);
+-    update_panel(message);
+-    draw_graphics(gpsdata);
+-    sigprocmask(SIG_UNBLOCK, &amp;allsigs, NULL);
++    XtRemoveTimeOut(timeout);
++    timeout = XtAppAddTimeOut(app, 2000, handle_time_out, NULL);
+ }
+ 
+-static void handle_alarm(int sig)
+-{
+-    timer++;
+-    update_display(&quot;&quot;);
+-    alarm(1);
+-}
+-
+ int main(int argc, char *argv[])
+ {
+-    XtAppContext app;
+     int option;
+     char *colon, *server = NULL, *port = DEFAULT_GPSD_PORT;
+ 
+@@ -369,16 +319,16 @@
+ 	exit(2);
+     }
+ 
+-    lxbApp = XtVaAppInitialize(&amp;app, &quot;gps.ad&quot;, NULL, 0, &amp;argc, argv, fallback_resources, NULL);
++    lxbApp = XtVaAppInitialize(&amp;app, &quot;gps.ad&quot;, NULL, 0, &amp;argc, argv, NULL, NULL);
+     build_gui(lxbApp);
+ 
+-    gps_set_raw_hook(gpsdata, update_display);
++    timeout = XtAppAddTimeOut(app, 2000, handle_time_out, app);
++
++    gps_set_raw_hook(gpsdata, update_panel);
+     gps_query(gpsdata, &quot;w+x\n&quot;);
+ 
+     XtAppAddInput(app, gpsdata-&gt;gps_fd, (XtPointer) XtInputReadMask,
+ 			     handle_input, NULL);
+-    signal(SIGALRM, handle_alarm);
+-    alarm(1);
+     XtAppMainLoop(app);
+ 
+     gps_close(gpsdata);
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000356.html">[Gpsd-dev] [PATCH] some portability issues with gpsd
+</A></li>
+	<LI>Next message: <A HREF="000358.html">[Gpsd-dev] [PATCH] gps.c rework resubmit
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#357">[ date ]</a>
+              <a href="thread.html#357">[ thread ]</a>
+              <a href="subject.html#357">[ subject ]</a>
+              <a href="author.html#357">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

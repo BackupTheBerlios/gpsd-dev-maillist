@@ -1,0 +1,146 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] blocked client eventually stalls gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20blocked%20client%20eventually%20stalls%20gpsd&In-Reply-To=%3C20040826234817.GA23721%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000054.html">
+   <LINK REL="Next"  HREF="000061.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] blocked client eventually stalls gpsd</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20blocked%20client%20eventually%20stalls%20gpsd&In-Reply-To=%3C20040826234817.GA23721%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] blocked client eventually stalls gpsd">esr at thyrsus.com
+       </A><BR>
+    <I>Fri Aug 27 01:48:17 CEST 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000054.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+        <LI>Next message: <A HREF="000061.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#55">[ date ]</a>
+              <a href="thread.html#55">[ thread ]</a>
+              <a href="subject.html#55">[ subject ]</a>
+              <a href="author.html#55">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rich Gibson &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">rich at testingrange.com</A>&gt;:
+&gt;<i> I agree, except that the online/offline status is derived from the time of 
+</I>&gt;<i> last fix.
+</I>
+No, it isn't. It's derived from the time of the last arriving data
+from the GPS, whether or not that was associated with a fix.  This is
+a very different matter.  The last fix could have been hours ago, but if 
+the GPS is alive at all the last data is probably only seconds old.
+
+&gt;<i> An application writer, say me, will say 'ah, gpsd tells me if the gps is 
+</I>&gt;<i> online, so I can rely on that.'  The 'better' approach is for the client 
+</I>&gt;<i> to say 'hmmm, I have been connected to gpsd for 3 seconds and have yet to 
+</I>&gt;<i> see any data, I should raise an alert to the user.'  
+</I>
+Which is almost exactly what the combination of the online/offline bit and its 
+timestamp tells you.  So, as near as I can tell, I'm doing exactly what
+you want and you're only having a terminological issue with the way I have
+documented it.
+ 
+I say &quot;almost&quot; exactly only because the amount of time with no data is
+not a per-client property, so what my code actually enables the client
+to (notionally) think is this: &quot;hmmm, gpsd has been up for 3 seconds
+and has yet to see any data from the GPS, I should raise an alert to
+the user.'
+
+But with respect to your objection, the difference between these two 
+assertions is unimportant.
+
+&gt;<i> In a previous message you wrote this:
+</I>&gt;<i> &gt; If we know that the GPS sends data at least once every X seconds,
+</I>&gt;<i> &gt; and X seconds elapses with no data, we know it's offline.  If it
+</I>&gt;<i> &gt; sends data, it's online.  That sounds reliable to me.
+</I>&gt;<i>                                                               
+</I>&gt;<i> Except I don't think that is reliable in more than the grossest sense.
+</I>&gt;<i> All we know at the host side is that we have not received data for X 
+</I>&gt;<i> seconds.  That does not mean that the GPS is offline.  It _may_ mean that 
+</I>&gt;<i> the GPS is offline, or it may mean that the GPS went offline since the 
+</I>&gt;<i> last 'packet,' but has since returned.
+</I>
+A difference that makes no difference is no difference.  A tree that
+falls in the forest with no one to hear it...if the GPS came up but
+didn't ship a packet, that is not only in practice but *in principle*
+equivalent to being continuously offline.  There is no observational
+test that allows you to distinguish these cases, unless maybe you're
+a hardware tech with a logic probe attached to the GPS's traces.
+
+&gt;<i> Think about pinging a server.  If you have a lossy link you will lose 
+</I>&gt;<i> packets, but ping doesn't tell us that the server is offline when it loses 
+</I>&gt;<i> packets.  
+</I>
+The analogy is false and misleading.  There are two crucial
+differences from the IP case here:
+
+1. The link between the GPS and gpsd, a few feet of serial or USB cable,
+   is not lossy.  At least not at any rate relevant to this discussion.
+
+2. The link has a heartbeat.  It's a property of the GPS that, if it's
+   alive, it *will* send data at predictable intervals.
+
+These two conditions mean that the absence of a packet at an expected
+time actually carries information about the state of the hardware.  If
+it ain't there, either the GPS has stopped transmitting or we have a
+wire fault.
+
+&gt;<i> The GPS is sending data to GPSD.  Sometimes that process fails for some 
+</I>&gt;<i> reason.  Did the GPS just go offline?  GPSD doesn't have enough 
+</I>&gt;<i> information to know.
+</I>
+I'm not sure I even understand this assertion.  It seems to mean that you 
+are using the word &quot;offline&quot; in some special way I am unfamiliar with.
+
+Usually, when people say a device is &quot;offline&quot;, they're simply
+describing it as being incommunicado -- in fact, as *not having sent
+data at an expected time*.  There isn't any causal hypothesis implied
+about whether the device has failed internally, or there's a wire
+fault.  At most, the term usually implies that the speaker thinks the
+machine at *this* end of the wire is not the problem.
+
+This seems to me to fit my use of the term &quot;offline&quot; exactly.  It's
+not an interpretation, it's an direct observable -- we have continuously
+failed to receive data at times when the GPS was expected to send it.
+
+So, what does the word 'offline' mean when you use it?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000054.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+	<LI>Next message: <A HREF="000061.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#55">[ date ]</a>
+              <a href="thread.html#55">[ thread ]</a>
+              <a href="subject.html#55">[ subject ]</a>
+              <a href="author.html#55">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

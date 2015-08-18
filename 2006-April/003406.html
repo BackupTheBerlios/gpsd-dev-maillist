@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Altitude%20not%20always%20being%20reported&In-Reply-To=%3Cp06230924c05a23a66487%40%5B192.168.11.10%5D%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003399.html">
+   <LINK REL="Next"  HREF="003407.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported</H1>
+    <B>Robin L Darroch</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Altitude%20not%20always%20being%20reported&In-Reply-To=%3Cp06230924c05a23a66487%40%5B192.168.11.10%5D%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported">robin at spade-men.com
+       </A><BR>
+    <I>Thu Apr  6 04:03:47 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003399.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+        <LI>Next message: <A HREF="003407.html">[Gpsd-dev] Patches and improvements: altitude/track/velocity jitter, compound query through libgps, mode in O/W output
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3406">[ date ]</a>
+              <a href="thread.html#3406">[ thread ]</a>
+              <a href="subject.html#3406">[ subject ]</a>
+              <a href="author.html#3406">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i>Unfortunately, that's showed up one error in the output from gpsd - 
+</I>&gt;<i>although the GSA sentences are reporting the fix quality as 2D, gpsd 
+</I>&gt;<i>is telling the clients that it has a 3D fix.  Now this gets a little 
+</I>&gt;<i>interesting - since GSA has no timestamp, it's only by context (that 
+</I>&gt;<i>it arrives between two sentences with the same timestamp) that we 
+</I>&gt;<i>can determine which cycle it fits into.  However, it seems reliably 
+</I>&gt;<i>to follow GGA, which is the only sentence that can imply a 
+</I>&gt;<i>3D-quality of fix, so presumably something is happening that 
+</I>&gt;<i>prevents GSA overriding the fix mode GGA has previously set.
+</I>&gt;<i>
+</I>&gt;<i>I'll investigate further, but not right now.
+</I>
+OK - results of further investigation:
+
+gpsd is doing everything right (as far as I can tell).  Responses to 
+the M query correctly identify 2D vs 3D fixes exactly as GSA reports 
+them.  The problem is in how libgps interprets the O command (more 
+specifically, that actual mode data is missing from the O command). 
+So since both gpstoge and cgps use O output for their data (gpstoge 
+with O queries, cgps with watcher mode), both of them incorrectly 
+report the fix quality as 3D because the GPS is reporting altitude 
+(as it does with a GGA sentence), even though gpsd knows the mode 
+only to be 2D.
+
+Now, I think it's wrong to throw any data out if the GPS unit is 
+reporting it, so it shouldn't simply return A=? (or a ? in the 
+altitude field of an O response) any time the mode is less than 3... 
+however, we need to look at some way of informing clients using O 
+queries or watcher mode that the altitude currently being reported by 
+the GPS is not the result of a current 3D fix.
+
+Any ideas?  I realise I'm relatively recent to this list, so I don't 
+want to rehash something that's already been discussed at length. 
+Without the benefit of possible previous discussion, I would suggest 
+extending the output of the O command by one field, to include mode 
+(0|1|2|3) at the end.  Any strenuous objections?  Any non-strenuous 
+ones?
+
+Now, that brings me to another issue which I think is actually a bug 
+(and I'll be working on that now) - when I was initially developing 
+it, I tried using a compound query in gpstoge (i.e. &quot;PAVTM\n&quot;), but 
+discovered that it only ever got the data corresponding to the first 
+(or actually, was it the last?) item in the query... and it's for 
+that reason that I moved to using an O query in the first place. 
+However, now that I'm more familiar with the internal workings of 
+gpsd/libgps, I may actually be able to track down what precisely was 
+going wrong, and why.
+
+Watch this space!
+-- 
+
+-------------------------------------------------------------------------
+  Robin L. Darroch - PO Box 2715, South Hedland WA 6722 - +61 421 503 966
+       <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at darroch.id.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at nyca.org.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003399.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+	<LI>Next message: <A HREF="003407.html">[Gpsd-dev] Patches and improvements: altitude/track/velocity jitter, compound query through libgps, mode in O/W output
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3406">[ date ]</a>
+              <a href="thread.html#3406">[ thread ]</a>
+              <a href="subject.html#3406">[ subject ]</a>
+              <a href="author.html#3406">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

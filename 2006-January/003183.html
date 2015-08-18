@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] garmin usb pps question
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20garmin%20usb%20pps%20question&In-Reply-To=%3C18108.213.84.187.156.1138536337.squirrel%40webmail.xs4all.nl%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003166.html">
+   <LINK REL="Next"  HREF="003185.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] garmin usb pps question</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20garmin%20usb%20pps%20question&In-Reply-To=%3C18108.213.84.187.156.1138536337.squirrel%40webmail.xs4all.nl%3E"
+       TITLE="[Gpsd-dev] garmin usb pps question">gpsd at xs4all.nl
+       </A><BR>
+    <I>Sun Jan 29 13:05:37 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003166.html">[Gpsd-dev] garmin usb pps question
+</A></li>
+        <LI>Next message: <A HREF="003185.html">[Gpsd-dev] garmin usb pps question
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3183">[ date ]</a>
+              <a href="thread.html#3183">[ thread ]</a>
+              <a href="subject.html#3183">[ subject ]</a>
+              <a href="author.html#3183">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;&gt;<i> I started investigating and learned that with PPS_ENABLE, GPSD duly
+</I>&gt;&gt;<i> spawns a thread to monitor the carrier-detect line.  However, since
+</I>&gt;&gt;<i> there's no physical carrier-detect line I guess I should not be too
+</I>&gt;&gt;<i> surprised that the ioctls to query TIOCM_CAR fail (with an invalid
+</I>&gt;&gt;<i> argument error on Linux FC4).
+</I>&gt;<i>
+</I>&gt;<i> As you noted, there is no Carrier Detect on a USB conenctor, so PPS,
+</I>&gt;<i> which uses the CD line can not possibly work on USB.  There would be no
+</I>&gt;<i> way to map a PPS signal in USB since USB is an asynchronous protocl.
+</I>
+Well, when you get a USB to RS232 cable for use with a modem or other
+external device you will find that it *does* support signalling like
+DCD and CTS.  Apparently these devices send a special message over the
+USB protocol for handshake line status changes, and the driver on the
+PC side decodes these messages and builds an emulated &quot;handshake line
+state&quot; that communication programs can query just like on a standard
+serial line.
+
+However, the USB driver does not implement the TIOCMIWAIT ioctl so it
+is a bit impractical to implement it in the PPS thread (it would have
+to poll the DCD signal in a tight loop, instead of just remaining in
+a sleeping state until it actually changes).
+
+&gt;<i> Worse yet, USB 2.0 does stor and forward of USB packets further distorting
+</I>&gt;<i> any syncronicity required to effectively pass a PPS signal.
+</I>
+That is true, but it would be much better than looking at the serial
+messages.
+
+However, what kills all this is that apparently the gps receiver
+manufacturers do not wire the PPS signal to an (emulated) handshake signal
+in their USB products.   They apparently do not expect anyone to be
+interested in this, as I think it is just a matter of a circuit board
+trace.  At least in those receivers that use existing gps receiver chips
+and USB serial port chips.
+
+Rob
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003166.html">[Gpsd-dev] garmin usb pps question
+</A></li>
+	<LI>Next message: <A HREF="003185.html">[Gpsd-dev] garmin usb pps question
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3183">[ date ]</a>
+              <a href="thread.html#3183">[ thread ]</a>
+              <a href="subject.html#3183">[ subject ]</a>
+              <a href="author.html#3183">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

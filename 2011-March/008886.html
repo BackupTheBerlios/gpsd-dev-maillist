@@ -1,0 +1,150 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [ntp:hackers] ntpd shm changes
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20ntpd%20shm%20changes&In-Reply-To=%3CAANLkTikN1GnhJH3-gdMnUUR4cnTov0DpPc1Gqui4shCr%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008885.html">
+   <LINK REL="Next"  HREF="008887.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [ntp:hackers] ntpd shm changes</H1>
+    <B>Dave Hart</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20ntpd%20shm%20changes&In-Reply-To=%3CAANLkTikN1GnhJH3-gdMnUUR4cnTov0DpPc1Gqui4shCr%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [ntp:hackers] ntpd shm changes">hart at ntp.org
+       </A><BR>
+    <I>Sat Mar 19 02:25:10 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008885.html">[Gpsd-dev] [ntp:hackers] ntpd shm changes
+</A></li>
+        <LI>Next message: <A HREF="008887.html">[Gpsd-dev] [ntp:hackers] ntpd shm changes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8886">[ date ]</a>
+              <a href="thread.html#8886">[ thread ]</a>
+              <a href="subject.html#8886">[ subject ]</a>
+              <a href="author.html#8886">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>2011/3/18 H&#229;kan Johansson &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">f96hajo at chalmers.se</A>&gt;:
+&gt;<i> On Fri, 18 Mar 2011, Dave Hart wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> [cross-posted to <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">hackers at ntp</A> and gpsd-dev@ by Dave Hart]
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Additionally, I noticed the comments in our driver are one-sided,
+</I>&gt;&gt;<i> describing only instructions for ntpd's interaction with the shared
+</I>&gt;&gt;<i> memory without spelling out the writer's contract. &#160;Harlan raised a
+</I>&gt;&gt;<i> concern about writers getting it wrong, and it took me a few guesses
+</I>&gt;&gt;<i> to infer the right steps for a writer before resorting to gpsd source
+</I>&gt;&gt;<i> code to to confirm. &#160;In short, writers increment count, then the
+</I>&gt;&gt;<i> payload data, then increment count again, then set valid. &#160;Readers
+</I>&gt;&gt;<i> fail if valid is zero, otherwise store count, copy payload, compare
+</I>&gt;&gt;<i> count, fail if they don't match. &#160;Whether count matches or not, valid
+</I>&gt;&gt;<i> is cleared.
+</I>&gt;<i>
+</I>&gt;<i> As ntpshm stands right now, both valid and count are needed. Note how gpsd
+</I>&gt;<i> also clears valid before the first count update, avoids the race pointed out
+</I>&gt;<i> by tz. &#160;(Missing in gpsd is memory barriers for SMP.)
+</I>&gt;<i>
+</I>&gt;<i> <A HREF="../2009-November/007006.html">http://lists.berlios.de/pipermail/gpsd-dev/2009-November/007006.html</A>
+</I>
+Thank you for pointing that out, Hakan.  The version of gpsd source I
+glanced at did not clear valid.
+
+I am not suggesting changing the interpretation or protocol of mode 0
+or mode 1, but in an imaginary mode 2 with volatile keywords on all
+the shm members, I think we can safely share the memory relying only
+on 32-bit operations on count being atomic.
+
+&gt;&gt;<i> I'm not sure valid is achieving anything. &#160;Readers don't read when
+</I>&gt;&gt;<i> it's zero, but that seems redundant to me with the count checking.
+</I>&gt;&gt;<i> Also I don't like the reader resetting valid to 0 -- that shuts down
+</I>&gt;&gt;<i> the possibility of multiple readers, and for what gain?
+</I>&gt;<i>
+</I>&gt;<i> Probably to avoid using the same sample twice? &#160;But this can be checked by
+</I>&gt;<i> either count, or the time-stamp itself. &#160;I also cannot see anything improved
+</I>&gt;<i> by having the reader clear valid.
+</I>
+Agreed, we need to be sure to not use the same sample twice but valid
+isn't the only way.
+
+&gt;&gt;<i> valid is
+</I>&gt;&gt;<i> cleared even when the reader abandoned the attempt because it was
+</I>&gt;&gt;<i> mid-update, which seems particularly ill-advised to me.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> There are missing volatile qualifiers, as far as I see, the shared
+</I>&gt;&gt;<i> memory should be accessed solely through volatile pointers, as it is
+</I>&gt;&gt;<i> being modified by code outside the scope of the compiler's
+</I>&gt;&gt;<i> optimizations.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> To facilitate correctness and avoid duplication of code, I'd like to
+</I>&gt;&gt;<i> see public header file lay out the structure and provide inline code
+</I>&gt;&gt;<i> for producer and consumer. &#160;That would be eased by having not just one
+</I>&gt;&gt;<i> structure, but a payload structure used by the producer and consumer
+</I>&gt;&gt;<i> and a container structure with mode, count, and if needed, valid along
+</I>&gt;&gt;<i> with an embedded payload struct.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Do you believe we need both valid and count? &#160;Can you think of other
+</I>&gt;&gt;<i> changes or extensions that might be an improvement in some way?
+</I>&gt;<i>
+</I>&gt;<i> One could use only count, if one in addition says that an odd count means
+</I>&gt;<i> 'being updated' and an even count 'is valid'. &#160;To allow for a previous crash
+</I>&gt;<i> during update, the increment before the update would ensure the count to be
+</I>&gt;<i> odd.
+</I>&gt;<i>
+</I>&gt;<i> count++;
+</I>&gt;<i> count |= 1;
+</I>&gt;<i> ... do updating ...
+</I>&gt;<i> count++;
+</I>
+Assuming all the shared memory struct variables are declared volatile,
+preventing the compiler from reordering accesses, I think we can
+dispense with the odd/even concept as well, and simply rely on count's
+update being atomic.  That does imply we need to allocate 64 bits for
+count, so that access _is_ atomic on 64-bit, while using only the low
+order 32 bits from 32-bit code.
+
+&gt;<i> Also nice would be if the consumer (ntpd) would write some information of
+</I>&gt;<i> its current status (stratum, active source, ... - basically what is in a NTP
+</I>&gt;<i> network packet) to also allow the interface to be used for alternative
+</I>&gt;<i> transmission methods, such as PPS-like over a serial line.
+</I>
+Feel free to prototype something.  It may be worthwhile to consider
+this as a general ntpd capability not a feature restricted to
+refclock_shm users.
+
+Thanks,
+Dave Hart
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008885.html">[Gpsd-dev] [ntp:hackers] ntpd shm changes
+</A></li>
+	<LI>Next message: <A HREF="008887.html">[Gpsd-dev] [ntp:hackers] ntpd shm changes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8886">[ date ]</a>
+              <a href="thread.html#8886">[ thread ]</a>
+              <a href="subject.html#8886">[ subject ]</a>
+              <a href="author.html#8886">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

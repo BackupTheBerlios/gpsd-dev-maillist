@@ -1,0 +1,139 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] How the RTCM2 support is supposed to be working
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20How%20the%20RTCM2%20support%20is%20supposed%20to%20be%20working&In-Reply-To=%3C20110228144546.GB14168%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008630.html">
+   <LINK REL="Next"  HREF="008632.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] How the RTCM2 support is supposed to be working</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20How%20the%20RTCM2%20support%20is%20supposed%20to%20be%20working&In-Reply-To=%3C20110228144546.GB14168%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] How the RTCM2 support is supposed to be working">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Feb 28 15:45:46 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008630.html">[Gpsd-dev] How the RTCM2 support is supposed to be working
+</A></li>
+        <LI>Next message: <A HREF="008632.html">[Gpsd-dev] How the RTCM2 support is supposed to be working
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8631">[ date ]</a>
+              <a href="thread.html#8631">[ thread ]</a>
+              <a href="subject.html#8631">[ subject ]</a>
+              <a href="author.html#8631">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Andre Naujoks &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">nautsch2 at googlemail.com</A>&gt;:
+&gt;<i> The code currently checks for both RTCM2_IS and RTCM3_is. I am very
+</I>&gt;<i> skeptical as to the ability of GPS devices to mix these things.
+</I>
+That implies a good question.  I don't know which device types accept RTCM2
+versus which accept RTCM3 - GPS spec sheets generally just say DGPS-capable and
+don't specify further.  
+
+In the absence of that knowledge, all we can do is spray all incoming RTCM2
+and RTCM3 streams at all attached DGPS-capable devices and hope they sort
+it out.  
+
+One reason this seems like the least bad thing to do is the checksumming
+on RTCM2 and RTCM3 and most GPS packets - it means devices that can't 
+interpret a given packet type will simply discard it as noise.
+
+(It is probably not coincidence that the only device types without
+effective checksums - TSIP and Garmin - don't accept DGPS corrections.)
+
+If you have any better method to propose I'd love to hear it.
+
+&gt;<i> The filtering on the server side is an assumption from me. I cannot
+</I>&gt;<i> imagine any other purpose of regular NMEA updates. It frees a client of
+</I>&gt;<i> the necessity to choose the nearest NTRIP caster/mountpoint, if the
+</I>&gt;<i> caster already does the selection of reference stations for the client.
+</I>
+I agree this seems like the most logical use for that information. But
+I think we need to get actual information on this, rather than merely
+conjecturing, before we try to do anything about it. 
+
+Googling for &quot;ntrip caster source code&quot; seems to yield some good hits.
+Perhaps you can look into this?
+
+&gt;<i>                              The current head does almost everything I
+</I>&gt;<i> intended it to do with the first big change.
+</I>
+Good.  I see from reading forward a bit that you confirm it's working live.
+
+&gt;<i> I think the current model works fine with one rtcm source and maybe
+</I>&gt;<i> multiple gps sources. But it is not optimal, when it comes to multiple
+</I>&gt;<i> rtcm sources.
+</I>&gt;<i> 
+</I>&gt;<i> IMHO a better approach would be to pass the first (or one somehow
+</I>&gt;<i> marked) rtcm devices data to all gps devices and don't use any other
+</I>&gt;<i> rtcm data for gps devices. This way a client still gets all the rtcm
+</I>&gt;<i> data but GPS devices are not confused with multiple streams of possibly
+</I>&gt;<i> conflicting data.
+</I>
+I'm not sure why you think mixing RTCM from different sources would be 
+a problem. As I look at the semantics of RTCM2 and RTCM3 message types,
+it looks to me like each correction record is independent of what caster
+source it comes from, and the worst that can happen if you mix sources
+is that you get duplicate corrections.
+
+I can't imagine any plausible scenario in which this would confuse a GPS.
+What failure case are you actually worried about?
+
+&gt;<i> BTW: The current git master works for as long as an NTRIP connection is
+</I>&gt;<i> alive. A reconnect does not however. If the server closes the
+</I>&gt;<i> connection, it should be reestablished as soon as possible. This was the
+</I>&gt;<i> case before the big code changes. Now it closes the connection and
+</I>&gt;<i> nothing happens. Even after a WATCH command from a client I get a
+</I>&gt;<i> 
+</I>&gt;<i> &quot;gpsd:ERROR: <A HREF="ntrip://XXXXX:XXXXX@www.sapos-ni-ntrip.de:2101/EPS_NI:">ntrip://XXXXX:XXXXX@www.sapos-ni-ntrip.de:2101/EPS_NI:</A>
+</I>&gt;<i> device activation failed.&quot;
+</I>&gt;<i> 
+</I>&gt;<i> from gpsd. I have to track down the exact reason for that.
+</I>
+OK, so we still have one known bug.  
+
+Please get back to me soon with an evaluation of what will be required
+to fix this.  Useful answers would be of the form &quot;about N days&quot; or
+&quot;I don't need this before the next release ships&quot;.
+
+The reason I need to know this is that I plan on feature-freezing for
+the release as soon as you tell me the Ntrip support is in good shape.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008630.html">[Gpsd-dev] How the RTCM2 support is supposed to be working
+</A></li>
+	<LI>Next message: <A HREF="008632.html">[Gpsd-dev] How the RTCM2 support is supposed to be working
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8631">[ date ]</a>
+              <a href="thread.html#8631">[ thread ]</a>
+              <a href="subject.html#8631">[ subject ]</a>
+              <a href="author.html#8631">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH 2/2] Move the memory barrier instructions into	the header file
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%202/2%5D%20Move%20the%20memory%20barrier%20instructions%20into%0A%09the%20header%20file&In-Reply-To=%3C1301232560-4827-2-git-send-email-bbolli%40ewanet.ch%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009133.html">
+   <LINK REL="Next"  HREF="009135.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH 2/2] Move the memory barrier instructions into	the header file</H1>
+    <B>Beat Bolli</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%202/2%5D%20Move%20the%20memory%20barrier%20instructions%20into%0A%09the%20header%20file&In-Reply-To=%3C1301232560-4827-2-git-send-email-bbolli%40ewanet.ch%3E"
+       TITLE="[Gpsd-dev] [PATCH 2/2] Move the memory barrier instructions into	the header file">bbolli at ewanet.ch
+       </A><BR>
+    <I>Sun Mar 27 15:29:20 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009133.html">[Gpsd-dev] [PATCH 1/2] gpxlogger improvements
+</A></li>
+        <LI>Next message: <A HREF="009135.html">[Gpsd-dev] [PATCH 2/2] Move the memory barrier instructions into the header file
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9134">[ date ]</a>
+              <a href="thread.html#9134">[ thread ]</a>
+              <a href="subject.html#9134">[ subject ]</a>
+              <a href="author.html#9134">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>This allows to add other compilers later as needed.
+---
+ gpsd.h-tail  |    9 +++++++++
+ libgps_shm.c |    8 ++------
+ shmexport.c  |    8 ++------
+ 3 files changed, 13 insertions(+), 12 deletions(-)
+
+diff --git a/gpsd.h-tail b/gpsd.h-tail
+index f8f46b1..10f1494 100644
+--- a/gpsd.h-tail
++++ b/gpsd.h-tail
+@@ -780,6 +780,15 @@ void cfmakeraw(struct termios *);
+ 
+ #define DEVICEHOOKPATH SYSCONFDIR&quot;/gpsd/device-hook&quot;
+ 
++/* memory barriers */
++static inline void barrier(void) {
++#ifdef __GNUC__
++#ifndef S_SPLINT_S
++	asm volatile(&quot;sfence&quot;);
++#endif /* S_SPLINT_S */
++#endif /* __GNUC__ */
++}
++
+ #endif /* _GPSD_H_ */
+ // Local variables:
+ // mode: c
+diff --git a/libgps_shm.c b/libgps_shm.c
+index f066a7a..676d02d 100644
+--- a/libgps_shm.c
++++ b/libgps_shm.c
+@@ -66,15 +66,11 @@ int gps_shm_read(struct gps_data_t *gpsdata)
+ 	 * get clobbered first and the data can be detected as bad.
+ 	 */
+ 	before = shared-&gt;bookend1;
+-#ifndef S_SPLINT_S
+-	asm volatile(&quot;sfence&quot;);
+-#endif /* S_SPLINT_S */
++	barrier();
+ 	(void)memcpy((void *)gpsdata, 
+ 		     (void *)&amp;shared-&gt;gpsdata, 
+ 		     sizeof(struct gps_data_t));
+-#ifndef S_SPLINT_S
+-	asm volatile(&quot;sfence&quot;);
+-#endif /* S_SPLINT_S */
++	barrier();
+ 	after = shared-&gt;bookend2;
+ 
+ 	/*@i1@*/gpsdata-&gt;privdata = shared;
+diff --git a/shmexport.c b/shmexport.c
+index d881417..01381b9 100644
+--- a/shmexport.c
++++ b/shmexport.c
+@@ -77,15 +77,11 @@ void shm_update(struct gps_context_t *context, struct gps_data_t *gpsdata)
+ 	 * get clobbered first and the data can be detected as bad.
+ 	 */
+ 	((struct shmexport_t *)context-&gt;shmexport)-&gt;bookend2 = tick;
+-#ifndef S_SPLINT_S
+-	asm volatile(&quot;sfence&quot;);
+-#endif /* S_SPLINT_S */
++	barrier();
+ 	memcpy((void *)(context-&gt;shmexport + offsetof(struct shmexport_t, gpsdata)),
+ 	       (void *)gpsdata,
+ 	       sizeof(struct gps_data_t)); 
+-#ifndef S_SPLINT_S
+-	asm volatile(&quot;sfence&quot;);
+-#endif /* S_SPLINT_S */
++	barrier();
+ 	((struct shmexport_t *)context-&gt;shmexport)-&gt;bookend1 = tick;
+     }
+ }
+-- 
+1.7.4.1
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009133.html">[Gpsd-dev] [PATCH 1/2] gpxlogger improvements
+</A></li>
+	<LI>Next message: <A HREF="009135.html">[Gpsd-dev] [PATCH 2/2] Move the memory barrier instructions into the header file
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9134">[ date ]</a>
+              <a href="thread.html#9134">[ thread ]</a>
+              <a href="subject.html#9134">[ subject ]</a>
+              <a href="author.html#9134">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

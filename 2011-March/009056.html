@@ -1,0 +1,136 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20A%20lightweight%20synchronization%0A%20mechanism%20for%20shared%20memory&In-Reply-To=%3C4D8CA6BC.80005%40tmsw.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009054.html">
+   <LINK REL="Next"  HREF="009062.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory</H1>
+    <B>Terje Mathisen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20A%20lightweight%20synchronization%0A%20mechanism%20for%20shared%20memory&In-Reply-To=%3C4D8CA6BC.80005%40tmsw.no%3E"
+       TITLE="[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory">terje at tmsw.no
+       </A><BR>
+    <I>Fri Mar 25 15:29:16 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009054.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+        <LI>Next message: <A HREF="009062.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9056">[ date ]</a>
+              <a href="thread.html#9056">[ thread ]</a>
+              <a href="subject.html#9056">[ subject ]</a>
+              <a href="author.html#9056">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>tz wrote:
+&gt;<i> On Fri, Mar 25, 2011 at 6:23 AM, Terje Mathisen&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">terje at tmsw.no</A>&gt;  wrote:
+</I>&gt;&gt;<i> Eric Raymond wrote:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> H&#229;kan Johansson&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">f96hajo at chalmers.se</A>&gt;:
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Going to a more-than-1 entry buffer does not immediately give any
+</I>&gt;&gt;&gt;&gt;<i> further guarantees, but it does open another loophole:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> One of the objectives of this method is to be starkly simple and
+</I>&gt;&gt;&gt;<i> lightweight.
+</I>&gt;&gt;&gt;<i> I am therefore not inclined to pursue generalizations that are more
+</I>&gt;&gt;&gt;<i> complex and
+</I>&gt;&gt;&gt;<i> use more storage.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Eric, you've been one of my heroes for many years, but here you are simply
+</I>&gt;&gt;<i> wrong:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Going to at least two buffers gets totally rid of the problem for all
+</I>&gt;&gt;<i> readers, they can always read a full/valid record.
+</I>&gt;<i>
+</I>&gt;<i> I don't see how this can be if you allow for reordering of the writes.
+</I>&gt;<i> Either buffer may or may not be updated by the writer for the reader.
+</I>&gt;<i>
+</I>&gt;<i> If you can't guarantee ordering in the case of one buffer, you can't
+</I>&gt;<i> guarantee it if you call one larger buffer &quot;two buffers&quot;.
+</I>
+Sorry, I have been too unclear. :-(
+
+I do want a proper memory barrier between the store of the timestamp 
+data and the update to the counter that makes this new record valid.
+
+I am definitely _not_ trying to say that simply having larger buffers 
+makes it impossible to get into trouble with memory reordering.
+
+OK?
+
+The only thing two or more buffers provide is that they make it much 
+easier to be a client: The current timestamp is always valid until the 
+writer wraps around the entire buffer, and the latter situation could be 
+detected the exact same way as today's mode 1, i.e. by seeing that the 
+counter has been updated. (But it is only when the new value is 
+identical to the same, modulo the buffer size, that this is a real problem.)
+
+I.e. buffer size = 1, mode 1 (current algorithm):
+
+  do {
+    read old_counter
+    read timestamp
+    reread counter
+  } while (counter != old_counter);
+
+New code, buffer size = 1 (so mask = 0)
+
+  do {
+    read old_counter
+    read timestamp[counter &amp; mask]
+    reread counter
+  } while (counter != old_counter &amp;&amp;
+          ((counter &amp; mask) == (old_counter &amp; mask)));
+
+The last line above can be optimized to
+   (counter ^ old_counter) &amp; mask
+
+Written this way a new client will interoperate with an old server (the 
+second half of the test above will always be true for buffer size = 1), 
+while on a server with buffer = 2/4/8/etc the second half will pretty 
+much always fail, avoiding any need to spinloop in the reader until the 
+writer finishes.
+
+Terje
+
+-- 
+- &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Terje at tmsw.no</A>&gt;
+&quot;almost all programming can be viewed as an exercise in caching&quot;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009054.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+	<LI>Next message: <A HREF="009062.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9056">[ date ]</a>
+              <a href="thread.html#9056">[ thread ]</a>
+              <a href="subject.html#9056">[ subject ]</a>
+              <a href="author.html#9056">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

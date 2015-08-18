@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] PATCH: Remove duplicate code from dgpsip.c and ntrip.c
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PATCH%3A%20Remove%20duplicate%20code%20from%20dgpsip.c%20and%20ntrip.c&In-Reply-To=%3CPine.LNX.4.64.0606132015020.21497%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003695.html">
+   <LINK REL="Next"  HREF="003860.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] PATCH: Remove duplicate code from dgpsip.c and ntrip.c</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PATCH%3A%20Remove%20duplicate%20code%20from%20dgpsip.c%20and%20ntrip.c&In-Reply-To=%3CPine.LNX.4.64.0606132015020.21497%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] PATCH: Remove duplicate code from dgpsip.c and ntrip.c">gem at rellim.com
+       </A><BR>
+    <I>Wed Jun 14 05:46:04 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003695.html">[Gpsd-dev] PATCH: Remove duplicate code from dgpsip.c and ntrip.c
+</A></li>
+        <LI>Next message: <A HREF="003860.html">[Gpsd-dev] PATCH: Remove duplicate code from dgpsip.c and ntrip.c
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3855">[ date ]</a>
+              <a href="thread.html#3855">[ thread ]</a>
+              <a href="subject.html#3855">[ subject ]</a>
+              <a href="author.html#3855">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Eric!
+
+On Fri, 9 Jun 2006, Eric S. Raymond wrote:
+
+&gt;<i> For some reason gpsd is never shipping the response.  Now *you* get
+</I>&gt;<i> to learn the magic for running gpsd in a gpsfake session under gdb
+</I>&gt;<i> control (see the header comment of gpsfake.py).  I recommend setting
+</I>&gt;<i> a breakpoint on handle_control(), then single-stepping forward.
+</I>
+I had a spare moment to look at this.  Instead of loading gdb, I just
+hacked gpsfake.py to add &quot;-D 5&quot; when it started gpsd.  Then the problem
+just hit me in the face.  Maybe the &quot;-v&quot; to gpsfake should tell
+gpsfake.py to start gpsd with &quot;-D 5&quot;?
+
+# gpsfake -b -p -v bu303-climbing.log
+Processing bu303-climbing.log...gpsd: control socket opened at /tmp/gpsfake-20972.sock
+gpsd: launching (Version 2.33)
+gpsd: listening on port 12000
+gpsd: running with effective group ID 0
+gpsd: running with effective user ID 0
+gpsd: control socket connect on 5
+gpsd: &lt;= control(5): +/dev/pts/5\x0d
+
+gpsd: &lt;= control(5): adding /dev/pts/5
+gpsd: opening GPS data source at '/dev/pts/5'
+gpsd: Set garmin_gps driver mode = 0
+gpsd: SendPacket(), writing 16 bytes
+gpsd: PrintPacket()
+gpsd: Private, Set Mode: 0
+gpsd: SendPacket(), wrote 16 bytes
+gpsd: Get garmin_gps driver version
+gpsd: SendPacket(), writing 12 bytes
+gpsd: PrintPacket()
+gpsd: Private, ID: Info Req
+gpsd: SendPacket(), wrote 12 bytes
+gpsd: garmin_probe() timeout, INFO_REQ
+
+
+Now that is odd.  Since the garmin kernel driver is installed on this
+system, the garmin autodetect is kicking in, and hanging.  This worked
+at some point in the past.  I'm gonna have to ponder this one a bit.
+
+After the &quot;timeout&quot; message the driver flushes the output queue, resets
+the termios and returns.  Or in this case, hangs doing the flush/restore
+in the tcsetattr().  I removed the TCIOFLUSH and now it does not hang.
+
+So the tweak is in SVN, check it out.
+
+BTW, I am seeing some rounding error diffs in the tests...
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.2.1 (GNU/Linux)
+
+iD8DBQFEj4Z/8KZibdeR3qURAoH6AKCWucqwcBkxC2W+eGyQqrKT3iu2UgCg7kPZ
+P1NeDq0OyDVxCl4B0k++rjQ=
+=1Bqt
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003695.html">[Gpsd-dev] PATCH: Remove duplicate code from dgpsip.c and ntrip.c
+</A></li>
+	<LI>Next message: <A HREF="003860.html">[Gpsd-dev] PATCH: Remove duplicate code from dgpsip.c and ntrip.c
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3855">[ date ]</a>
+              <a href="thread.html#3855">[ thread ]</a>
+              <a href="subject.html#3855">[ subject ]</a>
+              <a href="author.html#3855">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

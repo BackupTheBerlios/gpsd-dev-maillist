@@ -1,0 +1,213 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Preliminary Description of Gtk2-Based 'xgps' App
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Preliminary%20Description%20of%20Gtk2-Based%20%27xgps%27%20App&In-Reply-To=%3C200611121449.37109.marr99%40highstream.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005191.html">
+   <LINK REL="Next"  HREF="005152.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Preliminary Description of Gtk2-Based 'xgps' App</H1>
+    <B>Marr</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Preliminary%20Description%20of%20Gtk2-Based%20%27xgps%27%20App&In-Reply-To=%3C200611121449.37109.marr99%40highstream.net%3E"
+       TITLE="[Gpsd-dev] Preliminary Description of Gtk2-Based 'xgps' App">marr99 at highstream.net
+       </A><BR>
+    <I>Sun Nov 12 20:49:36 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005191.html">[Gpsd-dev] RPMbuild on Fedora Core 3
+</A></li>
+        <LI>Next message: <A HREF="005152.html">[Gpsd-dev] Preliminary Description of Gtk2-Based 'xgps' App
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5136">[ date ]</a>
+              <a href="thread.html#5136">[ thread ]</a>
+              <a href="subject.html#5136">[ subject ]</a>
+              <a href="author.html#5136">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi all,
+
+As I mentioned earlier this week, I've spent some (sporadic) time over the 
+last several days working on a Gtk2-based replacement for 'xgps'.
+
+The app still needs a lot of things done before it's ready to be released into 
+the wild, but the GUI has come along nicely enough that I wanted to release 
+this detailed description of how it all works so that I can get some 
+feedback.
+
+Since I don't know how (or if) this mailing list will handle graphical 
+attachments, I'll include my screenshots in another message.
+
+Yeah, I know that nobody will bother reading this -- they'll just jump to the 
+screenshots. :^)  But I wanted to give some explanation for my changes and my 
+reasoning while developing this new app.
+
+The new Gtk2 version of 'xgps' should be mostly recognizable to users of the 
+older Motif version, but there are several changes. I'd call them all 
+&quot;improvements&quot;, but I'm willing to let the developers (initially) and users 
+(eventually) make that call. :^)
+
+Let's begin.....
+
+The area labelled &quot;Satellite Geometry&quot; displays the satellite positions just 
+like the old app. Some things are done differently, though. The old app just 
+displayed the PRN of the satellite near the graphical representation, which 
+was color-coded grey, yellow, or green depending on the signal strength.
+
+The new version displays the PRN too, of course. However, I'm not fond of 
+looking in the satellite table for details (signal strength and whether the 
+satellite is part of the navigation solution) that could easily be conveyed 
+right in the graphical representation of the satellite. Therefore, the new 
+version also displays the numerical signal strength within the circle that 
+represents the satellite. The text is color-coded red when it's below a 
+certain threshold (currently 38 dB, but configurable in the code). 
+Additionally, the color of the circle which represents the satellite is 
+itself color coded -- green when it's part of the navigation solution and 
+light grey otherwise.
+
+To me, this new version, which mimics another of my long-used GPS 
+applications, provides a greater data density on the satellite display 
+without sacrificing too much space. In fact, this greater data density is the 
+reason that I moved the &quot;Satellite Info&quot; table to a (secondary) notebook tab 
+(more on that below), since I don't see much use for it now except to provide 
+(1) the exact satellite azim/elev and (2) a nice tabulated format for times 
+when that display presentation is more useful (e.g. ordered by PRN).
+
+Like the old app, the new app displays and updates all of the same data coming 
+from the GPS receiver via 'gpsd', including the new field to show the GPS 
+receiver type/firmware. All that data is displayed in a single &quot;tab&quot; labelled 
+&quot;GPS Info&quot; of a 2-tab &quot;notebook&quot; widget. 
+
+I've taken the liberty of renaming &quot;GPS Type&quot; to &quot;Receiver Type&quot;, since I find 
+that term more precise. More importantly, I've renamed the erroneously-named 
+&quot;Course&quot; to &quot;Track&quot;, which is what the GPS receiver is actually providing, of 
+course (no pun intended!).
+
+The other tab of the notebook widget is labelled &quot;Satellite Info&quot; and displays 
+the details of the satellite position and signal strength. It has exactly the 
+same data as the old app. With the improved &quot;Satellite Geometry&quot; display, 
+it's not really needed that often and is relegated to the 2nd tab.
+
+Unlike the old Motif app, which hard-codes a fixed number of satellites to be 
+displayed, thereby wasting screen real-estate most times, this &quot;Satellite 
+Info&quot; table in the new app is not constrained by a fixed number of 
+satellites. The table is dynamic and resizes, using a vertical scrollbar as 
+needed (which is not obvious in my forthcoming screenshot).
+
+One of the things that I always hated about the Motif version of 'xgps' is 
+that it only shows 1 line of raw incoming GPSD data and that there's no way 
+to pause the display refresh (so that you have slightly more than a 
+snowbaIl's chance in hell of reading the doggone thing).
+
+My new version fixes both of those shortcomings.
+
+I've added a scrollable, multi-line text area to show the raw incoming GPSD 
+data. Currently, I accumulate 12 lines of data but that's easily configurable 
+in the code, of course. Of those 12 lines, a little over 7 of them (using an 
+8-point font) are visible at one time in the text buffer. That, too, is 
+configurable at the code level, by deciding how large (in pixels) you want 
+the vertical portion of the widget which contains that text area.
+
+This text area is displayed by default but can be hidden with the little 
+downward-pointing arrow to the left of the &quot;Raw GPSD Data&quot; label (see the 
+screenshot).
+
+There are 2 good reasons to consider &quot;hiding&quot; the text area. (1) To avoid the 
+distraction of rapidly scrolling lines of text when you're not interested in 
+that data and are trying to concentrate on the other (GPS, satellite) data. 
+(2) To give more room vertically to the drawing area which is used to display 
+the &quot;Satellite Geometry&quot;.
+
+The &quot;cannot pause&quot; limitation is addressed by the addition of a new toggle 
+button labelled &quot;Pause&quot;. When activated, it changes to a red background and 
+is relabelled &quot;Paused&quot;, as a reminder that the display refresh is halted. 
+Everything stops updating when this happens -- the &quot;GPS Info&quot; tab data, the 
+&quot;Satellite Info&quot; tab data, the &quot;Satellite Geometry&quot; display, and the &quot;Raw 
+GPSD Data&quot; text buffer. As an additional reminder and to also act as a visual 
+segregator, I write &quot;--- paused ---&quot; in the text area as well. The blue color 
+of the toggle in its unselected state is a personal choice, configured via my 
+Gtk resource file (more on that later).
+
+I've added a 'De-Jitter' toggle to control the &quot;J&quot; command setting to 'gpsd'. 
+Like the 'Pause' toggle, it has an appropriate tool-tip to explain its 
+intent/usage.
+
+Most of the important items (widgets) have been &quot;named&quot; in the code so that 
+they may be referenced in the Gtk2 resource configuration file (e.g. 
+&quot;~/.gtkrc-2.0&quot;). I'll eventually provide some intelligent samples of what one 
+might add to such a file to control the application's appearance.
+
+In general, this new app is _much_ more tolerant of things like font changes, 
+resizing of the window, etc, without breaking the appearance of everything 
+else. It's not nearly as fragile as the Motif version in this regard. (Note: 
+The Motif version could certainly be improved -- we had that discussion 
+on-list a while back [but I didn't sense much enthusiasm for that plan]; it's 
+not a Motif toolkit shortcoming. However, I decided that going to Gtk2 was, 
+overall, a better long-term solution.)
+
+Of course, to fully appreciate the effect of things like resizing the window 
+and hiding the &quot;Raw GPSD Data&quot; area, you need to run the app. For now, you'll 
+have to take my word for it. :^) In general, the &quot;Satellite Geometry&quot; area, 
+while retaining a 1:1 aspect ratio, takes advantage of any increase in the 
+application's main window being resized, which is another improvement over 
+the fixed-size of the satellite geometry area shown with the old Motif 
+application.
+
+I've worked to keep the overall default initial application size under 800x600 
+pixels. Yes, I still have a laptop with that resolution and no, I don't plan 
+to replace it (my GPS + moving map &quot;road warrior&quot;) just yet -- I'm many 
+things and &quot;cheap bastard&quot; is near the top of that list. ;^) Basically, with 
+my current settings, the new app is only slightly wider and slightly taller 
+than the old one, but includes more functionality. The default initial 
+satellite geometry display is smaller on the new app than the old, but, as I 
+stated above, unlike the old app, the new app will expand the area 
+intelligently as the main window is resized.
+
+As I've said before, my new 'xgps' needs more work and a lot more testing 
+before I'm ready to submit a trial version, but what I have so far looks very 
+promising.
+
+One of the many issues I still need to address is the control of the 
+'units' (speed, altitude, EPH, etc). I've got some ideas on how I want to 
+handle that, which will affect the screenshots, but I wanted to get some 
+screenshots &quot;out the door&quot; now.
+
+Please let me know what you guys think. Looking forward to hearing all ideas, 
+comments, criticisms, etc.
+
+Regards,
+Bill Marr
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005191.html">[Gpsd-dev] RPMbuild on Fedora Core 3
+</A></li>
+	<LI>Next message: <A HREF="005152.html">[Gpsd-dev] Preliminary Description of Gtk2-Based 'xgps' App
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5136">[ date ]</a>
+              <a href="thread.html#5136">[ thread ]</a>
+              <a href="subject.html#5136">[ subject ]</a>
+              <a href="author.html#5136">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

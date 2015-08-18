@@ -1,0 +1,186 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] regression results: mostly ok
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20regression%20results%3A%20mostly%20ok&In-Reply-To=%3Crmid3lr5kf7.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008838.html">
+   <LINK REL="Next"  HREF="008854.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] regression results: mostly ok</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20regression%20results%3A%20mostly%20ok&In-Reply-To=%3Crmid3lr5kf7.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] regression results: mostly ok">gdt at ir.bbn.com
+       </A><BR>
+    <I>Wed Mar 16 13:17:32 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008838.html">[Gpsd-dev] sub-second accuracy in GPGGA timestamps
+</A></li>
+        <LI>Next message: <A HREF="008854.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8833">[ date ]</a>
+              <a href="thread.html#8833">[ thread ]</a>
+              <a href="subject.html#8833">[ subject ]</a>
+              <a href="author.html#8833">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+testing with
+
+commit 81eb8330cacf62cd55f7dfa0be7b1e9346d15dcf
+Author: Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt;
+Date:   Tue Mar 15 19:33:04 2011 -0400
+
+(plus an abort to look for discarding the buffer leftover from the
+not-reading-promptly bug - which has not been triggering)
+
+
+NetBSD/i386 5.1-STABLE:
+
+Processing ./test/daemon/uBlox-lea-4t.log
+gpsd:ERROR: can't bind to IPv4 port 55462, Address already in use
+gpsd:ERROR: maybe gpsd is already running!
+--- ./test/daemon/uBlox-lea-4t.log.chk  2011-02-22 13:02:09.000000000 -0500
++++ /tmp/test-25634.chk 2011-03-16 07:16:05.000000000 -0400
+@@ -1,293 +0,0 @@
+-$GPZDA,203543.00,28,01,2009,00,00*65
+-$GPGGA,203543,5333.7954,N,11326.3727,W,1,08,,655.33,M,-19.872,M,,*64
+-$GPRMC,203543,A,5333.7954,N,11326.3727,W,0.0000,0.000,280109,,*31
+-$GPGSA,A,3,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,0.0,0.0,0.0*32
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;0x0106&quot;,&quot;time&quot;:&quot;2009-01-28T20:35:43.00Z&quot;,&quot;ept&quot;:0.005,&quot;lat
+&quot;:53.563256268,&quot;lon&quot;:-113.439544853,&quot;alt&quot;:655.331,&quot;track&quot;:0.0000,&quot;speed&quot;:0.000,&quot;
+
+This machine is also running tahoe-lafs, which has connections to/from
+high ports.  So it seems like the test framework should be binding to a
+port and then using it, rather than assuming it's going to work, but I
+could well be misinterpreting.
+
+but a second run got (^M removed)
+
+Processing ./test/daemon/naujoks-ntrip.log
+--- ./test/daemon/naujoks-ntrip.log.chk	2011-03-16 06:52:37.000000000 -0400
++++ /tmp/test-6651.chk	2011-03-16 07:32:40.000000000 -0400
+@@ -8,4 +8,3 @@
+ {&quot;class&quot;:&quot;RTCM2&quot;,&quot;type&quot;:31,&quot;station_id&quot;:688,&quot;zcount&quot;:831.0,&quot;seqnum&quot;:2,&quot;length&quot;:14,&quot;station_health&quot;:6,&quot;satellites&quot;:[{&quot;ident&quot;:14,&quot;udre&quot;:0,&quot;change&quot;:false,&quot;tod&quot;:0,&quot;prc&quot;:142.140,&quot;rrc&quot;:0.000},{&quot;ident&quot;:5,&quot;udre&quot;:0,&quot;change&quot;:false,&quot;tod&quot;:0,&quot;prc&quot;:138.320,&quot;rrc&quot;:0.002},{&quot;ident&quot;:15,&quot;udre&quot;:0,&quot;change&quot;:false,&quot;tod&quot;:0,&quot;prc&quot;:136.440,&quot;rrc&quot;:0.002},{&quot;ident&quot;:21,&quot;udre&quot;:0,&quot;change&quot;:false,&quot;tod&quot;:0,&quot;prc&quot;:128.100,&quot;rrc&quot;:0.000},{&quot;ident&quot;:13,&quot;udre&quot;:0,&quot;change&quot;:false,&quot;tod&quot;:0,&quot;prc&quot;:133.620,&quot;rrc&quot;:0.000},{&quot;ident&quot;:6,&quot;udre&quot;:0,&quot;change&quot;:false,&quot;tod&quot;:0,&quot;prc&quot;:121.700,&quot;rrc&quot;:0.008},{&quot;ident&quot;:22,&quot;udre&quot;:0,&quot;change&quot;:false,&quot;tod&quot;:0,&quot;prc&quot;:125.940,&quot;rrc&quot;:0.004},{&quot;ident&quot;:20,&quot;udre&quot;:0,&quot;change&quot;:false,&quot;tod&quot;:0,&quot;prc&quot;:111.160,&quot;rrc&quot;:-0.016}]}
+ {&quot;class&quot;:&quot;RTCM2&quot;,&quot;type&quot;:1,&quot;station_id&quot;:688,&quot;zcount&quot;:846.0,&quot;seqnum&quot;:3,&quot;length&quot;:19,&quot;station_health&quot;:6,&quot;satellites&quot;:[{&quot;ident&quot;:10,&quot;udre&quot;:0,&quot;iod&quot;:46,&quot;prc&quot;:-2.400,&quot;rrc&quot;:0.000},{&quot;ident&quot;:13,&quot;udre&quot;:0,&quot;iod&quot;:94,&quot;prc&quot;:-4.440,&quot;rrc&quot;:0.000},{&quot;ident&quot;:7,&quot;udre&quot;:0,&quot;iod&quot;:22,&quot;prc&quot;:-5.160,&quot;rrc&quot;:0.002},{&quot;ident&quot;:2,&quot;udre&quot;:0,&quot;iod&quot;:34,&quot;prc&quot;:-6.480,&quot;rrc&quot;:0.000},{&quot;ident&quot;:8,&quot;udre&quot;:0,&quot;iod&quot;:76,&quot;prc&quot;:-7.980,&quot;rrc&quot;:0.002},{&quot;ident&quot;:4,&quot;udre&quot;:0,&quot;iod&quot;:47,&quot;prc&quot;:-8.880,&quot;rrc&quot;:0.000},{&quot;ident&quot;:5,&quot;udre&quot;:0,&quot;iod&quot;:99,&quot;prc&quot;:-8.240,&quot;rrc&quot;:0.002},{&quot;ident&quot;:23,&quot;udre&quot;:0,&quot;iod&quot;:81,&quot;prc&quot;:-8.080,&quot;rrc&quot;:0.000},{&quot;ident&quot;:16,&quot;udre&quot;:0,&quot;iod&quot;:70,&quot;prc&quot;:-11.740,&quot;rrc&quot;:0.000},{&quot;ident&quot;:30,&quot;udre&quot;:0,&quot;iod&quot;:4,&quot;prc&quot;:-18.960,&quot;rrc&quot;:-0.006},{&quot;ident&quot;:29,&quot;udre&quot;:0,&quot;iod&quot;:101,&quot;prc&quot;:-24.960,&quot;rrc&quot;:-0.002}]}
+ {&quot;class&quot;:&quot;RTCM2&quot;,&quot;type&quot;:31,&quot;station_id&quot;:688,&quot;zcount&quot;:832.2,&quot;seqnum&quot;:4,&quot;length&quot;:14,&quot;station_health&quot;:6,&quot;satellites&quot;:[{&quot;ident&quot;:14,&quot;udre&quot;:0,&quot;change&quot;:false,&quot;tod&quot;:0,&quot;prc&quot;:142.160,&quot;rrc&quot;:0.002},{&quot;ident&quot;:5,&quot;udre&quot;:0,&quot;change&quot;:false,&quot;tod&quot;:0,&quot;prc&quot;:138.320,&quot;rrc&quot;:0.002},{&quot;ident&quot;:15,&quot;udre&quot;:0,&quot;change&quot;:false,&quot;tod&quot;:0,&quot;prc&quot;:136.440,&quot;rrc&quot;:0.002},{&quot;ident&quot;:21,&quot;udre&quot;:0,&quot;change&quot;:false,&quot;tod&quot;:0,&quot;prc&quot;:128.100,&quot;rrc&quot;:0.000},{&quot;ident&quot;:13,&quot;udre&quot;:0,&quot;change&quot;:false,&quot;tod&quot;:0,&quot;prc&quot;:133.620,&quot;rrc&quot;:0.000},{&quot;ident&quot;:6,&quot;udre&quot;:0,&quot;change&quot;:false,&quot;tod&quot;:0,&quot;prc&quot;:121.720,&quot;rrc&quot;:0.008},{&quot;ident&quot;:22,&quot;udre&quot;:0,&quot;change&quot;:false,&quot;tod&quot;:0,&quot;prc&quot;:125.940,&quot;rrc&quot;:0.004},{&quot;ident&quot;:20,&quot;udre&quot;:0,&quot;change&quot;:false,&quot;tod&quot;:0,&quot;prc&quot;:111.120,&quot;rrc&quot;:-0.016}]}
+-{&quot;class&quot;:&quot;RTCM2&quot;,&quot;type&quot;:1,&quot;station_id&quot;:688,&quot;zcount&quot;:847.2,&quot;seqnum&quot;:5,&quot;length&quot;:19,&quot;station_health&quot;:6,&quot;satellites&quot;:[{&quot;ident&quot;:10,&quot;udre&quot;:0,&quot;iod&quot;:46,&quot;prc&quot;:-2.400,&quot;rrc&quot;:0.000},{&quot;ident&quot;:13,&quot;udre&quot;:0,&quot;iod&quot;:94,&quot;prc&quot;:-4.440,&quot;rrc&quot;:0.000},{&quot;ident&quot;:7,&quot;udre&quot;:0,&quot;iod&quot;:22,&quot;prc&quot;:-5.160,&quot;rrc&quot;:0.002},{&quot;ident&quot;:2,&quot;udre&quot;:0,&quot;iod&quot;:34,&quot;prc&quot;:-6.480,&quot;rrc&quot;:0.000},{&quot;ident&quot;:8,&quot;udre&quot;:0,&quot;iod&quot;:76,&quot;prc&quot;:-7.980,&quot;rrc&quot;:0.002},{&quot;ident&quot;:4,&quot;udre&quot;:0,&quot;iod&quot;:47,&quot;prc&quot;:-8.860,&quot;rrc&quot;:0.002},{&quot;ident&quot;:5,&quot;udre&quot;:0,&quot;iod&quot;:99,&quot;prc&quot;:-8.240,&quot;rrc&quot;:0.002},{&quot;ident&quot;:23,&quot;udre&quot;:0,&quot;iod&quot;:81,&quot;prc&quot;:-8.080,&quot;rrc&quot;:0.000},{&quot;ident&quot;:16,&quot;udre&quot;:0,&quot;iod&quot;:70,&quot;prc&quot;:-11.760,&quot;rrc&quot;:0.000},{&quot;ident&quot;:30,&quot;udre&quot;:0,&quot;iod&quot;:4,&quot;prc&quot;:-18.980,&quot;rrc&quot;:-0.006},{&quot;ident&quot;:29,&quot;udre&quot;:0,&quot;iod&quot;:101,&quot;prc&quot;:-24.980,&quot;rrc&quot;:-0.002}]}
+
+and on a third run all passed.
+
+
+NetBSD/sparc64 5.1-STABLE:
+
+One run had this failure, and the next had all pass
+
+Processing ./test/daemon/ait250.log
+--- ./test/daemon/ait250.log.chk        2011-02-25 11:06:07.000000000 -0500
++++ /tmp/test-4590.chk  2011-03-16 07:09:22.000000000 -0400
+@@ -1,17 +1,6 @@
+-$GPRMC,194907.00,A,5241.99815,N,00517.56525,E,0.005,,010809,,,A*7B
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;time&quot;:&quot;2009-08-01T19:49:07.00Z&quot;,&quot;ept&quot;:0.005,&quot;lat&quot;:52.699969167,&quot;lon&quot;:5.292754167,&quot;track&quot;:0.0000,&quot;speed&quot;:0.003,&quot;mode&quot;:2}
+-!AIVDO,1,1,,,B3aC3LP00063aj7RNpl03wSUwP06,0*43
+-{&quot;class&quot;:&quot;AIS&quot;,&quot;type&quot;:18,&quot;repeat&quot;:0,&quot;mmsi&quot;:244630386,&quot;scaled&quot;:false,&quot;reserved&quot;:0,&quot;speed&quot;:0,&quot;accuracy&quot;:false,&quot;lon&quot;:3175652,&quot;lat&quot;:31619981,&quot;course&quot;:0,&quot;heading&quot;:511,&quot;second&quot;:7,&quot;regional&quot;:0,&quot;cs&quot;:true,&quot;display&quot;:false,&quot;dsc&quot;:true,&quot;ban
+d&quot;:true,&quot;msg22&quot;:true,&quot;raim&quot;:true,&quot;radio&quot;:917510}
+-!AIVDM,1,1,,B,13njCt031t0DA=lN2:jKmad60l1p,0*12
+-{&quot;class&quot;:&quot;AIS&quot;,&quot;type&quot;:1,&quot;repeat&quot;:0,&quot;mmsi&quot;:258774000,&quot;scaled&quot;:false,&quot;status&quot;:0,&quot;turn&quot;:12,&quot;speed&quot;:124,&quot;accuracy&quot;:false,&quot;lon&quot;:2656698,&quot;lat&quot;:31492809,&quot;course&quot;:3030,&quot;heading&quot;:310,&quot;second&quot;:3,&quot;maneuver&quot;:0,&quot;raim&quot;:false,&quot;radio&quot;:426224}
+-$GPGBS,194907.00,3.0,1.9,4.2,,,,*4E
+-$GPRMC,194908.00,A,5241.99805,N,00517.56503,E,0.003,,010809,,,A*77
+-!AIVDO,1,1,,,B3aC3LP00063ai7RNph03wT5wP06,0*23
+-{&quot;class&quot;:&quot;AIS&quot;,&quot;type&quot;:18,&quot;repeat&quot;:0,&quot;mmsi&quot;:244630386,&quot;scaled&quot;:false,&quot;reserved&quot;:0,&quot;speed&quot;:0,&quot;accuracy&quot;:false,&quot;lon&quot;:3175650,&quot;lat&quot;:31619980,&quot;course&quot;:0,&quot;heading&quot;:511,&quot;second&quot;:8,&quot;regional&quot;:0,&quot;cs&quot;:true,&quot;display&quot;:false,&quot;dsc&quot;:true,&quot;ban
+d&quot;:true,&quot;msg22&quot;:true,&quot;raim&quot;:true,&quot;radio&quot;:917510}
+ !AIVDM,1,1,,B,33meMd50000EoJPMvw?:<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Ubp at 0000</A>,0*4F
+ {&quot;class&quot;:&quot;AIS&quot;,&quot;type&quot;:3,&quot;repeat&quot;:0,&quot;mmsi&quot;:257646000,&quot;scaled&quot;:false,&quot;status&quot;:5,&quot;turn&quot;:0,&quot;speed&quot;:0,&quot;accuracy&quot;:false,&quot;lon&quot;:2866000,&quot;lat&quot;:31440700,&quot;course&quot;:2710,&quot;heading&quot;:348,&quot;second&quot;:8,&quot;maneuver&quot;:0,&quot;raim&quot;:false,&quot;radio&quot;:0}
+ $GPGBS,194908.00,3.0,1.9,4.2,,,,*41
+-{&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;GBS&quot;,&quot;time&quot;:&quot;2009-08-01T19:49:08.00Z&quot;,&quot;ept&quot;:0.005,&quot;lat&quot;:52.699967500,&quot;lon&quot;:5.292750500,&quot;epx&quot;:1.900,&quot;epy&quot;:3.000,&quot;track&quot;:0.0000,&quot;speed&quot;:0.002,&quot;mode&quot;:2}
+ $GPRMC,194909.00,A,5241.99792,N,00517.56477,E,0.004,,010809,,,A*72
+ !AIVDO,1,1,,,B3aC3LP00063agWRNpd03wTUwP06,0*21
+ {&quot;class&quot;:&quot;AIS&quot;,&quot;type&quot;:18,&quot;repeat&quot;:0,&quot;mmsi&quot;:244630386,&quot;scaled&quot;:false,&quot;reserved&quot;:0,&quot;speed&quot;:0,&quot;accuracy&quot;:false,&quot;lon&quot;:3175647,&quot;lat&quot;:31619979,&quot;course&quot;:0,&quot;heading&quot;:511,&quot;second&quot;:9,&quot;regional&quot;:0,&quot;cs&quot;:true,&quot;display&quot;:false,&quot;dsc&quot;:true,&quot;band&quot;:true,&quot;msg22&quot;:true,&quot;raim&quot;:true,&quot;radio&quot;:917510}
+
+NetBSD/sparc 4.0-STABLE
+
+  is still building (almost all time is used by gcc), will report if
+  it's different from before.
+
+
+On i386, 'make distcheck' failed with:
+
+ls: ../doc/*.xml: No such file or directory
+gmake  all-am
+ls: ../doc/*.xml: No such file or directory
+gmake[1]: Entering directory `/usr/home/gdt/SOFTWARE/GPSD/gpsd/gpsd-2.96~dev/_build'
+(cd '..' &amp;&amp; \
+env version='2.96~dev' abs_builddir='/home/gdt/SOFTWARE/GPSD/gpsd/gpsd-2.96~dev/_build' \
+    MAKE='gmake' \
+	/usr/pkg/bin/python2.6 setup.py build \
+		--build-lib '../build/lib.netbsd-5.1_STABLE-i386-2.6' \
+		--build-scripts '../build/scripts-2.6' \
+		--mangenerator 'xsltproc') &amp;&amp; \
+(cd '../gps' &amp;&amp; \
+    rm -f *.so &amp;&amp; \
+    ln -s ../build/lib.netbsd-5.1_STABLE-i386-2.6/gps/*.so . ) &amp;&amp; \
+mv -f 'stamp-python.tmp' 'stamp-python'
+ls: ../doc/*.xml: No such file or directory
+gmake -C /home/gdt/SOFTWARE/GPSD/gpsd/gpsd-2.96~dev/_build packet_names.h
+
+Installing manual pages, generator is xsltproc
+running build
+running build_py
+running build_ext
+running build_scripts
+ln: ./*.so: Permission denied
+gmake[1]: *** [stamp-python] Error 1
+gmake[1]: Leaving directory `/usr/home/gdt/SOFTWARE/GPSD/gpsd/gpsd-2.96~dev/_build'
+gmake: *** [all] Error 2
+
+
+There are two issues.  One is that doc doesn't seem to be in the
+distribution, and the other seems to be some VPATH-build lossage in
+distutils that I haven't figured out.
+
+xgps actually works, but has a packaging/path problem in that the script
+doesn't substitute/force the python path to find the gps.py, in the case
+where gpsd's prefix and python's prefix are different.   This will
+generally be the case with a packaging system build of python and a
+private build of gpsd (or at leas *should* be the case!).
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110316/9f126286/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110316/9f126286/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008838.html">[Gpsd-dev] sub-second accuracy in GPGGA timestamps
+</A></li>
+	<LI>Next message: <A HREF="008854.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8833">[ date ]</a>
+              <a href="thread.html#8833">[ thread ]</a>
+              <a href="subject.html#8833">[ subject ]</a>
+              <a href="author.html#8833">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

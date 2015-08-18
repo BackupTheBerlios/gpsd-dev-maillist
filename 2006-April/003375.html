@@ -1,0 +1,105 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Altitude%20not%20always%20being%20reported&In-Reply-To=%3Cp0623091bc057c01cf49b%40%5B192.168.1.14%5D%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003373.html">
+   <LINK REL="Next"  HREF="003366.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported</H1>
+    <B>Robin L Darroch</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Altitude%20not%20always%20being%20reported&In-Reply-To=%3Cp0623091bc057c01cf49b%40%5B192.168.1.14%5D%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported">robin at spade-men.com
+       </A><BR>
+    <I>Tue Apr  4 08:36:36 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003373.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+        <LI>Next message: <A HREF="003366.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3375">[ date ]</a>
+              <a href="thread.html#3375">[ thread ]</a>
+              <a href="subject.html#3375">[ subject ]</a>
+              <a href="author.html#3375">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>At 1:36 +0200 4/4/06, Rob Janssen wrote:
+&gt;<i>  &gt; I have no idea how it's currently done.
+</I>&gt;<i>
+</I>&gt;<i>Right now we have this &quot;gps_clear_fix&quot; function which sets everything to
+</I>&gt;<i>invalid (NAN).  It is called when the driver returns CYCLE_START_SET,
+</I>&gt;<i>which it does (for NMEA) when the timestamp in the message changes.
+</I>&gt;<i>
+</I>&gt;<i>This is reasonable for an intermediate buffer that gets filled from the
+</I>&gt;<i>GPS messages, but it is done to the main fix buffer.
+</I>&gt;<i>So, when the GPS sends a message with a new timestamp and only part of the
+</I>&gt;<i>fix data (this is always true in NMEA because no single message contains
+</I>&gt;<i>all data), the fix buffer is left with partly valid data and partly NaN
+</I>&gt;<i>values.
+</I>&gt;<i>
+</I>&gt;<i>When using xgps, this can be observed as fields toggling between n/a and
+</I>&gt;<i>valid values.  Discussions about this are always dismissed with &quot;but xgps
+</I>&gt;<i>is only a test application&quot;, but I think it is unreasonable to expect all
+</I>&gt;<i>applications to incorporate another layer of buffering to avoid this.
+</I>&gt;<i>Besides, when an application polls at the same rate as the cycle time, it
+</I>&gt;<i>could be getting NaN values all the time.
+</I>&gt;<i>
+</I>&gt;<i>I think gpsd should perform the necessary buffering itself, or at least
+</I>&gt;<i>offer the option to do so.  Indeed this could mean that separate &quot;valid
+</I>&gt;<i>times&quot; are required for data items that are typically sent in separate
+</I>&gt;<i>messages (and/or at different cycle times).
+</I>
+I *think* that if we simply omit the gps_clear_fix call, gpsd should 
+behave in the expected manner.  It seems to me that we should aim for 
+clients to get the same picture from gpsd that a human gets from 
+looking at the screen of a GPS unit.  A GPS unit which outputs NMEA 
+doesn't flicker between displaying altitude/speed/track information 
+and not doing so in the moments between sending NMEA sentences, so 
+nor should gpsd.  The code for responding to queries already has the 
+means to prevent data being returned as fixed when in fact it isn't. 
+I'll try some testing myself, and look forward to hearing the results 
+from others with NMEA gps units.
+
+Robin
+-- 
+
+-------------------------------------------------------------------------
+  Robin L. Darroch - PO Box 2715, South Hedland WA 6722 - +61 421 503 966
+       <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at darroch.id.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at nyca.org.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003373.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+	<LI>Next message: <A HREF="003366.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3375">[ date ]</a>
+              <a href="thread.html#3375">[ thread ]</a>
+              <a href="subject.html#3375">[ subject ]</a>
+              <a href="author.html#3375">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

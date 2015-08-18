@@ -1,0 +1,124 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Single-writer/many-reader consistency
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3C4D8E59FA.5070204%40tmsw.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009098.html">
+   <LINK REL="Next"  HREF="009111.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Single-writer/many-reader consistency</H1>
+    <B>Terje Mathisen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Single-writer/many-reader%20consistency&In-Reply-To=%3C4D8E59FA.5070204%40tmsw.no%3E"
+       TITLE="[Gpsd-dev] Single-writer/many-reader consistency">terje at tmsw.no
+       </A><BR>
+    <I>Sat Mar 26 22:26:18 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009098.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+        <LI>Next message: <A HREF="009111.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9108">[ date ]</a>
+              <a href="thread.html#9108">[ thread ]</a>
+              <a href="subject.html#9108">[ subject ]</a>
+              <a href="author.html#9108">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Dave Hart wrote:
+&gt;<i> On Sat, Mar 26, 2011 at 14:58 UTC, Terje Mathisen&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">terje at tmsw.no</A>&gt;  wrote:
+</I>&gt;&gt;<i> I suggest we extend the buffer size to 4 entries, making the entire block
+</I>&gt;&gt;<i> 120 bytes, since this will fit inside the same two 64-byte cache lines as
+</I>&gt;&gt;<i> the current layout needs.
+</I>&gt;<i>
+</I>&gt;<i> For refclock_shm's shared memory, I am increasingly fond of Terje's
+</I>&gt;<i> array of four timestamps and lock-free sequence number/index.  In that
+</I>
+Thanks.
+
+&gt;<i> context it seems to me even without memory barriers being emitted on
+</I>&gt;<i> an architecture where they are in theory needed, ring buffering will
+</I>&gt;<i> make it practically impossible to get an inconsistent set of
+</I>&gt;<i> timestamps.
+</I>
+This is exactly what I'm trying to do: Even very simple reader code will 
+work at better than 5 nines reliability, i.e. even without a read 
+barrier or the check so see if the counter has been updated.
+
+The next level is to discard any sample read in during a counter update 
+by the writer, and retry.
+
+This is effectively _never_ needed though, since my suggested code for a 
+4-entry buffer just has to make sure that the counter has been updated 
+by less than 3 samples, i.e. making sure that maximum 2 seconds have 
+passed with the process sleeping in the middle of the read operation. 
+Since the ntpd process is as (near-) realtime priority as we can make 
+it, sleeping for two+ seconds like that means that something is _very_ 
+wrong indeed, but the shm code would simply retry the read and succeed.
+
+&gt;&gt;<i> The final 8 bytes (to make the total 128) is where I want to locate an
+</I>&gt;&gt;<i> endian-detecting marker: &quot;GPSD-NTP&quot;:
+</I>&gt;<i>
+</I>&gt;<i> Are you thinking of an architecture that allows for per-procecess
+</I>&gt;<i> endian selection, or what purpose do you have in mind?  Call it a
+</I>&gt;<i> magic number and I like the idea of sanity checking we're looking at
+</I>&gt;<i> what we think we're looking at...
+</I>
+All of those:
+
+1) It is indeed a magic number, until the reader process finds that 
+value nothing can be read in.
+
+2) It is also an endian detector _if_ you are on one of the few 
+architectures which allow a program to be compiled for either the 
+default or the opposite endianness. For this very particular case you 
+could even include code to swap the byte order of all the data items, 
+but I would rather log an error message and skip the shm driver activation.
+
+3) It overlays the current mode value, and none of the 8 bytes contain 
+either 1 or 0 which are the only legal values for the current interface, 
+i.e. a current-generation ntpd shm driver will never pick up any bogus 
+timestamps from a new-model gpsd.
+&gt;<i>
+</I>&gt;<i> Cheers,
+</I>&gt;<i> Dave Hart
+</I>&gt;<i>
+</I>
+
+-- 
+- &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Terje at tmsw.no</A>&gt;
+&quot;almost all programming can be viewed as an exercise in caching&quot;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009098.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+	<LI>Next message: <A HREF="009111.html">[Gpsd-dev] Single-writer/many-reader consistency
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9108">[ date ]</a>
+              <a href="thread.html#9108">[ thread ]</a>
+              <a href="subject.html#9108">[ subject ]</a>
+              <a href="author.html#9108">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

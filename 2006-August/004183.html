@@ -1,0 +1,131 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Moving towards a release
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Moving%20towards%20a%20release&In-Reply-To=%3C44EAB278.4060707%40esitcom.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004179.html">
+   <LINK REL="Next"  HREF="004180.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Moving towards a release</H1>
+    <B>Raphael Jacquot</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Moving%20towards%20a%20release&In-Reply-To=%3C44EAB278.4060707%40esitcom.org%3E"
+       TITLE="[Gpsd-dev] Moving towards a release">sxpert at esitcom.org
+       </A><BR>
+    <I>Tue Aug 22 09:30:00 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004179.html">[Gpsd-dev] Moving towards a release
+</A></li>
+        <LI>Next message: <A HREF="004180.html">[Gpsd-dev] Moving towards a release
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4183">[ date ]</a>
+              <a href="thread.html#4183">[ thread ]</a>
+              <a href="subject.html#4183">[ subject ]</a>
+              <a href="author.html#4183">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Chris Kuethe wrote:
+&gt;<i> On 8/21/06, Raphael Jacquot &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">sxpert at esitcom.org</A>&gt; wrote:
+</I>&gt;&gt;<i> erh.. spoke too fast ;D
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> gpxlogger.c: In function `main':
+</I>&gt;&gt;<i> gpxlogger.c:172: warning: implicit declaration of function `gps_clear_fix'
+</I>&gt;&gt;<i> cgps.c: In function `main':
+</I>&gt;&gt;<i> cgps.c:431: warning: implicit declaration of function `strlcpy'
+</I>&gt;<i> 
+</I>&gt;<i> does this help?
+</I>&gt;<i> 
+</I>&gt;<i> Index: gpxlogger.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- gpxlogger.c (revision 3416)
+</I>&gt;<i> +++ gpxlogger.c (working copy)
+</I>&gt;<i> @@ -11,6 +11,7 @@
+</I>&gt;<i>  #include &lt;dbus/dbus-glib.h&gt;
+</I>&gt;<i> 
+</I>&gt;<i>  #include &lt;glib/gprintf.h&gt;
+</I>&gt;<i> +#include &quot;config.h&quot;
+</I>&gt;<i> 
+</I>&gt;<i>  DBusConnection* connection;
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>
+it didn't help. however the patch below fixes both issues
+
+
+
+Index: cgps.c
+===================================================================
+--- cgps.c      (revision 3417)
++++ cgps.c      (working copy)
+@@ -34,6 +34,7 @@
+
+  #include &lt;ncurses.h&gt;
+  #include &lt;signal.h&gt;
++#include &quot;config.h&quot;
+
+  #include &quot;gps.h&quot;
+Index: gpxlogger.c
+===================================================================
+--- gpxlogger.c (revision 3417)
++++ gpxlogger.c (working copy)
+@@ -170,8 +170,8 @@
+         DBusError error;
+
+         /* initializes the gpsfix data structure */
+-       gps_clear_fix(&amp;gpsfix);
+-
++       memset (&amp;gpsfix, 0, sizeof(gpsfix));
++
+         /* catch all interesting signals */
+         signal (SIGTERM, quit_handler);
+         signal (SIGQUIT, quit_handler);
+Index: Makefile.am
+===================================================================
+--- Makefile.am (revision 3417)
++++ Makefile.am (working copy)
+@@ -14,7 +14,7 @@
+  if HAVE_DBUS
+  INCLUDES = $(DBUS_CFLAGS) $(DBUS_GLIB_CFLAGS) 
+-DDBUS_API_SUBJECT_TO_CHANGE=1
+  DBUSPROGS = gpxlogger
+-gpxlogger_LDADD = $(DBUS_GLIB_LIBS) libgps.la  -lm
++gpxlogger_LDADD = $(DBUS_GLIB_LIBS) -lm
+  endif
+
+  if HAVE_RTCM104
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004179.html">[Gpsd-dev] Moving towards a release
+</A></li>
+	<LI>Next message: <A HREF="004180.html">[Gpsd-dev] Moving towards a release
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4183">[ date ]</a>
+              <a href="thread.html#4183">[ thread ]</a>
+              <a href="subject.html#4183">[ subject ]</a>
+              <a href="author.html#4183">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

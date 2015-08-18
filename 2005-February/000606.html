@@ -1,0 +1,210 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: (no subject)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%28no%20subject%29&In-Reply-To=%3CPine.LNX.4.62.0502012344521.6650%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000604.html">
+   <LINK REL="Next"  HREF="000607.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: (no subject)</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%28no%20subject%29&In-Reply-To=%3CPine.LNX.4.62.0502012344521.6650%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] Re: (no subject)">gem at rellim.com
+       </A><BR>
+    <I>Wed Feb  2 08:47:12 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000604.html">[Gpsd-dev] Re: (no subject)
+</A></li>
+        <LI>Next message: <A HREF="000607.html">[Gpsd-dev] Re: (no subject)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#606">[ date ]</a>
+              <a href="thread.html#606">[ thread ]</a>
+              <a href="subject.html#606">[ subject ]</a>
+              <a href="author.html#606">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Pette!
+
+I sorta prefer my solution by a tiny bit.  My patch stops the loop
+depending on how many fields ARE in the sentence rather than how many
+SHOULD be in the sentence.
+
+&gt;<i> +	/* XXX Why do we ignore the entries where RPN in zero? */
+</I>&gt;<i> +	if (out-&gt;PRN[out-&gt;satellites])
+</I>
+In any case I do not think we are to ignore satellites when the RPN is
+zero.  Looks to me like this was depending on PRN being zero if the
+data is read past the end.  A bad bet.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+
+On Wed, 2 Feb 2005, Petter Reinholdtsen wrote:
+
+&gt;<i> Date: Wed, 02 Feb 2005 08:14:08 +0100
+</I>&gt;<i> From: Petter Reinholdtsen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">pere at hungry.com</A>&gt;
+</I>&gt;<i> To: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> Subject: [Gpsd-dev] Re: (no subject)
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> [Eric S. Raymond]
+</I>&gt;<i> &gt; Ah, I see.  This can only happen if we're looking at the second or third
+</I>&gt;<i> &gt; part of a GSV sequence and it has fewer satellites than a previous one.
+</I>&gt;<i>
+</I>&gt;<i> I believe my draft proposal for a rewrite of the parser had a version
+</I>&gt;<i> which would handle this.  Did anyone have a look at the patch?  This
+</I>&gt;<i> is the GSV part of it.  With this change the number of satellites are
+</I>&gt;<i> used to calculate how many fields to read from.  There is still the
+</I>&gt;<i> problem on when to update the change flag, which I haven't solved.
+</I>&gt;<i>
+</I>&gt;<i> Index: nmea_parse.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- nmea_parse.c	(revision 1369)
+</I>&gt;<i> +++ nmea_parse.c	(working copy)
+</I>&gt;<i> @@ -363,7 +368,7 @@
+</I>&gt;<i>      return 0;
+</I>&gt;<i>  }
+</I>&gt;<i>
+</I>&gt;<i> -static void processGPGSV(int count, char *field[], struct gps_data_t *out)
+</I>&gt;<i> +static int processGPGSV(int count, char *field[], struct gps_data_t *out)
+</I>&gt;<i>  /* GPS Satellites in View */
+</I>&gt;<i>  {
+</I>&gt;<i>      /*
+</I>&gt;<i> @@ -376,14 +381,29 @@
+</I>&gt;<i>             083          Azimuth, degrees
+</I>&gt;<i>             46           Signal-to-noise ratio in decibels
+</I>&gt;<i>             &lt;repeat for up to 4 satellites per sentence&gt;
+</I>&gt;<i> -                There my be up to three GSV sentences in a data packet
+</I>&gt;<i> +                There may be up to three GSV sentences in a data packet
+</I>&gt;<i>       */
+</I>&gt;<i> -    int changed, fldnum;
+</I>&gt;<i> +    int i;
+</I>&gt;<i> +    int changed;
+</I>&gt;<i> +    int inview, end;
+</I>&gt;<i>      if (count &lt;= 3)
+</I>&gt;<i> -        return;
+</I>&gt;<i> +        return -1;
+</I>&gt;<i>      out-&gt;await = atoi(field[1]);
+</I>&gt;<i> +
+</I>&gt;<i> +    inview = atoi(field[3]);
+</I>&gt;<i> +    if (inview &lt; 0) {
+</I>&gt;<i> +	gpsd_report(3, &quot;%d is an invalid number of satellites&quot;, inview);
+</I>&gt;<i> +	return -1;
+</I>&gt;<i> +    }
+</I>&gt;<i> +
+</I>&gt;<i> +    if (inview &gt; MAXCHANNELS) {
+</I>&gt;<i> +        gpsd_report(3, &quot;%d is too many satellite, %d max supported&quot;, inview,
+</I>&gt;<i> +		    MAXCHANNELS);
+</I>&gt;<i> +	inview = MAXCHANNELS;
+</I>&gt;<i> +    }
+</I>&gt;<i> +
+</I>&gt;<i>      if (sscanf(field[2], &quot;%d&quot;, &amp;out-&gt;part) &lt; 1)
+</I>&gt;<i> -        return;
+</I>&gt;<i> +        return -1;
+</I>&gt;<i>      else if (out-&gt;part == 1)
+</I>&gt;<i>      {
+</I>&gt;<i>  	memset(out-&gt;PRN,       '\0', sizeof(out-&gt;PRN));
+</I>&gt;<i> @@ -393,30 +413,142 @@
+</I>&gt;<i>  	out-&gt;satellites = 0;
+</I>&gt;<i>      }
+</I>&gt;<i>
+</I>&gt;<i> -    changed = 0;
+</I>&gt;<i> -    for (fldnum = 4; fldnum &lt; 20; ) {
+</I>&gt;<i> -	changed |= update_field_i(field[fldnum++], &amp;out-&gt;PRN[out-&gt;satellites]);
+</I>&gt;<i> -	changed |= update_field_i(field[fldnum++], &amp;out-&gt;elevation[out-&gt;satellites]);
+</I>&gt;<i> -	changed |= update_field_i(field[fldnum++], &amp;out-&gt;azimuth[out-&gt;satellites]);
+</I>&gt;<i> -	changed |= update_field_i(field[fldnum++], &amp;out-&gt;ss[out-&gt;satellites]);
+</I>&gt;<i> -	if (!out-&gt;PRN[out-&gt;satellites])
+</I>&gt;<i> -	    break;
+</I>&gt;<i> -	else
+</I>&gt;<i> +    end = inview - ((out-&gt;part - 1) * 4);
+</I>&gt;<i> +    if (end &gt; 4) end = 4;
+</I>&gt;<i> +    if (count &lt;= (end * 4) + 3)
+</I>&gt;<i> +        return -1;
+</I>&gt;<i> +
+</I>&gt;<i> +    /* Hm, this can be cleared between runs. */
+</I>&gt;<i> +    changed = out-&gt;satellite_stamp.changed;
+</I>&gt;<i> +    for (i = 0; i &lt; end; i++) {
+</I>&gt;<i> +	changed |= update_field_i(field[4 + i*4], &amp;out-&gt;PRN[out-&gt;satellites]);
+</I>&gt;<i> +	changed |= update_field_i(field[5 + i*4], &amp;out-&gt;elevation[out-&gt;satellites]);
+</I>&gt;<i> +	changed |= update_field_i(field[6 + i*4], &amp;out-&gt;azimuth[out-&gt;satellites]);
+</I>&gt;<i> +	changed |= update_field_i(field[7 + i*4], &amp;out-&gt;ss[out-&gt;satellites]);
+</I>&gt;<i> +
+</I>&gt;<i> +	/* XXX Why do we ignore the entries where RPN in zero? */
+</I>&gt;<i> +	if (out-&gt;PRN[out-&gt;satellites])
+</I>&gt;<i>  	    out-&gt;satellites++;
+</I>&gt;<i>      }
+</I>&gt;<i> +    out-&gt;satellite_stamp.changed = changed;
+</I>&gt;<i>
+</I>&gt;<i>      /* not valid data until we've seen a complete set of parts */
+</I>&gt;<i>      if (out-&gt;part &lt; out-&gt;await)
+</I>&gt;<i> -	gpsd_report(3, &quot;Partial satellite data (%d of %d).\n&quot;, out-&gt;part, out-&gt;await);
+</I>&gt;<i> +        gpsd_report(3, &quot;Partial satellite data (part %d of %d, %d of %d).\n&quot;,
+</I>&gt;<i> +		    out-&gt;part, out-&gt;await, out-&gt;satellites, inview);
+</I>&gt;<i>      else if (!nmea_sane_satellites(out))
+</I>&gt;<i>  	gpsd_report(3, &quot;Satellite data no good.\n&quot;);
+</I>&gt;<i>      else {
+</I>&gt;<i>  	gpsd_report(3, &quot;Satellite data OK.\n&quot;);
+</I>&gt;<i> -	out-&gt;satellite_stamp.changed = changed;
+</I>&gt;<i>  	REFRESH(out-&gt;satellite_stamp);
+</I>&gt;<i>      }
+</I>&gt;<i> +    return 0;
+</I>&gt;<i>  }
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="http://lists.berlios.de/mailman/listinfo/gpsd-dev">http://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.2.3 (GNU/Linux)
+
+iD8DBQFCAIWD8KZibdeR3qURAvV2AKDWgbTtzumXwKql0iBq4tn05mnjuQCfQktS
+dfyhw0+F3zraVEkygiKuyuQ=
+=coN7
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000604.html">[Gpsd-dev] Re: (no subject)
+</A></li>
+	<LI>Next message: <A HREF="000607.html">[Gpsd-dev] Re: (no subject)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#606">[ date ]</a>
+              <a href="thread.html#606">[ thread ]</a>
+              <a href="subject.html#606">[ subject ]</a>
+              <a href="author.html#606">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

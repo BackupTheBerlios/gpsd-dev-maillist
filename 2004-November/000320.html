@@ -1,0 +1,145 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] building gpsd-2.3 on debian (gpsprobe)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20building%20gpsd-2.3%20on%20debian%20%28gpsprobe%29&In-Reply-To=%3C20041109192754.GA31054%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000318.html">
+   <LINK REL="Next"  HREF="000323.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] building gpsd-2.3 on debian (gpsprobe)</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20building%20gpsd-2.3%20on%20debian%20%28gpsprobe%29&In-Reply-To=%3C20041109192754.GA31054%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] building gpsd-2.3 on debian (gpsprobe)">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Nov  9 20:27:54 CET 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000318.html">[Gpsd-dev] building gpsd-2.3 on debian (gpsprobe)
+</A></li>
+        <LI>Next message: <A HREF="000323.html">[Gpsd-dev] building gpsd-2.3 on debian (gpsprobe)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#320">[ date ]</a>
+              <a href="thread.html#320">[ thread ]</a>
+              <a href="subject.html#320">[ subject ]</a>
+              <a href="author.html#320">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hamish &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">hamish_nospam at yahoo.com</A>&gt;:
+&gt;<i> gpsprobe was giving:
+</I>&gt;<i> 
+</I>&gt;<i> $ ./gpsprobe -h
+</I>&gt;<i>   File &quot;./gpsprobe&quot;, line 64
+</I>&gt;<i>     else (switch == '-h'):
+</I>&gt;<i>          ^
+</I>&gt;<i> SyntaxError: invalid syntax
+</I>
+Should be 
+
+     elif (switch == '-h'):
+
+I've fixed it in the masters.
+
+&gt;<i> but then I get:
+</I>&gt;<i> [Garmin 48  NMEA 183 v2.0 @ 4800 baud]
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> $ ./gpsprobe
+</I>&gt;<i> Waiting for /dev/gps......(0.00 sec) acquired.
+</I>&gt;<i> Gathering 100 sentences will probably take about 33 seconds.
+</I>&gt;<i> Looking for first fix...Traceback (most recent call last):
+</I>&gt;<i>   File &quot;./gpsprobe&quot;, line 137, in ?
+</I>&gt;<i>     status = dev.poll()
+</I>&gt;<i>   File &quot;/usr/src/gpsd-2.3/gpsd.py&quot;, line 314, in poll
+</I>&gt;<i>     self.devtype.parser.handler(self.ttyfp, self.raw_hook)
+</I>&gt;<i>   File &quot;/usr/src/gpsd-2.3/gpsd.py&quot;, line 200, in handler
+</I>&gt;<i>     self.handle_line(linebuf[:-2])
+</I>&gt;<i>   File &quot;/usr/src/gpsd-2.3/gpsd.py&quot;, line 192, in handle_line
+</I>&gt;<i>     NMEA.__dict__['process'+words[0]](self, words[1:])
+</I>&gt;<i>   File &quot;/usr/src/gpsd-2.3/gpsd.py&quot;, line 123, in processGPGSA
+</I>&gt;<i>     self.data.vdop = float(words[16])
+</I>&gt;<i> ValueError: empty string for float()
+</I>
+It looks like the Garmin can sometime return empty fields in a GPGSA.
+I've added guard code to gpsd.py to cope with this.
+ 
+&gt;<i> hmmm, I just tried a 5th time (without changing anything), and it went:
+</I>
+OK, that time you got the expected result.
+
+&gt;<i> but not the sixth time:
+</I>
+Right, this is a known bug that I've added to the TODO.  I would have
+done so sooner but I thought I had killed it.
+
+    ** gps.py/gpsd.py has an arithmetic bug in the EarthDistance formula
+
+    This one is hard to figure out because it's nondeterministic -- adjacent
+    runs of gpsprobe at the same spot may get it or not.  It may be
+    a trig function overflow.  The symptom is Value Error thrown within
+    EarthDistance (actually within MeterOffset).
+
+This one is independent of GPS type.
+
+&gt;<i> ...after hooking up to an antenna running out the window (solid fixes),
+</I>&gt;<i> I get:
+</I>&gt;<i> 
+</I>&gt;<i> $ ./gpsprobe
+</I>&gt;<i> Waiting for /dev/gps......(0.00 sec) acquired.
+</I>&gt;<i> Gathering 100 sentences will probably take about 33 seconds.
+</I>&gt;<i> Looking for first fix...Traceback (most recent call last):
+</I>&gt;<i>   File &quot;./gpsprobe&quot;, line 137, in ?
+</I>&gt;<i>     status = dev.poll()
+</I>&gt;<i>   File &quot;/usr/src/gpsd-2.3/gpsd.py&quot;, line 314, in poll
+</I>&gt;<i>     self.devtype.parser.handler(self.ttyfp, self.raw_hook)
+</I>&gt;<i>   File &quot;/usr/src/gpsd-2.3/gpsd.py&quot;, line 200, in handler
+</I>&gt;<i>     self.handle_line(linebuf[:-2])
+</I>&gt;<i>   File &quot;/usr/src/gpsd-2.3/gpsd.py&quot;, line 192, in handle_line
+</I>&gt;<i>     NMEA.__dict__['process'+words[0]](self, words[1:])
+</I>&gt;<i>   File &quot;/usr/src/gpsd-2.3/gpsd.py&quot;, line 123, in processGPGSA
+</I>&gt;<i>     self.data.vdop = float(words[16])
+</I>&gt;<i> ValueError: empty string for float()
+</I>
+That's the empty-field bug again.
+ 
+&gt;<i> shrug. NMEA 183 v2.0 seems to be a requirement.
+</I>
+Would you please look at the Hardware page and compose an entry for
+the Garmin 48?  It should include a note that NMEA 183 v2.0 needs
+to be selected.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000318.html">[Gpsd-dev] building gpsd-2.3 on debian (gpsprobe)
+</A></li>
+	<LI>Next message: <A HREF="000323.html">[Gpsd-dev] building gpsd-2.3 on debian (gpsprobe)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#320">[ date ]</a>
+              <a href="thread.html#320">[ thread ]</a>
+              <a href="subject.html#320">[ subject ]</a>
+              <a href="author.html#320">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

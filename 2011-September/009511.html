@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Installing to a prefix?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Installing%20to%20a%20prefix%3F&In-Reply-To=%3C4E6B9491.8030804%40bzed.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009505.html">
+   <LINK REL="Next"  HREF="009512.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Installing to a prefix?</H1>
+    <B>Bernd Zeimetz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Installing%20to%20a%20prefix%3F&In-Reply-To=%3C4E6B9491.8030804%40bzed.de%3E"
+       TITLE="[Gpsd-dev] Installing to a prefix?">bernd at bzed.de
+       </A><BR>
+    <I>Sat Sep 10 18:47:13 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009505.html">[Gpsd-dev] Installing to a prefix?
+</A></li>
+        <LI>Next message: <A HREF="009512.html">[Gpsd-dev] Installing to a prefix?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9511">[ date ]</a>
+              <a href="thread.html#9511">[ thread ]</a>
+              <a href="subject.html#9511">[ subject ]</a>
+              <a href="author.html#9511">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 09/09/2011 11:01 PM, Eric Raymond wrote:
+&gt;<i> Ed W &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">lists at wildgooses.com</A>&gt;:
+</I>&gt;&gt;<i> Hi
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> I've added a 'strip' option to the build recipe.  It defaults to on.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Oops, answered previous email before reading this - many thanks
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> An rpath is a search path for shared libraries.  The path the build
+</I>&gt;&gt;&gt;<i> library sets is indeed insecure, including the build diorectory (this
+</I>&gt;&gt;&gt;<i> is required to support our test set) but this is supposed to be fixed
+</I>&gt;&gt;&gt;<i> at binary installation time if you have chrpath(1) available. Perhaps
+</I>&gt;&gt;&gt;<i> you don't, or the build recipe can't find it.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> This doesn't seem to be working for me.  I installed chrpath (wasn't
+</I>&gt;&gt;<i> installed before), I can see it executing, but I still get an error. 
+</I>&gt;&gt;<i> What tool can I use to check the rpath..?
+</I>&gt;<i> 
+</I>&gt;<i> chrpath -l &lt;binary&gt;
+</I>&gt;<i> 
+</I>&gt;&gt;<i> Seems like the problem here is that it's &quot;chrpath&quot;ing to my DESTDIR
+</I>&gt;&gt;<i> install location and not to the non prefixed path?
+</I>&gt;<i> 
+</I>&gt;<i> That is possible.  The relevant piece of code is at Sconstruct:1020, and I'm
+</I>&gt;<i> including a relevant function before it here:
+</I>
+[...]
+
+&gt;<i> if have_chrpath:
+</I>&gt;<i>     libdir = env['prefix'] + env['libdir']
+</I>&gt;<i>     if libdir in ['/lib', '/usr/lib']:
+</I>&gt;<i>         env.AddPostAction(binaryinstall, '$CHRPATH -d &quot;$TARGET&quot;')
+</I>&gt;<i>     else:
+</I>&gt;<i>         env.AddPostAction(binaryinstall, '$CHRPATH -r &quot;%s&quot; &quot;$TARGET&quot;' % libdir))
+</I>&gt;<i> 
+</I>&gt;<i> I'm not sure - DESTDIR isn't my feature and I'm not intimately familiar
+</I>&gt;<i> with its use cases.  Perhaps Bernd Zeimetz will have an opinion.
+</I>
+This version looks better at least, although it has the flaw that it assumes
+that only /lib and /usr/lib are in the default search path. In Debian and Ubuntu
+we also have
+
+/usr/local/lib
+/lib/x86_64-linux-gnu
+/usr/lib/x86_64-linux-gnu
+/lib32
+/usr/lib32
+
+in there and rpath should not be used for these directories, too.
+There should be some way to figure out which paths ld.so has in the default
+search path. I'm sure that /usr/local/lib is not in the search path everywhere.
+Neither have an idea on how to implement it properly in a way which works on all
+platforms. Looking at libtool the path seems to be hard-coded into the script
+and even distinguishes between compile time and run-time. Wondering if such
+things are necessary to implement in scons and if somebody will need them to
+buid gpsd as before.
+
+
+-- 
+ Bernd Zeimetz                            Debian GNU/Linux Developer
+ <A HREF="http://bzed.de">http://bzed.de</A>                                <A HREF="http://www.debian.org">http://www.debian.org</A>
+ GPG Fingerprint: ECA1 E3F2 8E11 2432 D485  DD95 EB36 171A 6FF9 435F
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009505.html">[Gpsd-dev] Installing to a prefix?
+</A></li>
+	<LI>Next message: <A HREF="009512.html">[Gpsd-dev] Installing to a prefix?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9511">[ date ]</a>
+              <a href="thread.html#9511">[ thread ]</a>
+              <a href="subject.html#9511">[ subject ]</a>
+              <a href="author.html#9511">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

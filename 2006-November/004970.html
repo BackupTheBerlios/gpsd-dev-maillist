@@ -1,0 +1,185 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] We're making progress
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20We%27re%20making%20progress&In-Reply-To=%3C862kkgV4D0644S20.1162936563%40cmsweb20.cms.usa.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004971.html">
+   <LINK REL="Next"  HREF="004973.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] We're making progress</H1>
+    <B>Petr Slansky</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20We%27re%20making%20progress&In-Reply-To=%3C862kkgV4D0644S20.1162936563%40cmsweb20.cms.usa.net%3E"
+       TITLE="[Gpsd-dev] We're making progress">slansky at usa.net
+       </A><BR>
+    <I>Tue Nov  7 22:56:03 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004971.html">[Gpsd-dev] We're making progress
+</A></li>
+        <LI>Next message: <A HREF="004973.html">[Gpsd-dev] [Gpsd-commit-watch] r3805 - trunk/www (fwd)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4970">[ date ]</a>
+              <a href="thread.html#4970">[ thread ]</a>
+              <a href="subject.html#4970">[ subject ]</a>
+              <a href="author.html#4970">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gentlemen,
+
+I get the gpsd crash when I start session with w or w+ command. Like cgps do.
+When I issue some other command first I can send w command later and it is
+processed.
+
+On PGRME topic. I can see now that E command reports &quot;?&quot; for unknown values
+and PGRME values matches E answer.
+
+GPSD
+er
+GPSD,E=9.63 ? ?,R=1
+$GPGSV,3,1,09,11,79,181,00,01,60,095,46,14,27,045,11,20,52,249,00*76
+$GPGSV,3,2,09,19,13,173,00,17,26,311,06,25,18,113,23,31,15,105,19*7F
+$GPGSV,3,3,09,23,15,197,02*48
+$GPGGA,213654,5002.8783,N,01426.6661,E,1,04,4.00,325.0,M,45.3,M,,*76
+$GPRMC,213654,A,5002.8783,N,01426.6661,E,0.0000,0.000,071106,,*2E
+$GPGSA,A,3,01,14,25,31,,,,,,,,,2.7,1.7,2.1*33
+$PGRME,0.00,M,0.00,M,9.63,M*12
+
+Are you sure about 0.00 in PGRME message? It could be like $PGRME,,M,,M,9.63
+but I don't have NMEA specification and I failed to find answer at the Web. I
+don't have a reference GPS device too. So I expect you know that 0.00 means
+unknown value. Could be this information added to
+<A HREF="http://gpsd.berlios.de/NMEA.txt">http://gpsd.berlios.de/NMEA.txt</A> document?
+
+I have one problem with E answer, it is the same all time with Evermore
+driver:
+GPSD
+e
+GPSD,E=9.63 ? ?
+
+When I observe xgps fields EPH and EPV they change in time but E command
+answer is the same all time.
+
+I am in 3D mode but I get only one value in E command. Is this OK? Does result
+of E command depend on GPS receiver? Maybe I see only a bug in Evermore
+driver.
+
+With regards,
+Petr
+
+&gt;<i> ------ Original Message ------
+</I>&gt;<i> Received: Tue, 07 Nov 2006 04:58:38 PM CET
+</I>&gt;<i> From: &quot;Eric S. Raymond&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt;
+</I>&gt;<i> 
+</I>&gt;<i> &gt; I have implemented interleaved probing, and it seems to be a big win.  
+</I>&gt;<i> &gt; gpsctrl appears to be working reliably on SiRFs now.  Awaiting
+</I>confirmation
+&gt;<i> &gt; from Chris on this.
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; I've fixed 'E' reporting myself; it now emits '?' for DOP components
+</I>&gt;<i> &gt; not available, separately for each of the fields.  I've also fixed
+</I>&gt;<i> &gt; libgps and gpsd(8) to reflect this.  Petr Slansky, since you reported
+</I>&gt;<i> &gt; E was buggy please check the new behavior,
+</I>&gt;<i> &gt; 
+</I>&gt;<i> 
+</I>&gt;<i> I am sorry to disappoint you but I get fatal error when I start cgps or
+</I>xgps.
+&gt;<i> What about your system?
+</I>&gt;<i> 
+</I>&gt;<i> $ ./gpsd -N -D9 /dev/gps
+</I>&gt;<i> gpsd: launching (Version 2.34)
+</I>&gt;<i> gpsd: listening on port 2947
+</I>&gt;<i> gpsd: Unable to start ntpshm.  gpsd must run as root.
+</I>&gt;<i> gpsd: running with effective group ID 501
+</I>&gt;<i> gpsd: running with effective user ID 501
+</I>&gt;<i> gpsd: opening GPS data source at '/dev/gps'
+</I>&gt;<i> gpsd: garmin_gps not active.
+</I>&gt;<i> gpsd: no probe matched...
+</I>&gt;<i> gpsd: speed 9600, 8N1
+</I>&gt;<i> gpsd: gpsd_activate: opened GPS (4)
+</I>&gt;<i> gpsd: flagging descriptor 4 in open_device
+</I>&gt;<i> gpsd: select waits
+</I>&gt;<i> gpsd: select waits
+</I>&gt;<i> gpsd: select waits
+</I>&gt;<i> gpsd: client connect on 5
+</I>&gt;<i> gpsd: select waits
+</I>&gt;<i> gpsd: checking client(0)
+</I>&gt;<i> gpsd: &lt;= client(0): w+x
+</I>&gt;<i> gpsd: client(0): assigning channel...
+</I>&gt;<i> gpsd: User requires 2, channel type is -1
+</I>&gt;<i> gpsd: client(0): channel 4 already active.
+</I>&gt;<i> Segmentation fault
+</I>&gt;<i> 
+</I>&gt;<i> Well, later I found I disconnected GPS from my PC (I needed serial port
+</I>during
+&gt;<i> weekend to test some new modem).
+</I>&gt;<i> 
+</I>&gt;<i> When I connect GPS, I finish with crash anyway (it only takes longer time).
+</I>&gt;<i> 
+</I>&gt;<i> gpsd: 00004676: character '.' [fe], new state: GROUND_STATE
+</I>&gt;<i> gpsd: Character discarded, buffer 2 chars = 0060
+</I>&gt;<i> gpsd: ISGPS word tag not correct, skipping
+</I>&gt;<i> gpsd: 00004677: character '.' [00], new state: GROUND_STATE
+</I>&gt;<i> gpsd: Character discarded, buffer 1 chars = 60
+</I>&gt;<i> gpsd: ISGPS syncing at byte 4678: 82082cb2bfffaff0
+</I>&gt;<i> gpsd: ISGPS syncing at byte 4678: 4105964bfffaff0
+</I>&gt;<i> gpsd: ISGPS syncing at byte 4678: 820b2c8bfffaff0
+</I>&gt;<i> gpsd: ISGPS syncing at byte 4678: 10416590bfffaff0
+</I>&gt;<i> gpsd: ISGPS syncing at byte 4678: 2082cb20bfffaff0
+</I>&gt;<i> gpsd: ISGPS syncing at byte 4678: 41059641bfffaff0
+</I>&gt;<i> gpsd: lock never achieved
+</I>&gt;<i> gpsd: 00004678: character '`' [60], new state: GROUND_STATE
+</I>&gt;<i> gpsd: Character discarded, buffer 0 chars = 
+</I>&gt;<i> gpsd: packet sniff finds type -1
+</I>&gt;<i> gpsd: GPS sent 393 new characters
+</I>&gt;<i> gpsd: New data, not yet a packet
+</I>&gt;<i> gpsd: checking client(0)
+</I>&gt;<i> gpsd: &lt;= client(0): w+x
+</I>&gt;<i> gpsd: client(0): assigning channel...
+</I>&gt;<i> gpsd: User requires 2, channel type is -1
+</I>&gt;<i> gpsd: client(0): channel 4 already active.
+</I>&gt;<i> Segmentation fault
+</I>&gt;<i> 
+</I>&gt;<i> First, try to start gpsd without receiver and start client like cgps. Do
+</I>you
+&gt;<i> get crash?
+</I>
+
+---------------------------------
+  Petr Slansky, <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">slansky at usa.net</A>
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004971.html">[Gpsd-dev] We're making progress
+</A></li>
+	<LI>Next message: <A HREF="004973.html">[Gpsd-dev] [Gpsd-commit-watch] r3805 - trunk/www (fwd)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4970">[ date ]</a>
+              <a href="thread.html#4970">[ thread ]</a>
+              <a href="subject.html#4970">[ subject ]</a>
+              <a href="author.html#4970">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,89 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Raw mode with 2 receivers
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Raw%20mode%20with%202%20receivers&In-Reply-To=%3C20050523134656.GA18753%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001837.html">
+   <LINK REL="Next"  HREF="001840.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Raw mode with 2 receivers</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Raw%20mode%20with%202%20receivers&In-Reply-To=%3C20050523134656.GA18753%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Raw mode with 2 receivers">esr at thyrsus.com
+       </A><BR>
+    <I>Mon May 23 15:46:56 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001837.html">[Gpsd-dev] Raw mode with 2 receivers
+</A></li>
+        <LI>Next message: <A HREF="001840.html">[Gpsd-dev] At gpsd 2.25, the to-do list is dwindling
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1839">[ date ]</a>
+              <a href="thread.html#1839">[ thread ]</a>
+              <a href="subject.html#1839">[ subject ]</a>
+              <a href="author.html#1839">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+&gt;<i> During some development (I am writing a driver for the Trimble TSIP
+</I>&gt;<i> protocol) I notice that when sending these commands:
+</I>&gt;<i> 
+</I>&gt;<i> F=/dev/ttyS1
+</I>&gt;<i> R
+</I>&gt;<i> 
+</I>&gt;<i> the Raw output is from the first receiver (/dev/ttyS0).  It has not
+</I>&gt;<i> switched because of the F command.  Other commands switch OK.
+</I>&gt;<i> 
+</I>&gt;<i> Is this consididered to be normal?  I don't see checking for the active
+</I>&gt;<i> device in the R command.
+</I>
+After looking at the code for a while, I think the actual bug is that
+turning on raw mode is getting you sentences from *all* active
+devices.  You hadn't opened the second one yet -- F won't trigger
+that, it takes a command that actually requests GPS info to do it.  So
+your set of all GPSes was still just the first one.
+
+I've checked in a change that should fix this, but I'm not in a place 
+where I can test it with multiple devices just now.  And even if I could,
+my devices are all SiRF-II so it's difficult to tell their sentences apart.
+
+The change is at gpsd.c:295.  The second conjunct should filter so that
+you will only get sentences from the device you are explicitly listening
+to.  Please test.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001837.html">[Gpsd-dev] Raw mode with 2 receivers
+</A></li>
+	<LI>Next message: <A HREF="001840.html">[Gpsd-dev] At gpsd 2.25, the to-do list is dwindling
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1839">[ date ]</a>
+              <a href="thread.html#1839">[ thread ]</a>
+              <a href="subject.html#1839">[ subject ]</a>
+              <a href="author.html#1839">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

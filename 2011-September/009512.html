@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Installing to a prefix?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Installing%20to%20a%20prefix%3F&In-Reply-To=%3C20110910185647.GA4980%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009511.html">
+   <LINK REL="Next"  HREF="009515.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Installing to a prefix?</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Installing%20to%20a%20prefix%3F&In-Reply-To=%3C20110910185647.GA4980%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Installing to a prefix?">esr at thyrsus.com
+       </A><BR>
+    <I>Sat Sep 10 20:56:47 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009511.html">[Gpsd-dev] Installing to a prefix?
+</A></li>
+        <LI>Next message: <A HREF="009515.html">[Gpsd-dev] Installing to a prefix?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9512">[ date ]</a>
+              <a href="thread.html#9512">[ thread ]</a>
+              <a href="subject.html#9512">[ subject ]</a>
+              <a href="author.html#9512">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Bernd Zeimetz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">bernd at bzed.de</A>&gt;:
+&gt;<i> &gt; if have_chrpath:
+</I>&gt;<i> &gt;     libdir = env['prefix'] + env['libdir']
+</I>&gt;<i> &gt;     if libdir in ['/lib', '/usr/lib']:
+</I>&gt;<i> &gt;         env.AddPostAction(binaryinstall, '$CHRPATH -d &quot;$TARGET&quot;')
+</I>&gt;<i> &gt;     else:
+</I>&gt;<i> &gt;         env.AddPostAction(binaryinstall, '$CHRPATH -r &quot;%s&quot; &quot;$TARGET&quot;' % libdir))
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; I'm not sure - DESTDIR isn't my feature and I'm not intimately familiar
+</I>&gt;<i> &gt; with its use cases.  Perhaps Bernd Zeimetz will have an opinion.
+</I>&gt;<i> 
+</I>&gt;<i> This version looks better at least, although it has the flaw that it assumes
+</I>&gt;<i> that only /lib and /usr/lib are in the default search path. In Debian and Ubuntu
+</I>&gt;<i> we also have
+</I>&gt;<i> 
+</I>&gt;<i> /usr/local/lib
+</I>&gt;<i> /lib/x86_64-linux-gnu
+</I>&gt;<i> /usr/lib/x86_64-linux-gnu
+</I>&gt;<i> /lib32
+</I>&gt;<i> /usr/lib32
+</I>&gt;<i> 
+</I>&gt;<i> in there and rpath should not be used for these directories, too.
+</I>&gt;<i> There should be some way to figure out which paths ld.so has in the default
+</I>&gt;<i> search path
+</I>
+I looked at the ld manpage and don't see any way to query the default list.
+
+We certainly want to edit out the unsafe rpath pointing to the build directory.
+But does it do any actual harm if we don't edit out the default search paths?  
+That is, I'm trying to understand why it wold be a problem if the code just
+looked like this:
+
+if have_chrpath:
+    libdir = env['prefix'] + env['libdir']
+    env.AddPostAction(binaryinstall, '$CHRPATH -r &quot;%s&quot; &quot;$TARGET&quot;' % libdir))
+
+If doing it this way is a problem we'lll have to maintain distro-specfic 
+lists of default paths, which would a pain in the butt. 
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009511.html">[Gpsd-dev] Installing to a prefix?
+</A></li>
+	<LI>Next message: <A HREF="009515.html">[Gpsd-dev] Installing to a prefix?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9512">[ date ]</a>
+              <a href="thread.html#9512">[ thread ]</a>
+              <a href="subject.html#9512">[ subject ]</a>
+              <a href="author.html#9512">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

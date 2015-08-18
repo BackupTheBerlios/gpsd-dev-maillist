@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Failing Regression test
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Failing%20Regression%20test&In-Reply-To=%3Cv2ubd1f1cc91004071429p7bc3c8cfv40f723ab6d7099f4%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007614.html">
+   <LINK REL="Next"  HREF="007605.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Failing Regression test</H1>
+    <B>Jon Schlueter</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Failing%20Regression%20test&In-Reply-To=%3Cv2ubd1f1cc91004071429p7bc3c8cfv40f723ab6d7099f4%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Failing Regression test">jon.schlueter at gmail.com
+       </A><BR>
+    <I>Wed Apr  7 23:29:19 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007614.html">[Gpsd-dev] Failing Regression test
+</A></li>
+        <LI>Next message: <A HREF="007605.html">[Gpsd-dev] [PATCH] Fix Pythonism in gpsd.php
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7618">[ date ]</a>
+              <a href="thread.html#7618">[ thread ]</a>
+              <a href="subject.html#7618">[ subject ]</a>
+              <a href="author.html#7618">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>As of this morning when I try running an individual test (Diagnosing
+another problem) it failed to run gpsd or ran my installed copy not
+the just built one.  Manual run like the following failed
+
+./gpsfake -p test/driver/xxx.log
+
+Jon
+
+
+On Wed, Apr 7, 2010 at 10:40 AM, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Bernd Zeimetz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">bernd at bzed.de</A>&gt; writes:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> &gt; On 04/07/2010 02:02 PM, Greg Troxel wrote:
+</I>&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;<i> &gt;&gt; I think we need to decide whether gpsfake should run the as-built copy
+</I>&gt;&gt;<i> &gt;&gt; of gpsd or the installed copy. &#160;Each is in a specific place, and thus
+</I>&gt;&gt;<i> &gt;&gt; neither needs PATH searching. &#160;I tend to think that regression tests
+</I>&gt;&gt;<i> &gt;&gt; should use the as-built copy, but gpsfake as installed in $PREFIX/bin
+</I>&gt;&gt;<i> &gt;&gt; should arguably use $PREFIX/sbin/gpsd.
+</I>&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;<i> &gt;&gt; So I would suggest that gpsfake.in have @PREFIX@ and @abs_build_dir@
+</I>&gt;&gt;<i> &gt;&gt; substituted into it, and a have a --uninstalled switch to run
+</I>&gt;&gt;<i> &gt;&gt; @abs_build_dir@/gpsd, and otherwise @PREFIX@/sbin/gpsd. &#160;This probably
+</I>&gt;&gt;<i> &gt;&gt; requires an argument into gpsfake.py.
+</I>&gt;&gt;<i> &gt;
+</I>&gt;&gt;<i> &gt; Why not add . or `pwd` to or something similar to $PATH for the regression
+</I>&gt;&gt;<i> &gt; tests? I think that should fix the issues
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> It fixes part of the issue, but it doesn't stop installed gpsfake from
+</I>&gt;&gt;<i> finding a gpsd other than the one in its prefix. &#160;Basically, in my view,
+</I>&gt;&gt;<i> programs from a package that call other programs shouldn't be using PATH
+</I>&gt;&gt;<i> at all.
+</I>&gt;<i>
+</I>&gt;<i> I've already explained why I don't want to go in the direction of more
+</I>&gt;<i> autotools cookies and .in files.
+</I>&gt;<i>
+</I>&gt;<i> I think there's a much simpler way to address this problem. &#160;When gpsfake
+</I>&gt;<i> starts gpsd, it can *report* where the daemon was run from. That way, if
+</I>&gt;<i> it was run from a wrong place or stale copy, you'll *see* it.
+</I>&gt;<i>
+</I>&gt;<i> In fact, in HEAD '.' is *already* in the path regress-driver sets.
+</I>&gt;<i>
+</I>&gt;<i> I'm aware of the security issues with dot in path. &#160;I don't much care, not
+</I>&gt;<i> in this context. &#160;If you're running regress-driver at all, you're building
+</I>&gt;<i> from source and expected to know better than to run strange scripts in
+</I>&gt;<i> a world-writeable directory.
+</I>&gt;<i>
+</I>&gt;<i> Jon, with regress-driver adding . to path and exporting it, gpsfake
+</I>&gt;<i> should already see that. Do you still get failure to invoke ./gpsd
+</I>&gt;<i> from HEAD?
+</I>&gt;<i> --
+</I>&gt;<i> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+</I>&gt;<i>
+</I>&gt;<i> -----BEGIN PGP SIGNATURE-----
+</I>&gt;<i> Version: GnuPG v1.4.9 (GNU/Linux)
+</I>&gt;<i>
+</I>&gt;<i> iD8DBQFLvJlxrfUW04Qh8RwRAvoFAJ9zdRX7jmSnNvKZvvR0Mg894GvGYgCg5ai2
+</I>&gt;<i> 4BaSSdVLi4Fue2WD71UyuWE=
+</I>&gt;<i> =thdg
+</I>&gt;<i> -----END PGP SIGNATURE-----
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007614.html">[Gpsd-dev] Failing Regression test
+</A></li>
+	<LI>Next message: <A HREF="007605.html">[Gpsd-dev] [PATCH] Fix Pythonism in gpsd.php
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7618">[ date ]</a>
+              <a href="thread.html#7618">[ thread ]</a>
+              <a href="subject.html#7618">[ subject ]</a>
+              <a href="author.html#7618">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

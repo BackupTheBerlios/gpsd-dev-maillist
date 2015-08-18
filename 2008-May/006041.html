@@ -1,0 +1,97 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Memory corruption bug in libgps when using raw and	watcher mode	together
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2008-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Memory%20corruption%20bug%20in%20libgps%20when%20using%20raw%20and%0A%09watcher%20mode%09together&In-Reply-To=%3C1210199358.13253.14.camel%40pcmartin.koesching.it-schaller.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="006042.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Memory corruption bug in libgps when using raw and	watcher mode	together</H1>
+    <B>Martin Schaller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Memory%20corruption%20bug%20in%20libgps%20when%20using%20raw%20and%0A%09watcher%20mode%09together&In-Reply-To=%3C1210199358.13253.14.camel%40pcmartin.koesching.it-schaller.de%3E"
+       TITLE="[Gpsd-dev] Memory corruption bug in libgps when using raw and	watcher mode	together">martin-s at users.sourceforge.net
+       </A><BR>
+    <I>Thu May  8 00:29:18 CEST 2008</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="006042.html">[Gpsd-dev] Memory corruption bug in libgps when using raw and	watcher mode together
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6041">[ date ]</a>
+              <a href="thread.html#6041">[ thread ]</a>
+              <a href="subject.html#6041">[ subject ]</a>
+              <a href="author.html#6041">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+there is a memory corruption bug in libgps which occurs if you set raw
+and watcher mode together (for example with &quot;w+xr+&quot;).
+If you feed this String (remote quotes and line breaks and replace \n
+with linefeed):
+&quot;GPSD,O=RMC 1207318966.000 0.005 49.026225 12.188348 375.20 19.20 10.40
+70.8900 24.899 0.000 75.6699 38.40 ? 3\n&quot;
+&quot;$GPVTG,70.89,T,,M,48.40,N,89.6,K,A*34\n&quot;
+to the function gps_unpack of libgps the following happens:
+In the loop
+for (sp = ns + 5; *sp != '\0'; sp = tp+1) {
+sp will in the first iteration point to &quot;O=RMC&quot;, leading to normal
+processing of the gpsd reply.
+In the next iteration, sp will point to &quot;$GPVTG&quot;, leading to it being
+wrongly handled as gpsd message.
+Next is &quot;70.89&quot;, then &quot;T&quot; and so on.
+Eventually sp points to &quot;K&quot;, which leads to sp+2 (&quot;A*34&quot;) being
+interpreted as number (which gives 0 as result).
+In the next step this number is used as argument to calloc, resulting in
+a zero sized devicelist
+But then
+gpsdata-&gt;devicelist[i=0] = strdup(strtok_r(sp+1, &quot; \r\n&quot;, &amp;ns));
+gets executed and the data after the zero sized devicelist gets
+overwritten.
+This leads to a crash later on somewhere in the libgps application.
+
+It took me a while to find out why navit crashed frequently when used
+with gpsd...
+
+I hope this will be fixed in the next release, as a workaround we will
+avoid using raw (for logging purposes) and watcher (for ease of use)
+mode together on a single connection.
+
+Best regards,
+
+Martin Schaller
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="006042.html">[Gpsd-dev] Memory corruption bug in libgps when using raw and	watcher mode together
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6041">[ date ]</a>
+              <a href="thread.html#6041">[ thread ]</a>
+              <a href="subject.html#6041">[ subject ]</a>
+              <a href="author.html#6041">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

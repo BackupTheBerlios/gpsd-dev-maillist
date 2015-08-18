@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Now I understand (revs that introduced bugs)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Now%20I%20understand%20%28revs%20that%20introduced%20bugs%29&In-Reply-To=%3C18041.213.84.187.156.1117871183.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001994.html">
+   <LINK REL="Next"  HREF="001989.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Now I understand (revs that introduced bugs)</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Now%20I%20understand%20%28revs%20that%20introduced%20bugs%29&In-Reply-To=%3C18041.213.84.187.156.1117871183.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] Now I understand (revs that introduced bugs)">gpsd at xs4all.nl
+       </A><BR>
+    <I>Sat Jun  4 09:46:23 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001994.html">[Gpsd-dev] Now I understand (revs that introduced bugs)
+</A></li>
+        <LI>Next message: <A HREF="001989.html">[Gpsd-dev] splint just turned up a third bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1995">[ date ]</a>
+              <a href="thread.html#1995">[ thread ]</a>
+              <a href="subject.html#1995">[ subject ]</a>
+              <a href="author.html#1995">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> Andreas Brauchli &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">a.brauchli at elementarea.net</A>&gt;:
+</I>&gt;&gt;<i> &gt; &gt; --disable-sirfII only works when also specifying --disable-tsip
+</I>&gt;&gt;<i> &gt;
+</I>&gt;&gt;<i> &gt; I can't reproduce this.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> i foolishly assumed the problem was with sirfII wheras it layed in the
+</I>&gt;&gt;<i> combination:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> --disable-sirfII --disable-garmin --disable-earthmate
+</I>&gt;<i>
+</I>&gt;<i> Fix is in SVN head now.
+</I>
+You call that a Fix?
+I call it a change to the code without first investigating the possible
+problem.
+Like so many of the past weeks 'Fixes'.
+
+In my opionion, you are not correctly handling the tool that has been
+given to you.  You use it as a machine gun to hit the target, because that
+is easier than using bow and arrow.
+
+But the overal quality of the project is going down the drain.
+When some warning is given about a datatype, you are not investigating the
+proper type of the data and making sure that all variables and function
+parameters agree to that type, but you merely insert a typecast at the
+place of the warning.
+
+Surely that is going to get the number of warnings down, but it is not
+going to change anything to the quality of the code.  Because the compiler
+already  performed those casts automatically.
+
+But what you do get is bugs as the result of subtle changes that have more
+impact than you oversee at first.
+
+As I have other things to do at the moment, I am not going to spend my
+time on exhaustive tests to see if the code is still correct after changes
+to make splint happy, only to find the next day that the strategy has
+again changed (and a new variant of the getx macros is tried, again
+incorrect).
+
+My opinion is and remains that a checking tool should be used as a
+guideline to evaluate possible problems in the code, then investigate a
+solution for those problems (like using a different datatype), and finally
+implement that solution throughout the code and see some warnings
+disappear.
+
+What I see happening now is just &quot;hey the tool says I put an unsigned int
+into a signed int parameter so let's insert (int) here&quot;.  That is not the
+way to do it.
+
+The changes around gps_week are a very good example for this.  Should it
+be an int, an unsigned int, a short, an unsigned short?  THAT should be
+decided first.  THEN all instances should be changed to that type.
+And the inclusion of the member into the gps_device structure should be
+based on actual facts, not anecdotes about errors seen.
+The member is only referenced in tsip.c so  if a #ifdef TSIP_ENABLE does
+not work to isolate it, there is a global problem, not something that is
+solved by putting some more terms into the #ifdef.
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001994.html">[Gpsd-dev] Now I understand (revs that introduced bugs)
+</A></li>
+	<LI>Next message: <A HREF="001989.html">[Gpsd-dev] splint just turned up a third bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1995">[ date ]</a>
+              <a href="thread.html#1995">[ thread ]</a>
+              <a href="subject.html#1995">[ subject ]</a>
+              <a href="author.html#1995">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

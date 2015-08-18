@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-users] Gpsd configuration files
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-users%5D%20Gpsd%20configuration%20files&In-Reply-To=%3CBANLkTimKU8ZcvWBiJfQB5-4vVPomVSpm%2Bw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009335.html">
+   <LINK REL="Next"  HREF="009334.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-users] Gpsd configuration files</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-users%5D%20Gpsd%20configuration%20files&In-Reply-To=%3CBANLkTimKU8ZcvWBiJfQB5-4vVPomVSpm%2Bw%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [Gpsd-users] Gpsd configuration files">thomas at mich.com
+       </A><BR>
+    <I>Tue May 31 19:47:11 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009335.html">[Gpsd-dev] [Gpsd-users]  Gpsd configuration files
+</A></li>
+        <LI>Next message: <A HREF="009334.html">[Gpsd-dev] [Gpsd-users] Gpsd configuration files
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9332">[ date ]</a>
+              <a href="thread.html#9332">[ thread ]</a>
+              <a href="subject.html#9332">[ subject ]</a>
+              <a href="author.html#9332">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Tue, May 31, 2011 at 1:10 PM, Sebastian Arcus &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">shop at open-t.co.uk</A>&gt; wrote:
+
+&gt;<i> Well, I'm all happy with that philosophy. Then why does it take four
+</I>&gt;<i> different configuration/script files and a Unix socket (which means you need
+</I>&gt;<i> RW access to the file system when you start gpsd) in order to hot plug gps
+</I>&gt;<i> devices? You need:
+</I>&gt;<i> /etc/default/gpsd
+</I>&gt;<i>
+</I>&gt;<i> /etc/udev/rules.d/gpsd.rules
+</I>&gt;<i> /lib/udev/gpsd.hotplug
+</I>&gt;<i> /lib/udev/gpsd.hotplug.wrapper
+</I>&gt;<i>
+</I>&gt;<i> I was suggesting an approach which would have used one single
+</I>&gt;<i> /etc/gpsd.conf instead of the four above. If somebody can do away with all
+</I>&gt;<i> of them without replacement, that's even better.
+</I>&gt;<i>
+</I>&gt;<i> It seems to me that  in order to avoid a single configuration file at all
+</I>&gt;<i> costs, the setup ended up far more complicated then it was needed.
+</I>&gt;<i>
+</I>
+ESR replied, but let me extend it - monitoring insertion events is not
+portable and often involves worse security problem potentials, or resource
+wastage (how often do you search through /dev? how do you distinguish
+between a GPS and something else - how do you even configure the gpsd.conf
+easily and consistently).  And not all sources are /dev/ttyUSBn - there is
+ttyACMn, bluetooth (rfcommN), network pipes, and other sources.  So it
+wouldn't just be one part attempting to replace just USB hotplugging.
+
+I did a completely different rewrite which I'm in final test before I try to
+merge the key bits into gpsd and I avoided configuration in my latest
+version for the same reason (I did use gconf for some things in the previous
+version).  I wrote separate feeder programs and use those instead since they
+can be tailored and maintained separately.
+
+The only time conf files should be used is in a consistent set where you
+have the command line, the environment, and finally conf files setting
+things.  But it is hard enough to maintain even one of these.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110531/b7564e0d/attachment.html">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110531/b7564e0d/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009335.html">[Gpsd-dev] [Gpsd-users]  Gpsd configuration files
+</A></li>
+	<LI>Next message: <A HREF="009334.html">[Gpsd-dev] [Gpsd-users] Gpsd configuration files
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9332">[ date ]</a>
+              <a href="thread.html#9332">[ thread ]</a>
+              <a href="subject.html#9332">[ subject ]</a>
+              <a href="author.html#9332">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

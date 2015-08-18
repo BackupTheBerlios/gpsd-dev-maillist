@@ -1,0 +1,149 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] MinGW/Win32 port
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20MinGW/Win32%20port&In-Reply-To=%3C20091231044348.GA17365%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007293.html">
+   <LINK REL="Next"  HREF="007295.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] MinGW/Win32 port</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20MinGW/Win32%20port&In-Reply-To=%3C20091231044348.GA17365%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] MinGW/Win32 port">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Dec 31 05:43:48 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007293.html">[Gpsd-dev] MinGW/Win32 port
+</A></li>
+        <LI>Next message: <A HREF="007295.html">[Gpsd-dev] MinGW/Win32 port
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7294">[ date ]</a>
+              <a href="thread.html#7294">[ thread ]</a>
+              <a href="subject.html#7294">[ subject ]</a>
+              <a href="author.html#7294">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>David Ludlow &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">davel at adsllc.com</A>&gt;:
+&gt;<i> I've spent the last few days working on a MinGW port of the gpsd
+</I>&gt;<i> package.  I've made pretty good progress and have a somewhat functional
+</I>&gt;<i> gpsd.exe and gpspipe.exe, as tested on Wine and WinXP.  The code is
+</I>&gt;<i> based on the gpsd-2.90 release.
+</I>
+Interesting.
+
+I'm the project lead and will make the go/no-go deciosion on this,
+though my lieutenants (Chris Kuethe and Gary Miller) will have a say.
+
+&gt;<i> The applicable files are available here:
+</I>&gt;<i> <A HREF="http://adsllc.fedorapeople.org/gpsd-2.90-mingw/">http://adsllc.fedorapeople.org/gpsd-2.90-mingw/</A>
+</I>
+I've downloaded them and skimmed the patch.  It doesn't look too bad.
+
+&gt;<i> It's clearly not a finished product, and is probably broken in many
+</I>&gt;<i> ways, but it's a start.  I'd like to get opinions on the structure of
+</I>&gt;<i> things before I do much more polishing &amp; fixing.
+</I>
+Some of your changes look like code cleanups that would be worthwhile
+even for the Unix home port. I have in mind, for example, getting rid of
+u_char and maybe using socket_t.  Let's merge those first and see how
+small we can make the patch before we have to start doing things that
+are ugly.
+
+&gt;<i> The basic summary of the changes are:
+</I>&gt;<i> 
+</I>&gt;<i> A. Added win32_compat.* files to compartmentalize as much as possible. 
+</I>&gt;<i> There are still many empty stubs here.
+</I>&gt;<i> B. Update a bunch of #include stuff to make step A work.
+</I>&gt;<i> C. Added a serial_win32.c file that is used instead of serial.c as
+</I>&gt;<i> necessary.
+</I>
+All pretty unobjectionable.
+
+&gt;<i> D. Sped up the select() timeout in the main loop on Win32.
+</I>
+That's going to need more careful review than I've given it yet, but is
+probably OK.
+
+&gt;<i> E. Added a conditional gps_handle to gps_data_t.
+</I>
+No problem.
+
+&gt;<i> F. Passed the whole gps_data_t* structure in some places instead of just
+</I>&gt;<i> the fd so gps_handle would be available.
+</I>
+That starts to get ugly and will need careful review.
+
+&gt;<i> G. The &quot;boolean&quot; token used by the JSON stuff is already defined in
+</I>&gt;<i> Win32.  Renamed to &quot;booleanval&quot;.
+</I>
+Is it a macro or a typedef?  If a typedef, what Windows file supplies it?
+
+&gt;<i> H. Created a socket_t that is a SOCKET on Win32 and an int otherwise.
+</I>
+I might take that change even if we don't finish the Windows port.  
+I'm in favor of using type declarations as documentation of semantic kinds.
+
+&gt;<i> I. Added NSIS installer support.
+</I>
+I have no idea what NSIS is.
+
+&gt;<i> I'm looking for:
+</I>&gt;<i> 
+</I>&gt;<i> 1. Advice on structural changes I can make to improve the odds of
+</I>&gt;<i> mainline integration.
+</I>
+You've got the beginnings of that above.
+
+&gt;<i> 2. Advice on the Win32 API code, as that's not my speciality. 
+</I>&gt;<i> Fortunately, there's really very little of it.
+</I>
+I don't think any our refgular is a Win32 person.  You may
+be out of luck there. 
+
+&gt;<i> 3. Other interested parties.
+</I>&gt;<i> 4. Other thoughts and opinions.
+</I>
+The largest issue I see is that porting to Windows would significantly
+complicate our test regime.  If we mainline the code, would you be willing to
+own it and do tests before each release?
+
+There's also the library code to worry about. That is, what it would take
+to make libgps available to client Windows applications.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007293.html">[Gpsd-dev] MinGW/Win32 port
+</A></li>
+	<LI>Next message: <A HREF="007295.html">[Gpsd-dev] MinGW/Win32 port
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7294">[ date ]</a>
+              <a href="thread.html#7294">[ thread ]</a>
+              <a href="subject.html#7294">[ subject ]</a>
+              <a href="author.html#7294">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

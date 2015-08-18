@@ -1,0 +1,111 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Run-time no-reconfigure option
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Run-time%20no-reconfigure%20option&In-Reply-To=%3C20061112153025.GA7916%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005103.html">
+   <LINK REL="Next"  HREF="005104.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Run-time no-reconfigure option</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Run-time%20no-reconfigure%20option&In-Reply-To=%3C20061112153025.GA7916%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Run-time no-reconfigure option">esr at thyrsus.com
+       </A><BR>
+    <I>Sun Nov 12 16:30:25 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005103.html">[Gpsd-dev] [Gpsd-commit-watch] r3548 - trunk
+</A></li>
+        <LI>Next message: <A HREF="005104.html">[Gpsd-dev] cgps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5124">[ date ]</a>
+              <a href="thread.html#5124">[ thread ]</a>
+              <a href="subject.html#5124">[ subject ]</a>
+              <a href="author.html#5124">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Michael R. Davis &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mrdvt92 at yahoo.com</A>&gt;:
+&gt;<i> I'd like to see a run-time option too because my GPS receiver still
+</I>&gt;<i> has that 10 seconds delay under SiRF so I have pop it back to NMEA
+</I>&gt;<i> every time GPSD has it way with it.
+</I>
+This is actually an argument for an /etc/gpsdrc config file, not a
+command-line option.
+
+Think about it.  The assumption that drives much of gpsd's design is that it's
+going to get silently called by a hotplug script when needed.  You don't want
+a way of requesting no-reconfigure that would require you to hack the hotplug
+agent -- and if you *did* want that, I'd refuse to do any such stupid thing!
+
+A config file, on the other hand, is indifferent to how the daemon is invoked.
+
+Now I'll let you in on a secret.  The internal machinery to set no-reconfigure
+at runtime already exists; I had to build it it in order to stop gpsctl from 
+heedlessly stomping on GPS settings.  There's an .enable_reconfigure flag
+in the session-context structure; gpsd sets it, gpsctl doesn't.  It controls
+whether the configurator method is called at device-open and driver-switch 
+time.
+
+I haven't exposed this flag yet for a couple of reasons:  
+
+One, I think its granularity is wrong -- you probably want to be able
+to set it by device type, so you can specifically say &quot;don't
+reconfigure SiRFs&quot;.
+
+Two, adding a config file is a big step and not one to be taken casually.
+I'm not going to do it without thinking through the syntax and semantics
+*extremely* carefully.  Design and processing of language-like markups
+is my thing, I'm confident I can come up with an excellent design -- but
+not if I rush into it.
+
+Three, like a command-line option, a config file is an easy out for
+lazy programmers.  As I pointed out to Chris Kuethe some time back, 
+no-reconfigure just addresses a symptom -- the truly right thing
+would be to have gpsd store its config changes and revert them on
+exit.  But the second I implement a runtime no-reconfigure, the
+pressure to implement the *right* design goes away.
+
+I've long refused to reintroduce a device-type or speed switch to the
+daemon for exactly the same reason -- I don't want us to have an easy
+out from making the packet-sniffer and hunt loop work correctly.
+
+So.  Please go figure out why your GPS is laggy in SiRF mode, or bug SiRF
+technical support until you get an answer.  That's what you *really*
+need to know.  Solve the problem, don't just evade it!
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005103.html">[Gpsd-dev] [Gpsd-commit-watch] r3548 - trunk
+</A></li>
+	<LI>Next message: <A HREF="005104.html">[Gpsd-dev] cgps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5124">[ date ]</a>
+              <a href="thread.html#5124">[ thread ]</a>
+              <a href="subject.html#5124">[ subject ]</a>
+              <a href="author.html#5124">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,114 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GST time parsing
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GST%20time%20parsing&In-Reply-To=%3C1299565101.23077.631.camel%40rudd%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008694.html">
+   <LINK REL="Next"  HREF="008683.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GST time parsing</H1>
+    <B>Thomas Sprinkmeier</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GST%20time%20parsing&In-Reply-To=%3C1299565101.23077.631.camel%40rudd%3E"
+       TITLE="[Gpsd-dev] GST time parsing">thomas.sprinkmeier at cohdawireless.com
+       </A><BR>
+    <I>Tue Mar  8 07:18:21 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008694.html">[Gpsd-dev] GST time parsing
+</A></li>
+        <LI>Next message: <A HREF="008683.html">[Gpsd-dev] [PATCH 1/4] webgps.py: use the HTML5 &lt;canvas&gt; instead of SVG
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8707">[ date ]</a>
+              <a href="thread.html#8707">[ thread ]</a>
+              <a href="subject.html#8707">[ subject ]</a>
+              <a href="author.html#8707">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Fri, 2011-03-04 at 17:55 -0500, Eric Raymond wrote:
+&gt;<i> Thomas Sprinkmeier &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas.sprinkmeier at cohdawireless.com</A>&gt;:
+</I>&gt;<i> &gt; I think I'm missing something in my GPGST processing.
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; When I run &quot;gpspipe -r&quot; I get
+</I>&gt;<i> &gt; $GPRMC,004702.90,...
+</I>&gt;<i> &gt; $GPGST,004703.00,...
+</I>&gt;<i> &gt; $GPGGA,004703.00,...
+</I>&gt;<i> &gt; $GPRMC,004703.00,...
+</I>&gt;<i> &gt; $GPGGA,004703.10,...
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; (note the timestamps), but when I run &quot;gpspipe -w&quot; I get
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; {&quot;class&quot;:&quot;GST&quot;,&quot;tag&quot;:&quot;GST&quot;,&quot;device&quot;:&quot;/dev/ttygps&quot;,&quot;time&quot;:&quot;1970-01-01T01:19:01.50Z&quot;,...
+</I>&gt;<i> &gt; {&quot;class&quot;:&quot;TPV&quot;,&quot;tag&quot;:&quot;RMC&quot;,&quot;device&quot;:&quot;/dev/ttygps&quot;,&quot;time&quot;:&quot;2010-11-23T00:47:41.50Z&quot;,...
+</I>&gt;<i> &gt; {&quot;class&quot;:&quot;GST&quot;,&quot;tag&quot;:&quot;GST&quot;,&quot;device&quot;:&quot;/dev/ttygps&quot;,&quot;time&quot;:&quot;1970-01-01T01:19:01.60Z&quot;,...
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; Should I call
+</I>&gt;<i> &gt; 	register_fractional_time()
+</I>&gt;<i> &gt; or will that mess up cycle detection (i.e. is there a better way)?
+</I>&gt;<i> 
+</I>&gt;<i> Almost certainly yes, you should.  
+</I>
+Yup, that did it.
+
+Sorry about the slow turnaround, haven't had access to the HW.
+
+---
+ driver_nmea.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/driver_nmea.c b/driver_nmea.c
+index 7a7ac55..2a47e1f 100644
+--- a/driver_nmea.c
++++ b/driver_nmea.c
+@@ -441,6 +441,7 @@ static gps_mask_t processGPGST(int count, char
+*field[], struct gps_device_t *se
+     session-&gt;gpsdata.gst.lon_err_deviation   = PARSE_FIELD(7);
+     session-&gt;gpsdata.gst.alt_err_deviation   = PARSE_FIELD(8);
+ #undef PARSE_FIELD
++    register_fractional_time(field[0], field[1], session);
+ 
+     gpsd_report(LOG_DATA,
+                &quot;GST: utc = %.2f, rms = %.2f, maj = %.2f, min = %.2f,
+ori = %.2f, lat = %.2f, lon = %.2f, alt = %.2f\n&quot;,
+-- 
+1.7.0.4
+
+
+
+Thomas
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008694.html">[Gpsd-dev] GST time parsing
+</A></li>
+	<LI>Next message: <A HREF="008683.html">[Gpsd-dev] [PATCH 1/4] webgps.py: use the HTML5 &lt;canvas&gt; instead of SVG
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8707">[ date ]</a>
+              <a href="thread.html#8707">[ thread ]</a>
+              <a href="subject.html#8707">[ subject ]</a>
+              <a href="author.html#8707">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,111 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Input packets buffering bug(s)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3CAANLkTim1joAvlp-el_4CELGoyqpUSlMuShWDCrY_3Cf_%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007759.html">
+   <LINK REL="Next"  HREF="007761.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Input packets buffering bug(s)</H1>
+    <B>Olivier Cornu</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3CAANLkTim1joAvlp-el_4CELGoyqpUSlMuShWDCrY_3Cf_%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Input packets buffering bug(s)">o.cornu at gmail.com
+       </A><BR>
+    <I>Sun May 23 23:55:13 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007759.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+        <LI>Next message: <A HREF="007761.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7760">[ date ]</a>
+              <a href="thread.html#7760">[ thread ]</a>
+              <a href="subject.html#7760">[ subject ]</a>
+              <a href="author.html#7760">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sun, May 23, 2010 at 22:59, Remco Treffkorn &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>&gt; wrote:
+&gt;<i> If you want o overcome my low iq and my lazyness, please take the time to explain the
+</I>&gt;<i> problem so that I can understand it without investing a lot of time on a problem that
+</I>&gt;<i> has a low probability to exist.
+</I>
+I'm sorry, i think i explained it the best i could. Perhaps someone
+else can do better?
+Anyhow, i believe you'd get it if you spent roughly as much time
+trying as you've spent writing this answer (no irony intended).
+
+
+&gt;<i> On Sunday 23 May 2010, Olivier Cornu wrote:
+</I>&gt;&gt;<i> To cut it short, the design wrongly assumes packets will be received
+</I>&gt;&gt;<i> one-at-a-time.
+</I>&gt;<i>
+</I>&gt;<i> Are you talking about gps data from the serial port?
+</I>&gt;<i> If yes, then what is your definition of 'packet'?
+</I>
+Anything that is returned by packet_get() [packet.c:1639]. More
+precisely, what's copied in gps_packet_t.outbuffer by packet_accept()
+[packet.c:1042] after a successful packet_parse().
+In my context: a NMEA sentence.
+
+&gt;&gt;<i> GPS device may actually send them one-at-a-time, yet there is no
+</I>&gt;&gt;<i> guarantee that's how they'll be received by gpsd.
+</I>&gt;<i>
+</I>&gt;<i> What?
+</I>
+What if 3.14 packets have been received over the serial line the next
+time you poll for input and read as much of it as you can
+[packet.c:1646]?
+
+&gt;<i> Please also address the point why in all the time gpsd is in use nobody has been bitten
+</I>&gt;<i> by this bug.
+</I>
+Probably because GPS devices usually send packets one at a time,
+slowly enough to let gpsd process them one by one, and regularly
+enough to keep the lag small if ever two packets arrived at once.
+I've talked about it on #gpsd and i'm definitely not the first one to
+experience this kind of bug.
+
+Do you have any proof nobody was ever bitten by this bug?
+
+&gt;<i> Extraordinary claims require extraordinary proof.
+</I>
+Proofs need people willing to understand them.
+
+
+-- 
+Olivier
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007759.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+	<LI>Next message: <A HREF="007761.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7760">[ date ]</a>
+              <a href="thread.html#7760">[ thread ]</a>
+              <a href="subject.html#7760">[ subject ]</a>
+              <a href="author.html#7760">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

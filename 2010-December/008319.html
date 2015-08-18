@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] test_gpsmm.cpp broken
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20test_gpsmm.cpp%20broken&In-Reply-To=%3CAANLkTikNrUyj6rSONvq0SWzFvB1voSDubOdnYxwb_1sc%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008313.html">
+   <LINK REL="Next"  HREF="008337.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] test_gpsmm.cpp broken</H1>
+    <B>Jon Schlueter</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20test_gpsmm.cpp%20broken&In-Reply-To=%3CAANLkTikNrUyj6rSONvq0SWzFvB1voSDubOdnYxwb_1sc%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] test_gpsmm.cpp broken">jon.schlueter at gmail.com
+       </A><BR>
+    <I>Fri Dec 17 20:56:41 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008313.html">[Gpsd-dev] test_gpsmm.cpp broken
+</A></li>
+        <LI>Next message: <A HREF="008337.html">[Gpsd-dev] test_gpsmm.cpp broken
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8319">[ date ]</a>
+              <a href="thread.html#8319">[ thread ]</a>
+              <a href="subject.html#8319">[ subject ]</a>
+              <a href="author.html#8319">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Fri, Dec 17, 2010 at 7:43 AM, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> Jon Schlueter &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jon.schlueter at gmail.com</A>&gt;:
+</I>&gt;&gt;<i> my system has enough of the necessary parts that libQgpsmm is being
+</I>&gt;&gt;<i> build and I get the following [...]
+</I>&gt;&gt;<i> with the attached patch it compiles and passes but I'm not sure if
+</I>&gt;&gt;<i> this is the correct thing to do...
+</I>&gt;<i>
+</I>&gt;<i> I should probably get more sleep. &#160;I just pushed what I thought was
+</I>&gt;<i> a more elegant fix for this problem, adding libgps.la to the link list
+</I>&gt;<i> for the libgpsmm binary.
+</I>&gt;<i>
+</I>&gt;<i> Except I just moved the stub definition of gpsd_report() out of there
+</I>&gt;<i> to libgpsd.la to fix a different bug. And that fix probably solves
+</I>&gt;<i> your problem too.
+</I>&gt;<i>
+</I>&gt;<i> Please try building with git head.
+</I>
+now I have a different failure
+
+$ make
+make  all-am
+make[1]: Entering directory `/home/jschlueter/projects/gpsd-git'
+make[1]: *** No rule to make target `gpsd_report.c', needed by
+`stamp-qt'.  Stop.
+make[1]: Leaving directory `/home/jschlueter/projects/gpsd-git'
+make: *** [all] Error 2
+
+removing the reference to gpsd_report.c for the qt library seems to help...
+
+diff --git a/Makefile.am b/Makefile.am
+index 27f54e6..4d0f727 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -333,7 +333,6 @@ QTLIB_sources = gpsutils.c \
+                libgpsmm.cpp \
+                libgps_json.c \
+                hex.c \
+-               gpsd_report.c \
+                strl.c \
+                shared_json.c \
+                rtcm2_json.c \
+diff --git a/libQgpsmm/libQgpsmm.pro b/libQgpsmm/libQgpsmm.pro
+index ecd3e98..a978e51 100644
+--- a/libQgpsmm/libQgpsmm.pro
++++ b/libQgpsmm/libQgpsmm.pro
+@@ -21,7 +21,6 @@ SOURCES += \
+     ../libgpsmm.cpp \
+     ../libgps_json.c \
+     ../hex.c \
+-    ../gpsd_report.c \
+     ../strl.c \
+     ../shared_json.c \
+     ../rtcm2_json.c \
+
+but with those it fails at:
+
+$ make check
+make  check-am
+make[1]: Entering directory `/home/jschlueter/projects/gpsd-git'
+make  test_float test_trig test_bits test_packet test_mkgmtime
+test_geoid test_json test_gpsmm test_qgpsmm
+make[2]: Entering directory `/home/jschlueter/projects/gpsd-git'
+make[2]: `test_float' is up to date.
+make[2]: `test_trig' is up to date.
+/bin/bash ./libtool --tag=CC   --mode=link gcc  -g -O2 -Wextra -Wall
+-Wno-missing-field-initializers -Wcast-align -Wmissing-declarations
+-Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type
+-D_GNU_SOURCE    -o test_bits test_bits.o -lc libgpsd.la libgps.la
+libtool: link: gcc -g -O2 -Wextra -Wall
+-Wno-missing-field-initializers -Wcast-align -Wmissing-declarations
+-Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type
+-D_GNU_SOURCE -o .libs/test_bits test_bits.o  -lc ./.libs/libgpsd.so
+./.libs/libgps.so
+./.libs/libgpsd.so: undefined reference to `gpsd_report'
+collect2: ld returned 1 exit status
+make[2]: *** [test_bits] Error 1
+make[2]: Leaving directory `/home/jschlueter/projects/gpsd-git'
+make[1]: *** [check-am] Error 2
+make[1]: Leaving directory `/home/jschlueter/projects/gpsd-git'
+make: *** [check] Error 2
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008313.html">[Gpsd-dev] test_gpsmm.cpp broken
+</A></li>
+	<LI>Next message: <A HREF="008337.html">[Gpsd-dev] test_gpsmm.cpp broken
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8319">[ date ]</a>
+              <a href="thread.html#8319">[ thread ]</a>
+              <a href="subject.html#8319">[ subject ]</a>
+              <a href="author.html#8319">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

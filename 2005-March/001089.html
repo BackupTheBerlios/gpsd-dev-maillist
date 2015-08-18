@@ -1,0 +1,94 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-commit-watch] r2160 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r2160%20-%20trunk&In-Reply-To=%3C24347.213.84.187.156.1111999280.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001088.html">
+   <LINK REL="Next"  HREF="001090.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-commit-watch] r2160 - trunk</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r2160%20-%20trunk&In-Reply-To=%3C24347.213.84.187.156.1111999280.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-commit-watch] r2160 - trunk">gpsd at xs4all.nl
+       </A><BR>
+    <I>Mon Mar 28 10:41:20 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001088.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2160 - trunk
+</A></li>
+        <LI>Next message: <A HREF="001090.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2160 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1089">[ date ]</a>
+              <a href="thread.html#1089">[ thread ]</a>
+              <a href="subject.html#1089">[ subject ]</a>
+              <a href="author.html#1089">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> -----BEGIN PGP SIGNED MESSAGE-----
+</I>&gt;<i> Hash: SHA1
+</I>&gt;<i>
+</I>&gt;<i> Yo Eric!
+</I>&gt;<i>
+</I>&gt;<i> On Mon, 28 Mar 2005, Eric S. Raymond at BerliOS wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Log:
+</I>&gt;&gt;<i> Rob Janssen's patches for timezone issues.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> This adds in the timezone then removes it back out!
+</I>
+I sent those patches to remove the worst problems (some things were added
+with the wrong sign and the error compensated in the offset between GPS
+and Unix time).
+However, at the same time I propose to remove all use of localtime related
+libc functions in the code.
+Using localtime and adding some offset is always going to cause problems. 
+At the very least there will be trouble around the DST changes, but there
+are also bugs in various libraries.
+
+Functions like gmtime of course are OK, but unfortunately due to the
+design of libc not all date/time functions have a UTC/GMT version.  For
+those that don't, it is better to write a function from scratch than to
+try to use a localtime function and add-in some offset.
+
+There is a call to localtime_r in libgpsd_core.c that should be replaced
+by gmtime_r (I think without offset, shouldn't the time in NMEA messages
+be UTC not localtime?)
+
+Rob
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001088.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2160 - trunk
+</A></li>
+	<LI>Next message: <A HREF="001090.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2160 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1089">[ date ]</a>
+              <a href="thread.html#1089">[ thread ]</a>
+              <a href="subject.html#1089">[ subject ]</a>
+              <a href="author.html#1089">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

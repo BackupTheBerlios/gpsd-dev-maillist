@@ -1,0 +1,138 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Availability of pkg-config
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Availability%20of%20pkg-config&In-Reply-To=%3C20110303192448.GA23849%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008665.html">
+   <LINK REL="Next"  HREF="008675.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Availability of pkg-config</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Availability%20of%20pkg-config&In-Reply-To=%3C20110303192448.GA23849%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Availability of pkg-config">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Mar  3 20:24:49 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008665.html">[Gpsd-dev] Availability of pkg-config
+</A></li>
+        <LI>Next message: <A HREF="008675.html">[Gpsd-dev] Availability of pkg-config
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8670">[ date ]</a>
+              <a href="thread.html#8670">[ thread ]</a>
+              <a href="subject.html#8670">[ subject ]</a>
+              <a href="author.html#8670">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+&gt;<i> It is a ground-up reimplementation I originally started for the
+</I>&gt;<i> Kyocera KR1 EVDO to WIFI router- sort of a very early mifi with
+</I>&gt;<i> hackable firmware.  It logs data to KMZ files.  This was a 100Mhz MIPS
+</I>&gt;<i> processor, and I was under 5% cpu.
+</I>
+Is GPSD over this figure?  How would I measure it?
+
+How do you get a performance advantage over GPSD stripped to handle NMEA only?
+
+I think I understand about the FP issue.  In an NMEA-only GPSD build I
+think the only FP would be in the error-modeling code and the handling
+of $PGRME/$GPGBS.  Please consider implementing a NOFLOAT config
+option for GPSD that would condition all that stuff out - I'd
+cheerfully help with this.
+ 
+&gt;<i> That was the basis for the nokia tablet version that also did vehicle logging.
+</I>&gt;<i> 
+</I>&gt;<i> My old version for the nSeries tablets (also in maemo.org's diablo repository)
+</I>&gt;<i> 
+</I>&gt;<i> <A HREF="https://github.com/tz1/minigpsd">https://github.com/tz1/minigpsd</A>
+</I>
+I'm looking at both that and webgpsd now.
+ 
+&gt;<i> The current work in progress - it uses HTML5 canvas to show the
+</I>&gt;<i> satellite status page and a few other things.  I've been busy and
+</I>&gt;<i> waiting for the feature freeze, and need to get to work (it
+</I>&gt;<i> multiplexes multiple GPS sources as well as other data to log).  I
+</I>&gt;<i> really need to do something about the security, but I need to verify
+</I>&gt;<i> the featureset first:  For now the multiple GPSes come from Python
+</I>&gt;<i> scripts, e.g. the bluetooth version even does pairing, and there is a
+</I>&gt;<i> log-replay feeder.
+</I>&gt;<i> 
+</I>&gt;<i> <A HREF="https://github.com/tz1/webgpsd">https://github.com/tz1/webgpsd</A>
+</I>
+If you're determined to reimplement I can't prevent it, of course.
+But GPSD is designed to be stripped down to a very small set of
+running gears for NMEA-only devices; I wish you'd work with us to
+tighten up and slim down that build, rather than duplicating a lot of
+our effort.
+
+Do you know about Gypsy?  It too, was an attempt to ship a leaner, meaner
+GPSD replacement. It was a technical success at its (necessarily) more 
+limited goals, but an uptake failure.  There was pro-forma
+support for it put into in a couple of projects like OpenMoko from
+back around when Gypsy launched in 2008, but AFAIK nobody's actually
+using it for production. The last code commit was eleven months ago.
+
+Gypsy stalled out for several reasons.  One is that GPSD has a level
+of name recognition and a reliability track record that's tough for
+any new competitor to match. Another is that the application domain is
+so replete with hardware quirks and protocol black art that it puts a
+*very* heavy premium on kinds of domain experience that new projects
+can't readily duplicate.  A third is our test infrastructure; more
+than half the problem is demonstrating that the code is correct and
+keeping it stable against the tendency to bitrot.
+
+When I look at minigpsd/webgpsd, I see the second coming of Gypsy.
+You clearly have some good ideas, and you've chosen a mission that a
+full-featured GPSD build is probably too heavyweight for.  But, honestly, I
+think you're likely to stall out in the same way Gypsy did.
+
+It would be better for everyone if we co-opted each other.  There's
+precedent; the lead dev of another GPSD competitor, ngpsd, was welcomed
+here and active for several years.  He decided ngpsd was unnecessary, 
+and we still have the specialized client he wrote under maintainance.
+
+You'd get the GPSD test infrastructure, which is no trivial thing.
+I'd like to have your Bluetooth-pairing and HTML5 support.  More
+generally, I'd *love* to have a dev on the project who cares day-to-day 
+about the low-power embedded stuff - I want to cover those devices,
+but I don't have the right hardware-test setup to do it.
+
+Gypsy was a well-intentioned waste of talent. Please, let's work together 
+to avoid another such.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008665.html">[Gpsd-dev] Availability of pkg-config
+</A></li>
+	<LI>Next message: <A HREF="008675.html">[Gpsd-dev] Availability of pkg-config
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8670">[ date ]</a>
+              <a href="thread.html#8670">[ thread ]</a>
+              <a href="subject.html#8670">[ subject ]</a>
+              <a href="author.html#8670">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

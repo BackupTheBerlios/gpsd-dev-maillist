@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] odd bug with gps_device string being lost/overwritten
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20odd%20bug%20with%20gps_device%20string%20being%20lost/overwritten&In-Reply-To=%3C200505181539.04122.lmendez19%40austin.rr.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001740.html">
+   <LINK REL="Next"  HREF="001742.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] odd bug with gps_device string being lost/overwritten</H1>
+    <B>Lonnie Mendez</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20odd%20bug%20with%20gps_device%20string%20being%20lost/overwritten&In-Reply-To=%3C200505181539.04122.lmendez19%40austin.rr.com%3E"
+       TITLE="[Gpsd-dev] odd bug with gps_device string being lost/overwritten">lmendez19 at austin.rr.com
+       </A><BR>
+    <I>Wed May 18 22:39:04 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001740.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2463 - trunk
+</A></li>
+        <LI>Next message: <A HREF="001742.html">[Gpsd-dev] odd bug with gps_device string being lost/overwritten
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1741">[ date ]</a>
+              <a href="thread.html#1741">[ thread ]</a>
+              <a href="subject.html#1741">[ subject ]</a>
+              <a href="author.html#1741">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE> Problem: gps_device string, ie: /dev/tts/USB0, is being lost (set to NULL?)
+ Mode: nmea mode only.
+ Receiver: delorme earthmate using cypress_m8 driver (SirfII/NMEA)
+ GPSD version - 2.24:
+  (this happens with previous versions, but 2.24 is the only one that
+ compiles with --disable-sirfII without any hacks)
+ configure line: --prefix=/usr --x-include=/usr/X11R6/include --disable-sirfII
+
+ I run the daemon in a terminal with flags 'gpsd -f /dev/tts/USB0 -D4 -N'
+
+gpsd: =&gt; client(4): $GPGGA,200738.843,0000.0000,N,00000.0000,E,0,00,50.0,0.0,M,0.0,M,0.0,0000*77
+gpsd: &lt;= GPS: $GPGSA,A,1,,,,,,,,,,,,,50.0,50.0,50.0*05
+gpsd: GPGSA sets mode 1
+gpsd: =&gt; client(4): $GPGSA,A,1,,,,,,,,,,,,,50.0,50.0,50.0*05
+gpsd: checking 4             &lt;- client disconnects
+gpsd: closing GPS=(null)   &lt;- daemon loses device name?
+gpsd: client connect on 4  &lt;- client connects again, at which point daemon hangs or segfaults
+gpsd: checking 4
+gpsd: &lt;= client: r
+gpsd: closing GPS=(null)
+gpsd: opening GPS data source at '(null)'
+gpsd: device open failed: Bad address
+gpsd: 4 turned on raw mode
+gpsd: =&gt; client(4): GPSD,R=1
+gpsd: checking 4
+gpsd: closing GPS=(null)
+
+&lt;client can continue to issue commands, but device name string has bit the dust&gt;
+
+ To achieve this result, I used telnet to open/close connection to the device.  On each connect I used the
+'r' flag to toggle raw mode which also opens the device.  On each connect I waited 4-5 seconds after issuing
+raw command before closing connection.  I then immediately reconnect.
+
+ I do this about 3-8 times before the above result happens.  I'm guessing this hasn't been reported yet as
+most people are compiling with sirf support.  I also ran this in gdb, the below is the output followed by another
+session.  I've looked over the code but found no outright obvious fix... thanks for any input.
+
+gpsd: checking 7
+gpsd: &lt;= client: r
+gpsd: closing GPS=(null)
+gpsd: opening GPS data source at '(null)'
+gpsd: device open failed: Bad address
+gpsd: 7 turned on raw mode
+gpsd: =&gt; client(7): GPSD,R=1
+gpsd: checking 7
+gpsd: &lt;= client: f=/dev/tts/USB0
+gpsd: &lt;= client(7): switching to /dev/tts/USB0
+
+Program received signal SIGSEGV, Segmentation fault.
+0x400b08b8 in strcmp () from /lib/libc.so.6
+(gdb) bt
+#0  0x400b08b8 in strcmp () from /lib/libc.so.6
+#1  0x080498c8 in find_device (device_name=0x8059410 &quot;/dev/tts/USB0&quot;)
+    at gpsd.c:295
+#2  0x0804b320 in handle_request (cfd=7, buf=0xbfffaec0 &quot;f=/dev/tts/USB0\r\n&quot;,
+    buflen=17) at gpsd.c:469
+#3  0x0804c005 in main (argc=17, argv=0x7) at gpsd.c:1102
+(gdb)        
+
+gpsd: &lt;= GPS: $GPRMC,202815.373,V,2959.3477,N,09804.8086,W,0.00,0.00,180505,,*07
+gpsd: =&gt; client(7): $GPRMC,202815.373,V,2959.3477,N,09804.8086,W,0.00,0.00,180505,,*07
+gpsd: &lt;= GPS: $Ack Input105.
+gpsd: found $Ack Input105..
+gpsd: Selecting SiRF-II NMEA driver...
+gpsd: =&gt; GPS: $PSRF105,0*3F
+
+gpsd: =&gt; GPS: $PSRF103,05,00,00,01*21
+
+gpsd: =&gt; GPS: $PSRF103,01,00,00,01*25
+
+gpsd: &lt;= GPS: $GPGSA,A,1,,,,,,,,,,,,,50.0,50.0,50.0*05
+gpsd: GPGSA sets mode 1
+gpsd: =&gt; client(7): $GPGSA,A,1,,,,,,,,,,,,,50.0,50.0,50.0*05
+gpsd: &lt;= GPS: $GPGSV,3,1,12,15,75,168,35,14,61,276,36,22,59,005,36,18,47,062,00*71
+gpsd: Partial satellite data (1 of 3).
+gpsd: =&gt; client(7): $GPGSV,3,1,12,15,75,168,35,14,61,276,36,22,59,005,36,18,47,062,00*71
+gpsd: &lt;= GPS: $GPGSV,3,2,12,21,33,148,33,09,28,051,00,01,26,244,00,03,17,264,*70
+gpsd: Partial satellite data (2 of 3).
+gpsd: =&gt; client(7): $GPGSV,3,2,12,21,33,148,33,09,28,051,00,01,26,244,00,03,17,264,*70
+gpsd: checking 7
+gpsd: closing GPS=(null)
+gpsd: client connect on 7
+gpsd: checking 7
+gpsd: &lt;= client: r
+gpsd: closing GPS=(null)
+gpsd: opening GPS data source at '(null)'
+gpsd: device open failed: Bad address
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001740.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2463 - trunk
+</A></li>
+	<LI>Next message: <A HREF="001742.html">[Gpsd-dev] odd bug with gps_device string being lost/overwritten
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1741">[ date ]</a>
+              <a href="thread.html#1741">[ thread ]</a>
+              <a href="subject.html#1741">[ subject ]</a>
+              <a href="author.html#1741">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,201 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] fix configure test for libusb
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20fix%20configure%20test%20for%20libusb&In-Reply-To=%3C4C333B5B.8010908%40bzed.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008021.html">
+   <LINK REL="Next"  HREF="008027.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] fix configure test for libusb</H1>
+    <B>Bernd Zeimetz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20fix%20configure%20test%20for%20libusb&In-Reply-To=%3C4C333B5B.8010908%40bzed.de%3E"
+       TITLE="[Gpsd-dev] [PATCH] fix configure test for libusb">bernd at bzed.de
+       </A><BR>
+    <I>Tue Jul  6 16:19:07 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008021.html">[Gpsd-dev] [PATCH] fix configure test for libusb
+</A></li>
+        <LI>Next message: <A HREF="008027.html">[Gpsd-dev] regression test status - ac12_binary not ok
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8025">[ date ]</a>
+              <a href="thread.html#8025">[ thread ]</a>
+              <a href="subject.html#8025">[ subject ]</a>
+              <a href="author.html#8025">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Thanks for the patch, applying right now.
+
+Next time it would be appreciated if you could create a patch against the latest
+git master head, makes applying easier. But thanks to git it was not too hard to
+merge it into the current tree :)
+
+On 07/06/2010 02:47 AM, Graham Gower wrote:
+&gt;<i> The configure test for libusb fails on systems where libusb is
+</I>&gt;<i> not in /usr/include and /usr/lib (e.g. 64 bit systems have
+</I>&gt;<i> /usr/lib64 or e.g. when cross compiling).
+</I>&gt;<i> 
+</I>&gt;<i> Use pkg-config instead.
+</I>&gt;<i> 
+</I>&gt;<i> diff -ru gpsd-2.94-orig/Makefile.am gpsd-2.94/Makefile.am
+</I>&gt;<i> --- gpsd-2.94-orig/Makefile.am	2010-04-20 19:07:21.000000000 +0930
+</I>&gt;<i> +++ gpsd-2.94/Makefile.am	2010-07-06 10:03:02.000000000 +0930
+</I>&gt;<i> @@ -42,7 +42,7 @@
+</I>&gt;<i>  endif
+</I>&gt;<i>  
+</I>&gt;<i>  # Conditional includes.
+</I>&gt;<i> -INCLUDES = $(INCUSB)
+</I>&gt;<i> +INCLUDES = $(LIBUSB_CFLAGS)
+</I>&gt;<i>  if HAVE_DBUS
+</I>&gt;<i>  INCLUDES += $(DBUS_CFLAGS) $(DBUS_GLIB_CFLAGS) -DDBUS_API_SUBJECT_TO_CHANGE=1
+</I>&gt;<i>  endif
+</I>&gt;<i> @@ -105,13 +105,13 @@
+</I>&gt;<i>  #
+</I>&gt;<i>  gpsd_c_sources = gpsd_dbus.c gpsd.c
+</I>&gt;<i>  gpsd_SOURCES = $(gpsd_c_sources) gpsd_dbus.h
+</I>&gt;<i> -gpsd_LDADD = $(DBUS_LIBS) $(LIBM) libgpsd.la libgps.la -lm $(LIBPTHREAD) $(LIBUSB)
+</I>&gt;<i> +gpsd_LDADD = $(DBUS_LIBS) $(LIBM) libgpsd.la libgps.la -lm $(LIBPTHREAD) $(LIBUSB_LIBS)
+</I>&gt;<i>  
+</I>&gt;<i>  #
+</I>&gt;<i>  # Build gpsctl
+</I>&gt;<i>  #
+</I>&gt;<i>  gpsctl_SOURCES = gpsctl.c
+</I>&gt;<i> -gpsctl_LDADD = $(LIBM) libgpsd.la libgps.la -lm $(LIBPTHREAD) $(LIBUSB)
+</I>&gt;<i> +gpsctl_LDADD = $(LIBM) libgpsd.la libgps.la -lm $(LIBPTHREAD) $(LIBUSB_LIBS)
+</I>&gt;<i>  
+</I>&gt;<i>  #
+</I>&gt;<i>  # Build gpspipe
+</I>&gt;<i> @@ -131,13 +131,13 @@
+</I>&gt;<i>  gpsmon_SOURCES = gpsmon.c monitor_nmea.c monitor_sirf.c \
+</I>&gt;<i>  	monitor_italk.c monitor_ubx.c monitor_superstar2.c \
+</I>&gt;<i>  	monitor_oncore.c monitor_tnt.c
+</I>&gt;<i> -gpsmon_LDADD = $(LIBM) $(NCURSES_LIBS) libgpsd.la libgps.la -lm $(LIBPTHREAD)  $(LIBUSB)
+</I>&gt;<i> +gpsmon_LDADD = $(LIBM) $(NCURSES_LIBS) libgpsd.la libgps.la -lm $(LIBPTHREAD)  $(LIBUSB_LIBS)
+</I>&gt;<i>  
+</I>&gt;<i>  #
+</I>&gt;<i>  # Build gpsdecode
+</I>&gt;<i>  #
+</I>&gt;<i>  gpsdecode_SOURCES = gpsdecode.c
+</I>&gt;<i> -gpsdecode_LDADD = $(LIBM) libgpsd.la libgps.la -lm $(LIBPTHREAD)  $(LIBUSB)
+</I>&gt;<i> +gpsdecode_LDADD = $(LIBM) libgpsd.la libgps.la -lm $(LIBPTHREAD)  $(LIBUSB_LIBS)
+</I>&gt;<i>  
+</I>&gt;<i>  #
+</I>&gt;<i>  # Build shared libraries
+</I>&gt;<i> @@ -309,20 +309,20 @@
+</I>&gt;<i>  # Build test_gpsmm
+</I>&gt;<i>  #
+</I>&gt;<i>  test_gpsmm_SOURCES = test_gpsmm.cpp
+</I>&gt;<i> -test_gpsmm_LDADD = $(LIBC) libgps.la -lm  $(LIBUSB)
+</I>&gt;<i> +test_gpsmm_LDADD = $(LIBC) libgps.la -lm  $(LIBUSB_LIBS)
+</I>&gt;<i>  endif
+</I>&gt;<i>  
+</I>&gt;<i>  #
+</I>&gt;<i>  # Build test_bits tester
+</I>&gt;<i>  #
+</I>&gt;<i>  test_bits_SOURCES = test_bits.c
+</I>&gt;<i> -test_bits_LDADD = $(LIBC) libgpsd.la libgps.la  $(LIBUSB)
+</I>&gt;<i> +test_bits_LDADD = $(LIBC) libgpsd.la libgps.la  $(LIBUSB_LIBS)
+</I>&gt;<i>  
+</I>&gt;<i>  #
+</I>&gt;<i>  # Build packets tester
+</I>&gt;<i>  #
+</I>&gt;<i>  test_packet_SOURCES = test_packet.c
+</I>&gt;<i> -test_packet_LDADD = $(LIBC) libgpsd.la libgps.la -lm  $(LIBUSB)
+</I>&gt;<i> +test_packet_LDADD = $(LIBC) libgpsd.la libgps.la -lm  $(LIBUSB_LIBS)
+</I>&gt;<i>  
+</I>&gt;<i>  #
+</I>&gt;<i>  # Build geoid model tester
+</I>&gt;<i> @@ -495,7 +495,7 @@
+</I>&gt;<i>  	$(CC) $(CFLAGS) -o libgps -lm -DTESTMAIN $(LIBPTHREAD) -g libgps_core.c .libs/libgps.a
+</I>&gt;<i>  
+</I>&gt;<i>  # Report splint warnings
+</I>&gt;<i> -SPLINTOPTS = -I/usr/include/dbus-1.0/ $(INCUSB) +quiet
+</I>&gt;<i> +SPLINTOPTS = -I/usr/include/dbus-1.0/ $(LIBUSB_CFLAGS) +quiet
+</I>&gt;<i>  splint: gpsd.h packet_names.h
+</I>&gt;<i>  	@echo &quot;Running splint on daemon and libraries...&quot;
+</I>&gt;<i>  	-splint $(SPLINTOPTS) -exportlocal -redef $(gpsd_c_sources) $(libgpsd_c_sources) $(libgps_c_sources)
+</I>&gt;<i> diff -ru gpsd-2.94-orig/configure.ac gpsd-2.94/configure.ac
+</I>&gt;<i> --- gpsd-2.94-orig/configure.ac	2010-04-21 03:25:08.000000000 +0930
+</I>&gt;<i> +++ gpsd-2.94/configure.ac	2010-07-06 10:03:09.000000000 +0930
+</I>&gt;<i> @@ -233,30 +233,12 @@
+</I>&gt;<i>  	AC_DEFINE([HAVE_LIBPTHREAD], [], [pthread libraries are present])])
+</I>&gt;<i>  AC_SUBST(LIBPTHREAD)
+</I>&gt;<i>  
+</I>&gt;<i> -#
+</I>&gt;<i> -# We want libusb-1.x or later.  Checking for this is messy in 2010
+</I>&gt;<i> -# since many Linux systems ship with .0,1.x versions and that's 
+</I>&gt;<i> -# what you get if you check naively for -lusb.  
+</I>&gt;<i> -#
+</I>&gt;<i> -# We use the fact that the obsolete versions put their include file in
+</I>&gt;<i> -# /usr/include/usb.h, while the newer ones have it in 
+</I>&gt;<i> -# /usr/include/libusb-*/libusb.h
+</I>&gt;<i> -#
+</I>&gt;<i> -AC_MSG_CHECKING([for libusb version &gt;= 1.0.0])
+</I>&gt;<i> -if test -f /usr/include/libusb-*/libusb.h ;
+</I>&gt;<i> -then
+</I>&gt;<i> -    usb=$(basename /usr/lib/libusb-*.so | sed -e s/\.so// -e s/^lib//)
+</I>&gt;<i> -    AC_DEFINE([HAVE_LIBUSB], [], [will link with -l$usb; ])
+</I>&gt;<i> -    LIBUSB=-l${usb}
+</I>&gt;<i> -    INCUSB=-I/usr/include/lib${usb}
+</I>&gt;<i> -    ac_libusb=yes
+</I>&gt;<i> -    AC_MSG_RESULT([found.])
+</I>&gt;<i> -else
+</I>&gt;<i> -    ac_libusb=yes
+</I>&gt;<i> -    AC_MSG_RESULT([not found.])
+</I>&gt;<i> +PKG_CHECK_MODULES(LIBUSB, libusb-1.0 &gt;= 1.0.0, [ac_libusb=yes], [ac_libusb=no])
+</I>&gt;<i> +AC_SUBST(LIBUSB_LIBS)
+</I>&gt;<i> +AC_SUBST(LIBUSB_CFLAGS)
+</I>&gt;<i> +if test x&quot;$ac_libusb&quot; = x&quot;yes&quot; ; then
+</I>&gt;<i> +	AC_DEFINE([HAVE_LIBUSB], 1, [libusb support])
+</I>&gt;<i>  fi
+</I>&gt;<i> -AC_SUBST(LIBUSB)
+</I>&gt;<i> -AC_SUBST(INCUSB)
+</I>&gt;<i>  
+</I>&gt;<i>  AH_VERBATIM([_GNU_SOURCE],
+</I>&gt;<i>  	  [/* Some libc's don't have strlcat/strlcpy. Local copies are provided */
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>
+
+-- 
+ Bernd Zeimetz                            Debian GNU/Linux Developer
+ <A HREF="http://bzed.de">http://bzed.de</A>                                <A HREF="http://www.debian.org">http://www.debian.org</A>
+ GPG Fingerprints: 06C8 C9A2 EAAD E37E 5B2C BE93 067A AD04 C93B FF79
+                   ECA1 E3F2 8E11 2432 D485 DD95 EB36 171A 6FF9 435F
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008021.html">[Gpsd-dev] [PATCH] fix configure test for libusb
+</A></li>
+	<LI>Next message: <A HREF="008027.html">[Gpsd-dev] regression test status - ac12_binary not ok
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8025">[ date ]</a>
+              <a href="thread.html#8025">[ thread ]</a>
+              <a href="subject.html#8025">[ subject ]</a>
+              <a href="author.html#8025">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

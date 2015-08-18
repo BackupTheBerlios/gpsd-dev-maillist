@@ -1,0 +1,90 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-commit-watch] r2626 - in trunk: . test
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r2626%20-%20in%20trunk%3A%20.%20test&In-Reply-To=%3C20050613121902.GA22368%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002111.html">
+   <LINK REL="Next"  HREF="002123.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-commit-watch] r2626 - in trunk: . test</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r2626%20-%20in%20trunk%3A%20.%20test&In-Reply-To=%3C20050613121902.GA22368%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-commit-watch] r2626 - in trunk: . test">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Jun 13 14:19:02 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002111.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2626 - in trunk: . test
+</A></li>
+        <LI>Next message: <A HREF="002123.html">[Gpsd-dev] zodiac trace
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2118">[ date ]</a>
+              <a href="thread.html#2118">[ thread ]</a>
+              <a href="subject.html#2118">[ subject ]</a>
+              <a href="author.html#2118">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+&gt;<i> &gt; Refactor so the raw_hook dumping is done in handle_packet, after the
+</I>&gt;<i> &gt; driver is called, rather than within the driver.
+</I>&gt;<i> 
+</I>&gt;<i> I just took a look at this change.  It does appar to simplify things
+</I>&gt;<i> nicely.  I do notice one problem, the PGRME seems broken:
+</I>&gt;<i> 
+</I>&gt;<i> $PGRME,0.00,34.38,39.26*7D
+</I>&gt;<i> 
+</I>&gt;<i> The PGRME data fields are, in order, eph, epv and epe.  The garmin is
+</I>&gt;<i> prviding an EPH but it is getting zeroed zomehow.  I took a quick look
+</I>&gt;<i> at the code, the garmin is setting it, and the PGRME is built properly,
+</I>&gt;<i> so something must be stepping on it in the middle.
+</I>
+grep -n -e 'eph *=' *.c /dev/null
+garmin.c:294:	    session-&gt;gpsdata.fix.eph = pvt-&gt;eph;
+libgps.c:86:    fixp-&gt;eph = UNCERTAINTY_NOT_VALID;
+libgps.c:194:			   gpsdata-&gt;fix.eph = UNCERTAINTY_NOT_VALID;
+libgps.c:282:			    nf.eph = DEFAULT(eph, UNCERTAINTY_NOT_VALID);
+libgpsd_core.c:418:	session-&gt;gpsdata.fix.eph = session-&gt;gpsdata.hdop*UERE(session);
+nmea_parse.c:414:    out-&gt;fix.eph = atof(field[1]);
+zodiac.c:178:    session-&gt;gpsdata.fix.eph       = (int)getlong(40) * 1e-2;
+
+I looked at all these sites, and I don't see anything that looks wrong.
+My suspicion falls on libgpsd_core.c:418.  Maybe it would be a good
+idea for you to use gdb and set a breakpoint there -- see if it gets
+hit, and under what circumstances.  
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002111.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2626 - in trunk: . test
+</A></li>
+	<LI>Next message: <A HREF="002123.html">[Gpsd-dev] zodiac trace
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2118">[ date ]</a>
+              <a href="thread.html#2118">[ thread ]</a>
+              <a href="subject.html#2118">[ subject ]</a>
+              <a href="author.html#2118">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Unacceptable intrusivemess by the OnCore driver
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Unacceptable%20intrusivemess%20by%20the%20OnCore%20driver&In-Reply-To=%3CAANLkTimh-UDxQYra2FpU6EWaU8e%2BR%2BG7K2v6ZhuOkX6d%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008988.html">
+   <LINK REL="Next"  HREF="008990.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Unacceptable intrusivemess by the OnCore driver</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Unacceptable%20intrusivemess%20by%20the%20OnCore%20driver&In-Reply-To=%3CAANLkTimh-UDxQYra2FpU6EWaU8e%2BR%2BG7K2v6ZhuOkX6d%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Unacceptable intrusivemess by the OnCore driver">thomas at mich.com
+       </A><BR>
+    <I>Wed Mar 23 15:00:24 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008988.html">[Gpsd-dev] Unacceptable intrusivemess by the OnCore driver
+</A></li>
+        <LI>Next message: <A HREF="008990.html">[Gpsd-dev] Unacceptable intrusivemess by the OnCore driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8989">[ date ]</a>
+              <a href="thread.html#8989">[ thread ]</a>
+              <a href="subject.html#8989">[ subject ]</a>
+              <a href="author.html#8989">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I should ask this, and this might be a good place.
+
+There are time-only devices.  I have an inexpensive WWVB receiver that
+does a pulse-per-second synced with the atomic clock and returns time
+only, but very accurate, especially if you compensate for the distance
+from the transmitter (which need not be down to the meter).  This is
+not a GPS but is a precise timing device, returns the exact UTC time
+after one minute with a good signal, and has a per-second edge.
+
+Ror PPS to sync the system clock, the edge needs to be
+captured/compared with the system time, or otherwise correlated so
+that the second tick of the system can occur precisely when the edge
+does.  NTP has this for samples with PLL like code.  But some of the
+hardware driver seems to be in gpsd.  However to do things properly it
+really needs to be a kernel driver since you need to see things right
+after an interrupt, near zero latency and jitter.
+
+My problem with what is trying to be done with gpsd and PPS and ntp
+and timing is they might be related or overlapping, but doing precise
+PPS synchronization - or for that matter any time synchronization is a
+different function.  Maybe for a ppsd designed for the deeper hardware
+problems (which could use gpsd itself as a source for the timestamps
+or its infrastructure).
+
+On Wed, Mar 23, 2011 at 7:52 AM, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> H&#229;kan Johansson &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">f96hajo at chalmers.se</A>&gt;:
+</I>&gt;&gt;<i> Yes, definately ugly.
+</I>&gt;<i>
+</I>&gt;<i> I am glad you recognize this.
+</I>&gt;<i>
+</I>&gt;&gt;<i> The attached diff cleans libgpsd_core.c by removing the oncore
+</I>&gt;&gt;<i> references inside libgpsd_core.c, without stripping out the support
+</I>&gt;&gt;<i> functionality in the driver itself.
+</I>&gt;<i>
+</I>&gt;<i> I think I have already figured out how to do most of this the right way.
+</I>&gt;<i>
+</I>&gt;<i> First step: Introduce a new driver state flag PPSTIME_IS which signals that the
+</I>&gt;<i> driver has returned a timestamp that it thinks can be treated as precision
+</I>&gt;<i> time. &#160;The Garmin driver, for example, wants to set this bit from
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008988.html">[Gpsd-dev] Unacceptable intrusivemess by the OnCore driver
+</A></li>
+	<LI>Next message: <A HREF="008990.html">[Gpsd-dev] Unacceptable intrusivemess by the OnCore driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8989">[ date ]</a>
+              <a href="thread.html#8989">[ thread ]</a>
+              <a href="subject.html#8989">[ subject ]</a>
+              <a href="author.html#8989">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

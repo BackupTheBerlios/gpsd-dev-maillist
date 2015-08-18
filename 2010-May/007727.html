@@ -1,0 +1,133 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Possible bug with Trimble Thunderbolt
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Possible%20bug%20with%20Trimble%20Thunderbolt&In-Reply-To=%3C20100508124312.GA19303%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007725.html">
+   <LINK REL="Next"  HREF="007728.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Possible bug with Trimble Thunderbolt</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Possible%20bug%20with%20Trimble%20Thunderbolt&In-Reply-To=%3C20100508124312.GA19303%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Possible bug with Trimble Thunderbolt">esr at thyrsus.com
+       </A><BR>
+    <I>Sat May  8 14:43:12 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007725.html">[Gpsd-dev] Possible bug with Trimble Thunderbolt
+</A></li>
+        <LI>Next message: <A HREF="007728.html">[Gpsd-dev] Gpspipe modified
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7727">[ date ]</a>
+              <a href="thread.html#7727">[ thread ]</a>
+              <a href="subject.html#7727">[ subject ]</a>
+              <a href="author.html#7727">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Joe Davidson &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">nugins99 at gmail.com</A>&gt;:
+&gt;<i> The firmware rev that I get is:
+</I>&gt;<i>  gpsd: Software version: 3.0 020627 10.2 011114
+</I>
+Noted.
+ 
+&gt;<i> &gt; &gt; 1)   The primary time message (0x84ab)  comes out right before the
+</I>&gt;<i> &gt; position
+</I>&gt;<i> &gt; &gt; message (0x8fac).   The time message does not get reported to clients.
+</I>&gt;<i> &gt; &gt; There is a REPORT_IS message was not being added to the mask for the time
+</I>&gt;<i> &gt; &gt; messages.  Is this intentional?
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Yes.  The REPORT flag should be set only for the sentence that ends the
+</I>&gt;<i> &gt; device's reporting cycle.  Any time information from previous sentence
+</I>&gt;<i> &gt; should be a merged part of the report.
+</I>&gt;<i> &gt;
+</I>&gt;<i> 
+</I>&gt;<i> I don't think the reports are getting merged correctly.   I removed the
+</I>&gt;<i> &quot;REPORT_IS&quot; flag from the first message.   Without the REPORT flag,  cgps
+</I>&gt;<i> does not receive the time tag.  I'm just guessing that because cgps has a
+</I>&gt;<i> field for time, that the normal behavior is that clients will receive a time
+</I>&gt;<i> tag with the position updates.
+</I>
+The second version of your patch applied wgat I think is the correct
+fix for this problem, moving the CLEAR operation to the TIMING
+packet.  I have merged that fix.
+
+&gt;<i> &gt; &gt; 2) The receiver mode flag was always being reported as &quot;0&quot; whenever gpsd
+</I>&gt;<i> &gt; &gt; gets restarted.   If I power cycle the gps, the reciever mode gets forced
+</I>&gt;<i> &gt; &gt; back to &quot;4&quot; which  indicates the receiver has the full 3D position.
+</I>&gt;<i> &gt; &gt; Restarting gpsd again causes the receiver flag to zero out again.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; I don't understand this report, sorry.  You'll need to be specific about
+</I>&gt;<i> &gt; whose &quot;receiver mode flag&quot; this is, and how the actual behavior differs
+</I>&gt;<i> &gt; from the expected behavior.
+</I>&gt;<i> 
+</I>&gt;<i> This receiver mode is what is being reported by the GPS.   The receiver
+</I>&gt;<i> modes are:
+</I>&gt;<i> Auto/Time/2D/3D/DGPS Ref/Clock Hold(2D)/Overdetermined Clock.   The reciever
+</I>&gt;<i> mode field in the supplemental time packet for the thunderbolt is defined to
+</I>&gt;<i> hold the mode setting the GPS is currently configured for.   The manual
+</I>&gt;<i> seems to indicate that this field doesn't have anything to do with the
+</I>&gt;<i> current fix.
+</I>&gt;<i> 
+</I>&gt;<i> The code interprets this field to indicate what kind of fix the GPS
+</I>&gt;<i> currently has.   To verify this,   I started gpsd, had it detect &amp; configure
+</I>&gt;<i> the Thunderbolt.   Then I power cycled the GPS.  When the GPS came back up,
+</I>&gt;<i> the receiver mode was &quot;3D fix&quot;, but the Lat/Long/Alt reported by the GPS was
+</I>&gt;<i> 0/0/0.  (This worked this way because of a minor bug:  GPSD doesn't seem to
+</I>&gt;<i> recognize when the Trimble is powercycled and resend configuration).
+</I>&gt;<i> 
+</I>&gt;<i> The reciever mode flag is the mode the Thunderbolt is operating in.   In
+</I>&gt;<i> tsip_event_hook() the following lines force the trimble to an auto (2D/3D
+</I>&gt;<i> mode):
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i>         /* Set Position Fix Mode (auto 2D/3D) */
+</I>&gt;<i>         putbyte(buf, 0, 0x00);
+</I>&gt;<i>         (void)tsip_write(session, 0x22, buf, 1);
+</I>&gt;<i> 
+</I>&gt;<i> There is possibly a difference in how different trimble devices handle this
+</I>&gt;<i> command.  It appears that this command causes Thunderbolt (with the above SW
+</I>&gt;<i> version) to report &quot;Auto&quot; mode in the supplemental timing packet. Removing
+</I>&gt;<i> this command appears to fix the lack of position updates from getting
+</I>&gt;<i> reported to clients in my environment because the receiver will report that
+</I>&gt;<i> it is in a 3D mode.   I'm not advocating removing this line at this point
+</I>&gt;<i> because I believe it was put in for a reason.  (Maybe another trimble device
+</I>&gt;<i> or software version required it).
+</I>
+Is this still an issue?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007725.html">[Gpsd-dev] Possible bug with Trimble Thunderbolt
+</A></li>
+	<LI>Next message: <A HREF="007728.html">[Gpsd-dev] Gpspipe modified
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7727">[ date ]</a>
+              <a href="thread.html#7727">[ thread ]</a>
+              <a href="subject.html#7727">[ subject ]</a>
+              <a href="author.html#7727">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

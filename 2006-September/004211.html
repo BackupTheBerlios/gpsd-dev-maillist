@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] State of the J commmand patch.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20State%20of%20the%20J%20commmand%20patch.&In-Reply-To=%3C1157232038.7541.4.camel%40localhost.localdomain%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004208.html">
+   <LINK REL="Next"  HREF="004207.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] State of the J commmand patch.</H1>
+    <B>Stelian Pop</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20State%20of%20the%20J%20commmand%20patch.&In-Reply-To=%3C1157232038.7541.4.camel%40localhost.localdomain%3E"
+       TITLE="[Gpsd-dev] State of the J commmand patch.">stelian at popies.net
+       </A><BR>
+    <I>Sat Sep  2 23:20:37 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004208.html">[Gpsd-dev] State of the J commmand patch.
+</A></li>
+        <LI>Next message: <A HREF="004207.html">[Gpsd-dev] gpsd &amp; Mac OS X launchd(8)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4211">[ date ]</a>
+              <a href="thread.html#4211">[ thread ]</a>
+              <a href="subject.html#4211">[ subject ]</a>
+              <a href="author.html#4211">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Le samedi 02 septembre 2006 &#224; 01:44 -0400, Eric S. Raymond a &#233;crit :
+&gt;<i> Stelian Pop &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">stelian at popies.net</A>&gt;:
+</I>&gt;<i> &gt; I tried with cgps, and tried the 'j' command.
+</I>&gt;<i> 
+</I>&gt;<i> Please pull svn head and try again.  I found a bug in the way the upper-level
+</I>&gt;<i> logic was implemented.
+</I>
+Sorry for the delay.
+
+With the below patch on top of current SVN (r3441), the 'J' command
+finally works as it should.
+
+Stelian.
+
+Index: gpsd.c
+===================================================================
+--- gpsd.c	(r&#233;vision 3441)
++++ gpsd.c	(copie de travail)
+@@ -361,6 +361,7 @@
+     subscribers[cfd].watcher = false;
+     subscribers[cfd].active = 0;
+     subscribers[cfd].device = NULL;
++    subscribers[cfd].buffer_policy = casoc;
+ }
+ 
+ static ssize_t throttled_write(int cfd, char *buf, ssize_t len)
+@@ -741,8 +742,6 @@
+ 	case 'J':
+ 	    if (!assign_channel(whoami) || whoami-&gt;device-&gt;device_type == NULL)
+ 		(void)strlcpy(phrase, &quot;,J=?&quot;, BUFSIZ);
+-	    else if (!whoami-&gt;device-&gt;device_type-&gt;mode_switcher)
+-		(void)strlcpy(phrase, &quot;,J=0&quot;, BUFSIZ);
+ 	    else if (privileged_user(whoami)) {
+ 		if (*p == '=') ++p;
+ 		if (*p == '1' || *p == '+') {
+
+-- 
+Stelian Pop &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">stelian at popies.net</A>&gt;
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004208.html">[Gpsd-dev] State of the J commmand patch.
+</A></li>
+	<LI>Next message: <A HREF="004207.html">[Gpsd-dev] gpsd &amp; Mac OS X launchd(8)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4211">[ date ]</a>
+              <a href="thread.html#4211">[ thread ]</a>
+              <a href="subject.html#4211">[ subject ]</a>
+              <a href="author.html#4211">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

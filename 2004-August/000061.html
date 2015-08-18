@@ -1,0 +1,218 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] blocked client eventually stalls gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20blocked%20client%20eventually%20stalls%20gpsd&In-Reply-To=%3CPine.LNX.4.58.0408261205570.26447%40testingrange.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000055.html">
+   <LINK REL="Next"  HREF="000065.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] blocked client eventually stalls gpsd</H1>
+    <B>Rich Gibson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20blocked%20client%20eventually%20stalls%20gpsd&In-Reply-To=%3CPine.LNX.4.58.0408261205570.26447%40testingrange.com%3E"
+       TITLE="[Gpsd-dev] blocked client eventually stalls gpsd">rich at testingrange.com
+       </A><BR>
+    <I>Thu Aug 26 21:51:07 CEST 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000055.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+        <LI>Next message: <A HREF="000065.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#61">[ date ]</a>
+              <a href="thread.html#61">[ thread ]</a>
+              <a href="subject.html#61">[ subject ]</a>
+              <a href="author.html#61">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> Rich Gibson &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">rich at testingrange.com</A>&gt;:
+</I>&gt;<i> &gt; I agree, except that the online/offline status is derived from the time of 
+</I>&gt;<i> &gt; last fix.
+</I>&gt;<i> 
+</I>&gt;<i> No, it isn't. It's derived from the time of the last arriving data
+</I>&gt;<i> from the GPS, whether or not that was associated with a fix.  This is
+</I>&gt;<i> a very different matter.  The last fix could have been hours ago, but if 
+</I>&gt;<i> the GPS is alive at all the last data is probably only seconds old.
+</I>
+Sorry, my typo.   The online/offline status represents the time of the 
+last arriving data. 
+
+&gt;<i> &gt; An application writer, say me, will say 'ah, gpsd tells me if the gps is 
+</I>&gt;<i> &gt; online, so I can rely on that.'  The 'better' approach is for the client 
+</I>&gt;<i> &gt; to say 'hmmm, I have been connected to gpsd for 3 seconds and have yet to 
+</I>&gt;<i> &gt; see any data, I should raise an alert to the user.'  
+</I>&gt;<i> 
+</I>&gt;<i> Which is almost exactly what the combination of the online/offline bit and its 
+</I>&gt;<i> timestamp tells you.  So, as near as I can tell, I'm doing exactly what
+</I>&gt;<i> you want and you're only having a terminological issue with the way I have
+</I>&gt;<i> documented it.
+</I>
+No, I'm having issues with the API of gpsd making an assertion, off line 
+or on line, based on an inference.  And I'm concerned with what 
+applications will do with this information that is presented as being 
+authoritative, but in fact, is not authoritative.
+
+If the API documentation says 'the online flag reports whether or not the 
+GPS is online' then the application writer will trust that to be true.  
+
+&gt;<i> I say &quot;almost&quot; exactly only because the amount of time with no data is
+</I>&gt;<i> not a per-client property, so what my code actually enables the client
+</I>&gt;<i> to (notionally) think is this: &quot;hmmm, gpsd has been up for 3 seconds
+</I>&gt;<i> and has yet to see any data from the GPS, I should raise an alert to
+</I>&gt;<i> the user.'
+</I>
+This is true without the online flag.  Exposing the online flag encourges 
+it to be used in troublesome ways.
+
+&gt;<i> &gt; In a previous message you wrote this:
+</I>&gt;<i> &gt; &gt; If we know that the GPS sends data at least once every X seconds,
+</I>&gt;<i> &gt; &gt; and X seconds elapses with no data, we know it's offline.  If it
+</I>&gt;<i> &gt; &gt; sends data, it's online.  That sounds reliable to me.
+</I>&gt;<i> &gt;                                                               
+</I>&gt;<i> &gt; Except I don't think that is reliable in more than the grossest sense.
+</I>&gt;<i> &gt; All we know at the host side is that we have not received data for X 
+</I>&gt;<i> &gt; seconds.  That does not mean that the GPS is offline.  It _may_ mean that 
+</I>&gt;<i> &gt; the GPS is offline, or it may mean that the GPS went offline since the 
+</I>&gt;<i> &gt; last 'packet,' but has since returned.
+</I>&gt;<i> 
+</I>&gt;<i> A difference that makes no difference is no difference.  A tree that
+</I>&gt;<i> falls in the forest with no one to hear it...if the GPS came up but
+</I>&gt;<i> didn't ship a packet, that is not only in practice but *in principle*
+</I>&gt;<i> equivalent to being continuously offline.  There is no observational
+</I>&gt;<i> test that allows you to distinguish these cases, unless maybe you're
+</I>&gt;<i> a hardware tech with a logic probe attached to the GPS's traces.
+</I>
+This is sort of my whole point in a nutshell.  gpsd does not actually know 
+if the GPS is 'online.'  Your logic is that it is online if we receive 
+data before the expiration of the online timeout.  But that is simply an 
+inference.
+
+&gt;<i> &gt; Think about pinging a server.  If you have a lossy link you will lose 
+</I>&gt;<i> &gt; packets, but ping doesn't tell us that the server is offline when it loses 
+</I>&gt;<i> &gt; packets.  
+</I>&gt;<i> 
+</I>&gt;<i> The analogy is false and misleading.  There are two crucial
+</I>&gt;<i> differences from the IP case here:
+</I>&gt;<i> 
+</I>&gt;<i> 1. The link between the GPS and gpsd, a few feet of serial or USB cable,
+</I>&gt;<i>    is not lossy.  At least not at any rate relevant to this discussion.
+</I>
+The link between _your_ GPS and gpsd is a few feet of serial or USB cable 
+in an apparently noise free environment.  But what if that is not the 
+case?  You've dismissed the 'noisy electronics' cases that others have 
+made by arguing that in those cases you would not miss the whole sentence, 
+but what if you have one of these mini GPS modules that spit out 
+NMEA sentences:
+
+<A HREF="http://www.sparkfun.com/shop/index.php?shop=1&amp;cart=91908&amp;cat=63&amp;">http://www.sparkfun.com/shop/index.php?shop=1&amp;cart=91908&amp;cat=63&amp;</A> 
+
+Connected to one of these 'Serial Miniature RF Links:'
+<A HREF="http://www.sparkfun.com/shop/index.php?shop=1&amp;cart=91908&amp;cat=62&amp;">http://www.sparkfun.com/shop/index.php?shop=1&amp;cart=91908&amp;cat=62&amp;</A>
+
+Suddenly your GPS is 200-300 feet away from your gpsd (or _much much_ 
+further.  That unit is running in the 2.4 ghz band.  I'm running 802.11b 
+8+ miles in that band, I'm betting one could get 20 miles with a 
+modified version of that 'SMiRF' transceiver).
+
+&gt;<i> 2. The link has a heartbeat.  It's a property of the GPS that, if it's
+</I>&gt;<i>    alive, it *will* send data at predictable intervals.
+</I>&gt;<i> 
+</I>&gt;<i> These two conditions mean that the absence of a packet at an expected
+</I>&gt;<i> time actually carries information about the state of the hardware.  
+</I>
+
+&gt;<i> If
+</I>&gt;<i> it ain't there, either the GPS has stopped transmitting or we have a
+</I>&gt;<i> wire fault.
+</I>
+Interesting point.  If one limits gpsd to GPS units connected to PC's with 
+a 'few feet' of cable you might even be making a compelling case.  But 
+then, you couldn't use this Bluetooth GPS:
+
+<A HREF="http://www.socketcom.com/product/GP0804-405.asp">http://www.socketcom.com/product/GP0804-405.asp</A>
+
+Where are the 'wires' you speak of?
+
+No, I don't think my analogy is 'false and misleading' at all.
+
+&gt;<i> &gt; The GPS is sending data to GPSD.  Sometimes that process fails for some 
+</I>&gt;<i> &gt; reason.  Did the GPS just go offline?  GPSD doesn't have enough 
+</I>&gt;<i> &gt; information to know.
+</I>&gt;<i> 
+</I>&gt;<i> I'm not sure I even understand this assertion.  It seems to mean that you 
+</I>&gt;<i> are using the word &quot;offline&quot; in some special way I am unfamiliar with.
+</I>&gt;<i> 
+</I>&gt;<i> Usually, when people say a device is &quot;offline&quot;, they're simply
+</I>&gt;<i> describing it as being incommunicado -- in fact, as *not having sent
+</I>&gt;<i> data at an expected time*.  There isn't any causal hypothesis implied
+</I>&gt;<i> about whether the device has failed internally, or there's a wire
+</I>&gt;<i> fault.  At most, the term usually implies that the speaker thinks the
+</I>&gt;<i> machine at *this* end of the wire is not the problem.
+</I>&gt;<i> 
+</I>&gt;<i> This seems to me to fit my use of the term &quot;offline&quot; exactly.  It's
+</I>&gt;<i> not an interpretation, it's an direct observable -- we have continuously
+</I>&gt;<i> failed to receive data at times when the GPS was expected to send it.
+</I>&gt;<i> 
+</I>&gt;<i> So, what does the word 'offline' mean when you use it?
+</I>
+Interesting straw man argument deleted.
+
+Let's go back to 'the tape' as it were, in which you asserted:
+
+Eric Raymond
+&gt;<i> The design principle here is that, when you're writing a data
+</I>&gt;<i> translator like gpsd, getting between the user and the data --
+</I>&gt;<i> imposing your own policy and preconceptions -- is wrong.
+</I>                                                                                                                           
+How is deciding what 'offline' means different from imposing your own
+policy and preconceptions?
+
+You have the proven false preconception that the GPS unit is connected 
+with a short length of wire.  What other false preconceptions do you have?
+
+                                                                                                                           
+&gt;<i> gpsd's job is mechanism -- getting the data to applications in a useful 
+</I>form.
+&gt;<i> The application's job is policy -- deciding what to do with it.
+</I>                                                                                                                           
+But the online/offline status doesn't come from the device, it is created
+by the demon.
+
+The offline flag is for the internal use of gpsd, where it is useful.  But 
+the act of exposing it in the API provides a false sense of authority.
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000055.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+	<LI>Next message: <A HREF="000065.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#61">[ date ]</a>
+              <a href="thread.html#61">[ thread ]</a>
+              <a href="subject.html#61">[ subject ]</a>
+              <a href="author.html#61">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

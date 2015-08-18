@@ -1,0 +1,305 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gps receiver emulator
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gps%20receiver%20emulator&In-Reply-To=%3C20050823233247.GB3606%40www%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003026.html">
+   <LINK REL="Next"  HREF="003019.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gps receiver emulator</H1>
+    <B>Jeff Francis</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gps%20receiver%20emulator&In-Reply-To=%3C20050823233247.GB3606%40www%3E"
+       TITLE="[Gpsd-dev] gps receiver emulator">jeff at gritch.org
+       </A><BR>
+    <I>Wed Aug 24 01:32:47 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003026.html">[Gpsd-dev] Re: [Gpsd-dev] DD MM SS.SSS
+</A></li>
+        <LI>Next message: <A HREF="003019.html">[Gpsd-dev] Re: [Gpsd-dev] gps receiver emulator
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3018">[ date ]</a>
+              <a href="thread.html#3018">[ thread ]</a>
+              <a href="subject.html#3018">[ subject ]</a>
+              <a href="author.html#3018">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>  It seems like I own about ten devices that all would like to be
+connected to a &quot;real&quot; GPS receiver.  As USB serial port dongles are
+now down around $15 or so apiece, I wrote a bit of code last night
+that connects to a gpsd instance and a serial port and pretends to be
+a 4800 baud NMEA-0183 GPS receiver (with bits and pieces of code
+stolen from other gpsd-related apps).  It may not work with
+everything, but it fools my Kenwood TH-D700, my SCS PTC-II, and
+Delorme Street Atlas USA.  Nice to cut down on the number of antennas
+on the roof of my pickup truck...
+
+-- 
++--------------------------+
+|<i>   Jeff Francis - N0GQ    |
+</I>|<i> Snohomish, WA USA, Earth |
+</I>|<i>     <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>      |
+</I>|<i>  <A HREF="http://www.gritch.org">http://www.gritch.org</A>   |
+</I>+--------------------------+
+-------------- next part --------------
+/*
+ * Copyright (c) 2005 Jeff Francis &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>&gt;
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED &quot;AS IS&quot; AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+/*
+  Connects to an instance of gpsd and a serial port and pretends to be
+  an NMEA-1083 GPS receiver.
+*/
+
+#include &lt;unistd.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;getopt.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;string.h&gt;
+#include &quot;gps.h&quot;
+#include &lt;fcntl.h&gt;
+#include &lt;termios.h&gt;
+
+/* Macro for declaring function arguments unused. */
+#if defined(__GNUC__)
+#  define UNUSED __attribute__((unused)) /* Flag variable as unused */
+#else /* not __GNUC__ */
+#  define UNUSED
+#endif
+
+static struct gps_data_t *gpsdata;
+int serial_error=0;
+int verbose_flag=0;
+
+/* NMEA-0183 standard baud rate */
+#define BAUDRATE B4800
+
+/* POSIX compliant source */
+#define _POSIX_SOURCE 1
+
+/* Serial port vars */
+struct termios oldtio,newtio;
+int fd;
+
+/* open the serial port and set it up */
+int open_serial(char* device) {
+
+  /*  Open modem device for reading and writing and not as controlling
+      tty. */
+  if((fd=open(device,O_RDWR|O_NOCTTY))&lt;0) {
+    fprintf(stderr,&quot;Error opening serial port\n&quot;);
+    exit(1);
+  }
+  
+  /* Save current serial port settings for later */
+  tcgetattr(fd,&amp;oldtio);
+
+  /* Clear struct for new port settings. */
+  bzero(&amp;newtio,sizeof(newtio));
+        
+  /* BAUDRATE: Set bps rate and other serial params. */
+  newtio.c_cflag=BAUDRATE|CS8|CREAD;
+         
+  /* Ignore bytes with parity errors, map CR to NL */
+  newtio.c_iflag=IGNPAR | ICRNL;
+         
+  /* Raw output. */
+  newtio.c_oflag=0;
+         
+  /* Enable canonical input. */
+  newtio.c_lflag=ICANON;
+         
+  /* Initialize all control characters. */
+  newtio.c_cc[VINTR]    = 0;     /* Ctrl-c */ 
+  newtio.c_cc[VQUIT]    = 0;     /* Ctrl-\ */
+  newtio.c_cc[VERASE]   = 0;     /* del */
+  newtio.c_cc[VKILL]    = 0;     /* @ */
+  newtio.c_cc[VEOF]     = 4;     /* Ctrl-d */
+  newtio.c_cc[VTIME]    = 0;     /* inter-character timer unused */
+  newtio.c_cc[VMIN]     = 1;     /* blocking read until 1 character arrives */
+  /* newtio.c_cc[VSWTC]    = 0; */     /* '\0' */
+  newtio.c_cc[VSTART]   = 0;     /* Ctrl-q */ 
+  newtio.c_cc[VSTOP]    = 0;     /* Ctrl-s */
+  newtio.c_cc[VSUSP]    = 0;     /* Ctrl-z */
+  newtio.c_cc[VEOL]     = 0;     /* '\0' */
+  newtio.c_cc[VREPRINT] = 0;     /* Ctrl-r */
+  newtio.c_cc[VDISCARD] = 0;     /* Ctrl-u */
+  newtio.c_cc[VWERASE]  = 0;     /* Ctrl-w */
+  newtio.c_cc[VLNEXT]   = 0;     /* Ctrl-v */
+  newtio.c_cc[VEOL2]    = 0;     /* '\0' */
+        
+  /* Clean the modem line and activate the settings for the port. */
+  tcflush(fd,TCIFLUSH);
+  tcsetattr(fd,TCSANOW,&amp;newtio);
+}
+
+
+/* Send a string to the serial port. */
+int send_string(char *buf) {
+
+  int res;
+
+  /* Send the string. */
+  res=write(fd,buf,strlen(buf));
+
+  /* Return the result. */
+  return(res);
+}
+
+
+/* Callback for gpsd. */
+static void send_gps_to_serial(struct gps_data_t *gpsdata,
+			       char *message,
+			       size_t len,
+			       int level UNUSED) {
+
+  int res;
+
+  if(verbose_flag==1) {
+    printf(&quot;%s&quot;,message);
+    fflush(stdout);
+  }
+
+  /* Write it to the serial port, set the flag if there's an error. */
+  if(send_string(message)==-1) {
+    serial_error=1;
+  } 
+}
+
+
+int main(int argc, char **argv)
+{
+  int option, res, newstate;
+  char *colon, *server = NULL;
+  char *port = DEFAULT_GPSD_PORT;
+
+  char *serialport;
+  int serial_flag=0;
+
+  char *timestring[255];
+  char *logname[255];
+
+  struct timeval timeout;
+  fd_set rfds;
+  int data;
+
+  while ((option = getopt(argc, argv, &quot;hvs:&quot;)) != -1) {
+    switch (option) {
+    case 'v':
+      verbose_flag=1;
+      break;
+    case 's':
+      serialport=optarg;
+      serial_flag=1;
+      break;
+    case 'h':
+    case '?':
+    default:
+      fputs(&quot;usage: gpsdgps [-h] [server[:port]] [-s serial_device]\n&quot;, stderr);
+      exit(1);
+    }
+  }
+
+  if (optind &lt; argc) {
+    server = strdup(argv[optind]);
+    colon = strchr(server, ':');
+    if (colon != NULL) {
+      server[colon - server] = '\0';
+      port = colon + 1;
+    }
+  }
+
+  /* Set serial port stuff. */
+  if(serial_flag==0) {
+    open_serial(&quot;/dev/ttyS0&quot;);
+  } else {
+    open_serial(serialport);
+  }
+
+  if (!(gpsdata = gps_open(server, DEFAULT_GPSD_PORT))) {
+    fprintf(stderr,&quot;no gpsd running or network error (%d).\n&quot;, errno);
+    exit(2);
+  }
+
+  gps_set_raw_hook(gpsdata, send_gps_to_serial);
+
+  gps_query(gpsdata, &quot;r\n&quot;);
+
+  while(serial_error==0) {
+
+    /* Watch to see when we have input. */
+    FD_ZERO(&amp;rfds);
+    FD_SET(gpsdata-&gt;gps_fd, &amp;rfds);
+    
+    /* Wait up to five seconds. */
+    timeout.tv_sec = 5;
+    timeout.tv_usec = 0;
+    
+    /* Check if we have new information. */
+    data = select(gpsdata-&gt;gps_fd + 1, &amp;rfds, NULL, NULL, &amp;timeout);
+    
+    if (data == -1) {
+      fprintf(stderr,&quot;gpsdgps: socket error\n&quot;);
+      exit(2);
+    } else if( data ) {
+      /* Code that calls gps_poll(gpsdata). */
+      (void)gps_poll(gpsdata);
+    } else {
+      fprintf(stderr,&quot;gpsdgps: No data\n&quot;);
+    }
+  }
+
+  /* Restore the old serial port settings. */
+  tcsetattr(fd,TCSANOW,&amp;oldtio);
+  
+  /* Done with gpsd. */
+  gps_close(gpsdata);
+  return 0;
+}
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003026.html">[Gpsd-dev] Re: [Gpsd-dev] DD MM SS.SSS
+</A></li>
+	<LI>Next message: <A HREF="003019.html">[Gpsd-dev] Re: [Gpsd-dev] gps receiver emulator
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3018">[ date ]</a>
+              <a href="thread.html#3018">[ thread ]</a>
+              <a href="subject.html#3018">[ subject ]</a>
+              <a href="author.html#3018">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,147 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-users] True North Technologies
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20True%20North%20Technologies&In-Reply-To=%3Cp0623091cc0932460e7a3%40%5B192.168.11.10%5D%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003501.html">
+   <LINK REL="Next"  HREF="003515.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-users] True North Technologies</H1>
+    <B>Robin L Darroch</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20True%20North%20Technologies&In-Reply-To=%3Cp0623091cc0932460e7a3%40%5B192.168.11.10%5D%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-users] True North Technologies">robin at spade-men.com
+       </A><BR>
+    <I>Fri May 19 09:48:53 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003501.html">[Gpsd-dev] Re: [Gpsd-users] True North Technologies
+</A></li>
+        <LI>Next message: <A HREF="003515.html">[Gpsd-dev] Re: [Gpsd-users] True North Technologies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3502">[ date ]</a>
+              <a href="thread.html#3502">[ thread ]</a>
+              <a href="subject.html#3502">[ subject ]</a>
+              <a href="author.html#3502">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>At 0:02 -0700 19/5/06, Gary E. Miller wrote:
+&gt;<i>While technically this may be the right thing to do, I am always
+</I>&gt;<i>reluctant to add patches that have not been tested and that by design
+</I>&gt;<i>will likely break existing applications.  At least one gpsd user
+</I>&gt;<i>has True North units in serious production usage.
+</I>
+OK - in that case, we need to get that user involved in this 
+discussion.  The problem here is that it was wrong to begin with: it 
+appears that when True North support was added, many things were not 
+done correctly (for example, receiving a sentence from a True North 
+device raises the fix mode to a minimum of 2D, when in fact we may 
+have no idea at all where we are), simply for the sake of expediency. 
+I know that virtually all software - gpsd included - comes with 
+warnings and caveats and dire legal threats about never using it in a 
+situation where you actually need it (thereby achieving the very 
+important aim of keeping all of us off the hook, legally)... but I 
+don't believe that should go so far as to say &quot;we know this is wrong, 
+but someone who doesn't care it's wrong is using it already, so we 
+shouldn't change it&quot;.
+
+&gt;<i>Also of concern is how far the effects go.  This new heading addition
+</I>&gt;<i>would also need to be made to libgps, cgps, xgps, the doc, etc.
+</I>
+Done - at least as far as libgps and the doc is concerned.  cgps and 
+xgps don't need any changes, since they have no field that reports 
+heading.  Indeed, most client software and most users won't care, BUT 
+existing True North users SHOULD care, and should ensure that any 
+client they wish to use distinguishes between track and heading.  The 
+decision to equate the two must occur in the client, not in the 
+server.
+
+&gt;<i>   None
+</I>&gt;<i>of which can be tested until we get someone with one of these units to
+</I>&gt;<i>test it.
+</I>
+True - which is why this is posted to the dev list... and if no-one 
+on the dev list has True North, then we need to involve such users.
+
+&gt;<i>   Then you have all the third party apps, like gpsdrive that can
+</I>&gt;<i>display track but know nothing of heading.
+</I>
+That doesn't mean we should program gpsd to lie: it means that if 
+gpsdrive wants the benefit of using heading, it should have that 
+facility added... otherwise, it can continue to use track data as it 
+does for everyone who doesn't have a True North compass.
+
+&gt;<i>   Maybe you can scrounge the
+</I>&gt;<i>list archives and attempt to recontact a True North user and get them
+</I>&gt;<i>involved first.
+</I>
+I'll see whom I can find.
+
+&gt;<i>  We can discuss this all we want but real users with
+</I>&gt;<i>real applications always seem to have their own views.
+</I>
+Indeed. :)  All of this has been written from the point of view of 
+&quot;what would I want if I had a True North compass?&quot;... and the fact 
+is, since much of my GPS use is in the air, I'd want a rock-solid 
+distinction between heading and track.
+
+&gt;<i>I do agree that something like this change needs to be done, but what
+</I>&gt;<i>will really force it will be when someone has a GPS that reports track
+</I>&gt;<i>and heading and needs both.  Then it needs to be done front to back.
+</I>
+True, that case would force it... but as long as we can get it right 
+from a design point of view, and with the participation of the 
+existing users, why leave it wrong until then?  We will always have 
+to trade off simplicity and versatility against accuracy, but short 
+of telling people &quot;if you want the right information, use raw mode&quot;, 
+we should aim for our command suite to support as many realistic 
+cases as it can, and certainly for it NOT to return values which are 
+not the data that command is specified to return.
+
+Anyhow, since I seem to be the Integrity Crusader at the moment 
+(although hopefully not Robinson Crusoe), I'll see if I can find 
+someone on the lists who has reported using True North devices, and 
+discuss such testing with them off-list.
+
+Cheers,
+Robin
+-- 
+
+-------------------------------------------------------------------------
+  Robin L. Darroch - PO Box 2715, South Hedland WA 6722 - +61 421 503 966
+       <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at darroch.id.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at nyca.org.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003501.html">[Gpsd-dev] Re: [Gpsd-users] True North Technologies
+</A></li>
+	<LI>Next message: <A HREF="003515.html">[Gpsd-dev] Re: [Gpsd-users] True North Technologies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3502">[ date ]</a>
+              <a href="thread.html#3502">[ thread ]</a>
+              <a href="subject.html#3502">[ subject ]</a>
+              <a href="author.html#3502">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

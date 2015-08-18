@@ -1,0 +1,171 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Shared-memory interface.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Shared-memory%20interface.&In-Reply-To=%3C20110324222304.GA30776%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009007.html">
+   <LINK REL="Next"  HREF="009002.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Shared-memory interface.</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Shared-memory%20interface.&In-Reply-To=%3C20110324222304.GA30776%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Shared-memory interface.">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Mar 24 23:23:04 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009007.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+        <LI>Next message: <A HREF="009002.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9009">[ date ]</a>
+              <a href="thread.html#9009">[ thread ]</a>
+              <a href="subject.html#9009">[ subject ]</a>
+              <a href="author.html#9009">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+&gt;<i> No, both sources could be on the public internet.  One of gpsd's
+</I>&gt;<i> function is to publish information.
+</I>
+You can be spoofed if you're not using IPsec.  This is not breaking news,
+nor is it GPSD's problem to solve.
+
+&gt;<i> You aren't building TLS as an option (The AUTHENTICATION is more
+</I>&gt;<i> important than the encryption - I can't require valid certs for
+</I>&gt;<i> sources, nor validate I'm talking to the real gpsd at the remote end).
+</I>
+Yeah, I looked into adding authentication a while back in order to 
+prevent DOSes via the commands for changing baud rate or cycle.  It would
+have required tremendously complicating the app interface, so I didn't do it.
+
+&gt;<i> And if your &quot;open exclusive&quot; code is working, stty won't, at least not
+</I>&gt;<i> while gpsd is connected and if you aren't root.
+</I>
+Um, what &quot;open exclusive&quot;?  I *wish* we could do that.  
+
+&gt;<i> But the names aren't unique.  I haven't set it up far enough to
+</I>&gt;<i> actually get DEVICE json sentences back, but if it worked they would
+</I>&gt;<i> be identical.
+</I>
+Right, since you tested this you know it actually works.  We don't rely
+*internally* on device names being distinct.  The only place it 
+matters is if clients want to set a &quot;device&quot; filtering option, or
+filter in the client.
+
+Which is actually a half-forgotten reason I've been resisting your
+push for channel numbers (I *knew* I had one other than incremental
+code complexity!).  There are two possible design cases here:
+
+Transparent channel numbers: You can get the channel -&gt; device map
+via ?DEVICES:  Or, opaque channel numbers - you can't get the device 
+name at all.
+
+Transparent channel numbers give you the information you need to 
+use filtering if, for example, you have two sensors in fixed locations
+at either end of an oil tanker.  (Real use case from one of our users!)
+But they have all the problems of leaking information that you describe.
+
+Opaque channel numbers prevent information leaks, but make device filtering
+a pain in the ass.
+
+As always, we have to choose in the presence of tradeoffs. Transaprent
+channel numbers would just be premature optimization, not addressing
+any security issue; I reject those outright. Opaque channel numbers 
+might help in some unlikely situations, but hinder real users with
+real use cases. You'd have to convince me that the risk from those
+information leaks is more weighty than the increased complexity cost to
+real users, and so far I'm nowhere within a light-year of persuaded.
+
+&gt;<i> &gt; Have you ever in your entire life seen a serial device name that was
+</I>&gt;<i> &gt; 63 chars long? &#160;No, better: have you ever even seen one that was *16*
+</I>&gt;<i> &gt; chars long?
+</I>&gt;<i> 
+</I>&gt;<i> Daily.  Right now.  On my Mac OSX.  For any bluetooth device, it
+</I>&gt;<i> creates /dev/tty.(bluetooth-friendly-name)-SPP  (or -Modem... SPPslave
+</I>&gt;<i> etc.), and the friendly name of one of my devices is 20 characters
+</I>&gt;<i> long by itself.  None of this is contrived.
+</I>
+Thanks for the education.  None of this pushes the actual buffer-size limit, 
+though.
+
+For detailed discussion of why devicename truncation doesn't worry me,
+see my reply to Dave Hart.
+
+&gt;<i> /dev/./././. - ./ttyUSB11 can be truncated to ttyUSB1 and the open
+</I>&gt;<i> will SUCCEED on the truncated name.
+</I>
+And then fail to sync - and toss USB1 out of the device pool -  unless 
+it's a GPS too.
+
+&gt;<i> You said the code had to be as safe as possible or practical, yet
+</I>&gt;<i> there are a lot of unchecked and unprotected things throughout.
+</I>
+Produce evidence for &quot;a lot&quot; rather than simply asserting it, please.
+We are scrupulously careful about strlcpy()/strcat()/vnsprintf(), 
+forbid malloc() in the daemon, use splint for static checking, and
+in general quite paranoid.
+
+&gt;<i> So which is it, if the user is stupid or doesn't use enough external
+</I>&gt;<i> security, well gpsd wasn't designed to be safe, or gpsd is supposed to
+</I>&gt;<i> be designed to be as safe as possible from both stupidity and malice?
+</I>
+gpsd is designed to be as safe as I think is practical, under a constraint
+you're not thinking about enough.
+
+Armoring against really outside failure cases has a complexity cost.
+When you push hard enough, you reach a region where the additional 
+complexity of the armor raises your defect rate more than ignoring
+the supposed problem would.
+
+My objective is to push gpsd to the edge of that region *and not into it*.
+ 
+&gt;<i> If someone malicious tries hard and does break gpsd's assumptions,
+</I>&gt;<i> they might be able to do more harm than you can expect.  I've found a
+</I>&gt;<i> few things in just a cursory glance of the code and I'm not looking
+</I>&gt;<i> for problems and won't try fuzzing (I think gpsctl is run as root, so
+</I>&gt;<i> if it isn't unidirectional and I can buffer-overflow, root!  - I just
+</I>&gt;<i> have to kill gpsd and set up a malicous version).  That is why I don't
+</I>&gt;<i> like loose ends like these.  It isn't only friendly, noob, or strange
+</I>&gt;<i> case users that you have to worry about.
+</I>&gt;<i> 
+</I>&gt;<i> I'm rooting for gpsd to be more secure :).
+</I>
+Good. By all means keep pushing. Expect to win sometimes, but not always.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009007.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+	<LI>Next message: <A HREF="009002.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9009">[ date ]</a>
+              <a href="thread.html#9009">[ thread ]</a>
+              <a href="subject.html#9009">[ subject ]</a>
+              <a href="author.html#9009">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

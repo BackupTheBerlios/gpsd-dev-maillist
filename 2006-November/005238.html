@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Restoring GPS settings on session end
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Restoring%20GPS%20settings%20on%20session%20end&In-Reply-To=%3C20061114152029.GA25409%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005236.html">
+   <LINK REL="Next"  HREF="005237.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Restoring GPS settings on session end</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Restoring%20GPS%20settings%20on%20session%20end&In-Reply-To=%3C20061114152029.GA25409%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Restoring GPS settings on session end">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Nov 14 16:20:29 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005236.html">[Gpsd-dev] Restoring GPS settings on session end
+</A></li>
+        <LI>Next message: <A HREF="005237.html">[Gpsd-dev] Absence of man pages
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5238">[ date ]</a>
+              <a href="thread.html#5238">[ thread ]</a>
+              <a href="subject.html#5238">[ subject ]</a>
+              <a href="author.html#5238">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Frank Nicholas &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">frank at nicholasfamilycentral.com</A>&gt;:
+&gt;<i> I may be speaking a little ignorantly here.  I haven't looked at the  
+</I>&gt;<i> gpsctl code or features it supported.  I thought the former gpsctl  
+</I>&gt;<i> tools (stand alone) were used to change GPS modes (NMEA, Binary,  
+</I>&gt;<i> etc.), turn certain statements on/off &amp; twiddle miscellaneous GPS flags.
+</I>
+Correct.
+ 
+&gt;<i> Scenario:
+</I>&gt;<i> gpsd starts &amp; records various information about the GPS state/config  
+</I>&gt;<i> at startup
+</I>&gt;<i> user wants to set the GPS to a state/config, after leaving gpsd, that  
+</I>&gt;<i> is different than when starting gpsd
+</I>&gt;<i> gpsctl is used, or raw mode commands are sent to the GPS via gpsd, to  
+</I>&gt;<i> change state/config
+</I>&gt;<i> the state/config that is changed, is one that gpsd recorded and 
+</I>&gt;<i> twiddled with at startup
+</I>&gt;<i> gpsd is exited, and the GPS state/config is restored to the way it  
+</I>&gt;<i> was at startup
+</I>&gt;<i> user has NO way to leave GPS in a state different than it was started  
+</I>&gt;<i> with gpsd (for the state/config info gpsd records &amp; restores)
+</I>
+Your error is in assuming that the revert logic takes gpsd back to
+gpsd's startup state.  It does not.  Rather, it reverts only specific
+changes made by the configurator method.  If the user makes other
+changes through B or N or C commands, those changes are not reverted.
+
+The configure and revert methods are *not called* from gpsctl -- that's
+the whole point of their separation from probe_subtype and wrapup --
+so the issue doesn't even arise there.  
+
+While it is possible to send &quot;raw mode&quot; commands to the GPS via gpsd,
+this can only be done by special tools operating through the local
+control socket. I left this capability out of the normal gpsd command
+set specifically because it would invalidate gpsd's model of the
+device state.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005236.html">[Gpsd-dev] Restoring GPS settings on session end
+</A></li>
+	<LI>Next message: <A HREF="005237.html">[Gpsd-dev] Absence of man pages
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5238">[ date ]</a>
+              <a href="thread.html#5238">[ thread ]</a>
+              <a href="subject.html#5238">[ subject ]</a>
+              <a href="author.html#5238">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

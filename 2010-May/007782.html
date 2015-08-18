@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] Move the &quot;sub == NULL&quot; check to have all	sub-&gt;... accesses checked
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Move%20the%20%22sub%20%3D%3D%20NULL%22%20check%20to%20have%20all%0A%09sub-%3E...%20accesses%20checked&In-Reply-To=%3C1274967672-3204-1-git-send-email-bbolli%40ewanet.ch%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007781.html">
+   <LINK REL="Next"  HREF="007797.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] Move the &quot;sub == NULL&quot; check to have all	sub-&gt;... accesses checked</H1>
+    <B>Beat Bolli</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Move%20the%20%22sub%20%3D%3D%20NULL%22%20check%20to%20have%20all%0A%09sub-%3E...%20accesses%20checked&In-Reply-To=%3C1274967672-3204-1-git-send-email-bbolli%40ewanet.ch%3E"
+       TITLE="[Gpsd-dev] [PATCH] Move the &quot;sub == NULL&quot; check to have all	sub-&gt;... accesses checked">bbolli at ewanet.ch
+       </A><BR>
+    <I>Thu May 27 15:41:12 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007781.html">[Gpsd-dev] Attached are 2 little [patch]es
+</A></li>
+        <LI>Next message: <A HREF="007797.html">[Gpsd-dev] NMEA strings decode as Garmin Text
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7782">[ date ]</a>
+              <a href="thread.html#7782">[ thread ]</a>
+              <a href="subject.html#7782">[ subject ]</a>
+              <a href="author.html#7782">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I'm not sure about the placement of the nullderef splint directive, though.
+---
+ gpsd.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/gpsd.c b/gpsd.c
+index 1480eaa..6f1d3aa 100644
+--- a/gpsd.c
++++ b/gpsd.c
+@@ -1856,15 +1856,15 @@ int main(int argc, char *argv[])
+ 
+ 		/* update all subscribers associated with this device */
+ 		for (sub = subscribers; sub &lt; subscribers + MAXSUBSCRIBERS; sub++) {
+-		    if (sub-&gt;active == 0)
++		    /*@-nullderef@*/
++		    if (sub == NULL || sub-&gt;active == 0)
+ 			continue;
+ 
+ 		    /* report raw packets to users subscribed to those */
+ 		    raw_report(sub, device);
+ 
+ 		    /* some listeners may be in watcher mode */
+-		    /*@-nullderef@*/
+-		    if (sub != NULL &amp;&amp; sub-&gt;policy.watcher) {
++		    if (sub-&gt;policy.watcher) {
+ 			if (changed &amp; DATA_IS) {
+ 			    gpsd_report(LOG_PROG,
+ 					&quot;Changed mask: %s with %sreliable cycle detection\n&quot;,
+@@ -1880,7 +1880,7 @@ int main(int argc, char *argv[])
+ 				json_report(sub, changed, device);
+ 			}
+ 		    }
+-		    /*@-nullderef@*/
++		    /*@+nullderef@*/
+ 		} /* subscribers */
+ 	    }
+ 	} /* devices */
+-- 
+1.7.1
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007781.html">[Gpsd-dev] Attached are 2 little [patch]es
+</A></li>
+	<LI>Next message: <A HREF="007797.html">[Gpsd-dev] NMEA strings decode as Garmin Text
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7782">[ date ]</a>
+              <a href="thread.html#7782">[ thread ]</a>
+              <a href="subject.html#7782">[ subject ]</a>
+              <a href="author.html#7782">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] packet parser discards packets
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20packet%20parser%20discards%20packets&In-Reply-To=%3C798LFJkfT0436S20.1181471539%40cmsweb20.cms.usa.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005718.html">
+   <LINK REL="Next"  HREF="005723.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] packet parser discards packets</H1>
+    <B>Petr Slansky</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20packet%20parser%20discards%20packets&In-Reply-To=%3C798LFJkfT0436S20.1181471539%40cmsweb20.cms.usa.net%3E"
+       TITLE="[Gpsd-dev] packet parser discards packets">slansky at usa.net
+       </A><BR>
+    <I>Sun Jun 10 12:32:19 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005718.html">[Gpsd-dev] huge vertical error
+</A></li>
+        <LI>Next message: <A HREF="005723.html">[Gpsd-dev] packet parser discards packets
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5719">[ date ]</a>
+              <a href="thread.html#5719">[ thread ]</a>
+              <a href="subject.html#5719">[ subject ]</a>
+              <a href="author.html#5719">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>------ Original Message ------
+
+&gt;<i> &gt; I stared at this diff for a few minutes now, but I can't see what the 
+</I>&gt;<i> &gt; difference is.
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; What am I missing?
+</I>&gt;<i> 
+</I>&gt;<i> I think that &quot;&lt;&quot; operation is not defined for pointers in C. Only &quot;==&quot;,
+</I>&quot;!=&quot;,
+&gt;<i> &quot;+&quot; and &quot;-&quot;.
+</I>&gt;<i> 
+</I>&gt;<i> I didn't check for details, old code rejected some NMEA packets with
+</I>correct
+&gt;<i> checksum, new code accept them all, it just works.
+</I>
+I checked log files from yesterday and I don't know what was wrong. Maybe it
+was not gpsd code. Anyway, please, apply the patch to packet.c, I think that
+original code used invalid pointer test.
+
+1) gpsd was losing bytes from serial port /dev/ttyS1, as a result, checksum
+was incorrect and gpsd reported strange data as it processed just some NMEA
+messages from the stream, huge number of messages was lost
+2) Command &quot;cat /dev/ttyS1&quot; lost no data, at least I didn't notice that
+3) I restarted gpsd several times, I added a message that &quot;checksum is wrong&quot;,
+I saw the problem with checksum, it was repeatable
+4) when I changed packet.c code, problem was fixed
+5) I reverted packet.c to original state today but I cannot repeat the problem
+from yesterday. (PC was rebooted in the morning)
+
+I have explanation that my system was corrupted in some way yesterday or maybe
+it was overloaded with some other task, maybe Firefox (system overload
+explains, why cat reported correct data from the serial port and why gpsd was
+not so successful)
+
+With regards,
+Petr
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005718.html">[Gpsd-dev] huge vertical error
+</A></li>
+	<LI>Next message: <A HREF="005723.html">[Gpsd-dev] packet parser discards packets
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5719">[ date ]</a>
+              <a href="thread.html#5719">[ thread ]</a>
+              <a href="subject.html#5719">[ subject ]</a>
+              <a href="author.html#5719">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

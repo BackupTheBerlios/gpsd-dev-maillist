@@ -1,0 +1,109 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsctrl proof-of-concept is in svn head
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsctrl%20proof-of-concept%20is%20in%20svn%20head&In-Reply-To=%3C20061030071558.GA3310%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004745.html">
+   <LINK REL="Next"  HREF="004741.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsctrl proof-of-concept is in svn head</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsctrl%20proof-of-concept%20is%20in%20svn%20head&In-Reply-To=%3C20061030071558.GA3310%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] gpsctrl proof-of-concept is in svn head">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Oct 30 08:15:58 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004745.html">[Gpsd-dev] gpsctrl proof-of-concept is in svn head
+</A></li>
+        <LI>Next message: <A HREF="004741.html">[Gpsd-dev] gpsctrl proof-of-concept is in svn head
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4746">[ date ]</a>
+              <a href="thread.html#4746">[ thread ]</a>
+              <a href="subject.html#4746">[ subject ]</a>
+              <a href="author.html#4746">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Chris Kuethe &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">chris.kuethe at gmail.com</A>&gt;:
+&gt;<i> On 10/29/06, Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+</I>&gt;<i> &gt; Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+</I>&gt;<i> &gt; &gt; As Chris pointed out, gpsd can have a hard time recovering from all
+</I>&gt;<i> &gt; &gt; psossible configurations.  Using a tool that starts with the knowledge of
+</I>&gt;<i> &gt; &gt; the target GPS has a better chance getting the GPS into a better state.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; You both say this, but I don't see what makes it true.
+</I>&gt;<i> 
+</I>&gt;<i> Mercifully the cases are rare, but they do exist.
+</I>&gt;<i> 
+</I>&gt;<i> Plug in a BU-353 sometime, and watch it not switch baud until you beat
+</I>&gt;<i> it over the head with control strings 8 times.
+</I>
+We're talking past each other, or something.  I know some device types have 
+weird requirements.  But this doesn't mean the tool has to *start off* by
+knowing the type.  As long as it can deduce the type before having to
+do the special operation, we win.
+
+So, in this case, I'd look for a way for the SiRF driver to detect that 
+it's dealing with a BU-353 (I found the the firmware revision number 
+was often a valuable clue when I was writing the SiRF driver).  Then I'd
+make &quot;beat it over the head 8 times&quot; what the driver does when it has
+detected a BU-353.  
+
+In two years of dealing with wildly perverse devices, I have stumbled
+over *exactly one* GPS chipset for which this strategy (autodetect
+followed by special-casing) will not work.  I forget the model number,
+but it generated bad sentence checksums when it didn't have a fix.
+That was too much, it undermined the autodetect mechanism enough that
+I said to hell with it.
+
+I keep hearing people say that knowing the device type in advance is
+critical in weird edge case X, but except in that one case this has
+*never* turned out to be the case when I pushed hard enough.
+ 
+&gt;<i> I don't have any bluetooth gear but I've had at least 3 reports from
+</I>&gt;<i> bluetooth/SiRF users where the autobaud/probe/protocol switch gets the
+</I>&gt;<i> UART/protocol engine/bluetooth spp all confused.
+</I>&gt;<i> 
+</I>&gt;<i> Both of these have, on a couple of occasions, been remedied by a
+</I>&gt;<i> standalone tool...
+</I>
+Well, yeah.  So what?  The argument here isn't standalone tool vs.
+gpsd, it's having all the type-specific magic in one driver object 
+as opposed to scattered about in several different places.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004745.html">[Gpsd-dev] gpsctrl proof-of-concept is in svn head
+</A></li>
+	<LI>Next message: <A HREF="004741.html">[Gpsd-dev] gpsctrl proof-of-concept is in svn head
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4746">[ date ]</a>
+              <a href="thread.html#4746">[ thread ]</a>
+              <a href="subject.html#4746">[ subject ]</a>
+              <a href="author.html#4746">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

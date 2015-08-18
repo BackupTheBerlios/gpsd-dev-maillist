@@ -1,0 +1,339 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Stripping down gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Stripping%20down%20gpsd&In-Reply-To=%3C20110310023734.4613920C2B0%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008767.html">
+   <LINK REL="Next"  HREF="008727.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Stripping down gpsd</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Stripping%20down%20gpsd&In-Reply-To=%3C20110310023734.4613920C2B0%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Stripping down gpsd">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Thu Mar 10 03:37:34 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008767.html">[Gpsd-dev] Have I failed to simplify *enough*?
+</A></li>
+        <LI>Next message: <A HREF="008727.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8726">[ date ]</a>
+              <a href="thread.html#8726">[ thread ]</a>
+              <a href="subject.html#8726">[ subject ]</a>
+              <a href="author.html#8726">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>This is a consolidated reply to your five postings around the topic of
+stripping down gpsd to a minimalist, NMEA-only version using no
+floating point and suitable for low-power embedded development.
+
+Summary: it seems to me to break down into two tasks.
+
+(1) De-autoconfiscating the build system
+
+(2) Cleaning floating point usage out of the core structures and NMEA driver.
+
+The first task is relatively easy, and should come first.  The second will
+be messy and difficult.  This is not going to happen before we ship the
+2.96 release.
+
+One major question I have for you is: could you live with scons as a
+build system? That would be a relatively easy transition.
+
+Answers to your more specific questions and comments:
+
+&gt;<i>First, I didn't know until your message it would be possible to build
+</I>&gt;<i>such a version.
+</I>
+Yes, all you have to do is configure out all drivers except NMEA.  Most of
+the code goes away if a raft of stuff like binary-GPS drivers and support
+for RTCM2 and RTCM3 and AIS are configured out.
+
+&gt;<i>I might try, but I know I don't have anything to do libtool for MIPS.
+</I>
+This falls under &quot;getting rid of autotools&quot;.  Autotools is full of 
+horrible botches; libtool is one of the worst.  Shooting it through
+the head would be a positive pleasure.
+
+&gt;<i>There are a bunch of options to disable things and I'm not sure which
+</I>&gt;<i>are features and which are protocols.  there is no --minimalist
+</I>&gt;<i>option, and there is nothing that I can find describing how I would
+</I>&gt;<i>build what you are specifically talking about.
+</I>
+Look at this listing from the end of configure:
+
+	Protocols
+	---------
+Ashtech                 : yes
+Earthmate               : yes
+EverMore                : yes
+FV-18                   : yes
+Garmin                  : yes
+Garmin Simple Text      : yes
+Geostar                 : yes
+iTrax                   : yes
+NMEA                    : yes
+NTRIP                   : yes
+Navcom                  : yes
+OnCore                  : yes
+RTCM104V2               : yes
+RTCM104V3               : yes
+SiRF                    : yes
+SuperStarII             : yes
+Trimble TSIP            : yes
+Tripmate                : yes
+True North              : yes
+OceanServer             : yes
+UBX                     : yes
+GPSclock                : yes
+AIVDM support           : yes
+Timing support          : yes
+Client debugging support: yes
+MTK-3301                : yes
+	Daemon Features
+	---------------
+NTP SHM                 : yes
+NTP PPS                 : yes
+PPS input on            : DCD
+Fixed port speed        : no
+Priv-drop user          : nobody
+Enable shared libraries : yes
+Enable DBUS support     : no
+Enable BlueZ support    : no
+Enable IPv6 support     : yes
+Limited max clients     : no
+Limited max devices     : no
+Allow device reconfig   : yes
+Allow control send      : yes
+Squelch logging/hexdump : no
+libusb device discovery : yes
+	Client Features
+	---------------
+Old protocol in libgps  : yes
+Build ncurses programs  : yes
+Enable Python support   : yes
+Enable C++ support      : yes
+Enable Qt support       : no
+
+It should tell you what you need to know.  The place you probably want to 
+start is by turning off all protocols other than NMEA and the NTP support.
+
+&gt;<i>I am more efficient because I have highly optimized parser code.  The
+</I>&gt;<i>NMEA output is a short string of integer characters  Everything else
+</I>&gt;<i>has a very short path..
+</I>
+I don't quite inderstand this.  What &quot;NMEA output&quot; is a short string of
+integers?  NMEA sentences generally at least have an alphabetic tag.
+
+&gt;<i>for minigpsd, I was using shared memory, so I could just open and
+</I>&gt;<i>overlay the section and updates would be instantaneous - and no
+</I>&gt;<i>message passing or repackaging.
+</I>
+I don't understand this, either.  Was it your method of communicating
+to clients?
+
+&gt;<i>Even in the makefile, I had CFLAGS += `pkgconfig...&quot; for gconf instead
+</I>&gt;<i>of the autogen stuff, and maemo uses debian packaging.
+</I>
+We might end up using something like your pkgconfig trick.  But it would
+be far easier to transion off autotools if you could use scons as your
+build system. 
+
+&gt;<i>No, right at the top of driver_nmea.c where it picks out the lat/lon:
+</I>
+You are right.  There is much more float dependency in the code than I
+understood.  We'll have to deal with this, and it's going to be a lot
+of work.  But I've taken some first steps.
+
+&gt;<i>It would be intertesting to compare ncycles 
+</I>
+How would you recommend we do this?
+
+&gt;<i>                                             I keep everyting in
+</I>&gt;<i>micro-degrees (could go to tenth-of if any hardware was that
+</I>&gt;<i>accurate). 
+</I>
+Diego Berge had some thoughts about this which I'll get to later in this reply.
+
+&gt;<i>As I've shown, you are using libraries and floats everywhere.  We're
+</I>&gt;<i>talking extreme liposuction.
+</I>
+Yes.  But it's the right thing to do.  We'll just have to take it in steps.
+
+&gt;<i>Most distros probably just use the defaults or nearso.
+</I>
+I think the OpenMoko build is NMEA-only.
+
+&gt;<i>The other half is I can't use gpsd-ng since I can't (and probably will
+</I>&gt;<i> never be able to) inline external data.  You will have water depth or
+</I>&gt;<i>whatever merged into the info stream, but I can't merge my engine rpm
+</I>&gt;<i>and fuel consumption data.  I have other sensors, some might get
+</I>&gt;<i>adopted, others not.  I need multiple redundant failover GPSes but one
+</I>&gt;<i>master value.
+</I>
+We merge water depth and so forth only if those drivers are enabled.
+If you strip down to NMEA support only you'll get TPV and SKY and
+that's about it.
+
+&gt;<i>Also, even if I did - and I might take a look with your help and
+</I>&gt;<i>comments - I don't see the necessary features being in gpsd-ng, so I
+</I>&gt;<i>have to write my version anyway.
+</I>
+What features do you need that we don't have?
+
+&gt;<i>As a postscript, looking at gps.h, &quot;double&quot; is everywhere.  I'm in
+</I>&gt;<i>microdegrees (could go to 100 nanodegrees).  Even time portion of an
+</I>&gt;<i>hour is double.
+</I>
+Problem acknowledged.
+
+&gt;<i>I am really willing to help do a nofloat version, but then would
+</I>&gt;<i>anything still work?
+</I>
+Here is my thought about how to get there.
+
+1. Introduce a NOFLOAT conditional.  Outside it, do what we do now.
+Inside it, various structure members change type.  Timestamps become
+milliseconds rather than seconds with a fractional part.  Degrees become
+microdegrees or something like that.
+
+2. Currently in JSON reporting, some types of obects (notably AIS
+sentences) may be reported in either scaled or unscaled format. 
+(You tell the difference by a &quot;scaled&quot; attribute.)  Currently
+TPVs are always reported in a scaled form.  Undeer NOFLOAT we 
+report them unscaled. 
+
+&gt;<i>The original target MIPS and the lower-end ARM processors don't have
+</I>&gt;<i>an FPU, and most FPUs aren't single cycle.
+</I>
+Right.  Which is why at the *next* major API break forced on us for
+whatever other reason, NOFLOAT goes away and we're all fixed-point all
+the time.
+
+&gt;<i>That said, the web interface and the rest should be fairly agnostic or
+</I>&gt;<i>easily modified.
+</I>
+Indeed. I would welcome that.
+
+In your third post, you give this list of requirements:
+
+&gt;<i>What I need from a gpsd to work in embedded:
+</I>&gt;<i>
+</I>&gt;<i>1. No floating point or other big libraries.  This might or might not
+</I>&gt;<i>mean NMEA only, but from the binary formats I've seen it isn't that
+</I>&gt;<i>hard to do fixed point parsing.
+</I>
+I think, at least at first, it will be acceptable to support NMEA only
+in NOFLOAT.  We'll get some others for free; the AIS driver, for example 
+is already integer-clean with no floats or doubles.
+
+&gt;<i>2. I need to be able to type &quot;make -f Makefile.gpsdmini&quot; instead of
+</I>&gt;<i>requiring the entire GNU autobuild environment.  Even if the binary is
+</I>&gt;<i>a bit chubby (I suggested drivers as plugins earlier) memory is rarely
+</I>&gt;<i>a limit and you can -DNMEA_ONLY if it comes to that.  Nothing but -lc,
+</I>&gt;<i>i.e. the implicit link path, or maybe one or two if they are cross
+</I>&gt;<i>system and really needed, but I can't think of any.  No libtool,
+</I>&gt;<i>automake, autoconf, or the rest should be necessary for gpsd itself.
+</I>&gt;<i>I could do this too once I see how to do a minimalist
+</I>&gt;<i>makefile/config.h.
+</I>
+We agree on getting rid of autotools.  But do you really need a
+flat makefile or can you use scons?
+
+&gt;<i>3. An API for interleaving events or other sensor data.  I can have
+</I>&gt;<i>another interface picking up other data, but if the line of text comes
+</I>&gt;<i>in before the GPS line of text, it needs to go out, send the event, or
+</I>&gt;<i>otherwise coordinate with it.  For example, my dashboard app needs
+</I>&gt;<i>engine RPM.  I could pull everything separately and merge it but each
+</I>&gt;<i>app would have to do that.  Maybe a driver_xeno.c that just opens a
+</I>&gt;<i>listen/read socket and provides text strings out the JSON if a watch
+</I>&gt;<i>is set.  I don't need much, but I do need a way to merge and sync
+</I>&gt;<i>data.  (I'm assuming the multiple source GPS and failover is already
+</I>&gt;<i>there).  If this is decided, it might clear up trouble on whether to
+</I>&gt;<i>include some of the other data GPS devices provide which aren't nav
+</I>&gt;<i>data like water temp.  Anything not in the main nav structure becomes
+</I>&gt;<i>available through a standard catch-all method.
+</I>
+The data interleaving won't be difficult.  And yes, multiple source
+GPS and failover is already there.
+
+&gt;<i>And yes, I would prefer to get gpsd-ng down to embedded size rather
+</I>&gt;<i>than doing a separate codebase.
+</I>
+Better for all involved, yes.
+
+Diego Berge wrote:
+&gt;<i>One of the requirements that make it possible is that data obtained
+</I>&gt;<i>through gpsd must not suffer significant loss of precision.
+</I>
+Agreed. I think we're pretty much there for consumer-grade hardware.
+tz's microdegrees is enough for that.
+
+&gt;<i>Now, while there appear to be very valid and worthwhile reasons that
+</I>&gt;<i>would make it desirable for gpsd to work exclusively at the integer
+</I>&gt;<i>level, as discussed on this insightful thread, I suggest that in order
+</I>&gt;<i>to preserve precision at the level at which current and near-term
+</I>&gt;<i>future geomatics products work, data representation in the order of
+</I>&gt;<i>10^9 sexagesimal degrees would be required (that's around 1/10th of a
+</I>&gt;<i>millimetre of a great circle).  Unfortunately that level of
+</I>&gt;<i>granularity cannot be had with 32 bit integers, so 64 bit storage is
+</I>&gt;<i>the minimum (2^32 &lt; 360/10^-9 &lt; 2^64).
+</I>
+Crash landing.  We may get there someday, but in the near-term future
+the goal of supporting embedded means we *can't* work only on 64-bit.
+
+So here's what we'll do.  Angular measurement under NOFLOAT will get
+its own integer type, angle_t or something.  We'll set the units 
+at microdegrees with a future direction that they may change to
+nanodegrees in a future major API revision.  We'll do code-hygiene
+things, like having a scale constant rather than magic numbers, to
+make that easy.
+
+&gt;<i>P.S.: Back in 2005, I recall there was a similar issue with the
+</I>&gt;<i>output precision of lat/lon values, but that was only a matter of
+</I>&gt;<i>changing the printf() spec, an easy patch to apply (which I did).
+</I>
+And much appreciated.  You do good work, Diego; I wish you were more 
+active here.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+The possession of arms by the people is the ultimate warrant
+that government governs only with the consent of the governed.
+        -- Jeff Snyder
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008767.html">[Gpsd-dev] Have I failed to simplify *enough*?
+</A></li>
+	<LI>Next message: <A HREF="008727.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8726">[ date ]</a>
+              <a href="thread.html#8726">[ thread ]</a>
+              <a href="subject.html#8726">[ subject ]</a>
+              <a href="author.html#8726">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

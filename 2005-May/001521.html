@@ -1,0 +1,97 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] PPS patch
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS%20patch&In-Reply-To=%3C20050502031508.GA6174%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001518.html">
+   <LINK REL="Next"  HREF="001522.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] PPS patch</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20PPS%20patch&In-Reply-To=%3C20050502031508.GA6174%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] PPS patch">esr at thyrsus.com
+       </A><BR>
+    <I>Mon May  2 05:15:08 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001518.html">[Gpsd-dev] PPS patch
+</A></li>
+        <LI>Next message: <A HREF="001522.html">[Gpsd-dev] PPS patch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1521">[ date ]</a>
+              <a href="thread.html#1521">[ thread ]</a>
+              <a href="subject.html#1521">[ subject ]</a>
+              <a href="author.html#1521">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+&gt;<i> Here is my first cut at a PPS synchronisation for NTP.
+</I>&gt;<i> It actually is simpler than I thought before.
+</I>
+I like the direction this patch is going, but I think it needs more
+work before being incorporated in the mainline.
+ 
+&gt;<i> Open issues:
+</I>&gt;<i> 
+</I>&gt;<i> - it should probably be a configuration option to include this code
+</I>&gt;<i> - it uses an ioctl that probably only exists in Linux
+</I>&gt;<i> - it requires the pthreads library, so that should be added to the linking
+</I>&gt;<i> - it would work better when scheduling options are set
+</I>
+And it needs an associated documentation patch.
+ 
+&gt;<i> Right now it calls nice(-10) but I have also experimented with other
+</I>&gt;<i> scheduler settings.  Unfortunately it turns out that gpsd eats all
+</I>&gt;<i> processor time during startup (hunting for the correct speed) so that has
+</I>&gt;<i> to change, or else the entire system hangs for a while when gpsd is
+</I>&gt;<i> started.
+</I>
+I may have fixed this earlier today.  I'll be curious to know whether
+the usleep(3) I inserted make a difference in your environment.
+ 
+&gt;<i> I also found that there seems to be no strict separation between client
+</I>&gt;<i> and server side routines and libraries.  For some reason the code in
+</I>&gt;<i> libgpsd_core.c gets pulled in by xgps as well, requiring a -lpthread there
+</I>&gt;<i> as well.  That is not correct, I think.  Clients should get linked only
+</I>&gt;<i> with the routines required at their side of the TCP connection, not with
+</I>&gt;<i> stuff that is internal to gpsd.
+</I>
+Yes, this is a bug and should be fixed.  I will try to identify the 
+reason for it.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001518.html">[Gpsd-dev] PPS patch
+</A></li>
+	<LI>Next message: <A HREF="001522.html">[Gpsd-dev] PPS patch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1521">[ date ]</a>
+              <a href="thread.html#1521">[ thread ]</a>
+              <a href="subject.html#1521">[ subject ]</a>
+              <a href="author.html#1521">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

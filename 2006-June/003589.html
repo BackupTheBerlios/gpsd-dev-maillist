@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from        meters/sec to knots
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Re%3A%20accuracy%20in%20conversion%20from%20%20%0A%20%20%20%20%20%20meters/sec%20to%20knots&In-Reply-To=%3Cp06230902c0ac543ca6e9%40%5B192.168.1.6%5D%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003588.html">
+   <LINK REL="Next"  HREF="003594.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from        meters/sec to knots</H1>
+    <B>Robin L Darroch</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Re%3A%20accuracy%20in%20conversion%20from%20%20%0A%20%20%20%20%20%20meters/sec%20to%20knots&In-Reply-To=%3Cp06230902c0ac543ca6e9%40%5B192.168.1.6%5D%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from        meters/sec to knots">robin at spade-men.com
+       </A><BR>
+    <I>Wed Jun  7 12:18:08 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003588.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from       meters/sec to knots
+</A></li>
+        <LI>Next message: <A HREF="003594.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from        meters/sec to knots
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3589">[ date ]</a>
+              <a href="thread.html#3589">[ thread ]</a>
+              <a href="subject.html#3589">[ subject ]</a>
+              <a href="author.html#3589">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>At 0:11 -0700 7/6/06, Gary E. Miller wrote:
+&gt;<i>  &gt; Actually, the only change to our existing logic I'm proposing is 
+</I>&gt;<i>from &quot;Buffer
+</I>&gt;&gt;<i>  all, report on every packet, clear at start of cycle&quot; (what we have now) to
+</I>&gt;&gt;<i>  &quot;Buffer all, report on every packet, never clear&quot; (what we should have)
+</I>&gt;<i>
+</I>&gt;<i>Sadly that does not help with a lot of NMEA.  Several units report
+</I>&gt;<i>lat/lon and the 2d flag in the first packet, and lat/lon/altitude and the
+</I>&gt;<i>3d flag in a later packet.  For those units your patch solves nothing
+</I>&gt;<i>but adds complexity.  Check out the &quot;test&quot; sub dir and you will see
+</I>&gt;<i>many examples that.
+</I>
+I realise you don't have an NMEA unit, but you're 100% mistaken in 
+the above claim: my patch works fine no matter when in the cycle the 
+data arrives... indeed, that's *exactly the point*.  The CURRENT 
+LOGIC is what causes all the problems with that kind of data 
+source... I know - I've got one!  With the current logic, using an 
+NMEA unit like you describe will generate artificial jitter (i.e. 
+GPSd returns NaN for altitude when in fact the GPS unit has a valid 
+altitude which it reported barely a second ago).  That is why we 
+SHOULD NOT clear at start of cycle - because the start of cycle is 
+largely an artificial construct, and there has been no case yet cited 
+where GPSd will actually return invalid data with my patch applied 
+(I've already refuted those listed in Eric's white paper).
+
+I know debate over such fundamental design principles is important, 
+but there comes a point where I think it's worth giving it a try, and 
+seeing if anyone can actually find a genuine problem with it.  I've 
+been running a patched version for over two months now, with a range 
+of real-world clients, and a SiRF-II/NMEA source with an output 
+pattern just like you've mentioned.  It works perfectly.  What's 
+more, everyone who's downloaded a copy of my Mac OS X binary has been 
+running the patched version, and there has not been a single 
+complaint of problems with data quality.
+
+I apologise if some frustration is coming across in my e-mails now... 
+but it is getting frustrating to be told by people for whom the patch 
+will make no difference that there's something wrong with it, when 
+the unpatched version behaves so badly for those for whom the patch 
+*will* make a difference: it feels like being told by a blind person 
+that you've chosen the wrong colour to paint your walls.  The TNT 
+patch is being held up pending real-world testing - which I 
+appreciate (and entirely agree should be the case) - but here the 
+real-world testing that has already been done is being discounted in 
+favour of arguments which have yet to offer substantiated claims of 
+drawbacks.
+
+Trust me - when we get through this (and we will, because I DON'T 
+want to have to maintain a forked version indefinitely), it will all 
+seem like much ado about nothing... but I have faith that we'll come 
+to a sensible conclusion.
+
+I also await further input on the O-mode patch... I'm pretty sure of 
+that one, but if Eric or someone else comes up with actual data 
+showing &quot;random garbage&quot; altitudes returned with a 2D fix, I'm 
+prepared to write a different patch.
+
+Cheers,
+Robin
+-- 
+
+-------------------------------------------------------------------------
+  Robin L. Darroch - PO Box 2715, South Hedland WA 6722 - +61 421 503 966
+       <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at darroch.id.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at nyca.org.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003588.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from       meters/sec to knots
+</A></li>
+	<LI>Next message: <A HREF="003594.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from        meters/sec to knots
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3589">[ date ]</a>
+              <a href="thread.html#3589">[ thread ]</a>
+              <a href="subject.html#3589">[ subject ]</a>
+              <a href="author.html#3589">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

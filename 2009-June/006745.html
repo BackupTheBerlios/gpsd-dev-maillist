@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Bug in GPS I suspect (with workaround)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Bug%20in%20GPS%20I%20suspect%20%28with%20workaround%29&In-Reply-To=%3Ca2d3b4550906092105x2b62eb75k8b3099383b43bbb7%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006744.html">
+   <LINK REL="Next"  HREF="006746.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Bug in GPS I suspect (with workaround)</H1>
+    <B>Don Weeks</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Bug%20in%20GPS%20I%20suspect%20%28with%20workaround%29&In-Reply-To=%3Ca2d3b4550906092105x2b62eb75k8b3099383b43bbb7%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Bug in GPS I suspect (with workaround)">don.l.weeks.jr at gmail.com
+       </A><BR>
+    <I>Wed Jun 10 06:05:14 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006744.html">[Gpsd-dev] Bug in GPS I suspect (with workaround)
+</A></li>
+        <LI>Next message: <A HREF="006746.html">[Gpsd-dev] Bug in GPS I suspect (with workaround)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6745">[ date ]</a>
+              <a href="thread.html#6745">[ thread ]</a>
+              <a href="subject.html#6745">[ subject ]</a>
+              <a href="author.html#6745">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE> &lt;<A HREF="http://www.catb.org/%7Eesr/">http://www.catb.org/%7Eesr/</A>&gt;
+Eric,
+    That worked perfectly. Here is the full patch. Thanks for the help. I
+have asked the hardware manufacturer to look into this. I still find it
+strange when I capture packets
+with minicom or with cat I get different results. gpscat also works
+perfectly. I suspect minicom is not capturing the raw data but only what is
+logged on the screen and cat is giving some very bizarre results with
+&quot;Command Error&quot; interleaved in the NMEA strings. Still working on getting
+good raw serial data to submit for testing. I did test this &quot;fix&quot; with both
+the Firefly and the Navsync CW-25TIM. The CW-25TIM is pure NMEA with some
+propriatry strings added in. Later this summer, I hope to submit code added
+to the NMEA driver to support the additional strings for the CW-25TIM.
+           Don
+
+Index: packet.c
+===================================================================
+--- packet.c    (revision 1)
++++ packet.c    (working copy)
+@@ -270,9 +270,6 @@
+     case NMEA_LEADER_END:
+        if (c == '\r')
+            lexer-&gt;state = NMEA_CR;
+-       else if (c == '\n')
+-           /* not strictly correct, but helps for interpreting logfiles */
+-           lexer-&gt;state = NMEA_RECOGNIZED;
+        else if (c == '$')
+            /* faster recovery from missing sentence trailers */
+            lexer-&gt;state = NMEA_DOLLAR;
+@@ -280,7 +277,14 @@
+            lexer-&gt;state = GROUND_STATE;
+        break;
+     case NMEA_CR:
+-       if (c == '\n')
++/*
++ * A second \r is used for Firefly-1a
++ * The second \r is treated as an NMEA_CR for as long as they occur
++ *
++ */
++       if (c == '\r')
++           lexer-&gt;state = NMEA_CR;
++       else if (c == '\n')
+            lexer-&gt;state = NMEA_RECOGNIZED;
+        else
+            lexer-&gt;state = GROUND_STATE;
+@@ -951,16 +955,22 @@
+ #ifdef NMEA_ENABLE
+        else if (lexer-&gt;state == NMEA_RECOGNIZED) {
+            bool checksum_ok = true;
+-           char csum[3];
+-           char *trailer = (char *)lexer-&gt;inbufptr-5;
+-           if (*trailer == '*') {
+-               unsigned int n, crc = 0;
+-               for (n = 1; (char *)lexer-&gt;inbuffer + n &lt; trailer; n++)
+-                   crc ^= lexer-&gt;inbuffer[n];
+-               (void)snprintf(csum, sizeof(csum), &quot;%02X&quot;, crc);
+-               checksum_ok = (csum[0]==toupper(trailer[1])
+-                               &amp;&amp; csum[1]==toupper(trailer[2]));
+-           }
++           char csum[3],*end;
++           /*
++            * Back up past any whitespace.  Need to do this because
++            * at least one GPS (the Firefly 1a) emits \r\r\n
++            */
++           for (end = (char *)lexer-&gt;inbufptr-1; isspace(*end); end--)
++               continue;
++           end -= 2;
++           if (*end == '*') {
++               unsigned int n, crc = 0;
++               for (n = 1; (char *)lexer-&gt;inbuffer + n &lt; end; n++)
++                   crc ^= lexer-&gt;inbuffer[n];
++               (void)snprintf(csum, sizeof(csum), &quot;%02X&quot;, crc);
++               checksum_ok = (csum[0]==toupper(end[1])
++                               &amp;&amp; csum[1]==toupper(end[2]));
++           }
+            if (checksum_ok) {
+ #ifdef AIVDM_ENABLE
+                if (strncmp((char *)lexer-&gt;inbuffer, &quot;!AIVDM&quot;, 6) == 0)
+
+
+&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090609/0e390b93/attachment.html">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090609/0e390b93/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006744.html">[Gpsd-dev] Bug in GPS I suspect (with workaround)
+</A></li>
+	<LI>Next message: <A HREF="006746.html">[Gpsd-dev] Bug in GPS I suspect (with workaround)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6745">[ date ]</a>
+              <a href="thread.html#6745">[ thread ]</a>
+              <a href="subject.html#6745">[ subject ]</a>
+              <a href="author.html#6745">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH 8/8] Displaying GPGST data in xgps
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%208/8%5D%20Displaying%20GPGST%20data%20in%20xgps&In-Reply-To=%3C1295903610.2029.157.camel%40adelie%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008521.html">
+   <LINK REL="Next"  HREF="008526.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH 8/8] Displaying GPGST data in xgps</H1>
+    <B>Thomas Sprinkmeier</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%208/8%5D%20Displaying%20GPGST%20data%20in%20xgps&In-Reply-To=%3C1295903610.2029.157.camel%40adelie%3E"
+       TITLE="[Gpsd-dev] [PATCH 8/8] Displaying GPGST data in xgps">thomas.sprinkmeier at cohdawireless.com
+       </A><BR>
+    <I>Mon Jan 24 22:13:30 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008521.html">[Gpsd-dev] [PATCH 8/8] Displaying GPGST data in xgps
+</A></li>
+        <LI>Next message: <A HREF="008526.html">[Gpsd-dev] [PATCH 8/8] Displaying GPGST data in xgps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8524">[ date ]</a>
+              <a href="thread.html#8524">[ thread ]</a>
+              <a href="subject.html#8524">[ subject ]</a>
+              <a href="author.html#8524">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Mon, 2011-01-24 at 06:38 -0500, Eric Raymond wrote:
+&gt;<i> Thomas Sprinkmeier &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas.sprinkmeier at cohdawireless.com</A>&gt;:
+</I>&gt;<i> &gt; patch 8 of 5 :-)
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; updated xgps to display the GPGST data
+</I>&gt;<i> 
+</I>&gt;<i> You're missing the 9th part, where you document this feature on the
+</I>&gt;<i> gpsd manual page. That's the only blocker for merging this.
+</I>
+Patch 9 of 5 coming up (as soon as the flag thing is resolved).
+
+&gt;<i> There's a potential problem with taking the mask member to 64 bits, as we
+</I>&gt;<i> want gpsd and its clients to be able to run on 32-bit machines.  I don't
+</I>&gt;<i> know if it's possible to reliably force a 64-bit integral type in those 
+</I>&gt;<i> environments.  Yes, I know about &quot;long long&quot; and int64_t, what I'm not
+</I>&gt;<i> sure of is how portable those are.
+</I>
+I had misgivings about going to 64-bit as well. 
+
+I used uint64_t to force 64-bit, but any compiler/environment that does
+not support that type would be left behind by this patch.
+
+Having run out of bits in a 32-bit mask I don't know how else to signal
+availability of GST data. 
+Is overloading the HERR/VERR bits acceptable? (My guess is &quot;NO!&quot; because
+it would confuse old clients).
+Can I just use NAN in the error fields to flag 'not available'? (But
+then clients would be left testing bitmasks to check the availability of
+some data and using isNAN for others).
+
+Some hybrid solution
+#ifdef 64-bit-supported
+/* use uint64_t */
+#else
+/* use NAN as a flag value */
+#endif
+should work in the short term but could turn ugly in the long term.
+
+I'm searching for the least bad solution. I'm tempted to say it's
+&quot;uint64_t&quot; but I don't know how many clients would be affected.
+
+
+
+regards,
+
+Thomas
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008521.html">[Gpsd-dev] [PATCH 8/8] Displaying GPGST data in xgps
+</A></li>
+	<LI>Next message: <A HREF="008526.html">[Gpsd-dev] [PATCH 8/8] Displaying GPGST data in xgps
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8524">[ date ]</a>
+              <a href="thread.html#8524">[ thread ]</a>
+              <a href="subject.html#8524">[ subject ]</a>
+              <a href="author.html#8524">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

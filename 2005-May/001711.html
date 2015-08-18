@@ -1,0 +1,131 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] endless loop, 100% cpu
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20endless%20loop%2C%20100%25%20cpu&In-Reply-To=%3C134C86E29965B848959E7722A562887124BA88%40ssfmail.sirf.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001710.html">
+   <LINK REL="Next"  HREF="001713.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] endless loop, 100% cpu</H1>
+    <B>Carl Carter</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20endless%20loop%2C%20100%25%20cpu&In-Reply-To=%3C134C86E29965B848959E7722A562887124BA88%40ssfmail.sirf.com%3E"
+       TITLE="[Gpsd-dev] endless loop, 100% cpu">ccarter at sirf.com
+       </A><BR>
+    <I>Tue May 17 18:44:08 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001710.html">[Gpsd-dev] Re: [Gpsd-users] gpsd on MIPSEL
+</A></li>
+        <LI>Next message: <A HREF="001713.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1711">[ date ]</a>
+              <a href="thread.html#1711">[ thread ]</a>
+              <a href="subject.html#1711">[ subject ]</a>
+              <a href="author.html#1711">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Message ID 41 (0x29) was in fact not fully filled out until version
+2.3.2 -- it was only available for development of our SiRFDRive DR
+product in 2.3.1.  As to time, at the time of 2.3.1 leap seconds were
+still 13 where they have been for some few years now.  I don't
+understand how the time is off by two or three seconds.  We specify
+where we output UTC and where we output GPS time, and in most cases
+where the format is seconds in the current week that is specified as GPS
+time.  In fact, I cannot think of any place where we output time of week
+that is not GPS time.  Similarly, if we output hours/minutes/seconds it
+is UTC time, and our default leap-second adjustment is 13 seconds, so it
+should be right.
+
+One issue for discussion is that we do not output on the second (unless
+you are using message ID 52).  We make measurements in the receiver in
+time with an internal counter that is not slaved to GPS time, so the
+measurements are made at a time that wanders around the second.  Then,
+after the measurements are made (all normalized to the same point in
+time) we dispatch the navigation software to make a solution, and that
+solution comes out some 200 to 300 ms after the measurement time.  So
+you may get a message at 700 ms after the second that uses measurements
+time tagged 450 ms after the second.  And if some other task jumps up
+and delays things, that message may not come out until 900 ms after the
+second.  Things can get out of sync to the point that if you try to
+resolve the GPS time of our 1 PPS pulses using the navigation messages,
+you will find it impossible to be consistent.  That is why I added
+message ID 52 to our system -- it is tied to the creation of the 1 PPS
+and always comes out right around the top of the second.
+
+Carl 
+
+
+Carl Carter
+Field Application Engineer
+SiRF Technology, Inc.
+1231 East Dyer Road, Suite 200
+Santa Ana, California 92705 USA
+Phone (direct) 1-714-435-4902
+          (main)  1-714-435-4900
+          (fax)     1-714-435-4993
+
+-----Original Message-----
+From: Eric S. Raymond [mailto:<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>] 
+Sent: Tuesday, May 17, 2005 1:08 AM
+To: Carl Carter
+Cc: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>; Rob Janssen
+Subject: Re: [Gpsd-dev] endless loop, 100% cpu
+
+Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+&gt;<i> It looks like your receiver is not outputting either GPS time or UTC
+</I>time...
+&gt;<i> The message 0x29 time, which is supposed to be UTC, is all zeroes on 
+</I>&gt;<i> your receiver.  This is consistent with the comments in the code that 
+</I>&gt;<i> say that this does not work before version 232 (and yours is 231).
+</I>&gt;<i> So, the program uses messages 0x02 and 0x04.
+</I>&gt;<i> 
+</I>&gt;<i> The time fields there are supposed to be GPS time.  sirfmon prints 
+</I>&gt;<i> them unmodified.  You report that they are &quot;a second or two ahead of 
+</I>&gt;<i> UTC&quot; but they should have been 13 seconds ahead.
+</I>&gt;<i> gpsd subtracts the leap_seconds from that, which should be 13.  That 
+</I>&gt;<i> is how you get your &quot;10 seconds behind UTC&quot; time.
+</I>&gt;<i> 
+</I>&gt;<i> It sort of looks like this particular receiver attempts some GPS-&gt;UTC 
+</I>&gt;<i> correction of its own, by subtracting a fixed 10 or 11 seconds (that 
+</I>&gt;<i> may have been valid at the time it was built).
+</I>&gt;<i> We will have to find some way to turn that off, or to identify the 
+</I>&gt;<i> actual offset and an indication that it is being applied.
+</I>
+Carl, is this at all possible for a SiRF chip at firmware level 231?
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001710.html">[Gpsd-dev] Re: [Gpsd-users] gpsd on MIPSEL
+</A></li>
+	<LI>Next message: <A HREF="001713.html">[Gpsd-dev] endless loop, 100% cpu
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1711">[ date ]</a>
+              <a href="thread.html#1711">[ thread ]</a>
+              <a href="subject.html#1711">[ subject ]</a>
+              <a href="author.html#1711">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

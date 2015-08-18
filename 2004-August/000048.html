@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] blocked client eventually stalls gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20blocked%20client%20eventually%20stalls%20gpsd&In-Reply-To=%3C20040826122130.GC10201%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000047.html">
+   <LINK REL="Next"  HREF="000050.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] blocked client eventually stalls gpsd</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20blocked%20client%20eventually%20stalls%20gpsd&In-Reply-To=%3C20040826122130.GC10201%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] blocked client eventually stalls gpsd">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Aug 26 14:21:30 CEST 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000047.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+        <LI>Next message: <A HREF="000050.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#48">[ date ]</a>
+              <a href="thread.html#48">[ thread ]</a>
+              <a href="subject.html#48">[ subject ]</a>
+              <a href="author.html#48">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rich Gibson &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">rich at testingrange.com</A>&gt;:
+&gt;<i> Maybe I'm not catching on, but I expect the software to give me an idea of 
+</I>&gt;<i> where I am.  GPS units don't work like just another hotplug device.  They 
+</I>&gt;<i> can take a while to get a lock, and they can lose lock at inconvenient 
+</I>&gt;<i> plans.  My expectation of the 'right' behavior is to give me the last best 
+</I>&gt;<i> information.
+</I>&gt;<i>
+</I>&gt;<i> I much much prefer a six hour old position with a timestamp to no 
+</I>&gt;<i> position.
+</I>
+And you'll get one. The offline timeout is irrelevant to this.
+
+Here's how it works.  
+
+1. At some time T, your GPS reports a fix to gpsd.
+gpsd stores it, with a timestamp.  
+
+2. Suppose at T + 30 seconds later, the GPS goes offline (unplugged,
+battery drained, whatever).
+
+3. Then at T + 32 seconds gpsd times out the connection to the GPS and
+raises the offine flag.
+
+4. At T + 6 hours later, you query gpsd.  It reports the last fix 
+and the fact that status is offline.
+
+&gt;<i> The whole issue of 'offline' sort of confuses me.  Basically, we don't 
+</I>&gt;<i> really have a reliable way to know if the GPS is 'online' or 'offline.'  
+</I>
+If we know that the GPS sends data at least once every X seconds, and
+X seconds elapses with no data, we know it's offline.  If it sends data, 
+it's online.  That sounds reliable to me.
+
+&gt;<i> But we do know when we got the last useful information from the GPS.  It 
+</I>&gt;<i> seems to me that the question of whether 1, 2, or 180 seconds is 'on line' 
+</I>&gt;<i> or 'off line' is best left to the client.
+</I>
+No, because in the general case the client can't know anything about the state
+of the gpsd-to-host connection except what the host tells it.
+
+&gt;<i> 'Here is what I know, and this is when I knew this' is what I want from 
+</I>&gt;<i> the demon.
+</I>
+And that is exactly what you now get.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000047.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+	<LI>Next message: <A HREF="000050.html">[Gpsd-dev] blocked client eventually stalls gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#48">[ date ]</a>
+              <a href="thread.html#48">[ thread ]</a>
+              <a href="subject.html#48">[ subject ]</a>
+              <a href="author.html#48">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

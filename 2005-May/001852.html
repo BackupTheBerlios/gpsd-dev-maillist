@@ -1,0 +1,177 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] making gosdrive haoot
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20making%20gosdrive%20haoot&In-Reply-To=%3C20050524022823.GA25081%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001856.html">
+   <LINK REL="Next"  HREF="001858.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] making gosdrive haoot</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20making%20gosdrive%20haoot&In-Reply-To=%3C20050524022823.GA25081%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] making gosdrive haoot">esr at thyrsus.com
+       </A><BR>
+    <I>Tue May 24 04:28:23 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001856.html">[Gpsd-dev] making gosdrive haoot
+</A></li>
+        <LI>Next message: <A HREF="001858.html">[Gpsd-dev] making gosdrive haoot
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1852">[ date ]</a>
+              <a href="thread.html#1852">[ thread ]</a>
+              <a href="subject.html#1852">[ subject ]</a>
+              <a href="author.html#1852">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+&gt;<i> My experience is that when small bugs are found at a high rate, the
+</I>&gt;<i> density is high.  I.e. there is no reason to believe that after fixing 5
+</I>&gt;<i> small bugs in a week, the program is reasonably bugfree.  It is more of an
+</I>&gt;<i> indication that still many small bugs exist.
+</I>
+Yes.  So what does this have to do with the release tempo, exactly?
+
+If you want to argue that fixing 5 small bugs in a week means we need
+more time on QA and testing, fine.  I won't argue, because I agree
+with you.  But you can't turn that into an argument that the release
+tempo should slow down without another premise -- e.g. that faster
+releases mean more bugs.
+ 
+&gt;<i> This is what makes open source so strong: others can find and fix bugs
+</I>&gt;<i> much easier.  But it also means one sometimes has to sitdown and take
+</I>&gt;<i> time, which is sometimes made difficult when there are &quot;final calls for
+</I>&gt;<i> fixes&quot; so often.
+</I>
+Why?  You can take the time to read the code at any time.  The codebase
+is not changing on such a large scale as to prevent that.
+
+&gt;<i> That is why I mention the &quot;nighly build&quot;, by which I mean a set of files
+</I>&gt;<i> like an official version, but built from the latest svn version.  This
+</I>&gt;<i> allows users to download recent sources and/or binaries without having to
+</I>&gt;<i> use svn or even to compile.
+</I>
+I'm not seeing how nightly builds would solve any problems, but that's probably
+because I don't see what problems a rapid release tempo is supposed to be
+creating.
+
+&gt;<i> I went through the Zodiac driver and found many errors.  But maybe that
+</I>&gt;<i> was not indicative as it seemed to be orphaned.
+</I>
+Yes, it had been semi- or unmaintained for quite a while before you
+started working on it.
+
+&gt;<i> I put up this point when I noticed that -1 is used for invalid latitude
+</I>&gt;<i> and longitude, yet -1 is a valid value for those.
+</I>
+Hm.  I thought those were guaranteed nonnegative.  Hold on...no,
+you're right, the range is pi to -pi.  I'll change the #defines to
+something arbitrary and out of bounds like 721, I guess.
+
+&gt;<i> &gt; OK, I like that idea, but I have some portability reservations.  Do
+</I>&gt;<i> &gt; POSIX or X3J11 describe #defines for max or min values?
+</I>&gt;<i> 
+</I>&gt;<i> It needs investigation.  When it would be simple, I would have sent a patch.
+</I>&gt;<i> I noticed that printf with the %f format can print &quot;nan&quot; when a value is
+</I>&gt;<i> not a number.  What I don't know is if  scanf can scan the &quot;nan&quot; string
+</I>&gt;<i> and set the variable to not-a-number, and if #defines for this value
+</I>&gt;<i> exist.
+</I>
+I don't know that either.
+
+&gt;<i> &gt; Hm.  This is a significant problem with the multi-session
+</I>&gt;<i> &gt; architecture.  I wish you had prought it to my attention sooner.
+</I>&gt;<i> 
+</I>&gt;<i> It only came to my attention during my work on the Trimble and plugging 3
+</I>&gt;<i> receivers between 2 ports.
+</I>
+I've been looking at the code.  I don't think it will be as difficult as I
+first thought.  I'll take a whack at it tonight.
+ 
+&gt;<i> Ok, fine with me...   of course it requires a much wider change to bring
+</I>&gt;<i> the sniff into the mainloop than to separate the receiver drivers into
+</I>&gt;<i> separate threads, but on the other hand it could be less risky because
+</I>&gt;<i> there is no locking of data in the current implementation and it could be
+</I>&gt;<i> required when separate threads start to read and write into the same
+</I>&gt;<i> datastructure.
+</I>
+You have put your finger precisely on the reason I think it is less risky.
+ 
+&gt;<i> &gt; I think increasing the usleep() would be an acceptable fix.
+</I>&gt;<i> 
+</I>&gt;<i> Yes, my feeling from the beginning was that the variable usleep was a bit
+</I>&gt;<i> over-engineered and could simply have been a fixed usleep for 20 or 30 ms.
+</I>&gt;<i> As long as it is above 10ms it will allow other tasks to be scheduled even
+</I>&gt;<i> when those are of lower priority.
+</I>
+Interesting; apparently you know something I don't.  What makes 10ms a
+magic number in this contecxt.
+
+&gt;<i> However, when this code is changed to be in the main select loop the
+</I>&gt;<i> FIONREAD ioctl can simply be dropped and the select will handle the
+</I>&gt;<i> timeout.
+</I>
+Yes, I see that.
+
+&gt;<i> What remains is &quot;why is it failing under high load&quot;?
+</I>&gt;<i> I have not found that yet.   I was simply copying a lot of disk data
+</I>&gt;<i> (which causes some buffermanagement trouble especially with Reiserfs, and
+</I>&gt;<i> thus causes swapping) and suddenly gpsd started using much more CPU, and I
+</I>&gt;<i> saw that only the PPS threads were still functioning normally but the
+</I>&gt;<i> packet handler was stuck hunting for valid packets.  No idea yet why it
+</I>&gt;<i> got an error and why it would not recover.
+</I>
+I'd be inclined to suspect some trouble in the serial drive leading to
+data loss, with the result looking like endless garbage to the
+sniffer.  That possibility is somewhat worrisome, because we can't
+fix it.  I actually hope it's a bug in gpsd instead.
+
+&gt;<i> &gt; OK.  Is this a reason not to release?  Doesn't seem so to me.  Releases
+</I>&gt;<i> &gt; aren't expensive.
+</I>&gt;<i> 
+</I>&gt;<i> Not so much for the developer, but we must also think about the user.
+</I>&gt;<i> When releases are once or twice per week, those who want to make actual
+</I>&gt;<i> use of the product tend to get a little overwhelmed and do not track them
+</I>&gt;<i> anymore.
+</I>
+I'd worry about this seriously if gpsd were a word processor or something.  
+As it is, the people who are exposed to our frequent releases are pretty
+hard-core techies.  I suspect they consider frequent releases a sign of
+health.  It's distro-release frequencies that set the intervals for users.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001856.html">[Gpsd-dev] making gosdrive haoot
+</A></li>
+	<LI>Next message: <A HREF="001858.html">[Gpsd-dev] making gosdrive haoot
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1852">[ date ]</a>
+              <a href="thread.html#1852">[ thread ]</a>
+              <a href="subject.html#1852">[ subject ]</a>
+              <a href="author.html#1852">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

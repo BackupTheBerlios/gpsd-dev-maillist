@@ -1,0 +1,145 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Stripping down gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Stripping%20down%20gpsd&In-Reply-To=%3CAANLkTimYou5YZgZ0shNSe8o-CFYvh%3DOXPu5Ytgcw6_7a%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008741.html">
+   <LINK REL="Next"  HREF="008743.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Stripping down gpsd</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Stripping%20down%20gpsd&In-Reply-To=%3CAANLkTimYou5YZgZ0shNSe8o-CFYvh%3DOXPu5Ytgcw6_7a%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Stripping down gpsd">thomas at mich.com
+       </A><BR>
+    <I>Thu Mar 10 20:05:37 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008741.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+        <LI>Next message: <A HREF="008743.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8742">[ date ]</a>
+              <a href="thread.html#8742">[ thread ]</a>
+              <a href="subject.html#8742">[ subject ]</a>
+              <a href="author.html#8742">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Thu, Mar 10, 2011 at 1:24 PM, Bernd Zeimetz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">bernd at bzed.de</A>&gt; wrote:
+&gt;<i> On 03/10/2011 06:54 PM, tz wrote:
+</I>&gt;&gt;<i> That is one of the reasons I asked about plugins. &#160;Things with drivers
+</I>&gt;&gt;<i> bloat if they don't use this kind of architecture - no one would think
+</I>&gt;&gt;<i> that the linux USB subsystem or Xorg should have one monolithic
+</I>&gt;&gt;<i> &quot;everything&quot; module. &#160;Since were aren't going to do plugins, it makes
+</I>&gt;&gt;<i> sense to have in addition to the ala-carte settings, a set of build
+</I>&gt;&gt;<i> options for light, normal, everything.
+</I>&gt;<i>
+</I>&gt;<i> Which selections of the current enable/disable switches would you like
+</I>&gt;<i> to see as light/normal ?
+</I>
+Light: NMEA only, maybe ntp integration but nothing else, basically
+for embedded targets to supply JSON position data and little else.
+Probably not the lib
+
+Medium:  NMEA, plus any common protocol on a GPS that doesn't support
+NMEA (Garmin has binary, but most as of a few years ago had NMEA
+modes).  Consumer and system gps timekeepers,.  Any builtin GPS
+hardware for laptops or tablets if not NMEA.  Add pps, ntp, the
+library, and auxiliary programs.   Basically any desktop or small
+distro should work with any common GPS.
+
+&gt;<i>
+</I>&gt;&gt;&gt;<i> The last time I tried it it worked well on a sun sparc box runnign
+</I>&gt;&gt;&gt;<i> solaris and the sun compiler suite.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> The current or the ancient version?
+</I>&gt;<i>
+</I>&gt;<i> Solaris 8. No idea where they are now.
+</I>&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Ubuntu still builds on arm? I don't think so, I think they dropped the
+</I>&gt;&gt;&gt;<i> architecture. We (Debian) are building everything on real (and fast!)
+</I>&gt;&gt;&gt;<i> arm hardware, same for mips(el).
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> My point exactly - one of the reasons for autotools is/was --build
+</I>&gt;&gt;<i> --host and --target. &#160;You are building everything on a fast arm, but I
+</I>&gt;&gt;<i> don't have a fast arm. &#160;I do have a multicore x86_64 which is fast,
+</I>&gt;&gt;<i> but can I build debian arm on that? &#160;Not using something like
+</I>&gt;&gt;<i> scratchbox with QEMU.
+</I>&gt;<i>
+</I>&gt;<i> You might want to have a look at the OpenWRT buildchain - they build
+</I>&gt;<i> basically everything on x86. Cross-building gpsd worked fine for me when
+</I>&gt;<i> I tried some months ago and they still have gpsd packages, so it seems
+</I>&gt;<i> it still works fine.
+</I>&gt;<i> <A HREF="https://dev.openwrt.org/browser/packages/net/gpsd/patches/100-cross-compile.patch">https://dev.openwrt.org/browser/packages/net/gpsd/patches/100-cross-compile.patch</A>
+</I>&gt;<i> - there is only one patch in there repository we should apply.
+</I>
+Thanks - I will take a look.
+
+&gt;<i> [...]
+</I>&gt;&gt;<i> Perhaps the library should be moved to its own directory and built
+</I>&gt;&gt;<i> optionally but use its own autogen and such if it requires all that.
+</I>&gt;&gt;<i> That part probably has all the build complexity like GTK+. &#160;But gpsd
+</I>&gt;&gt;<i> itself shouldn't be burdened by every requirement the library has.
+</I>&gt;<i>
+</I>&gt;<i> Actually I have to admit I can't see your problem here. Setting up a
+</I>&gt;<i> toolchain for cross-building is not *that* hard.
+</I>
+Setting up the toolchain is simple enough.  The problem is that a very
+large number of the build system for packages can't cross compile.
+
+./configure --target=arm-linux-unknown (with CFLAGS, PATHs and such)
+...
+Checking if gcc can create runnable executables... no
+
+dd-wrt might have fixed enough to do the thin portion they use, but
+what percentage of debian packages can be compiled on x86 for mips
+even if the entire cross toolchain and libs are present and correct?
+
+One of the reasons for the ugliness of the autotools is so you can do
+things like cross compile, but few have bothered to clean up or fix
+the scripts to actually work.
+
+&gt;<i> --
+</I>&gt;<i> &#160;Bernd Zeimetz &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;Debian GNU/Linux Developer
+</I>&gt;<i> &#160;<A HREF="http://bzed.de">http://bzed.de</A> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;<A HREF="http://www.debian.org">http://www.debian.org</A>
+</I>&gt;<i> &#160;GPG Fingerprints: ECA1 E3F2 8E11 2432 D485 DD95 EB36 171A 6FF9 435F
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008741.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+	<LI>Next message: <A HREF="008743.html">[Gpsd-dev] Stripping down gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8742">[ date ]</a>
+              <a href="thread.html#8742">[ thread ]</a>
+              <a href="subject.html#8742">[ subject ]</a>
+              <a href="author.html#8742">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

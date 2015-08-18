@@ -1,0 +1,120 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-commit-watch] r4727 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2008-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20r4727%20-%20trunk&In-Reply-To=%3Crmid4levi62.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006078.html">
+   <LINK REL="Next"  HREF="006080.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-commit-watch] r4727 - trunk</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20r4727%20-%20trunk&In-Reply-To=%3Crmid4levi62.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] [Gpsd-commit-watch] r4727 - trunk">gdt at ir.bbn.com
+       </A><BR>
+    <I>Wed Jul 16 01:31:17 CEST 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006078.html">[Gpsd-dev] [Gpsd-commit-watch] r4727 - trunk
+</A></li>
+        <LI>Next message: <A HREF="006080.html">[Gpsd-dev] The state of RTCM3 support, and two request for healp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6079">[ date ]</a>
+              <a href="thread.html#6079">[ thread ]</a>
+              <a href="subject.html#6079">[ subject ]</a>
+              <a href="author.html#6079">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Matthias Urlichs &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">smurf at smurf.noris.de</A>&gt; writes:
+
+&gt;&gt;<i> &gt; One thing I'd like to use RTCM3 for is offline correction of my NMEA /
+</I>&gt;&gt;<i> &gt; gpsd stream; when I go openstreetmapping or geocaching somewhere in the
+</I>&gt;&gt;<i> &gt; wilderness I'm unlikely to have Internet, so I'd have to postprocess
+</I>&gt;&gt;<i> &gt; the data.
+</I>&gt;<i>
+</I>&gt;<i> Postprocessing requires a steam of timestamp+offset-for-lat/long/height
+</I>&gt;<i> messages that I can apply to the track and waypoint data(*). That may be
+</I>&gt;<i> extractable from the RTCM stream; I haven't checked yet. If not, I'd
+</I>&gt;<i> connect two identical GPS receivers, send RTCM to only one of them, and
+</I>&gt;<i> store the differences between their reported positions.
+</I>
+Perhaps you know this, but for everyone else: 
+
+Normal GPS observes pseudranges (combination of distance and time
+offset), and then does a least-squares fit to get position.  DGPS
+corrections are basically a pseudorange error, a time, and a pseudorange
+error rate.  One then applies the corrections to the pseudoranges before
+solving.
+
+It's natural to think about applying the corrections to the
+already-computed position solution, but that's hard because you have to
+back out the solution with the errors.  The hardest part is making sure
+that you know which satellites were in the solutions, and then perhaps
+you could.
+
+The bottom line is that until gpsd grows support for taking raw
+pseudoranges and computing position solutions, it doesn't make sense to
+talk about it applying RTCM corrections to positions.
+
+&gt;<i> (*) High-end commercial surveying systems which do this kind of
+</I>&gt;<i> post-processing store the raw satellite reception parameters
+</I>&gt;<i> (i.e. signal offset and phase) instead of the waypoint coordinate, and
+</I>&gt;<i> apply the RTCM corrections before they calculate their position, thereby
+</I>&gt;<i> delivering another order of magnitude of accuracy. Unfortunately that's
+</I>&gt;<i> all proprietary AFAIK; even if it wasn't, somebody would have to write
+</I>&gt;<i> code for GPS analysis. Which is NOT easy.
+</I>
+I don't think it's all proprietary, and moderately-priced receivers do
+this too.  But you do need code to solve the positioning equations, and
+you'd need essentially the same code to extend to compute a position
+error from a position solution and list of satellites.
+
+&gt;<i> I'm somewhat annoyed about the fact that all this effort would be mostly
+</I>&gt;<i> unnecessary if the 2-GHz signal wasn't encrypted, but oh well ...
+</I>&gt;<i> we work with what we have.
+</I>
+There is no 2 GHz signal; L1 is 1575 and L2 is 1200ish.  There is talk
+of an L2 civil signal, and this would let people avoid most of the error
+due to ionospheric delay.  But there's still unmodeled tropospheric
+delay, clock errors, and orbit errors - differential takes out all of
+them.
+
+As for being annoyed, let me know when you or someone else launches a
+24-bird constellation and give it away :) Last I heard Galileo was
+planning to charge for access to accurate signals - I think the L1-only
+GPS signal is pretty spiffy for being free.  But that's veering off topic.
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006078.html">[Gpsd-dev] [Gpsd-commit-watch] r4727 - trunk
+</A></li>
+	<LI>Next message: <A HREF="006080.html">[Gpsd-dev] The state of RTCM3 support, and two request for healp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6079">[ date ]</a>
+              <a href="thread.html#6079">[ thread ]</a>
+              <a href="subject.html#6079">[ subject ]</a>
+              <a href="author.html#6079">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

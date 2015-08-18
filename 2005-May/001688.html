@@ -1,0 +1,95 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd callback and c++ patch
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20callback%20and%20c%2B%2B%20patch&In-Reply-To=%3C20050516173901.GA10226%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001686.html">
+   <LINK REL="Next"  HREF="001694.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd callback and c++ patch</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20callback%20and%20c%2B%2B%20patch&In-Reply-To=%3C20050516173901.GA10226%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] gpsd callback and c++ patch">esr at thyrsus.com
+       </A><BR>
+    <I>Mon May 16 19:39:01 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001686.html">[Gpsd-dev] gpsd callback and c++ patch
+</A></li>
+        <LI>Next message: <A HREF="001694.html">[Gpsd-dev] gpsd callback and c++ patch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1688">[ date ]</a>
+              <a href="thread.html#1688">[ thread ]</a>
+              <a href="subject.html#1688">[ subject ]</a>
+              <a href="author.html#1688">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Alfredo &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">alfredio at fastwebnet.it</A>&gt;:
+&gt;<i> &gt;Although this is true, is it really necessary to handle this as a separate
+</I>&gt;<i> &gt;case?
+</I>&gt;<i> &gt;The original gps_poll returns -1 in this case and that can be used to end
+</I>&gt;<i> &gt;the thread as well, I think.
+</I>&gt;<i> &gt;That would mean no change is necessary to the documented function.
+</I>&gt;<i> &gt;(0 or -1 return from read are both treated as end of file)
+</I>&gt;<i> 
+</I>&gt;<i> Yeah! that sounds cool! ;-)
+</I>&gt;<i> 
+</I>&gt;<i> Moreovoer there is an issue we should add to the docs:
+</I>&gt;<i> - you shall only have ONE callback active for one gpsdata structure.
+</I>&gt;<i> you must call gps_del_callback() before calling gps_set_callback() 
+</I>&gt;<i> another time.
+</I>
+There are a couple of serious problems with this patch besides the one
+you've just pointed out.
+
+One is that libgpsmm.h and libgpsmm.cpp seem to be missing.  Without them,
+applying this patch breaks the gpsd build.
+
+Another is that the poll_gpsd() code looks buggy.  The return type of the
+dunction is void *, but it has a return -1 in it.  It looks like that
+should be &quot;return res&quot; with res initialized to -1, but res is uninitialized.
+Also, there;s a completely superfluous prototype just before the definition.
+
+These are sloppy mistakes.  They don't do much to inspire confidence
+in this code.  Do you have a unit test for it?
+
+It's good that you added documentation.  I'd like to see a cleaned-up
+patch with a unit test to verify that the entry point works as
+described.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001686.html">[Gpsd-dev] gpsd callback and c++ patch
+</A></li>
+	<LI>Next message: <A HREF="001694.html">[Gpsd-dev] gpsd callback and c++ patch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1688">[ date ]</a>
+              <a href="thread.html#1688">[ thread ]</a>
+              <a href="subject.html#1688">[ subject ]</a>
+              <a href="author.html#1688">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

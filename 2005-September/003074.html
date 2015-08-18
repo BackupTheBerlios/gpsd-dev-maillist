@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPRMC bug?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPRMC%20bug%3F&In-Reply-To=%3C20050926163559.GG3513%40www.gritch.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003073.html">
+   <LINK REL="Next"  HREF="003075.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPRMC bug?</H1>
+    <B>Jeff Francis</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPRMC%20bug%3F&In-Reply-To=%3C20050926163559.GG3513%40www.gritch.org%3E"
+       TITLE="[Gpsd-dev] GPRMC bug?">jeff at gritch.org
+       </A><BR>
+    <I>Mon Sep 26 18:35:59 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003073.html">[Gpsd-dev] GPRMC bug?
+</A></li>
+        <LI>Next message: <A HREF="003075.html">[Gpsd-dev] GPRMC bug?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3074">[ date ]</a>
+              <a href="thread.html#3074">[ thread ]</a>
+              <a href="subject.html#3074">[ subject ]</a>
+              <a href="author.html#3074">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>  Ok, major patch here to fix issue #1:
+
+Index: libgpsd_core.c
+===================================================================
+--- libgpsd_core.c      (revision 3207)
++++ libgpsd_core.c      (working copy)
+@@ -268,7 +268,7 @@
+            ((session-&gt;gpsdata.fix.latitude &gt; 0) ? 'N' : 'S'),
+            degtodm(fabs(session-&gt;gpsdata.fix.longitude)),
+            ((session-&gt;gpsdata.fix.longitude &gt; 0) ? 'E' : 'W'),
+-           session-&gt;gpsdata.fix.speed,
++           session-&gt;gpsdata.fix.speed * MPS_TO_KNOTS,
+            session-&gt;gpsdata.fix.track,
+            tm.tm_mday,
+            tm.tm_mon + 1,
+
+
+
+On Sun, Sep 25, 2005 at 10:36:51PM -0700, Jeff Francis wrote:
+&gt;<i> On Sun, Sep 25, 2005 at 11:27:18PM -0700, Gary E. Miller wrote:
+</I>&gt;<i> 
+</I>&gt;<i> &gt; Yes, fix.speed is meters/second.  I am the one that patched in a lot
+</I>&gt;<i> &gt; of the units in the comments.  All the drivers, not just the NMEA
+</I>&gt;<i> &gt; driver, write to the fix.speed field.  If the NMEA driver gets it
+</I>&gt;<i> &gt; wrong then just fix the NMEA driver.  If you change the meaning of
+</I>&gt;<i> &gt; that field then you have to change all the drivers that currently
+</I>&gt;<i> &gt; get it right.
+</I>&gt;<i> 
+</I>&gt;<i>   Right, ok, that's what I intended, maybe I didn't word it very well
+</I>&gt;<i> (I'm a bit sleep-deprived).  I just wanted to make sure I was reading
+</I>&gt;<i> things right.
+</I>&gt;<i> 
+</I>&gt;<i> -- 
+</I>&gt;<i> -=jeff=-
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="http://lists.berlios.de/mailman/listinfo/gpsd-dev">http://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>
+-- 
++--------------------------+---------------------------------------------+
+|<i>   Jeff Francis - N0GQ    | &quot;When people forget God, tyrants forge      |
+</I>|<i> Snohomish, WA USA, Earth |  their chains; a corrputed public           |
+</I>|<i>     <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>      |  conscience is incompatible with freedom.&quot;  |
+</I>|<i>  <A HREF="http://www.gritch.org">http://www.gritch.org</A>   |                         -- Patrick Henry    |
+</I>+--------------------------+---------------------------------------------+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003073.html">[Gpsd-dev] GPRMC bug?
+</A></li>
+	<LI>Next message: <A HREF="003075.html">[Gpsd-dev] GPRMC bug?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3074">[ date ]</a>
+              <a href="thread.html#3074">[ thread ]</a>
+              <a href="subject.html#3074">[ subject ]</a>
+              <a href="author.html#3074">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

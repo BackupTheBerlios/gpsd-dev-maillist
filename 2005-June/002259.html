@@ -1,0 +1,95 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Big change -- FIONREAD is no longer used
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Big%20change%20--%20FIONREAD%20is%20no%20longer%20used&In-Reply-To=%3C20050628190148.GA32686%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002257.html">
+   <LINK REL="Next"  HREF="002262.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Big change -- FIONREAD is no longer used</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Big%20change%20--%20FIONREAD%20is%20no%20longer%20used&In-Reply-To=%3C20050628190148.GA32686%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Big change -- FIONREAD is no longer used">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Jun 28 21:01:48 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002257.html">[Gpsd-dev] Big change -- FIONREAD is no longer used
+</A></li>
+        <LI>Next message: <A HREF="002262.html">[Gpsd-dev] Big change -- FIONREAD is no longer used
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2259">[ date ]</a>
+              <a href="thread.html#2259">[ thread ]</a>
+              <a href="subject.html#2259">[ subject ]</a>
+              <a href="author.html#2259">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+&gt;<i> Ah, I see you use O_NONBLOCK.
+</I>
+Only on the DGPS socket.  The serial-device read is guarded by the select(2)
+call in the main loop, so it can still use blocking I/O.
+
+&gt;<i> For serial devices, there also is the possibility of using VMIN and VTIME.
+</I>&gt;<i> When c_cc[VMIN]==0 and c_cc[VTIME]==0 a read call will return immediately
+</I>&gt;<i> even with 0 bytes, without causing the extra complications that O_NONBLOCK
+</I>&gt;<i> could cause.
+</I>
+I know about this facility, but when I've tried to use it in the past
+I have found it to be chronically flaky.
+
+&gt;<i> It is not completely clear to me why gpsd_poll tries to read two different
+</I>&gt;<i> devices.  Would it not be better to look at the select return value and
+</I>&gt;<i> just call those handlers that have a &quot;read data available&quot; bit set in the
+</I>&gt;<i> returned filedescriptor set (including dgps receivers)?  Then you don't
+</I>&gt;<i> need nonblocking I/O at all, because a read will always return some data
+</I>&gt;<i> in this case.
+</I>
+gpsd_poll() is written that way in an attempt to encapsulate the
+querying operation.  The idea is that the DGPS socket associated with
+a GPS is considered part of the session state for the abstract machine
+that is offering location info to the daemon's main loop through the 
+libgpsd interface
+
+This may be a design error -- in fact, I have considered changing it 
+before.  If we expect that all of the GPSes associated with a gpsd
+instance are at the same place (e.g within the length of a USB cable)
+then I guess it would be reasonable to consider the DGPS socket part of
+shared context of the entire group of GPSes.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002257.html">[Gpsd-dev] Big change -- FIONREAD is no longer used
+</A></li>
+	<LI>Next message: <A HREF="002262.html">[Gpsd-dev] Big change -- FIONREAD is no longer used
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2259">[ date ]</a>
+              <a href="thread.html#2259">[ thread ]</a>
+              <a href="subject.html#2259">[ subject ]</a>
+              <a href="author.html#2259">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

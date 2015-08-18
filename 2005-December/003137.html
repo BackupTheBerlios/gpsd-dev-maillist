@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Fwd: minor GPSD fix to ntpshm.c
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Fwd%3A%20minor%20GPSD%20fix%20to%20ntpshm.c&In-Reply-To=%3C200512022246.26449.remco%40rvt.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="003138.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Fwd: minor GPSD fix to ntpshm.c</H1>
+    <B>Remco Treffkorn</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Fwd%3A%20minor%20GPSD%20fix%20to%20ntpshm.c&In-Reply-To=%3C200512022246.26449.remco%40rvt.com%3E"
+       TITLE="[Gpsd-dev] Fwd: minor GPSD fix to ntpshm.c">remco at rvt.com
+       </A><BR>
+    <I>Sat Dec  3 07:46:25 CET 2005</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="003138.html">[Gpsd-dev] Fwd: minor GPSD fix to ntpshm.c
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3137">[ date ]</a>
+              <a href="thread.html#3137">[ thread ]</a>
+              <a href="subject.html#3137">[ subject ]</a>
+              <a href="author.html#3137">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I forwarded this for you ntp gurus. Who wants to take this?
+
+Cheers,
+Remco
+
+----------  Forwarded Message  ----------
+
+Subject: minor GPSD fix to ntpshm.c
+Date: Friday 02 December 2005 09:02
+From: &quot;Geoffrey B. Crew&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gbc at space.mit.edu</A>&gt;
+To: Remco Treffkorn &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>&gt;
+
+Hello Remco,
+
+Here are two minor fixes (attached) to ntpshm.c which may or may not be
+of interest to your project.  I've recently tried to get a BU-353 to talk
+o my NTP daemon on a Fedora-4 linux machine....
+
+Permissions seem to be a bit of a mess, and (in Fedora-4, anyway) the
+Fedora folks seem to want to have ntpd running as user/group ntp.  I
+solved the problem by making the SHM segment more generally readable.
+
+The second fix is needed because this particular unit (and I suspect
+other inexpensive units) provides the same timestamp on a set of NMEA
+sentences, and the repeated updates to the SHM segment confuses NTP.
+(The first update with the new timestamp is useful, the later ones
+aren't.)  This fix, plus a fudge, generates more useful results (i.e.
+within 10ms or so--not great, but not horrible.)
+
+In any case, thanks for a fine daemon!
+
+--
+
+		Geoffrey Crew
+		<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gbc at space.mit.edu</A>
+
+-------------------------------------------------------
+
+-- 
+Remco Treffkorn (RT445)
+HAM DC2XT
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>   (831) 685-1201
+-------------- next part --------------
+--- ntpshm.c.hack	2005-12-02 10:51:16.000000000 -0500
++++ ntpshm.c.orig	2005-08-05 07:59:38.000000000 -0400
+@@ -50,8 +50,7 @@
+ static /*@null@*/ struct shmTime *getShmTime(int unit)
+ {
+     int shmid=shmget ((key_t)(NTPD_BASE+unit), 
+-		      /* sizeof (struct shmTime), IPC_CREAT|0700); */
+-		      sizeof (struct shmTime), IPC_CREAT|0644);
++		      sizeof (struct shmTime), IPC_CREAT|0700);
+     if (shmid == -1) {
+ 	gpsd_report(1, &quot;shmget failed\n&quot;);
+ 	return NULL;
+@@ -119,15 +118,6 @@
+     struct shmTime *shmTime = NULL;
+     struct timeval tv;
+     double seconds,microseconds;
+-#define NTPSHM_FILTER 1
+-#if NTPSHM_FILTER
+-    static double last_fixtime;
+-    /* ignore later postings with this same fixtime */
+-    if (fixtime == last_fixtime)
+-	return 0;
+-    else
+-	last_fixtime = fixtime;
+-#endif /* NTPSHM_FILTER */
+ 
+     if (session-&gt;shmTime &lt; 0 ||
+ 	(shmTime = session-&gt;context-&gt;shmTime[session-&gt;shmTime]) == NULL)
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="003138.html">[Gpsd-dev] Fwd: minor GPSD fix to ntpshm.c
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3137">[ date ]</a>
+              <a href="thread.html#3137">[ thread ]</a>
+              <a href="subject.html#3137">[ subject ]</a>
+              <a href="author.html#3137">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

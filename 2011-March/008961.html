@@ -1,0 +1,144 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Shared-memory interface.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Shared-memory%20interface.&In-Reply-To=%3CAANLkTinWhRWvzfbMegtxcFA0V1v0Yx0R1eJ9RMSa%3DxHX%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008960.html">
+   <LINK REL="Next"  HREF="008965.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Shared-memory interface.</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Shared-memory%20interface.&In-Reply-To=%3CAANLkTinWhRWvzfbMegtxcFA0V1v0Yx0R1eJ9RMSa%3DxHX%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Shared-memory interface.">thomas at mich.com
+       </A><BR>
+    <I>Tue Mar 22 15:12:41 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008960.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+        <LI>Next message: <A HREF="008965.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8961">[ date ]</a>
+              <a href="thread.html#8961">[ thread ]</a>
+              <a href="subject.html#8961">[ subject ]</a>
+              <a href="author.html#8961">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Tue, Mar 22, 2011 at 9:10 AM, Eric Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+</I>&gt;&gt;<i> &gt; Why won't a semaphore be enough?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I assume this is a broadcast mechanism - gpsd writes, any number of
+</I>&gt;&gt;<i> clients read.
+</I>&gt;<i>
+</I>&gt;<i> Correct. And yes, this is a reaction to you talking about a shared-memory
+</I>&gt;<i> interface in
+</I>&gt;<i>
+</I>&gt;&gt;<i> Also, is the data going to be NOFLOAT? &#160;The internal structures are
+</I>&gt;&gt;<i> one thing but if you are going to do a shared memory segment, it will
+</I>&gt;&gt;<i> have to be one or the other.
+</I>&gt;<i>
+</I>&gt;<i> That will depend on whether you build client and daemon with NOFLOAT or not.
+</I>&gt;<i> The transport part of the interface (shm and semaphore) won't care what's
+</I>&gt;<i> in the struct, only the writers and readers will.
+</I>&gt;<i>
+</I>&gt;&gt;<i> Semaphores are the most obvious mechanism but it starts to defeat the
+</I>&gt;&gt;<i> simplicity of using a SHM. &#160;You need both the readers and writers to
+</I>&gt;&gt;<i> use the semaphore, and you have to do it so readers won't block the
+</I>&gt;&gt;<i> writer nor each other, at least not for very long, and that gets
+</I>&gt;&gt;<i> tricky. &#160;Linux's RCU mechanism doesn't have a user analog I've found.
+</I>&gt;<i>
+</I>&gt;<i> I'm open to a better way to do it, but I haven't thought of a simpler
+</I>&gt;<i> method than shared-memory segment plus semaphore.
+</I>&gt;<i>
+</I>&gt;&gt;<i> The way I did it for the Nokia tablets (so my instrument cluster could
+</I>&gt;&gt;<i> pick out speed, direction, etc whenever without blicking) is to use
+</I>&gt;&gt;<i> the 32 bit integers for everything so reads were atomic, and use a
+</I>&gt;&gt;<i> memory mapped file (mmap.h). &#160;I did it with an actual file in /tmp,
+</I>&gt;&gt;<i> but it should be just as doable with a file descriptor from a named
+</I>&gt;&gt;<i> shm from shm_open.
+</I>&gt;<i>
+</I>&gt;<i> This guarantees that a single read of any field will get a correct
+</I>&gt;<i> value for some timestamp, but not that your entire multiple-field copy
+</I>&gt;<i> of a fix representation is associated with the same timestamp. &#160;That
+</I>&gt;<i> does not seem good enough to me, not for potentially life-critical nav
+</I>&gt;<i> systems.
+</I>
+This is using GPS and isn't being written in Haskell. life-critical is
+a completely different plane.
+
+You are correct, but the probability of any one race is low, and it is
+updating constantly, so there might be a glitch (fresh lat, stale
+lon), but particularly at the higher rates the distance is smaller,
+under 10 feet in a car on a freeway diagonally which is likely less
+than shifting the satellites used.
+
+If synchronization is critical, you need a pipe or one of the other mechanisms.
+
+
+&gt;&gt;<i> There can still be problems since it is volatile, but the routines
+</I>&gt;&gt;<i> would need to check if anything changes, e.g. number of satellites.
+</I>&gt;&gt;<i> Conversely, the readers could also do the lseek and read() and get the
+</I>&gt;&gt;<i> data atomically.
+</I>&gt;<i>
+</I>&gt;<i> Still sounds like a semaphore would be a safer way of interlocking. The
+</I>&gt;<i> upper limit on read-write atomicity is not portable AFAIK.
+</I>
+It isn't portable, but there is a minimum page/sector size in most
+implementations.  If there are multiple devices, each could have a
+separate section of the shm.
+
+&gt;<i> Maybe we could avoid reader contention with a simple backoff algorithm?
+</I>
+Maybe, but that sounds dodgy too.  You now have nondeterministic time
+to access, and it can fail.
+
+It is worse on the write side.  You need another thread, and maybe an
+internal semaphore:
+
+The writer basically does:
+    Internal data image -&gt; shm data image.
+But the internal data image has to be synchronized too and you only
+want to update when the whole set has changed and is updated.
+I think we don't want anything main in gpsd itself to block on the
+semaphore writing to the shm area so we need yet another thread.
+Create an internal pipe, and if it ever blocks don't refresh it?  Or
+force the refresh?  Internal semaphore - don't update if it would
+block?
+Maybe double buffer like I suggested with the ReaderNotWriter boolean
+field in the ntp discussion.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008960.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+	<LI>Next message: <A HREF="008965.html">[Gpsd-dev] Shared-memory interface.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8961">[ date ]</a>
+              <a href="thread.html#8961">[ thread ]</a>
+              <a href="subject.html#8961">[ subject ]</a>
+              <a href="author.html#8961">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

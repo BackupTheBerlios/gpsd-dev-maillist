@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] segfault in nmea_parse.c ($GPGSV,3,3,09,24,10,137,00*42)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20segfault%20in%20nmea_parse.c%20%28%24GPGSV%2C3%2C3%2C09%2C24%2C10%2C137%2C00%2A42%29&In-Reply-To=%3C20050127070151.GA15169%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000566.html">
+   <LINK REL="Next"  HREF="000578.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] segfault in nmea_parse.c ($GPGSV,3,3,09,24,10,137,00*42)</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20segfault%20in%20nmea_parse.c%20%28%24GPGSV%2C3%2C3%2C09%2C24%2C10%2C137%2C00%2A42%29&In-Reply-To=%3C20050127070151.GA15169%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] segfault in nmea_parse.c ($GPGSV,3,3,09,24,10,137,00*42)">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Jan 27 08:01:51 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000566.html">[Gpsd-dev] Re: segfault in nmea_parse.c ($GPGSV,3,3,09,24,10,137,00*42)
+</A></li>
+        <LI>Next message: <A HREF="000578.html">[Gpsd-dev] segfault in nmea_parse.c ($GPGSV,3,3,09,24,10,137,00*42)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#569">[ date ]</a>
+              <a href="thread.html#569">[ thread ]</a>
+              <a href="subject.html#569">[ subject ]</a>
+              <a href="author.html#569">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Jason W &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jason at backtick.org</A>&gt;:
+&gt;<i> Just received my GPS unit today (BU-303) and started playing with gpsd. 
+</I>&gt;<i> I am currently using both xgps and KisMAC as clients to gpsd. Version 
+</I>&gt;<i> 1.10 seems to work fine but with 2.7, KisMAC seems to cause gpsd to 
+</I>&gt;<i> segfault. It has not crashed when using xgps.
+</I>
+That's very odd.  Why should a change in *client* cause gpsd to crash?
+The client never sends the gpsd socket anything, just reads from it.
+
+To make matters more mysterious, I have a BU-303 -- in fact, it's my
+main test GPS -- and I've *never seen this*!  And the BU-303 uses the
+same SiRF-II chip set as 80% of other GPS mice; if the SiRF-II were
+capable of sending output that would tank gpsd, this should have shown
+up much sooner.
+
+To make sure, I used the following script to extract the NMEA from
+your error log:
+
+#!/bin/sh
+# Extract pure NMEA from an emailed gpsd error log
+sed -n -e &quot;/^&gt; */s///&quot; -e &quot;/gpsd: &lt;= GPS: /s///&quot; -e '/^\$/p' &gt;FOO
+
+I then fed that to gpsd using the command gpsd -n -D 3 -T -l -p FOO
+This did not produce a core dump.  So the problem really is not
+malformed NMEA, but specific to use with KisMAC.
+
+But KisMAC and gpsd run in separate processes!  The only way that the
+client can ever affect the daemon's internal state is by refraining
+from reading so the daemon's internal socket-library buffers fill up.
+But (a) this session didn't seem to go on long enough for that to be
+likely, and (b) I already cope with that case; if the daemon gets a
+write error it simply drops that client.
+
+This is an extremely mysterious bug.  In fact, it's so weird that I
+don't believe it.  I wonder if maybe you have a bad spot in RAM that
+only shows itself when a large program like KisMAC loads?
+
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000566.html">[Gpsd-dev] Re: segfault in nmea_parse.c ($GPGSV,3,3,09,24,10,137,00*42)
+</A></li>
+	<LI>Next message: <A HREF="000578.html">[Gpsd-dev] segfault in nmea_parse.c ($GPGSV,3,3,09,24,10,137,00*42)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#569">[ date ]</a>
+              <a href="thread.html#569">[ thread ]</a>
+              <a href="subject.html#569">[ subject ]</a>
+              <a href="author.html#569">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

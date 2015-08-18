@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd release status
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20release%20status&In-Reply-To=%3C20090317190436.GA27366%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006538.html">
+   <LINK REL="Next"  HREF="006541.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd release status</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20release%20status&In-Reply-To=%3C20090317190436.GA27366%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] gpsd release status">esr at thyrsus.com
+       </A><BR>
+    <I>Tue Mar 17 20:04:36 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006538.html">[Gpsd-dev] gpsd release status
+</A></li>
+        <LI>Next message: <A HREF="006541.html">[Gpsd-dev] gpsd release status
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6539">[ date ]</a>
+              <a href="thread.html#6539">[ thread ]</a>
+              <a href="subject.html#6539">[ subject ]</a>
+              <a href="author.html#6539">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Martin Schaller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">martin-s at users.sourceforge.net</A>&gt;:
+&gt;<i> Ok, with the recent -u option to libgps it is actually pretty easy to
+</I>&gt;<i> create a test case.
+</I>&gt;<i> 
+</I>&gt;<i> Add
+</I>&gt;<i> 
+</I>&gt;<i> #include &lt;locale.h&gt;
+</I>&gt;<i> setlocale(LC_NUMERIC,&quot;&quot;);
+</I>&gt;<i> to libgps.c at the beginning of the main function body.
+</I>&gt;<i> 
+</I>&gt;<i> The results are:
+</I>&gt;<i> LC_NUMERIC=C ./libgps -u
+</I>&gt;<i> P: lat/lon: 49.026225 12.188348
+</I>&gt;<i> A: altitude: 375.200000  U: climb: 0.000000
+</I>&gt;<i> T: track: 70.890000  V: speed: 24.899000
+</I>&gt;<i> S: status: 1 (FIX)
+</I>&gt;<i> 
+</I>&gt;<i> LC_NUMERIC=de_DE ./libgps -u
+</I>&gt;<i> P: lat/lon: 49,000000 12,000000
+</I>&gt;<i> A: altitude: 375,000000  U: climb: 0,000000
+</I>&gt;<i> T: track: 70,000000  V: speed: 24,000000
+</I>&gt;<i> S: status: 1 (FIX)
+</I>&gt;<i> 
+</I>&gt;<i> LC_NUMERIC=C LC_ALL=de_DE ./libgps -u
+</I>&gt;<i> LC_NUMERIC=de_DE ./libgps -u
+</I>&gt;<i> P: lat/lon: 49,000000 12,000000
+</I>&gt;<i> A: altitude: 375,000000  U: climb: 0,000000
+</I>&gt;<i> T: track: 70,000000  V: speed: 24,000000
+</I>&gt;<i> S: status: 1 (FIX)
+</I>
+OK. To fix this I need to be sure what locale affects, and where.  
+Here is my present theory, based on what you've just shown me and
+previously told me.
+
+1. locale affects the formatting of floats/doubles in *printf(3) and
+the parsing of floats/doubles in *scanf(3).  I see from the man page
+that it also affects strtod(3).
+
+2. The case that is relevant here is whether the locale specifies a'
+decimal indicator of comma or period.
+
+3. Locale needs to be forced to &quot;C&quot; in gpsd so it will always ship periods 
+in its printf() calls; otherwise the decimal-separator commas will be confused
+with field-separator commas.
+
+4. The scanf() or other float-parsing calls in libgps.c need to be told to 
+look for a decimal point separator, not comma even if that is locally 
+correct for the application.
+
+Do you agree this much is correct? 
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006538.html">[Gpsd-dev] gpsd release status
+</A></li>
+	<LI>Next message: <A HREF="006541.html">[Gpsd-dev] gpsd release status
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6539">[ date ]</a>
+              <a href="thread.html#6539">[ thread ]</a>
+              <a href="subject.html#6539">[ subject ]</a>
+              <a href="author.html#6539">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

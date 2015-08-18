@@ -1,0 +1,105 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-users] Starting another release cycle
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-users%5D%20Starting%20another%20release%20cycle&In-Reply-To=%3C20090306030430.GC20959%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006462.html">
+   <LINK REL="Next"  HREF="006429.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-users] Starting another release cycle</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-users%5D%20Starting%20another%20release%20cycle&In-Reply-To=%3C20090306030430.GC20959%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] [Gpsd-users] Starting another release cycle">esr at thyrsus.com
+       </A><BR>
+    <I>Fri Mar  6 04:04:30 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006462.html">[Gpsd-dev] [Gpsd-users] Starting another release cycle
+</A></li>
+        <LI>Next message: <A HREF="006429.html">[Gpsd-dev] testregress failure
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6464">[ date ]</a>
+              <a href="thread.html#6464">[ thread ]</a>
+              <a href="subject.html#6464">[ subject ]</a>
+              <a href="author.html#6464">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;: 
+&gt;<i> With -j, I have no complaints so far with the user behavior of cgps.
+</I>&gt;<i> 
+</I>&gt;<i> My residual issue is that without -j cgps says &quot;2D fix&quot; when there is no
+</I>&gt;<i> information arriving that supports that statement and it isn't true.
+</I>
+Isn't it?  At the moment that sentence arrives, we don't in fact know
+that we have a 3D fix.  Consider the following scenario with a GPS
+that sends, per cycle, the following sentences in the following order:
+GPRMC GPGSA GPGGA.
+
+1. GPS has 3D fix.  Sends GPRMC GPGSA GPGGA. Cycle ends.
+
+2. GPS loses lock on a satellite.  Fix quality drops to 2D
+
+3. Next reporting cycle starts.  GPS ships GPRMC.
+
+If we report a 3D fix at that point because we're waiting to get a new
+value of the mode bit from the GSA and *assume* the fix quality has
+not changed, we'd be claiming more precision than we have and possibly
+passing the application a spurious altitude.  
+
+Rule #1 is DON'T DO THAT.  Well, not ubnless the user asks for it knowing
+what the risk it.  
+
+&gt;<i> Perhaps only updating/showing that field if we get fix quality
+</I>&gt;<i> information delivered would be a good change.
+</I>&gt;<i> 
+</I>&gt;<i> I don't really know what all the libgps users do, and whether my notion
+</I>&gt;<i> that this merging behavior should be available in the library makes
+</I>&gt;<i> sense.  It just feels like a common service that most users would want.
+</I>
+-j 1 tells the client to tell the daemon to do fix merging.  There's
+no need to put that in the library, you'll get it if your query
+setting up watcher mode is wj+ rather than just w.
+
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 189 bytes
+Desc: Digital signature
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090305/62f41363/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090305/62f41363/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006462.html">[Gpsd-dev] [Gpsd-users] Starting another release cycle
+</A></li>
+	<LI>Next message: <A HREF="006429.html">[Gpsd-dev] testregress failure
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6464">[ date ]</a>
+              <a href="thread.html#6464">[ thread ]</a>
+              <a href="subject.html#6464">[ subject ]</a>
+              <a href="author.html#6464">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

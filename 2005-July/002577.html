@@ -1,0 +1,89 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] rtcm.c is ready to be ported to big-endian machines
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20rtcm.c%20is%20ready%20to%20be%20ported%20to%20big-endian%20machines&In-Reply-To=%3C200507221400.j6ME0KcI000614%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002589.html">
+   <LINK REL="Next"  HREF="002578.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] rtcm.c is ready to be ported to big-endian machines</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20rtcm.c%20is%20ready%20to%20be%20ported%20to%20big-endian%20machines&In-Reply-To=%3C200507221400.j6ME0KcI000614%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] rtcm.c is ready to be ported to big-endian machines">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Fri Jul 22 16:00:20 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002589.html">[Gpsd-dev] Re: Cannot access anonymous svn
+</A></li>
+        <LI>Next message: <A HREF="002578.html">[Gpsd-dev] Re: rtcm.c is ready to be ported to big-endian machines
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2577">[ date ]</a>
+              <a href="thread.html#2577">[ thread ]</a>
+              <a href="subject.html#2577">[ subject ]</a>
+              <a href="author.html#2577">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I believe I have put all the pieces in place to make porting rtcm.c to
+big-endian machines trivial.  Somebody with a big-endian machine
+handy, please take it the rest of the way.
+
+I have wrapped all the bitfield references in unpack() with macros
+named by the signedness and width of the bitfield.  On a little-endian
+machine these will expand to just their argument.  On a big-endian
+machine they will expand into calls to a bit_reverse() function,
+which I found on the Web and supply (untested).
+
+All that remains to be done is
+
+(1) check that I got the casts on the signed8() and signed16() macros
+    right so signedness won't be clobbered.
+
+(2) test and verify correct operation.
+
+The modified version still passes the RTCM regression test on my
+little-endian machine.
+
+As a potential matter of interest, I did not hand-hack these changes.
+Instead I wrote a little code processor in Python to do the
+macro-wrapping.  It's in the repo as wrapinvert.py, for the curious.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+When your hammer is C++, everything begins to look like a thumb.
+                -- Steve Hoflich on compl.lang.c++
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002589.html">[Gpsd-dev] Re: Cannot access anonymous svn
+</A></li>
+	<LI>Next message: <A HREF="002578.html">[Gpsd-dev] Re: rtcm.c is ready to be ported to big-endian machines
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2577">[ date ]</a>
+              <a href="thread.html#2577">[ thread ]</a>
+              <a href="subject.html#2577">[ subject ]</a>
+              <a href="author.html#2577">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

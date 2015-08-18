@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Input packets buffering bug(s)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3CAANLkTiloQELkUJPmSEsCHHxueGmjoE20tyRIzdb9gjwQ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007813.html">
+   <LINK REL="Next"  HREF="007815.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Input packets buffering bug(s)</H1>
+    <B>Jon Schlueter</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3CAANLkTiloQELkUJPmSEsCHHxueGmjoE20tyRIzdb9gjwQ%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Input packets buffering bug(s)">jon.schlueter at gmail.com
+       </A><BR>
+    <I>Sat May 29 17:30:13 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007813.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+        <LI>Next message: <A HREF="007815.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7814">[ date ]</a>
+              <a href="thread.html#7814">[ thread ]</a>
+              <a href="subject.html#7814">[ subject ]</a>
+              <a href="author.html#7814">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>we broke the UDP regression test for et-322.log is broke which uses
+the UDP transport.
+The hunch of the problem here is that read is reading from a UDP
+Socket (Datagrams) and
+if you don't read the whole datagram in you lose the rest of it... but
+things are committed already
+
+Greg did you run regression tests on your box after the patch before
+committing? just curious if
+the regression tests fail on your box as well.
+
+I don't have time to look further into this just letting people know.
+
+Jon
+
+
+
+On Sat, May 29, 2010 at 4:41 AM, Olivier Cornu &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">o.cornu at gmail.com</A>&gt; wrote:
+&gt;<i> On Sat, May 29, 2010 at 02:04, Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt; wrote:
+</I>&gt;&gt;<i> It sounds like Olivier and Remco both favor committing, and no one is
+</I>&gt;&gt;<i> opposed - just people who aren't 100% sure if regression tests are ok
+</I>&gt;&gt;<i> with the change. &#160;I'll spiff up the comment and do that.
+</I>&gt;<i>
+</I>&gt;<i> Fwiw, the patch is working fine on my setup. Thanks!
+</I>&gt;<i>
+</I>&gt;&gt;<i> &#160;As for efficiency, I think the concern is overblown. &#160;If one had a
+</I>&gt;&gt;<i> &#160;serial port GPSr, then there would be close to one system call per
+</I>&gt;&gt;<i> &#160;byte. &#160;On USB, we're talking ~500 bytes/second arriving in a burst,
+</I>&gt;&gt;<i> &#160;and it taking 32 reads instead of 2 over an entire second is not a big
+</I>&gt;&gt;<i> &#160;deal.
+</I>&gt;<i>
+</I>&gt;<i> Now that the problem is fixed and the urge gone, we can perhaps
+</I>&gt;<i> discuss this input design/efficiency point more deeply.
+</I>&gt;<i> Before doing so, i'd like to add i'm conscious that what gets decided
+</I>&gt;<i> is not my call anyway, and i don't really mind that much.
+</I>&gt;<i>
+</I>&gt;<i> In my use-case (RFCOMM over bluetooth) there are ~250 bytes to be read
+</I>&gt;<i> (or nothing). That's ~16 chunks of 16 bytes.
+</I>&gt;<i> No big deal, but enough paddling in jelly to trigger an inside alarm.
+</I>&gt;<i> In fact, going over the entire main loop just to read tty input
+</I>&gt;<i> already triggers it.
+</I>&gt;<i> What i'd actually like to see is one thread per open COM port reading
+</I>&gt;<i> and parsing packets, notifying the rest when there's a packet
+</I>&gt;<i> available for processing...
+</I>&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i> Olivier
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007813.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+	<LI>Next message: <A HREF="007815.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7814">[ date ]</a>
+              <a href="thread.html#7814">[ thread ]</a>
+              <a href="subject.html#7814">[ subject ]</a>
+              <a href="author.html#7814">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

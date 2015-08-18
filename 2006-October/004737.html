@@ -1,0 +1,150 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsctrl proof-of-concept is in svn head
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsctrl%20proof-of-concept%20is%20in%20svn%20head&In-Reply-To=%3CPine.LNX.4.64.0610292024530.30820%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004736.html">
+   <LINK REL="Next"  HREF="004740.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsctrl proof-of-concept is in svn head</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsctrl%20proof-of-concept%20is%20in%20svn%20head&In-Reply-To=%3CPine.LNX.4.64.0610292024530.30820%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] gpsctrl proof-of-concept is in svn head">gem at rellim.com
+       </A><BR>
+    <I>Mon Oct 30 05:39:18 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004736.html">[Gpsd-dev] gpsctrl proof-of-concept is in svn head
+</A></li>
+        <LI>Next message: <A HREF="004740.html">[Gpsd-dev] gpsctrl proof-of-concept is in svn head
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4737">[ date ]</a>
+              <a href="thread.html#4737">[ thread ]</a>
+              <a href="subject.html#4737">[ subject ]</a>
+              <a href="author.html#4737">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Eric!
+
+On Sun, 29 Oct 2006, Eric S. Raymond wrote:
+
+&gt;<i> Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+</I>&gt;<i> &gt; One is that there are are a lot of things that gpsd/libgpsd just can
+</I>&gt;<i> &gt; not do to certain GPS.  Things like changing the speed in garmin serial
+</I>&gt;<i> &gt; binary mode are especially gnarly.
+</I>&gt;<i>
+</I>&gt;<i> Why can't gpsd do this?
+</I>
+Not that I know it can't, just that it was easier to recode it than
+grok the current code.
+
+The delays needed in baud changing ar also problematic.  I really hate
+to do things like add large wait delays in a dameon that has to serve
+multiple clients.  The second was that it was easier to code my own loop
+that to figure out how to jam the current autobaud/packet detector into
+certain modes.
+
+I guess we'll see if we can solve these problems.  Please do not delete
+garminctl until we do!
+
+&gt;<i> Or, to put the question more precisely: What prevents us from adding
+</I>&gt;<i> this as a capability to whatever driver in libgpsd(3) is handling
+</I>&gt;<i> Garmin serial binary?
+</I>
+Same thing as all projects, time.
+
+&gt;<i> &gt; The second is that having a differently coded decoder has been usefull
+</I>&gt;<i> &gt; for debugging.
+</I>&gt;<i>
+</I>&gt;<i> OK, but be prepared to throw the prototype away.  I fear deeply the
+</I>&gt;<i> consequences of having our maintenance capability spread among
+</I>&gt;<i> redundant driver implementations.  I see that I have led us into error
+</I>&gt;<i> by the example of sirfmon; I'll have to fix that.
+</I>
+Balance that with the complexity of putting all the eggs in the one big
+basket.  Sirfmon came about because it was easy to code up a standalone
+test and figure out how the GPS device works before having to figure out
+how to integrate into the big daemon.
+
+These standalone tools will always be useful bootstraps.  The real
+question is how long they need to persist.
+
+And having one big packet engine has maintenance problems of it's own.
+Standalone tools don't affect as many different GPS so do not need to
+undergo as extensive testing as things in gpd.  For example, I got back
+to the garmin serial now that I have the big push out on the garmin USB.
+It looks like some recent changes have broken Garmin serial.  Not sure
+what did it yet.  Makes me wonder what I might have broken.
+
+Having garminctl let me put my GPS-18/lvc in a useable mode for now.  If
+garminctl depended on gpsd/libgpd I would be SOL.
+
+&gt;<i> &gt; &gt; Adding an option to preset the driver type rather than going through
+</I>&gt;<i> &gt; &gt; the hunt loop, so the tool doesn't depend on packet.c, is left as an
+</I>&gt;<i> &gt; &gt; utterly trivial exercise -- hint: look at the function
+</I>&gt;<i> &gt; &gt; gpsd_switch_driver() in libgpsd_core.c.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; This will be key as a core function of the *ctl is switching from
+</I>&gt;<i> &gt; NMEA to proprietary modes and back.
+</I>&gt;<i>
+</I>&gt;<i> I understand that. But normally you shouldn't ever have to specify a
+</I>&gt;<i> driver type to switch modes, because gpsctrl will figure out what kind it's
+</I>&gt;<i> looking at exactly the same way that gpsd does.
+</I>
+As Chris pointed out, gpsd can have a hard time recovering from all
+psossible configurations.  Using a tool that starts with the knowledge of
+the target GPS has a better chance getting the GPS into a better state.
+
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Ave., Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFFRYH68KZibdeR3qURAqhgAKDV2bV1M+IQ8OuovJ2oPrFERSKBWQCg4pWX
+j+dGqjMzGoyGhSNFKCIzXJo=
+=PFh5
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004736.html">[Gpsd-dev] gpsctrl proof-of-concept is in svn head
+</A></li>
+	<LI>Next message: <A HREF="004740.html">[Gpsd-dev] gpsctrl proof-of-concept is in svn head
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4737">[ date ]</a>
+              <a href="thread.html#4737">[ thread ]</a>
+              <a href="subject.html#4737">[ subject ]</a>
+              <a href="author.html#4737">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

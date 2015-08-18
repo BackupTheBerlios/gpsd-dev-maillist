@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] MinGW/Win32 port housekeeping patch
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20MinGW/Win32%20port%20housekeeping%20patch&In-Reply-To=%3Cbd1f1cc91001011708x614432abi8ea7370e09139343%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="007302.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] MinGW/Win32 port housekeeping patch</H1>
+    <B>Jon Schlueter</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20MinGW/Win32%20port%20housekeeping%20patch&In-Reply-To=%3Cbd1f1cc91001011708x614432abi8ea7370e09139343%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] MinGW/Win32 port housekeeping patch">jon.schlueter at gmail.com
+       </A><BR>
+    <I>Sat Jan  2 02:08:20 CET 2010</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="007302.html">[Gpsd-dev] MinGW/Win32 port housekeeping patch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7298">[ date ]</a>
+              <a href="thread.html#7298">[ thread ]</a>
+              <a href="subject.html#7298">[ subject ]</a>
+              <a href="author.html#7298">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I looked at the patch and seems reasonable:
+
+patch mostly complete I think you are missing a couple of bits from
+bsd-base64.c where the calling interface changed
+
+-b64_ntop(u_char const *src, size_t srclength, char *target, size_t targsize)
++b64_ntop(unsigned char const *src, size_t srclength, char *target,
+size_t targsize)
+
+
+-	u_char input[3];
+-	u_char output[4];
++	unsigned char input[3];
++	unsigned char output[4];
+
+
+-b64_pton(char const *src, u_char *target, size_t targsize)
++b64_pton(char const *src, unsigned char *target, size_t targsize)
+
+also in packet.c might we want to leave out whitespace change around line 1537
+
+Jon Schlueter
+
+
+On Thu, Dec 31, 2009 at 5:37 PM, David Ludlow &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">davel at adsllc.com</A>&gt; wrote:
+&gt;<i> On 12/31/2009 11:03 AM, Eric Raymond wrote:
+</I>&gt;&gt;&gt;<i> It only affects sirf_write() directly...
+</I>&gt;&gt;<i> I think there are analogous functions in other drivers, though. &#160;Have
+</I>&gt;&gt;<i> you checked?
+</I>&gt;<i>
+</I>&gt;<i> sirf_write() calls tcdrain(), which is what really causes the need for a
+</I>&gt;<i> HANDLE instead of a fd. &#160;None of the others failed to compile, so I
+</I>&gt;<i> think they're fine and don't call tcdrain(). &#160;It's an obvious
+</I>&gt;<i> compile-time failure since a HANDLE is a (void *) and a fd is an int.
+</I>&gt;<i>
+</I>&gt;&gt;<i> That's good. &#160;You just raised the chances that we'll actually integrate
+</I>&gt;&gt;<i> this substantially.
+</I>&gt;<i>
+</I>&gt;<i> That's what I like to hear!
+</I>&gt;<i>
+</I>&gt;<i> I'm not sure of the proper patch-posting etiquette, so I've attached an
+</I>&gt;<i> uncompressed housekeeping patch. &#160;Let me know if another format or
+</I>&gt;<i> method is preferable. &#160;The patch is against revision 6905 of the SVN trunk.
+</I>&gt;<i>
+</I>&gt;<i> The housekeeping patch adds some #include intelligence updates, a few
+</I>&gt;<i> minor typo fixes, and using send()/recv() instead of read()/write().
+</I>&gt;<i>
+</I>&gt;<i> There's a bunch of printf()'s with &quot;%zd&quot; format specifiers which cause
+</I>&gt;<i> compiler warnings in MinGW since it doesn't like the 'z'. &#160;My proposal
+</I>&gt;<i> is to switch those to &quot;%ld&quot; and typecast the parameters as necessary.
+</I>&gt;<i> Objections? &#160;It's a lot of mindless typing, so I didn't want to commit
+</I>&gt;<i> to it blindly.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="007302.html">[Gpsd-dev] MinGW/Win32 port housekeeping patch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7298">[ date ]</a>
+              <a href="thread.html#7298">[ thread ]</a>
+              <a href="subject.html#7298">[ subject ]</a>
+              <a href="author.html#7298">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

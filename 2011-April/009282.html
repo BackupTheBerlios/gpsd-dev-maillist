@@ -1,0 +1,104 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Updated pre-3.0 task list
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Updated%20pre-3.0%20task%20list&In-Reply-To=%3C7A8C2406-3918-4487-8EFE-D71BB26A1214%40ledford.cc%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009285.html">
+   <LINK REL="Next"  HREF="009288.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Updated pre-3.0 task list</H1>
+    <B>Michael Ledford</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Updated%20pre-3.0%20task%20list&In-Reply-To=%3C7A8C2406-3918-4487-8EFE-D71BB26A1214%40ledford.cc%3E"
+       TITLE="[Gpsd-dev] Updated pre-3.0 task list">michael at ledford.cc
+       </A><BR>
+    <I>Sun Apr 10 05:04:15 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009285.html">[Gpsd-dev] [Gpsd-users] Updated pre-3.0 task list
+</A></li>
+        <LI>Next message: <A HREF="009288.html">[Gpsd-dev] Updated pre-3.0 task list
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9282">[ date ]</a>
+              <a href="thread.html#9282">[ thread ]</a>
+              <a href="subject.html#9282">[ subject ]</a>
+              <a href="author.html#9282">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+On Apr 9, 2011, at 5:07 PM, Eric Raymond wrote:
+
+&gt;<i> 2, Fix the Mac prolem with scons's dynamic-library building.
+</I>
+OK. From my very new and limited knowledge of scons here is what I am seeing.
+
+1) Linking together libgpsd.dylib doesn't search for libgps as a library flag. To force this I modified line 511 of SConstruct to be the following:
+
+compiled_gpsdlib = Library(target=&quot;gpsd&quot;, source=libgpsd_sources, LIBS=[&quot;gps&quot;] + ncurseslibs)
+
+That changed the linking line from:
+
+gcc -o libgpsd.dylib -dynamiclib bits.os bsd-base64.os crc24q.os gpsd_json.os isgps.os libgpsd_core.os net_dgpsip.os net_gnss_dispatch.os net_ntrip.os packet.os pseudonmea.os serial.os srecord.os subframe.os timebase.os drivers.os driver_aivdm.os driver_evermore.os driver_garmin.os driver_garmin_txt.os driver_geostar.os driver_italk.os driver_navcom.os driver_nmea.os driver_oncore.os driver_rtcm2.os driver_rtcm3.os driver_sirf.os driver_superstar2.os driver_tsip.os driver_ubx.os driver_zodiac.os -L. -lncurses
+
+to...
+
+gcc -o libgpsd.dylib -dynamiclib bits.os bsd-base64.os crc24q.os gpsd_json.os isgps.os libgpsd_core.os net_dgpsip.os net_gnss_dispatch.os net_ntrip.os packet.os pseudonmea.os serial.os srecord.os subframe.os timebase.os drivers.os driver_aivdm.os driver_evermore.os driver_garmin.os driver_garmin_txt.os driver_geostar.os driver_italk.os driver_navcom.os driver_nmea.os driver_oncore.os driver_rtcm2.os driver_rtcm3.os driver_sirf.os driver_superstar2.os driver_tsip.os driver_ubx.os driver_zodiac.os -L. -lgps -lncurses
+
+This eliminated most undefined symbols but left &quot;_gpsd_report&quot;.
+
+2) Looking to see where gpsd_report is defined I see it is in gpsd.c. But gpsd.c is of course part of the daemon program code and not in the shared library. This used to be taken care of by a file called gpsd_report.c. I found the last time gpsd_report.c existed and checked it out.
+
+$ git log -n 1 -- gpsd_report.c
+commit 7ac656a6e2ef78d17a48376df352dfe349de38e8
+Author: Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt;
+Date:   Thu Dec 16 18:27:18 2010 -0500
+
+    Abolish gpsd_report.c.  No more hardwired logging from the client libraries.
+    
+    Only the daemon now uses this function.
+
+git checkout 7ac656a6e2ef78d17a48376df352dfe349de38e8^ gpsd_report.c
+
+I then modified SConstruct and added a line at 471:
+
+	&quot;gpsd_report.c&quot;,
+
+Finally I ran scons and it built successfully.
+
+I'm not sure if these are the correct courses of action to take but it worked over here.
+
+Sincerely,
+Michael
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009285.html">[Gpsd-dev] [Gpsd-users] Updated pre-3.0 task list
+</A></li>
+	<LI>Next message: <A HREF="009288.html">[Gpsd-dev] Updated pre-3.0 task list
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9282">[ date ]</a>
+              <a href="thread.html#9282">[ thread ]</a>
+              <a href="subject.html#9282">[ subject ]</a>
+              <a href="author.html#9282">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

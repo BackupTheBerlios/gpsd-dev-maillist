@@ -1,0 +1,91 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPSD shared-memory export is working
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20shared-memory%20export%20is%20working&In-Reply-To=%3C20110326142724.40A7E20C265%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009087.html">
+   <LINK REL="Next"  HREF="009092.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPSD shared-memory export is working</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20shared-memory%20export%20is%20working&In-Reply-To=%3C20110326142724.40A7E20C265%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] GPSD shared-memory export is working">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Sat Mar 26 15:27:24 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009087.html">[Gpsd-dev] Perl NET::GPSD3
+</A></li>
+        <LI>Next message: <A HREF="009092.html">[Gpsd-dev] GPSD shared-memory export is working
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9091">[ date ]</a>
+              <a href="thread.html#9091">[ thread ]</a>
+              <a href="subject.html#9091">[ subject ]</a>
+              <a href="author.html#9091">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Pursuant to previous discussion, I have implemented a shared-memory
+export for GPSD using a slight variant of the bookend-consistency algorithm 
+I previously described.  It's working.  In fact, it worked perfectly on
+the first try, which makes me wonder what special perversity the dread
+god Finagle and his mad prophet Murphy have stored up for me.
+
+The variation is in the way the copy is done. I blogged about the technique
+at &lt;<A HREF="http://esr.ibiblio.org/?p=3065">http://esr.ibiblio.org/?p=3065</A>&gt;, and in the first comment Daniel Franke
+pointed out that as long as the fields in the wrapper structure are written
+last-to-first, the byte-copy order for the payload itself doesn't matter.
+
+I have not yet attempted to implement memory barriers, and the reader code
+may fail on x64 Atom and any other platform that implements memcpy() with
+a reverse rather than forward byte copy.  It relies on a GCCism to
+prevent reordering of the copy operations.  An I may yet replace it
+with a semaphore-based technique.
+
+Still, this is both proof-of-concept and working code, and may be of
+interest to those working a similar problem in NTPD.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+In the absence of any evidence tending to show that possession 
+or use of a 'shotgun having a barrel of less than eighteen inches 
+in length' at this time has some reasonable relationship to the 
+preservation or efficiency of a well regulated militia, we cannot 
+say that the Second Amendment guarantees the right to keep and bear 
+such an instrument. [...] The Militia comprised all males 
+physically capable of acting in concert for the common defense.  
+        -- Majority Supreme Court opinion in &quot;U.S. vs. Miller&quot; (1939)
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009087.html">[Gpsd-dev] Perl NET::GPSD3
+</A></li>
+	<LI>Next message: <A HREF="009092.html">[Gpsd-dev] GPSD shared-memory export is working
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9091">[ date ]</a>
+              <a href="thread.html#9091">[ thread ]</a>
+              <a href="subject.html#9091">[ subject ]</a>
+              <a href="author.html#9091">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

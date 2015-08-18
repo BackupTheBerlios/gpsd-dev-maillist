@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] FreeBSD porting problems of gpsd-3.0
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20FreeBSD%20porting%20problems%20of%20gpsd-3.0&In-Reply-To=%3C4E556910.6070003%40bzed.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009460.html">
+   <LINK REL="Next"  HREF="009450.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] FreeBSD porting problems of gpsd-3.0</H1>
+    <B>Bernd Zeimetz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20FreeBSD%20porting%20problems%20of%20gpsd-3.0&In-Reply-To=%3C4E556910.6070003%40bzed.de%3E"
+       TITLE="[Gpsd-dev] FreeBSD porting problems of gpsd-3.0">bernd at bzed.de
+       </A><BR>
+    <I>Wed Aug 24 23:11:44 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009460.html">[Gpsd-dev] FreeBSD porting problems of gpsd-3.0
+</A></li>
+        <LI>Next message: <A HREF="009450.html">[Gpsd-dev] FreeBSD porting problems of gpsd-3.0
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9449">[ date ]</a>
+              <a href="thread.html#9449">[ thread ]</a>
+              <a href="subject.html#9449">[ subject ]</a>
+              <a href="author.html#9449">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+&gt;<i> 3. As I understand pydistutils (setup.py) is called right from
+</I>&gt;<i> SCons. Normally, when some port (for example, of some python module)
+</I>&gt;<i> uses pydistutils, it provides setup.py with certain arguments, for
+</I>&gt;<i> example, -c -O1 so python bytecode files (.pyc, .pyo) are created.
+</I>&gt;<i> Obviously this can't be done in this case.
+</I>
+Could you show me some examples of options you pass to setup.py? -c -O1 sound
+more like gcc options which should not be passed to setup.py bu instead the
+system's distutils/setuptools install should know how to compile the files properly.
+
+&gt;<i> This results in only *.py files installed, so if some python program
+</I>&gt;<i> which uses `gps' module is run by root user, python will create
+</I>&gt;<i> .pyc/.pyo files on its own, polluting system directory and making a
+</I>&gt;<i> port unable to deinstall cleanly.
+</I>&gt;<i> 
+</I>&gt;<i> I've solved this with calling python from a port after the installation
+</I>&gt;<i> to create the bytecode.
+</I>
+Good catch, byte compiled files should be installed - and if not needed, removed
+by the packager instead the other way round.
+I'll fix that.
+
+
+&gt;<i> 8. Last but not least, the only problem I couldn't solve is dbus
+</I>&gt;<i> support. On FreeBSD dbus is installed from the ports, so pkg-config
+</I>&gt;<i> knows about it. However gpsd doesn't build with dbus_export=yes:
+</I>&gt;<i> 
+</I>&gt;<i> cc -o ais_json.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -Wimplicit-function-declaration -D_GNU_SOURCE -O2 -pipe -fno-strict-aliasing -O2 -fPIC ais_json.c
+</I>&gt;<i> In file included from ais_json.c:18:
+</I>&gt;<i> gpsd.h:979:23: error: dbus/dbus.h: No such file or directory
+</I>&gt;<i> 
+</I>&gt;<i> looks like SCons doesn't take cflags from pkgconfig at all, and I
+</I>&gt;<i> couldn't figure out how to make it do so.
+</I>
+Can't reproduce that here, scons properly adds
+-I/usr/include/dbus-1.0 -I/usr/lib/x86_64-linux-gnu/dbus-1.0/include
+from the dbus .pc files.
+Could you please send me the .pc files from your dbus installation?
+
+
+&gt;<i> 
+</I>&gt;<i> PS. Judging from my own experience as both packager and ex- scons
+</I>&gt;<i> user, I'd warn you against switching to SCons. It doesn't do enough
+</I>&gt;<i> job required from build system, and its build scripts, instead of
+</I>&gt;<i> being an abstraction from target system, tend to become unmaintainable
+</I>&gt;<i> shell-script-alikes written in python consisting of endless tests and
+</I>&gt;<i> conditions for certain features of target systems. CMake is a much
+</I>&gt;<i> better alternative, providing clearer syntax and doing most work
+</I>&gt;<i> for a user (library detection, for instance: as easy as
+</I>&gt;<i> find_package(Curses) and you have compiler/linker arguments to use
+</I>&gt;<i> the library, and you shouldn't care of pkg-config, or other methods
+</I>&gt;<i> to determine path to the includes/library), also being friendly to
+</I>&gt;<i> packagers, as many aspects of its work is customizable with command
+</I>&gt;<i> line arguments.
+</I>
+unfortunately I have to say that I tend to have the same opinion. Although
+autotools is a real pain, it is *much* easier to use from a packager's POV than
+scons. Same for cmake. And i can be more or less sure, that libraries are being
+built properly instead of trusting some lines of Python code which showed
+various bugs already.
+
+
+-- 
+ Bernd Zeimetz                            Debian GNU/Linux Developer
+ <A HREF="http://bzed.de">http://bzed.de</A>                                <A HREF="http://www.debian.org">http://www.debian.org</A>
+ GPG Fingerprint: ECA1 E3F2 8E11 2432 D485  DD95 EB36 171A 6FF9 435F
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009460.html">[Gpsd-dev] FreeBSD porting problems of gpsd-3.0
+</A></li>
+	<LI>Next message: <A HREF="009450.html">[Gpsd-dev] FreeBSD porting problems of gpsd-3.0
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9449">[ date ]</a>
+              <a href="thread.html#9449">[ thread ]</a>
+              <a href="subject.html#9449">[ subject ]</a>
+              <a href="author.html#9449">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

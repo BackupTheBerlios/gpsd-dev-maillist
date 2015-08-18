@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] ntpd shm changes
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntpd%20shm%20changes&In-Reply-To=%3CAANLkTi%3D1p6ULeH1kzEZqdnF6qYJbD4T2dbG5nutmax9_%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008865.html">
+   <LINK REL="Next"  HREF="008883.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] ntpd shm changes</H1>
+    <B>Dave Hart</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20ntpd%20shm%20changes&In-Reply-To=%3CAANLkTi%3D1p6ULeH1kzEZqdnF6qYJbD4T2dbG5nutmax9_%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] ntpd shm changes">hart at ntp.org
+       </A><BR>
+    <I>Fri Mar 18 18:34:17 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008865.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+        <LI>Next message: <A HREF="008883.html">[Gpsd-dev] ntpd shm changes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8879">[ date ]</a>
+              <a href="thread.html#8879">[ thread ]</a>
+              <a href="subject.html#8879">[ subject ]</a>
+              <a href="author.html#8879">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>[cross-posted to <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">hackers at ntp</A> and gpsd-dev@ by Dave Hart]
+
+Bruce Lilly has done some work to develop a POSIX named shared memory
+alternative to ntpd's refclock_shm.c / driver 28, which uses SysV shm
+&quot;named&quot; using 32 bits, currently including the ascii for NTP (or ntp)
+and a unit digit.  See &quot;new driver development&quot; thread.  [1]
+
+If ntpd is to grow the flavors of shared memory it understands to
+include POSIX named shm, which would require a new driver or an
+extension of the current refclock_shm.c, I think we should take the
+opportunity presented to clean up the shared memory interface
+contract.  We could use the existing layout but since it requires new
+code in ntpd and producers like gpsd to move to the different shm
+namespace, there's no existing code to offended by a reshuffling of
+layout and/or protocol.
+
+Today's mode 1 approach is pretty good.  As I mentioned on questions@
+I would prefer fixed sizes so the interface is resilient in the face
+of a 64-bit ntpd and a 32-bit gpsd or vice-versa.
+
+Additionally, I noticed the comments in our driver are one-sided,
+describing only instructions for ntpd's interaction with the shared
+memory without spelling out the writer's contract.  Harlan raised a
+concern about writers getting it wrong, and it took me a few guesses
+to infer the right steps for a writer before resorting to gpsd source
+code to to confirm.  In short, writers increment count, then the
+payload data, then increment count again, then set valid.  Readers
+fail if valid is zero, otherwise store count, copy payload, compare
+count, fail if they don't match.  Whether count matches or not, valid
+is cleared.
+
+I'm not sure valid is achieving anything.  Readers don't read when
+it's zero, but that seems redundant to me with the count checking.
+Also I don't like the reader resetting valid to 0 -- that shuts down
+the possibility of multiple readers, and for what gain?  valid is
+cleared even when the reader abandoned the attempt because it was
+mid-update, which seems particularly ill-advised to me.
+
+There are missing volatile qualifiers, as far as I see, the shared
+memory should be accessed solely through volatile pointers, as it is
+being modified by code outside the scope of the compiler's
+optimizations.
+
+To facilitate correctness and avoid duplication of code, I'd like to
+see public header file lay out the structure and provide inline code
+for producer and consumer.  That would be eased by having not just one
+structure, but a payload structure used by the producer and consumer
+and a container structure with mode, count, and if needed, valid along
+with an embedded payload struct.
+
+Do you believe we need both valid and count?  Can you think of other
+changes or extensions that might be an improvement in some way?
+
+Thanks for your time,
+Dave Hart
+
+[1]
+<A HREF="http://lists.ntp.org/pipermail/questions/2011-March/thread.html#28910">http://lists.ntp.org/pipermail/questions/2011-March/thread.html#28910</A>
+ or
+<A HREF="http://groups.google.com/group/comp.protocols.time.ntp/browse_thread/thread/72b460de0c825044?hl=en#">http://groups.google.com/group/comp.protocols.time.ntp/browse_thread/thread/72b460de0c825044?hl=en#</A>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008865.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+	<LI>Next message: <A HREF="008883.html">[Gpsd-dev] ntpd shm changes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8879">[ date ]</a>
+              <a href="thread.html#8879">[ thread ]</a>
+              <a href="subject.html#8879">[ subject ]</a>
+              <a href="author.html#8879">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

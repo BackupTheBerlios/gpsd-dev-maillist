@@ -1,0 +1,131 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Input packets buffering bug(s)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3CAANLkTikAxFm0_rxve3%3DxSqQz7EG%2BcfTbqaqqi_PeceeN%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008088.html">
+   <LINK REL="Next"  HREF="008090.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Input packets buffering bug(s)</H1>
+    <B>Olivier Cornu</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Input%20packets%20buffering%20bug%28s%29&In-Reply-To=%3CAANLkTikAxFm0_rxve3%3DxSqQz7EG%2BcfTbqaqqi_PeceeN%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Input packets buffering bug(s)">o.cornu at gmail.com
+       </A><BR>
+    <I>Thu Jul 29 17:51:44 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008088.html">[Gpsd-dev] gpsd hangs with tcp:// device
+</A></li>
+        <LI>Next message: <A HREF="008090.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8089">[ date ]</a>
+              <a href="thread.html#8089">[ thread ]</a>
+              <a href="subject.html#8089">[ subject ]</a>
+              <a href="author.html#8089">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi all!
+
+Sorry i did not get the chance to come back to you sooner about this
+input buffering bug and the fix esr committed the day i left...
+
+These were great holidays!
+It started in an usual way, as we sea-rescued a Greek lady the first
+day who had drifted for hours on her small inflatable boat because of
+a strong Meltem wind and, i suppose, a bit of a nap...
+Greece definitely is a great place to sail and visit altogether. One
+downside: Greeks people seem embarked in an ambitious, longstanding
+and successful project which appears to consist, as far as a tourist
+can tell, in replacing all sea fish with plastic bags (labeled with
+greek writing, in case you're wondering where they come from). At
+least there are still fish somewhere: in the sea-food restaurants.
+
+But let's get back to our business!
+The good news is: the main bug has disappeared. Gpsd isn't
+continuously drifting behind anymore when faced with multi-packets
+inputs.
+The bad news is: there still is a bug, afaict. Now gpsd is
+consistently lagging one GPS tick (i.e. one multi-packets input)
+behind.
+
+Let's give more details: as you may remember, my GPS device is
+updating location data every 5s (what i call a GPS tick), which are
+translated into a bundle of corresponding NMEA sentences sent to gpsd
+(via bluetooth).
+I must say that i got lazy, and limited myself to xgps observations:
+xgps time is always exactly 5s (one tick) behind the GPS time
+displayed on my device. If i simply &quot;cat /dev/rfcomm0&quot;, incoming NMEA
+sentences time show no lag at all.
+
+An xgps observation is kind of a weak proof for such a bug: it might
+come from something else than a gpsd-core bug related to input
+buffering (let's cross fingers).
+However, i remember feeling surprised at how esr fixed this when he
+explained it to me on IRC. Although i don't remember the details, the
+surprise was about being able to empty the input buffer without
+changing a core (function?) logic which, according to me, was
+necessary to avoid this kind of behavior. It might (rightly so) sound
+like a weak argument to you, yet it's enough for me to suspect this is
+a core-gpsd bug (i'd love to be proven wrong).
+
+In case you're just as lazy as i am and want to observe this yourself
+before digging into the code, i attached a Java MIDlet of the
+application i'm using to showcase this problem. It will transform any
+GPS-enabled device with J2ME support (typically: a smart-phone) in a
+Bluetooth NMEA GPS.
+It can be installed on your phone like any other J2ME application.
+It can handle multiple clients in case you want to cat its output and
+use gpsd at the same time (although RFCOMM only support one connection
+between any 2 devices, so you might need 2 client machines for this).
+You should not need to do that though as it can also display the NMEA
+sentences sent on the phone display.
+Note: this is a modified version where the GPS tick is set to 10s, so
+you have plenty of time to look at the different screens and notice a
+lag.
+
+
+Cheers,
+
+-- 
+Olivier
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: ExportGPS_en.jar
+Type: application/java-archive
+Size: 27973 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100729/4e657541/attachment.jar">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20100729/4e657541/attachment.jar</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008088.html">[Gpsd-dev] gpsd hangs with tcp:// device
+</A></li>
+	<LI>Next message: <A HREF="008090.html">[Gpsd-dev] Input packets buffering bug(s)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8089">[ date ]</a>
+              <a href="thread.html#8089">[ thread ]</a>
+              <a href="subject.html#8089">[ subject ]</a>
+              <a href="author.html#8089">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,364 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Eric attempts to emulate C. August Dupin in &quot;The Murders	on the Rue Morgue&quot;
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Eric%20attempts%20to%20emulate%20C.%20August%20Dupin%20in%20%22The%20Murders%0A%09on%20the%20Rue%20Morgue%22&In-Reply-To=%3C20100331234829.0E56220CB1B%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="007584.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Eric attempts to emulate C. August Dupin in &quot;The Murders	on the Rue Morgue&quot;</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Eric%20attempts%20to%20emulate%20C.%20August%20Dupin%20in%20%22The%20Murders%0A%09on%20the%20Rue%20Morgue%22&In-Reply-To=%3C20100331234829.0E56220CB1B%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Eric attempts to emulate C. August Dupin in &quot;The Murders	on the Rue Morgue&quot;">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Thu Apr  1 01:48:29 CEST 2010</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="007584.html">[Gpsd-dev] Eric attempts to emulate C. August Dupin in &quot;The	Murders on the Rue Morgue&quot;
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7581">[ date ]</a>
+              <a href="thread.html#7581">[ thread ]</a>
+              <a href="subject.html#7581">[ subject ]</a>
+              <a href="author.html#7581">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Jon Schlueter is seeing a packet_test regression failure.
+Here's his diff log:
+
+Testing detection of invalid packets...
+--- ./test/packet.test.chk      2010-03-13 09:12:12.134564727 -0500
++++ -   2010-03-30 07:03:20.158540689 -0400
+@@ -6,7 +6,7 @@
+  6: SiRF WAAS version ID test succeeded.
+  7: SiRF WAAS version ID with 3 chars of leading garbage test succeeded.
+  8: SiRF WAAS version ID with wrong checksum test succeeded.
+- 9: SiRF WAAS version ID with bad length test succeeded.
++ 9: SiRF WAAS version ID with bad length test FAILED (packet type 14 wrong).
+ 10: Zodiac binary 1000 Geodetic Status Output Message test succeeded.
+ 11: EverMore status packet 0x20 test succeeded.
+ 12: EverMore packet 0x04 with 0x10 0x10 sequence test succeeded.
+make[2]: *** [packet-regress] Error 1
+make[2]: Leaving directory `/home/jonschl/projects/gpsd-git'
+make[1]: *** [check-am] Error 2
+make[1]: Leaving directory `/home/jonschl/projects/gpsd-git'
+make: *** [check] Error 2
+
+The background to this failure is that as the packet sniffer is doing its
+conventional state-machine thing on incoming data, it's also passing each byte
+to a function called rtcm2_decode(), which calls isgps_decode(). This is 
+because of:
+
+ * 4) ISGPS packets. The input may be a bitstream containing IS-GPS-200
+ *    packets.  Each includes a fixed leader byte, a length, and check bits.  
+ *    In this case, it is not guaranted that packet starts begin on byte 
+ *    bounaries; the recognizer has to run a separate state machine against 
+ *    each byte just to achieve synchronization lock with the bitstream.
+
+ISGPS is the data format used for raw GPS radio bit streams and for
+RTCM2, the DGPS correction service.  What's happening on Jon's machine
+is that the ISGPS state machine thinks it has achieved ISGPS sync
+lock. It tells the lexer this, and the lexer thinks it has accumulated
+a packet of type 14 - RTCM2
+
+Jon Schlueter &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jon.schlueter at gmail.com</A>&gt; writes:
+&gt;<i>gcc (Ubuntu 4.4.1-4ubuntu9) 4.4.1
+</I>
+OK, same here. Not a compiler version issue, then
+
+&gt;<i>$ lsb_release -a
+</I>&gt;<i>No LSB modules are available.
+</I>&gt;<i>Distributor ID: Ubuntu
+</I>&gt;<i>Description:    Ubuntu 9.10
+</I>&gt;<i>Release:        9.10
+</I>&gt;<i>Codename:       karmic
+</I>
+Same OS as me, too.  
+
+&gt;<i>uname -m = i686
+</I>&gt;<i>uname -r = 2.6.31-19-generic
+</I>&gt;<i>uname -s = Linux
+</I>&gt;<i>uname -v = #56-Ubuntu SMP Thu Jan 28 01:26:53 UTC 2010
+</I>
+For me, it's
+
+uname -m = x86_64
+uname -r = 2.6.31-20-generic
+uname -s = Linux
+uname -v = #58-Ubuntu SMP Fri Mar 12 04:38:19 UTC 2010
+
+I think that actually pins it down pretty hard.  It has to be the
+i686 vs. x86_64 difference - 32 vs. 64 bits.  That's believable,
+because the code that's going wrong is some heavy-duty bit twiddling.
+
+Here's Jon's session log on his 32-bit machine:
+
+$ ./test_packet -t 9 -v8
+07270260: character '.' [a0], new state: SIRF_LEADER_1
+07270261: character '.' [a2], new state: SIRF_LEADER_2
+07270262: character '.' [ff], new state: SIRF_LENGTH_1
+07270263: character '.' [15], new state: GROUND_STATE
+Character discarded, buffer 28 chars =
+ISGPS word tag not correct, skipping byte
+07270264: character '.' [a2], new state: GROUND_STATE
+Character discarded, buffer 27 chars =
+07270265: character '.' [ff], new state: ZODIAC_LEADER_1
+07270266: character '.' [15], new state: GROUND_STATE
+Character discarded, buffer 26 chars =
+ISGPS word tag not correct, skipping byte
+07270267: character '.' [15], new state: GROUND_STATE
+Character discarded, buffer 25 chars =
+ISGPS word tag not correct, skipping byte
+07270268: character '.' [06], new state: GROUND_STATE
+Character discarded, buffer 24 chars =
+ISGPS word tag not correct, skipping byte
+07270269: character '.' [06], new state: GROUND_STATE
+Character discarded, buffer 23 chars =
+ISGPS word tag not correct, skipping byte
+07270270: character '1' [31], new state: GROUND_STATE
+Character discarded, buffer 22 chars =
+ISGPS word tag not correct, skipping byte
+07270271: character '.' [2e], new state: GROUND_STATE
+Character discarded, buffer 21 chars =
+ISGPS word tag not correct, skipping byte
+07270272: character '2' [32], new state: GROUND_STATE
+Character discarded, buffer 20 chars =
+ISGPS word tag not correct, skipping byte
+07270273: character '.' [2e], new state: GROUND_STATE
+Character discarded, buffer 19 chars =
+ISGPS word tag not correct, skipping byte
+07270274: character '0' [30], new state: GROUND_STATE
+Character discarded, buffer 18 chars =
+ISGPS parity 0
+ISGPS processing word 4 (offset -1076330956)
+ISGPS residual -1076330932
+07270275: character 'D' [44], new state: RTCM2_RECOGNIZED
+Packet type 14 accepted 1 =
+Packet discard of 1, chars remaining is 17 =
+ 9: SiRF WAAS version ID with bad length test FAILED (packet type 14 wrong).
+
+And here's mine on my 64-bit machine:
+
+Script started on Wed 31 Mar 2010 06:41:39 PM EDT
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at snark</A>:~/git/gpsd$  ./test_packet -t 9 -v8
+4294967295: character '.' [a0], new state: SIRF_LEADER_1
+4294967296: character '.' [a2], new state: SIRF_LEADER_2
+4294967297: character '.' [ff], new state: SIRF_LENGTH_1
+4294967298: character '.' [15], new state: GROUND_STATE
+Character discarded, buffer 28 chars = 
+ISGPS word tag not correct, skipping byte
+4294967299: character '.' [a2], new state: GROUND_STATE
+Character discarded, buffer 27 chars = 
+4294967300: character '.' [ff], new state: ZODIAC_LEADER_1
+4294967301: character '.' [15], new state: GROUND_STATE
+Character discarded, buffer 26 chars = 
+ISGPS word tag not correct, skipping byte
+4294967302: character '.' [15], new state: GROUND_STATE
+Character discarded, buffer 25 chars = 
+ISGPS word tag not correct, skipping byte
+4294967303: character '.' [06], new state: GROUND_STATE
+Character discarded, buffer 24 chars = 
+ISGPS word tag not correct, skipping byte
+4294967304: character '.' [06], new state: GROUND_STATE
+Character discarded, buffer 23 chars = 
+ISGPS word tag not correct, skipping byte
+4294967305: character '1' [31], new state: GROUND_STATE
+Character discarded, buffer 22 chars = 
+ISGPS word tag not correct, skipping byte
+4294967306: character '.' [2e], new state: GROUND_STATE
+Character discarded, buffer 21 chars = 
+ISGPS word tag not correct, skipping byte
+4294967307: character '2' [32], new state: GROUND_STATE
+Character discarded, buffer 20 chars = 
+ISGPS word tag not correct, skipping byte
+4294967308: character '.' [2e], new state: GROUND_STATE
+Character discarded, buffer 19 chars = 
+ISGPS word tag not correct, skipping byte
+4294967309: character '0' [30], new state: GROUND_STATE
+Character discarded, buffer 18 chars = 
+ISGPS syncing at byte 4294967310: 0x00000000
+ISGPS syncing at byte 4294967310: 0x00000000
+ISGPS syncing at byte 4294967310: 0x00000001
+ISGPS syncing at byte 4294967310: 0x00000002
+ISGPS syncing at byte 4294967310: 0x00000004
+ISGPS syncing at byte 4294967310: 0x00000008
+ISGPS lock never achieved
+4294967310: character 'D' [44], new state: GROUND_STATE
+Character discarded, buffer 17 chars = 
+ISGPS syncing at byte 4294967311: 0x00000011
+ISGPS syncing at byte 4294967311: 0x00000023
+ISGPS syncing at byte 4294967311: 0x00000046
+ISGPS syncing at byte 4294967311: 0x0000008d
+ISGPS syncing at byte 4294967311: 0x0000011a
+ISGPS syncing at byte 4294967311: 0x00000234
+ISGPS lock never achieved
+4294967311: character 'K' [4b], new state: GROUND_STATE
+Character discarded, buffer 16 chars = 
+ISGPS syncing at byte 4294967312: 0x00000469
+ISGPS syncing at byte 4294967312: 0x000008d2
+ISGPS syncing at byte 4294967312: 0x000011a4
+ISGPS syncing at byte 4294967312: 0x00002349
+ISGPS syncing at byte 4294967312: 0x00004692
+ISGPS syncing at byte 4294967312: 0x00008d24
+ISGPS lock never achieved
+4294967312: character 'I' [49], new state: GROUND_STATE
+Character discarded, buffer 15 chars = 
+ISGPS syncing at byte 4294967313: 0x00011a48
+ISGPS syncing at byte 4294967313: 0x00023490
+ISGPS syncing at byte 4294967313: 0x00046921
+ISGPS syncing at byte 4294967313: 0x0008d242
+ISGPS syncing at byte 4294967313: 0x0011a485
+ISGPS syncing at byte 4294967313: 0x0023490a
+ISGPS lock never achieved
+4294967313: character 'T' [54], new state: GROUND_STATE
+Character discarded, buffer 14 chars = 
+ISGPS word tag not correct, skipping byte
+4294967314: character '1' [31], new state: GROUND_STATE
+Character discarded, buffer 13 chars = 
+ISGPS word tag not correct, skipping byte
+4294967315: character '1' [31], new state: GROUND_STATE
+Character discarded, buffer 12 chars = 
+ISGPS word tag not correct, skipping byte
+4294967316: character '9' [39], new state: GROUND_STATE
+Character discarded, buffer 11 chars = 
+ISGPS word tag not correct, skipping byte
+4294967317: character ' ' [20], new state: GROUND_STATE
+Character discarded, buffer 10 chars = 
+ISGPS syncing at byte 4294967318: 0x00469215
+ISGPS syncing at byte 4294967318: 0x008d242b
+ISGPS syncing at byte 4294967318: 0x011a4856
+ISGPS syncing at byte 4294967318: 0x023490ac
+ISGPS syncing at byte 4294967318: 0x04692159
+ISGPS syncing at byte 4294967318: 0x08d242b2
+ISGPS lock never achieved
+4294967318: character 'S' [53], new state: GROUND_STATE
+Character discarded, buffer 9 chars = 
+ISGPS syncing at byte 4294967319: 0x11a48565
+ISGPS syncing at byte 4294967319: 0x23490aca
+ISGPS syncing at byte 4294967319: 0x46921595
+ISGPS syncing at byte 4294967319: 0x8d242b2b
+ISGPS syncing at byte 4294967319: 0x1a485656
+ISGPS syncing at byte 4294967319: 0x3490acac
+ISGPS lock never achieved
+4294967319: character 'M' [4d], new state: GROUND_STATE
+Character discarded, buffer 8 chars = 
+ISGPS word tag not correct, skipping byte
+4294967320: character '.' [00], new state: GROUND_STATE
+Character discarded, buffer 7 chars = 
+ISGPS word tag not correct, skipping byte
+4294967321: character '.' [00], new state: GROUND_STATE
+Character discarded, buffer 6 chars = 
+ISGPS word tag not correct, skipping byte
+4294967322: character '.' [00], new state: GROUND_STATE
+Character discarded, buffer 5 chars = 
+ISGPS word tag not correct, skipping byte
+4294967323: character '.' [00], new state: GROUND_STATE
+Character discarded, buffer 4 chars = 
+ISGPS word tag not correct, skipping byte
+4294967324: character '.' [03], new state: GROUND_STATE
+Character discarded, buffer 3 chars = 
+ISGPS word tag not correct, skipping byte
+4294967325: character '.' [82], new state: GROUND_STATE
+Character discarded, buffer 2 chars = 
+ISGPS word tag not correct, skipping byte
+4294967326: character '.' [b0], new state: GROUND_STATE
+Character discarded, buffer 1 chars = 
+ISGPS word tag not correct, skipping byte
+4294967327: character '.' [b3], new state: GROUND_STATE
+Character discarded, buffer 0 chars = 
+ 9: SiRF WAAS version ID with bad length test succeeded.
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at snark</A>:~/git/gpsd$ exit
+
+Script done on Wed 31 Mar 2010 06:41:51 PM EDT
+
+The key difference is after line 36.  Zooming in on that part of the logs...
+
+i686:
+07270274: character '0' [30], new state: GROUND_STATE
+Character discarded, buffer 18 chars =
+ISGPS parity 0
+ISGPS processing word 4 (offset -1076330956)
+ISGPS residual -1076330932
+07270275: character 'D' [44], new state: RTCM2_RECOGNIZED
+Packet type 14 accepted 1 =
+Packet discard of 1, chars remaining is 17 =
+ 9: SiRF WAAS version ID with bad length test FAILED (packet type 14 wrong).
+
+x86_64:
+4294967309: character '0' [30], new state: GROUND_STATE
+Character discarded, buffer 18 chars = 
+ISGPS syncing at byte 4294967310: 0x00000000
+ISGPS syncing at byte 4294967310: 0x00000000
+ISGPS syncing at byte 4294967310: 0x00000001
+ISGPS syncing at byte 4294967310: 0x00000002
+ISGPS syncing at byte 4294967310: 0x00000004
+ISGPS syncing at byte 4294967310: 0x00000008
+ISGPS lock never achieved
+4294967310: character 'D' [44], new state: GROUND_STATE
+
+This turns up one minor bug.  The long number before the colon in the
+first line is supposed to be a chracter counter, but in test_packet.c 
+it's never initialized and random. After fixing that bug, my log is:
+
+x86_64:
+00000014: character '0' [30], new state: GROUND_STATE
+Character discarded, buffer 18 chars = 
+ISGPS syncing at byte 15: 0x00000000
+ISGPS syncing at byte 15: 0x00000000
+ISGPS syncing at byte 15: 0x00000001
+ISGPS syncing at byte 15: 0x00000002
+ISGPS syncing at byte 15: 0x00000004
+ISGPS syncing at byte 15: 0x00000008
+ISGPS lock never achieved
+15: character 'D' [44], new state: GROUND_STATE
+
+And checking Jon's log, 07270274 - 07270260 = 14, so that's OK.
+
+The key difference is what happens when the 'D' (character 15) arrives.
+At that point, on Jon's machine, the ISGPS state machine thinks it 
+has parity 0 and sync lock.  Mine is still trying to sync.
+
+Stay tuned for the exciting sequel, &quot;The Purloined Character&quot;, which
+I will inscribe after I have added some more instrumentation to the 
+ISGPS code.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+The two pillars of `political correctness' are, 
+  a) willful ignorance, and
+  b) a steadfast refusal to face the truth
+	-- George MacDonald Fraser
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="007584.html">[Gpsd-dev] Eric attempts to emulate C. August Dupin in &quot;The	Murders on the Rue Morgue&quot;
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7581">[ date ]</a>
+              <a href="thread.html#7581">[ thread ]</a>
+              <a href="subject.html#7581">[ subject ]</a>
+              <a href="author.html#7581">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

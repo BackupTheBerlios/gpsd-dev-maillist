@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPSD Protocol Inconsistencies
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3CAANLkTikO4mzeYmaosBAmAQNLKqYmQ1Q0jRMc4OE2zd28%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008906.html">
+   <LINK REL="Next"  HREF="008917.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPSD Protocol Inconsistencies</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3CAANLkTikO4mzeYmaosBAmAQNLKqYmQ1Q0jRMc4OE2zd28%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] GPSD Protocol Inconsistencies">thomas at mich.com
+       </A><BR>
+    <I>Sun Mar 20 20:02:22 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008906.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+        <LI>Next message: <A HREF="008917.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8908">[ date ]</a>
+              <a href="thread.html#8908">[ thread ]</a>
+              <a href="subject.html#8908">[ subject ]</a>
+              <a href="author.html#8908">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sun, Mar 20, 2011 at 2:09 PM, Jon Schlueter &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jon.schlueter at gmail.com</A>&gt; wrote:
+&gt;<i> On Sun, Mar 20, 2011 at 10:57 AM, tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt; wrote:
+</I>&gt;&gt;<i> Why is &quot;mode&quot; in TPV if it comes from GPGSA? &#160;Shouldn't it or whatever
+</I>&gt;&gt;<i> is in GPGSA be in SKY? &#160;But you can derive mode from just the TPV
+</I>&gt;&gt;<i> information.
+</I>&gt;<i>
+</I>&gt;<i> Isn't the mode a reflection of the state of the Receiver? if so how would one
+</I>&gt;<i> go about reliably figuring out what internal state a receiver is in
+</I>&gt;<i> from the other
+</I>&gt;<i> information? &#160;NEMA splits the information one way, but some of the other binary
+</I>&gt;<i> protocols provide mode with the TPV message
+</I>&gt;<i>
+</I>&gt;<i> &#160; &#160;SiRF ships mode/nav information in MID 2 message
+</I>&gt;<i> &#160; &#160;UBLOX ships mode/nav information in MID 98
+</I>&gt;<i> &#160; &#160;Garmin binary ships mode/nav information in GARMIN_PKTID_PVT_DATA
+</I>
+I will have to check, but on my 10Hz Venus624 it only gives GPGSA
+every second, but the GPGGA/GPRMC/GPGLL as far as I know can switch
+validity and number of satellites in the interim updates.
+
+NMEA is fragmented, but if we are going to defragment it we need to do
+it properly, or just do it adhoc, as it is otherwise just hinted and
+tweaked adhoc.
+
+It actually is about to get much worse with GLONASS - you will soon
+have to handle both sets for a combined value:
+
+$GNGNS,083613.333,2447.0963,N,12100.5393,E,AA,08,1.6,138.8,19.6,,0000*60
+$GNGSA,A,3,03,19,24,08,20,32,,,,,,,2.7,1.0,2.5*23
+$GNGSA,A,3,87,72,,,,,,,,,,,2.7,1.0,2.5*25
+$GPGSV,3,1,7,03,82,240,41,19,62,241,40,24,45,304,39,08,35,038,38*72
+$GPGSV,3,2,7,20,35,143,38,32,51,221,37,02,04,135,27,,,,*72
+$GLGSV,1,1,03,87,73,268,38,72,42,041,36,65,36,287,,,,,*78
+
+I'm getting a number of Skytraq eval modules - mainly Venus 628 and
+7xx, but one RTK chip in for development - do you have a set for your
+testing?
+
+&gt;&gt;<i> Note you need either GPRMC or BOTH GPGLL AND GPZDA to get the date and
+</I>&gt;&gt;<i> then there is the midnight rollover problem (5Hz garmins if nothing
+</I>&gt;&gt;<i> else). &#160;To get altitude, you need GPGGA.
+</I>&gt;<i>
+</I>&gt;<i> hmm do we have a capture of a 5Hz garmin that exibits the midnight rollover
+</I>&gt;<i> problem it sounds like that case should be added to our regression tests
+</I>&gt;<i> if we suspect an issue with our reporting/cycle detection of the nema parser.
+</I>
+One of my first tests a long time ago showed the problem - I think I
+still have the log, but I have to dig into some archives.
+I'll post the relevant section
+
+&gt;&gt;<i> The lat/lon sentences have the A/V flag which would correspond to mode
+</I>&gt;&gt;<i> 1 or &gt;1, and the number of satellites in GPGGA should give 2 or 3 for
+</I>&gt;&gt;<i> 2d or 3d fix (ignore the altitude if 2d), but I propose changing 3 to
+</I>&gt;&gt;<i> 4 if GPGGA also indicates DGPS is active. &#160;I don't see anywhere else
+</I>&gt;&gt;<i> this higher accuracy is indicated. &#160;It isn't DoP, it means whatever
+</I>&gt;&gt;<i> numbers are being reported are being corrected. &#160;It could be its own
+</I>&gt;&gt;<i> tag.
+</I>&gt;<i>
+</I>&gt;<i> DGPS information is currently reported back in
+</I>&gt;<i> &#160; &#160;session-&gt;gpsdata.status = STATUS_DGPS_FIX or STATUS_FIX
+</I>
+What POLL or WATCH JSON message reflects this?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008906.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+	<LI>Next message: <A HREF="008917.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8908">[ date ]</a>
+              <a href="thread.html#8908">[ thread ]</a>
+              <a href="subject.html#8908">[ subject ]</a>
+              <a href="author.html#8908">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

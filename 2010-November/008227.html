@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [ Bug #17642 ] gpsctl -b fails with u-blox antaris
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5B%20Bug%20%2317642%20%5D%20gpsctl%20-b%20fails%20with%20u-blox%20antaris&In-Reply-To=%3C841v6z2zvz.fsf%40sauna.l.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008226.html">
+   <LINK REL="Next"  HREF="008228.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [ Bug #17642 ] gpsctl -b fails with u-blox antaris</H1>
+    <B>Timo Juhani Lindfors</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5B%20Bug%20%2317642%20%5D%20gpsctl%20-b%20fails%20with%20u-blox%20antaris&In-Reply-To=%3C841v6z2zvz.fsf%40sauna.l.org%3E"
+       TITLE="[Gpsd-dev] [ Bug #17642 ] gpsctl -b fails with u-blox antaris">timo.lindfors at iki.fi
+       </A><BR>
+    <I>Fri Nov  5 23:01:52 CET 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008226.html">[Gpsd-dev] [ Bug #17638 ] control socket &amp; command can return OK	even if write fails
+</A></li>
+        <LI>Next message: <A HREF="008228.html">[Gpsd-dev] monitor_oncore.c fixes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8227">[ date ]</a>
+              <a href="thread.html#8227">[ thread ]</a>
+              <a href="subject.html#8227">[ subject ]</a>
+              <a href="author.html#8227">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>[Reposting here since only few people seem to be paying attention to
+the bug tracker.]
+
+Date:
+2010-Oct-19 20:24
+Submitted By:
+lindi     Assigned To:
+none
+Category:
+None    Priority:
+5
+Bug Group:
+None    Resolution:
+None
+Summary:
+gpsctl -b fails with u-blox antaris
+
+Original Submission:
+$ gpsctl -b
+gpsctl: mode change to native mode failed
+
+fails. Strace shows
+
+write(3, &quot;?DEVICE={\&quot;path\&quot;:\&quot;/dev/ttySAC1\&quot;,\&quot;native\&quot;:1}\r\n&quot;, 44) = 44
+recv(3, &quot;{\&quot;class\&quot;:\&quot;ERROR\&quot;,\&quot;message\&quot;:\&quot;Channel has no device (possible internal error).\&quot;}\r\n{\&quot;class\&quot;:\&quot;DEVICE\&quot;,\&quot;path\&quot;:\&quot;/dev/ttySAC1\&quot;}\r\n&quot;, 3072, 0) = 122
+
+The code fragment
+
+device = NULL;
+/*@-branchstate@*/
+if (status != 0) {
+...
+} else {
+if (devconf.path[0] != '\0') {
+/* user specified a path, try to assign it */
+if (!awaken(find_device(devconf.path))) {
+...
+}
+} else {
+...
+}
+if (device == NULL)
+(void)snprintf(reply + strlen(reply),
+replylen - strlen(reply),
+&quot;{\&quot;class\&quot;:\&quot;ERROR\&quot;,\&quot;message\&quot;:\&quot;Channel has no device (possible internal error).\&quot;}\r\n&quot;);
+
+looks buggy. It never sets &quot;device&quot; to non-NULL if status==0,
+devconf.path == &quot;/dev/ttySAC1&quot; and awaken() succeeds.
+
+If I send the ?DEVICE command manually and omit the &quot;path&quot; part
+completely then the code proceeds to ubx_nmea_mode() normally.
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008226.html">[Gpsd-dev] [ Bug #17638 ] control socket &amp; command can return OK	even if write fails
+</A></li>
+	<LI>Next message: <A HREF="008228.html">[Gpsd-dev] monitor_oncore.c fixes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8227">[ date ]</a>
+              <a href="thread.html#8227">[ thread ]</a>
+              <a href="subject.html#8227">[ subject ]</a>
+              <a href="author.html#8227">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

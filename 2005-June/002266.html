@@ -1,0 +1,109 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-commit-watch] r2734 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r2734%20-%20trunk&In-Reply-To=%3CPine.LNX.4.63.0506281442260.9521%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002264.html">
+   <LINK REL="Next"  HREF="002267.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-commit-watch] r2734 - trunk</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-commit-watch%5D%20r2734%20-%20trunk&In-Reply-To=%3CPine.LNX.4.63.0506281442260.9521%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-commit-watch] r2734 - trunk">gem at rellim.com
+       </A><BR>
+    <I>Tue Jun 28 23:46:38 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002264.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2734 - trunk
+</A></li>
+        <LI>Next message: <A HREF="002267.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2734 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2266">[ date ]</a>
+              <a href="thread.html#2266">[ thread ]</a>
+              <a href="subject.html#2266">[ subject ]</a>
+              <a href="author.html#2266">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Eric!
+
+On Tue, 28 Jun 2005, Eric S. Raymond wrote:
+
+&gt;<i> Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+</I>&gt;<i> &gt; So this needs a bit of tweaking before it can ship.  Today is my daughters'
+</I>&gt;<i> &gt; B-day, so this is not the day I can work on it.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Options are to:
+</I>&gt;<i> &gt; 	1. put the logic back the way it was.
+</I>&gt;<i> &gt; 	2. not return from GetPacket until a full packet is found.
+</I>&gt;<i> &gt; 	3. pass a second flag back that alerts if a full packet is
+</I>&gt;<i> &gt;            in buffer.
+</I>&gt;<i>
+</I>&gt;<i> If I'm understanding you correctly, this will work.
+</I>
+...
+
+&gt;<i> -	if (garmin_get_packet( session ) &gt; 0) {
+</I>&gt;<i> +	if (garmin_get_packet( session ) == sizeof(session-&gt;GarminBuffer)) {
+</I>
+Nope, that totally hosed it.  The packet is variable size, and if it
+gets as big as GerminBuffer then thing have gone very wrong.
+
+The garmin binary message comes in as one garmin packet of variable size.
+The garmin packet may be broken up in to one or more USB packets.  You tell
+that there are no more USB packets in the Garmin packet when you get a
+zero length read.  Even if there is a lot of data backed up, the garmin
+kernel driver will return a 0 length read after every garmin packet.
+
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.1 (GNU/Linux)
+
+iD8DBQFCwcVD8KZibdeR3qURAjQjAJ0bVcDwWGov4oPFgNTHcSw/NmtIawCg64G+
+OTjIezNlr25N8In4CWpMdU0=
+=cyHd
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002264.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2734 - trunk
+</A></li>
+	<LI>Next message: <A HREF="002267.html">[Gpsd-dev] Re: [Gpsd-commit-watch] r2734 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2266">[ date ]</a>
+              <a href="thread.html#2266">[ thread ]</a>
+              <a href="subject.html#2266">[ subject ]</a>
+              <a href="author.html#2266">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

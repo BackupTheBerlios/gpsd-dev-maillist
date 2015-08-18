@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] rtcm.c: compiler warning with gcc 4.1
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20rtcm.c%3A%20compiler%20warning%20with%20gcc%204.1&In-Reply-To=%3C20060608184348.GA21302%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003653.html">
+   <LINK REL="Next"  HREF="003665.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] rtcm.c: compiler warning with gcc 4.1</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20rtcm.c%3A%20compiler%20warning%20with%20gcc%204.1&In-Reply-To=%3C20060608184348.GA21302%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] rtcm.c: compiler warning with gcc 4.1">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Jun  8 20:43:48 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003653.html">[Gpsd-dev] rtcm.c: compiler warning with gcc 4.1
+</A></li>
+        <LI>Next message: <A HREF="003665.html">[Gpsd-dev] one small item
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3657">[ date ]</a>
+              <a href="thread.html#3657">[ thread ]</a>
+              <a href="subject.html#3657">[ subject ]</a>
+              <a href="author.html#3657">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Tilman Koschnick &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">til at subnetz.org</A>&gt;:
+&gt;<i> I just switched to gcc 4.1, and got a new warning when compiling svn
+</I>&gt;<i> head:
+</I>&gt;<i> 
+</I>&gt;<i> rtcm.c: In function 'rtcm_undump':
+</I>&gt;<i> rtcm.c:1076: warning: dereferencing type-punned pointer will break
+</I>&gt;<i> strict-aliasing rules
+</I>&gt;<i> rtcm.c:1080: warning: dereferencing type-punned pointer will break
+</I>&gt;<i> strict-aliasing rules
+</I>&gt;<i> rtcm.c:1081: warning: dereferencing type-punned pointer will break
+</I>&gt;<i> strict-aliasing rules
+</I>&gt;<i> 
+</I>&gt;<i> The code that triggers the warning is:
+</I>&gt;<i> 
+</I>&gt;<i>    1071             struct consat_t *csp = &amp;rtcmp-&gt;msg_data.conhealth.sat[rtcmp-&gt;msg_data.conhealth.nentries++];
+</I>&gt;<i>    1072
+</I>&gt;<i>    1073             fldcount = sscanf(buf,
+</I>&gt;<i>    1074                               &quot;C\t%2u\t%1u\t%1u\t%2d\t%1u\t%1u\t%1u\t%2u\n&quot;,
+</I>&gt;<i>    1075                               &amp;csp-&gt;ident,
+</I>&gt;<i>    1076                               (unsigned int *)&amp;csp-&gt;iodl,
+</I>&gt;<i>    1077                               &amp;csp-&gt;health,
+</I>&gt;<i>    1078                               &amp;csp-&gt;snr,
+</I>&gt;<i>    1079                               &amp;csp-&gt;health_en,
+</I>&gt;<i>    1080                               (unsigned int *)&amp;csp-&gt;new_data,
+</I>&gt;<i>    1081                               (unsigned int *)&amp;csp-&gt;los_warning,
+</I>&gt;<i>    1082                               &amp;csp-&gt;tou);
+</I>&gt;<i> 
+</I>&gt;<i> iodl, new_data and los_warning are defined as bool in struct consat_t.
+</I>&gt;<i> 
+</I>&gt;<i> Does this warning point to a real problem? FWIW, compiling with
+</I>&gt;<i> '-fno-strict-aliasing' makes gcc happy again.
+</I>&gt;<i> 
+</I>&gt;<i> gcc is version 4.1.1 20060511 (prerelease) (Debian 4.1.0-4) on a 64-bit Opteron.
+</I>
+Ah.  Yes, I think I understand this error.  This is gcc being pedantic, not
+a real problem.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003653.html">[Gpsd-dev] rtcm.c: compiler warning with gcc 4.1
+</A></li>
+	<LI>Next message: <A HREF="003665.html">[Gpsd-dev] one small item
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3657">[ date ]</a>
+              <a href="thread.html#3657">[ thread ]</a>
+              <a href="subject.html#3657">[ subject ]</a>
+              <a href="author.html#3657">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

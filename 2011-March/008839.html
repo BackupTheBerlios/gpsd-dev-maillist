@@ -1,0 +1,232 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] time presence and precision, tags, class member queries.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20time%20presence%20and%20precision%2C%20tags%2C%0A%20class%20member%20queries.&In-Reply-To=%3C20110316164042.GB14686%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008835.html">
+   <LINK REL="Next"  HREF="008840.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] time presence and precision, tags, class member queries.</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20time%20presence%20and%20precision%2C%20tags%2C%0A%20class%20member%20queries.&In-Reply-To=%3C20110316164042.GB14686%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] time presence and precision, tags, class member queries.">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Mar 16 17:40:42 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008835.html">[Gpsd-dev] time presence and precision, tags,	class member queries.
+</A></li>
+        <LI>Next message: <A HREF="008840.html">[Gpsd-dev] time presence and precision, tags,	class member queries.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8839">[ date ]</a>
+              <a href="thread.html#8839">[ thread ]</a>
+              <a href="subject.html#8839">[ subject ]</a>
+              <a href="author.html#8839">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+&gt;<i> My concern here is I would rather specify an &quot;unknown&quot; number of
+</I>&gt;<i> decimal digits whose accuracy is questionable rather than locking
+</I>&gt;<i> things down to two decimal digits.
+</I>
+Noted. Remind me after we ship.
+ 
+&gt;<i> To clarify, it will queue data and emit a fix when the timestamp changes?
+</I>&gt;<i> e.g.
+</I>&gt;<i> RMC1, GLL1, GGA1 RMC2- triggers fix(RMC1-GLL1-GGA1) and starts fix(RMC2...)
+</I>&gt;<i> 
+</I>&gt;<i> Doesn't this introduce a second of latency if the update rate is 1Hz?
+</I>
+No. What it does is watch for a timestamp change on the first cycle,
+record the tag of the sentence *before* that as the cycle ender, and
+subsequently ship on the cycle ender.  So no latency is introduced.
+
+In your example, RMC1, GLL1, GGA1, RMC2, it would see the timestamp change 
+on RMC, deduce that GGA is the cycle ender, then subsequently report on GGA.
+
+&gt;<i> But my original question was the purpose for the tag in the first
+</I>&gt;<i> place.  Why is it important for anything downstream to know it was
+</I>&gt;<i> GGA, or RMC that triggered things?
+</I>
+Generally it won't be important in any way.  The tag is only there for
+diagnostic purposes. It's not very informative on an NMEA device, but a bit
+more so on a SiRF or other binary-packet device.
+
+&gt;<i> So it uses the skyview raw data to compute [xyz]DoP?
+</I>
+Correct.  Of course this will need to be disabled when NOFLOAT.
+
+&gt;<i>                                                          This is a lot of
+</I>&gt;<i> computation if someone doesn't need the extra data, and the skyview is
+</I>&gt;<i> returned.
+</I>
+It is a lot of computation by your standards, yes.  You need to bear
+in mind that we have not tried to optimize for a really low-power
+enivironment before; with cycle times being on the order of 1 second,
+the DOP computation didn't have measurable impact.
+
+&gt;<i> &gt;&gt; Is there a reason computed values are returned alongside the direct
+</I>&gt;<i> &gt;&gt; values?
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; I'm not certain what &quot;direct&quot; values you mean.
+</I>&gt;<i> 
+</I>&gt;<i> The GPS itself returns HDOP, VDOP, and PDOP.  To that you add
+</I>&gt;<i> [XYZ]DOP. which are computed.
+</I>
+Right. This is basically so we can use [XYZ]DOP for 3D error modeling,
+for which the traditional sum-of-squares DOPs aren't actually very
+useful (but we report them because (a) I have a design rule about not
+throwing away information, and (b) app designers might squawk if we
+didn't). NOFLOAT will have to disable all this.
+
+&gt;<i> &gt;&gt; On the gpsd.8 manpage and xml, &quot;Responce&quot; is used - that might be a
+</I>&gt;<i> &gt;&gt; non US variant of response, otherwise it is a typo.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; You must be looking at an old version; I can't find this in git head.
+</I>&gt;<i> 
+</I>&gt;<i> My error - I didn't pull the most recent version - it has been fixed
+</I>&gt;<i> in the last few days.
+</I>&gt;<i> 
+</I>&gt;<i> I think you also need to update the website copies of the manpages as
+</I>&gt;<i> I first noticed it there.
+</I>
+That will be done when we ship in a few days. Possibly sooner.
+ 
+&gt;<i> But that is the root of my question.  There is no recommended practice
+</I>&gt;<i> or guaranteed responses or even much clarity to how to send the
+</I>&gt;<i> commands.
+</I>&gt;<i> 
+</I>&gt;<i> I send it a ?WATCH={'json':true}; and get some not really specified
+</I>&gt;<i> response.  You get some kind of Device - one or more?, maybe a watch
+</I>&gt;<i> status, I remember a third line...  I've sent different variants
+</I>&gt;<i> (double quotes, ordering) of ?WATCH={'enabled':true,'json':true}; and
+</I>&gt;<i> json was not set to true sometimes.
+</I>&gt;<i> 
+</I>&gt;<i> So you send some kind of not very well specified blob, and get back
+</I>&gt;<i> some kind of not very well specified blob - if it happens to contain
+</I>&gt;<i> fields, the contents are detailed.
+</I>
+I think I see part of the problem.  You appear to be expecting the
+control protocol to be specified as though it were a conversational or
+lockstep protocol.  It isn't.  There is not anywhere in it anything
+like synchronous command/response transaction.  There can't be,
+because the devices can insert arbitrary delays before they respond to
+command.
+
+There were a couple of major design errors in the old protocol.  One
+of them is that it pretended to be synchronous. It took me longer
+than it should have to realize how many problems this was causing.
+
+The right way to think about it is that the daemon is going to spew
+reports at you at random intervals.  What *kind* of reports is
+controlled mainly by the WATCH state, with a small random delay after
+you set it.  Until a WATCH policy is set, all you'll see is device connect
+and device disconnect notifications (after the initial VERSION and
+DEVICES reports).
+
+It's up to client code to aggregate the state from these events.  The C
+library binding does this for you.
+
+&gt;<i> What I was expecting is something like (don't take these to be accurate)
+</I>&gt;<i> 
+</I>&gt;<i> ?WATCH= MUST specify parameters in a specific order
+</I>&gt;<i> ?WATCH= SHOULD specify enable last in the list
+</I>&gt;<i> ?WATCH= MAY specify parameters in any order
+</I>
+The third alternative is correct. I just added this to the manual
+page: &quot;The order of JSON attributes within a response object is never
+significant, and you may specify attributes in commands in any order.&quot;
+
+&gt;<i> (I also can't seem to find a way to only watch for position TPV and
+</I>&gt;<i> not get the SKY but I might just be dense - I don't think browser
+</I>&gt;<i> location will need SKY).
+</I>
+There is at present no way to specify this.  In general, the policy
+options in WATCH specify what formats the daemon should ship reports
+in, but do not set filters on which reports should be shipped. When
+you set WATCH, all devices will ship you every report they can deliver;
+it's up to the client to do content filtering.
+
+The reason it's designed this way is that even at full flood from several 
+devices the data volume is not very high; for most of each second the
+socket will be idle.  Content filtering would add complexity that I'm
+not yet convinced is necessary.
+
+If you have a measured need to throttle back the amount of sending, 
+then I might consider adding something like &quot;filter&quot;:{&quot;TPV&quot;} to WATCH.
+But it would have to be a *measured* need, with profiling, not one
+just guessed at.  I am concerned to avoid code bloat.
+
+&gt;<i> The response MUST return the following:...  The response SHOULD ...
+</I>&gt;<i> The response MAY...  Both for content and ordering.
+</I>&gt;<i> 
+</I>&gt;<i> For the TPV - are the device and tag fields MUST, SHOULD, or MAY?
+</I>&gt;<i> They might be for libgps, but not if you are decoding the json
+</I>&gt;<i> directly.
+</I>
+Look in the attribute tables. There's a column to tell you whether or
+not an attribute is optional; that's your MUST.  If you want or need
+more detailed specification than that, explain and I'll try to fill it
+in.
+ 
+&gt;<i> This might not belong on the gpsd.8 manpage, but it is a detailed
+</I>&gt;<i> protocol and it isn't really documented as a protocol.  Think RFC
+</I>&gt;<i> (actually that would be a good idea - do an RFC to document this).
+</I>&gt;<i> There should be a certain minimum MUST.
+</I>&gt;<i> 
+</I>&gt;<i> The actual protocol is whatever standard you want to set and has to
+</I>&gt;<i> precisely describe the behavior of whatever implementation.  Right now
+</I>&gt;<i> it is &quot;whatever the code does&quot; and the code can change.  If some are
+</I>&gt;<i> depending on specific fields and they go away, it will break.
+</I>
+The intent is that the protocol is documented with RFC completeness
+on gpsd(8).  If I'm not achieving that, do criticize the docs so
+I can fix them.
+ 
+&gt;<i> One of the problems with the original GPSD is it was quirky - the
+</I>&gt;<i> commands and responses were all ad-hoc but at least were uniform and
+</I>&gt;<i> constant.
+</I>&gt;<i> 
+</I>&gt;<i> JSON creates the problem because it is &quot;extensible&quot;, but also
+</I>&gt;<i> contractable, e.g. no altitude for 2d.  But is this behavior set in
+</I>&gt;<i> stone, or ad-hoc?
+</I>
+It depends on what the underlying device sends.  If you don't have a 3D
+fix, TPV won't report altitude.  It really can't be any other way.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008835.html">[Gpsd-dev] time presence and precision, tags,	class member queries.
+</A></li>
+	<LI>Next message: <A HREF="008840.html">[Gpsd-dev] time presence and precision, tags,	class member queries.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8839">[ date ]</a>
+              <a href="thread.html#8839">[ thread ]</a>
+              <a href="subject.html#8839">[ subject ]</a>
+              <a href="author.html#8839">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

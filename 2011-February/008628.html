@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Supporting the MediaTek 3329
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Supporting%20the%20MediaTek%203329&In-Reply-To=%3C20110227232733.4783C20C245%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008622.html">
+   <LINK REL="Next"  HREF="008629.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Supporting the MediaTek 3329</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Supporting%20the%20MediaTek%203329&In-Reply-To=%3C20110227232733.4783C20C245%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Supporting the MediaTek 3329">esr at snark.thyrsus.com
+       </A><BR>
+    <I>Mon Feb 28 00:27:33 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008622.html">[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch,	master, updated. release-2.95-863-gf318dd2
+</A></li>
+        <LI>Next message: <A HREF="008629.html">[Gpsd-dev] Correction to my description of how Ntrip works
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8628">[ date ]</a>
+              <a href="thread.html#8628">[ thread ]</a>
+              <a href="subject.html#8628">[ subject ]</a>
+              <a href="author.html#8628">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I received your report on the FasTrax IT520U.  GPSD actually includes
+code to support the MKT 3301, which may be upward-compatible to the
+MTK 3329 - but our support was somewhat bit-rotted, with the firmware
+versin query function not actually called anywhere.
+
+I have fixed it up as best I can without a device to test against; pull head 
+from the git repo and look at drivers.c:975-1100. Unfortunately the manual
+you pointed to does not specify the response to a $PMTK605 query, so we can't
+be sure the 3329 returns the same $PMTK705 the 3301 did.
+
+You wrote:
+&gt;<i>If you push me into the right direction and give me some support maybe
+</I>&gt;<i>I could do the changes necessary, but if you added the commands and I
+</I>&gt;<i>tested it with my hardware it would probably be quicker.
+</I>
+We'd be delighted to cooperate with you.  We don't like having our
+drivers bit-rot, but it's prone to happen if we don't have an active
+user for the device type.  So welcome, active MTK user!
+
+Here are the steps I suggest:
+
+First, review that span of code against your documentation.  If there
+have been changes in the required control sequences since the 3301 we
+need to know it.  If there haven't, we'll change the driver name to
+33xx or something.
+
+Second, run the daemon at -D4 against your device, so you can see
+LOG_PROG messages, and see if it switches drivers to MTK-3301.  If
+it does, we're most of the way done; all you have to do is test 
+the speed, mode, and rate-changers.
+
+If it doesn't switch, eyeballing the log ought to tell you 
+what the chip's response to $PMTK605 is.
+
+I look forward to working with you on this.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+Nearly all men can stand adversity, but if you want to test a man's character,
+give him power.
+	-- Abraham Lincoln
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008622.html">[Gpsd-dev] [Gpsd-commit-watch] Project gpsd at BerliOS branch,	master, updated. release-2.95-863-gf318dd2
+</A></li>
+	<LI>Next message: <A HREF="008629.html">[Gpsd-dev] Correction to my description of how Ntrip works
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8628">[ date ]</a>
+              <a href="thread.html#8628">[ thread ]</a>
+              <a href="subject.html#8628">[ subject ]</a>
+              <a href="author.html#8628">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,98 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-commit-watch] r3548 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20r3548%20-%20trunk&In-Reply-To=%3C20060929070259.GA11547%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004455.html">
+   <LINK REL="Next"  HREF="004459.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-commit-watch] r3548 - trunk</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20r3548%20-%20trunk&In-Reply-To=%3C20060929070259.GA11547%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] [Gpsd-commit-watch] r3548 - trunk">esr at thyrsus.com
+       </A><BR>
+    <I>Fri Sep 29 09:02:59 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004455.html">[Gpsd-dev] [Gpsd-commit-watch] r3547 - trunk
+</A></li>
+        <LI>Next message: <A HREF="004459.html">[Gpsd-dev] [Gpsd-commit-watch] r3548 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4458">[ date ]</a>
+              <a href="thread.html#4458">[ thread ]</a>
+              <a href="subject.html#4458">[ subject ]</a>
+              <a href="author.html#4458">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Chris Kuethe &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">chris.kuethe at gmail.com</A>&gt;:
+&gt;<i>                                gpsd shouldn't even bother opening
+</I>&gt;<i> a control protocol network listener/honouring privileged commands on
+</I>&gt;<i> the control socket unless you specifically ask for such dangerous
+</I>&gt;<i> behaviour.
+</I>
+True -- and you do have to tell it to do that; if the -F option is
+not specified, you get no control socket.  But there's a reason
+that socket is almost always going to be active; it's how the hotplug
+system notifies the daemon about new devices.
+
+The way it works: the hotplug script checks for a gpsd PID file in a known
+location.  If it finds one, and that process number is live, then it
+opens the control socket that will exist and ships a device notification. 
+If the PID file is nonexistent or the process is dead, it starts up
+gpsd with switches that drop a PID file and a control socket in known 
+locations.
+
+&gt;<i> That allows the average user to &quot;./gpsd /dev/gps&quot; and be up and
+</I>&gt;<i> running right away with no increased exposure, and allows those of us
+</I>&gt;<i> who are willing to put in some effort to secure our infrastructure to
+</I>&gt;<i> do remote reconfiguration, etc.
+</I>
+You've been doing a lot of excellent work lately and I don't want to discourage
+that.  But your -x option is a perfect example of why I'm harsh on people who
+want to add command-line options -- you rushed to add a switch without 
+thinking enough about how it fit into the present design.
+
+Here's my design decision: if you must have | and it must have remote access,
+put it in guarded with privileged_user().  Don't bother with -x, it would
+be a bandaid rather than a fix and it would break zero administration.  
+We'll move the issue of real authentication for privileged status up on the
+priority list a little.
+
+Copied to dev for the record.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004455.html">[Gpsd-dev] [Gpsd-commit-watch] r3547 - trunk
+</A></li>
+	<LI>Next message: <A HREF="004459.html">[Gpsd-dev] [Gpsd-commit-watch] r3548 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4458">[ date ]</a>
+              <a href="thread.html#4458">[ thread ]</a>
+              <a href="subject.html#4458">[ subject ]</a>
+              <a href="author.html#4458">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

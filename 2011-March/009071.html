@@ -1,0 +1,111 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20A%20lightweight%20synchronization%0A%20mechanism%20for%20shared%20memory&In-Reply-To=%3C4D8CDE10.80409%40tmsw.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009066.html">
+   <LINK REL="Next"  HREF="009072.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory</H1>
+    <B>Terje Mathisen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5Bntp%3Ahackers%5D%20A%20lightweight%20synchronization%0A%20mechanism%20for%20shared%20memory&In-Reply-To=%3C4D8CDE10.80409%40tmsw.no%3E"
+       TITLE="[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory">terje at tmsw.no
+       </A><BR>
+    <I>Fri Mar 25 19:25:20 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009066.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+        <LI>Next message: <A HREF="009072.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9071">[ date ]</a>
+              <a href="thread.html#9071">[ thread ]</a>
+              <a href="subject.html#9071">[ subject ]</a>
+              <a href="author.html#9071">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>tz wrote:
+&gt;<i> On Fri, Mar 25, 2011 at 12:35 PM, Terje Mathisen&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">terje at tmsw.no</A>&gt;  wrote:
+</I>&gt;<i>
+</I>&gt;<i> cnt = (shm-&gt;count + 1)&amp;  mask
+</I>
+This is a writer-private copy of the counter which has been updated, so 
+it points to the next buffer location.
+&gt;<i>
+</I>&gt;<i> NON-ATOMIC shm-&gt;timestamp[cnt] = timestamp;
+</I>&gt;<i>
+</I>&gt;<i> THE timestamp struct copy is  interrupted in the middle or if only
+</I>&gt;<i> some but not all writes are complete.
+</I>&gt;<i>
+</I>&gt;<i> Switch to read process.
+</I>&gt;<i>
+</I>&gt;<i> Read reads old shm-&gt;count
+</I>
+This still points to the previous record!
+
+&gt;<i> Reads INCOHERENT shm-&gt;  timestame
+</I>&gt;<i> Reads old shm-&gt;count which is the same as the original.
+</I>&gt;<i>
+</I>&gt;<i> Switch back to write process.
+</I>&gt;<i>
+</I>&gt;<i> WRITE memory_barrier(); // All preceding writes must finish at this point
+</I>&gt;<i> shm-&gt;count++;     // Now the client(s) can read the timestamp
+</I>&gt;<i>
+</I>&gt;<i> There is an assumption that the sentinels, counts, timestamps are read
+</I>&gt;<i> and written atomically, but I should explicitly state it here.
+</I>
+Only the counter value update needs to be atomic, and even this _can_ be 
+an unlocked read-modify-write operation since we only have a single 
+writer: Both the previous and the new value will point to valid, 
+consistent data.
+&gt;<i>
+</I>&gt;<i> The reason you need two sentinels is because you need to know when the
+</I>&gt;<i> memory is out of sync.
+</I>&gt;<i>
+</I>&gt;<i> If you put a single barrier at the end, the read might get identical
+</I>&gt;<i> counts if it reads the count (with the payload) twice before the write
+</I>&gt;<i> barrier.
+</I>
+This is perfectly OK, it just means you got the previous second's worth 
+of data. :-)
+
+Terje
+
+-- 
+- &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Terje at tmsw.no</A>&gt;
+&quot;almost all programming can be viewed as an exercise in caching&quot;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009066.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+	<LI>Next message: <A HREF="009072.html">[Gpsd-dev] [ntp:hackers] A lightweight synchronization mechanism for shared memory
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9071">[ date ]</a>
+              <a href="thread.html#9071">[ thread ]</a>
+              <a href="subject.html#9071">[ subject ]</a>
+              <a href="author.html#9071">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

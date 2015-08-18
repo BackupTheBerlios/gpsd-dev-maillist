@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd bug and feature queue is now empty
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20bug%20and%20feature%20queue%20is%20now%20empty&In-Reply-To=%3C7596.213.84.187.156.1117181749.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001958.html">
+   <LINK REL="Next"  HREF="001961.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd bug and feature queue is now empty</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd%20bug%20and%20feature%20queue%20is%20now%20empty&In-Reply-To=%3C7596.213.84.187.156.1117181749.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] gpsd bug and feature queue is now empty">gpsd at xs4all.nl
+       </A><BR>
+    <I>Fri May 27 10:15:49 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001958.html">[Gpsd-dev] gpsd bug and feature queue is now empty
+</A></li>
+        <LI>Next message: <A HREF="001961.html">[Gpsd-dev] gpsd bug and feature queue is now empty
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1959">[ date ]</a>
+              <a href="thread.html#1959">[ thread ]</a>
+              <a href="subject.html#1959">[ subject ]</a>
+              <a href="author.html#1959">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+</I>&gt;&gt;<i> &lt; #define getw(off)     ((short)((getb(off) &lt;&lt; 8) | getb(off+1)))
+</I>&gt;&gt;<i> ---
+</I>&gt;&gt;<i> &gt; #define getw(off)     (((getb(off) &lt;&lt; 8) | getb(off+1)))
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Here (and also in the similar define sirf.c) you are not cleaning up
+</I>&gt;&gt;<i> code,
+</I>&gt;&gt;<i> but introducing a bug.
+</I>&gt;&gt;<i> This cast is there for a purpose, and should not be removed.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> When splint complains that its behaviour is implementation dependent,
+</I>&gt;&gt;<i> change the short into some type that is always a 16-bit signed int.  But
+</I>&gt;&gt;<i> do not simply drop it.
+</I>&gt;<i>
+</I>&gt;<i> If you look, you'll see that I now cast the return value of each
+</I>&gt;<i> getw() to whatever the appropriate type is at the point of call.
+</I>
+But that is incorrect.  It will not work.
+The cast is not there for the purpose of defining the return type, but
+rather the source type.  Removing it and putting casts to the desired
+result type will break the macro's functionality.
+
+&gt;<i>  The
+</I>&gt;<i> reason to do this, rather than having the cast in the macro, is that
+</I>&gt;<i> getl() is written in terms of getw().  Having the cast in the getw()
+</I>&gt;<i> macro guarantees that splint will always choke on getl().
+</I>
+In that case you should fix the getl, not the getw.
+As they are written now, those macro's assume that int is 32 bits or more.
+ They will not work on 16-bit int machines.  This is probably what splint
+is complaining about.
+I have written them with the assumption that 16-bit machines are dead. 
+Most of the code will fail on 16-bit machines.
+When you want to remove the warning, you should modify the getl define
+into something like:
+
+((int)(((int)getw(off) &lt;&lt; 16) | (getw(off+2) &amp; 0xffff)))
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001958.html">[Gpsd-dev] gpsd bug and feature queue is now empty
+</A></li>
+	<LI>Next message: <A HREF="001961.html">[Gpsd-dev] gpsd bug and feature queue is now empty
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1959">[ date ]</a>
+              <a href="thread.html#1959">[ thread ]</a>
+              <a href="subject.html#1959">[ subject ]</a>
+              <a href="author.html#1959">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,98 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] extending the gpsd protocol some more
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20extending%20the%20gpsd%20protocol%20some%20more&In-Reply-To=%3C91981b3e0609241007n67e57580t58309587d215d10b%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004395.html">
+   <LINK REL="Next"  HREF="004398.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] extending the gpsd protocol some more</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20extending%20the%20gpsd%20protocol%20some%20more&In-Reply-To=%3C91981b3e0609241007n67e57580t58309587d215d10b%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] extending the gpsd protocol some more">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Sun Sep 24 19:07:45 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004395.html">[Gpsd-dev] '$' message and command not described in gpsd.8
+</A></li>
+        <LI>Next message: <A HREF="004398.html">[Gpsd-dev] extending the gpsd protocol some more
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4397">[ date ]</a>
+              <a href="thread.html#4397">[ thread ]</a>
+              <a href="subject.html#4397">[ subject ]</a>
+              <a href="author.html#4397">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>last night while i was trying to find when exactly the nmea status
+flashing broke, i noticed that cgps would only produce meaningful
+output with more recent gpsds. Looking at CHANGES, I saw that the O
+command changed between v2.32 and v2.33 (r3267 and r3328 respectively)
+to include fix mode. It's nice to have that information but it ...
+ummm... has an adverse impact on backwards compatibility.
+
+I'd like to suggest for protocol v4 something like this:
+
+@&lt;cmdA&gt;[:&lt;cmdAparam1&gt;[,&lt;cmdAparam2&gt;[,...,&lt;cmdAparamN&gt;]]];
+
+So...
+- Command strings are &quot;C&quot; strings.
+- Command names can be some number of alphanumeric characters {0}
+- Command strings must be terminated by a semicolon {1}
+- Commands may have a variable number of parameters
+- Commands are separated from their parameters (if any) by a colon.
+- Reserved characters are colon, semicolon and comma [:;,] - these
+must not be used in a command name or command parameter.
+- Command strings, including leading '@' and terminating ';\0' shall
+fit into uint8_t buf[1024]. If a ';' is not found before buf[1023],
+the command is not valid and will be discarded. {2}
+- Only one command shall be sent at a time. Even if they take no
+parameters &quot;@cmdA;cmdB;&quot; is not valid. Processing will stop before
+cmdB.{3}
+
+{0} do we want to allow arbitrarily long command names?
+{1} if ((buf[strlen(buf) - 1]) != ';') return ERROR; /* nice and easy */
+{2} is 1023 bytes enough?
+{3} do we want to allow multiple commands on a line, or is it fair
+trade the ability to specify multiple command for the possibility of a
+very rich, extensible command set?
+
+Comments?
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004395.html">[Gpsd-dev] '$' message and command not described in gpsd.8
+</A></li>
+	<LI>Next message: <A HREF="004398.html">[Gpsd-dev] extending the gpsd protocol some more
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4397">[ date ]</a>
+              <a href="thread.html#4397">[ thread ]</a>
+              <a href="subject.html#4397">[ subject ]</a>
+              <a href="author.html#4397">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

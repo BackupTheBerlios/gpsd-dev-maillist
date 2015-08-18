@@ -1,0 +1,109 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Changing USB - GPS baud rates
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Changing%20USB%20-%20GPS%20baud%20rates&In-Reply-To=%3CC9BF2641-B75F-451B-94E2-B19DE308E427%40qwest.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003902.html">
+   <LINK REL="Next"  HREF="003880.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Changing USB - GPS baud rates</H1>
+    <B>Dan Oetting</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Changing%20USB%20-%20GPS%20baud%20rates&In-Reply-To=%3CC9BF2641-B75F-451B-94E2-B19DE308E427%40qwest.net%3E"
+       TITLE="[Gpsd-dev] Changing USB - GPS baud rates">dan_oetting at qwest.net
+       </A><BR>
+    <I>Fri Jun 16 19:17:05 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003902.html">[Gpsd-dev] Net::GPSD won't fix (possible gpsd error)
+</A></li>
+        <LI>Next message: <A HREF="003880.html">[Gpsd-dev] Changing USB - GPS baud rates
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3869">[ date ]</a>
+              <a href="thread.html#3869">[ thread ]</a>
+              <a href="subject.html#3869">[ subject ]</a>
+              <a href="author.html#3869">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>There may be alternate ways to change/track baud rates that are more  
+reliable than assuming you can predict the timing. For instance, when  
+changing the GPS baud rate, send the command to the GPS and wait for  
+the receiver to detect the framing errors indicating that the GPS is  
+transmitting at the new speed before commanding the UART to change.  
+The current 50ms fixed delay works if only the change speed command  
+can be in the output buffer at the time and the current UART speed is  
+not slower than the default.
+
+If you set a state flag indicating that you are waiting for a speed  
+change and don't allow any further output to the GPS until the  
+receiver detects and locks on to the new speed you will know that the  
+output buffers are empty at the time the receiver changes the UART  
+speed (note: the waiting for change flag would need to expire if the  
+GPS never changed).
+
+The receiver can detect that the GPS baud rate is different than the  
+UART speed because there will be many framing errors in the received  
+data. This should trigger a hunt to match the new speed. Having the  
+receiver detect speed changes will also allow GPSd to track manual  
+speed changes on the GPS and doesn't put you in a bind if the GPS  
+doesn't process the change speed request for any reason. A downside  
+is that you are guaranteed to miss the next output sentence after the  
+change.
+
+A timing independent way to change baud rates would be to block input  
+with the CREAD bit, read or flush to insure that there is no more  
+buffered input, change the UART baud rate then unblock the input.  
+However, a comment I read in one of the USB drivers asks if anybody  
+uses the CREAD bit anymore. It may be unfortunate if some drivers  
+ignore it or if it's not implemented in the USB hardware.
+
+Looking at what normal data would look like at various baud rates, I  
+think it should be possible to directly detect a number of nearby  
+speeds and in most cases jump directly to the correct speed. Once on  
+the correct speed, detecting and setting correct data, parity and  
+stop bits should also be fairly simple. If the hunt is directed by  
+the receiver seeing bad data it will continue to hunt until the  
+correct settings are found. The only catch would be not allowing the  
+system to fall into a short loop that doesn't land on the right  
+settings and making sure it's not confused by seeing data from a  
+previous speed after the UART speed is changed.
+
+-- Dan Oetting
+
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003902.html">[Gpsd-dev] Net::GPSD won't fix (possible gpsd error)
+</A></li>
+	<LI>Next message: <A HREF="003880.html">[Gpsd-dev] Changing USB - GPS baud rates
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3869">[ date ]</a>
+              <a href="thread.html#3869">[ thread ]</a>
+              <a href="subject.html#3869">[ subject ]</a>
+              <a href="author.html#3869">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

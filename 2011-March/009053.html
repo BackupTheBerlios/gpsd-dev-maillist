@@ -1,0 +1,144 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%22bookend%20synchronization%22.%20does%20not%20%28always%29%20work&In-Reply-To=%3C4D8C9DB2.5010803%40tmsw.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009051.html">
+   <LINK REL="Next"  HREF="009055.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work</H1>
+    <B>Terje Mathisen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%22bookend%20synchronization%22.%20does%20not%20%28always%29%20work&In-Reply-To=%3C4D8C9DB2.5010803%40tmsw.no%3E"
+       TITLE="[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work">terje at tmsw.no
+       </A><BR>
+    <I>Fri Mar 25 14:50:42 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009051.html">[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work
+</A></li>
+        <LI>Next message: <A HREF="009055.html">[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9053">[ date ]</a>
+              <a href="thread.html#9053">[ thread ]</a>
+              <a href="subject.html#9053">[ subject ]</a>
+              <a href="author.html#9053">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>tz wrote:
+&gt;<i> Looking further, they do have a point that it is memory CONSISTENCY,
+</I>&gt;<i> not merely coherency that is involved, but the question becomes
+</I>&gt;<i> whether string primitive operations the simple while(l--) *d++=*c++;
+</I>&gt;<i> that results in a rep prefix and movs or equivalent short RISC loop
+</I>&gt;<i> can be reordered.
+</I>&gt;<i>
+</I>&gt;<i> Most discussions on consistency involve instruction reordering.
+</I>
+The actual memory operations (to&lt;-&gt;from cache) cannot be reordered, but 
+the actual transfers to RAM and to any other cpus can be arbitrarily 
+re-ordered, even on x86 with strong memory ordering:
+
+Due to ECC errors and replays, you can indeed see any order at all, it 
+is just extremely unlikely.
+&gt;<i>
+</I>&gt;<i> I do worry as this is an edge case, but to put it in terms of my
+</I>&gt;<i> generalized version:
+</I>&gt;<i>
+</I>&gt;<i> Writer:
+</I>&gt;<i> t1 - updates hi bookend
+</I>&gt;<i> t2 - updates payload
+</I>&gt;<i> t3 - updates lo bookend
+</I>&gt;<i>
+</I>&gt;<i> Could these be reordered where there is cache coherency such that:
+</I>&gt;<i>
+</I>&gt;<i> t1' - read lo bookend
+</I>&gt;<i> t2' - read payload
+</I>&gt;<i> t3' - read hi bookend
+</I>&gt;<i>
+</I>&gt;<i> t1' should get the t1 value, t3' should get the t3 value.
+</I>&gt;<i>
+</I>&gt;<i> could return invalid data.
+</I>
+YES!
+&gt;<i>
+</I>&gt;<i> (and don't forget about interrupts to either the reader or writer)
+</I>&gt;<i>
+</I>&gt;<i> In general, the copy loop is so simple, the instructions can't be
+</I>&gt;<i> reordered or have other pipeline problems.  That is probably why it
+</I>&gt;<i> would work unless the memory subsystem is doing something really
+</I>&gt;<i> strange.
+</I>&gt;<i>
+</I>&gt;<i> If the &quot;rep movs&quot; or the &quot;load - increment pointer, store - increment
+</I>&gt;<i> pointer, decrement-branch-loop&quot; could be reordered, it would have the
+</I>&gt;<i> problems - including if the compiler had strange optimization that
+</I>&gt;<i> would reverse the direction from backwards to forwards.  I think
+</I>&gt;<i> merely unrolling the loops would not affect this.
+</I>&gt;<i>
+</I>&gt;<i> Another question would be where do you put the memory barrier
+</I>&gt;<i> instruction?  Before?  After? both? Inside the loop, i.e. while(l--)
+</I>&gt;<i> {*d++=*c++; memsync(); }?
+</I>
+The barrier is needed between the write of all the data and the update 
+of the semaphore, this guarantees that the flag/semaphore value will not 
+be visible until after all preceding stores.
+
+Terje
+&gt;<i>
+</I>&gt;<i> On Fri, Mar 25, 2011 at 8:59 AM, Eric Raymond&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt;  wrote:
+</I>&gt;&gt;<i> tz&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+</I>&gt;&gt;&gt;<i> And if there were no cache coherency, then ordinary common instruction
+</I>&gt;&gt;&gt;<i> sequences would fail - consider a device driver that needs to set then
+</I>&gt;&gt;&gt;<i> reset a bit on a port - if it could occur in any order, the bit might
+</I>&gt;&gt;&gt;<i> not be set at all, or be stuck high.  (Instruction reordering is also
+</I>&gt;&gt;&gt;<i> limited to insure coherency)
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Interesting point.  I will note in my public description that *if* the
+</I>&gt;&gt;<i> hardware does not guarantee cache coherency, memory barriers around the
+</I>&gt;&gt;<i> writes and reads will be required.
+</I>&gt;&gt;<i> --
+</I>&gt;&gt;<i>                 &lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+</I>&gt;&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>
+
+-- 
+- &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Terje at tmsw.no</A>&gt;
+&quot;almost all programming can be viewed as an exercise in caching&quot;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009051.html">[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work
+</A></li>
+	<LI>Next message: <A HREF="009055.html">[Gpsd-dev] &quot;bookend synchronization&quot;. does not (always) work
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9053">[ date ]</a>
+              <a href="thread.html#9053">[ thread ]</a>
+              <a href="subject.html#9053">[ subject ]</a>
+              <a href="author.html#9053">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] EVK-5H log and patches
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2008-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20EVK-5H%20log%20and%20patches&In-Reply-To=%3C91981b3e0808182229j35077c8ex2a3a3ef3133b3f44%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006113.html">
+   <LINK REL="Next"  HREF="006115.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] EVK-5H log and patches</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20EVK-5H%20log%20and%20patches&In-Reply-To=%3C91981b3e0808182229j35077c8ex2a3a3ef3133b3f44%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] EVK-5H log and patches">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Tue Aug 19 07:29:05 CEST 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006113.html">[Gpsd-dev] EVK-5H log and patches
+</A></li>
+        <LI>Next message: <A HREF="006115.html">[Gpsd-dev] EVK-5H patches against current
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6114">[ date ]</a>
+              <a href="thread.html#6114">[ thread ]</a>
+              <a href="subject.html#6114">[ subject ]</a>
+              <a href="author.html#6114">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>* your patch doesn't apply cleanly to svn - please send patches
+against -current, since a lot of things have changed since 2.37. after
+reconciling the patch by hand:
+
+* you should probably rename your revert and configure functions to
+ubx_revert and ubx_configure.
+
+* there is already a copy of the ublox checksum routine in packet.c -
+perhaps you could put those into a common function and call it in both
+the packet.c check and ubx_write?
+
+* strchrnul is not portable.
+
+drivers.c: In function `nmea_parse_input':
+drivers.c:109: warning: implicit declaration of function `strchrnul'
+drivers.c:109: error: invalid type argument of `unary *'
+
+please try compiling with warnings... something like &quot;-W -Wall
+-Wno-format-y2k -Wall -Wcast-align -Wmissing-declarations
+-Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith
+-Wreturn-type&quot; should be sufficient.
+ubx.c: In function `ubx_msg_nav_svinfo':
+ubx.c:195: warning: implicit declaration of function `getsw'
+ubx.c: In function `ubx_msg_sbas':
+ubx.c:250: warning: unused variable `i'
+ubx.c:250: warning: unused variable `nsv'
+ubx.c:248: warning: unused parameter `session'
+ubx.c:248: warning: unused parameter `data_len'
+ubx.c: In function `parse_input':
+ubx.c:441: warning: `st' might be used uninitialized in this function
+ubx.c: In function `ubx_write':
+ubx.c:496: warning: comparison between signed and unsigned
+ubx.c: In function `ubx_nmea_mode':
+ubx.c:570: warning: implicit declaration of function `putlong'
+ubx.c: In function `subtype':
+ubx.c:597: warning: unused parameter `session'
+ubx.c: At top level:
+ubx.c:598: warning: `subtype' defined but not used
+
+On Sat, Aug 16, 2008 at 8:23 AM, Henk Fijnvandraat
+&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at hfijnvandraat.nl</A>&gt; wrote:
+&gt;<i> Well,
+</I>&gt;<i>
+</I>&gt;<i> Had some fun, this is the current state.
+</I>&gt;<i> Expecting comments ;-)
+</I>&gt;<i>
+</I>&gt;<i> Henk
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>
+
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006113.html">[Gpsd-dev] EVK-5H log and patches
+</A></li>
+	<LI>Next message: <A HREF="006115.html">[Gpsd-dev] EVK-5H patches against current
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6114">[ date ]</a>
+              <a href="thread.html#6114">[ thread ]</a>
+              <a href="subject.html#6114">[ subject ]</a>
+              <a href="author.html#6114">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

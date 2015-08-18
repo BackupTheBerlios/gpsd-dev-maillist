@@ -1,0 +1,114 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsctrl proof-of-concept is in svn head
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsctrl%20proof-of-concept%20is%20in%20svn%20head&In-Reply-To=%3C20061030003252.GA29409%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004728.html">
+   <LINK REL="Next"  HREF="004735.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsctrl proof-of-concept is in svn head</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsctrl%20proof-of-concept%20is%20in%20svn%20head&In-Reply-To=%3C20061030003252.GA29409%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] gpsctrl proof-of-concept is in svn head">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Oct 30 01:32:52 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004728.html">[Gpsd-dev] RPM tester on FC3 with rpmbuild
+</A></li>
+        <LI>Next message: <A HREF="004735.html">[Gpsd-dev] gpsctrl proof-of-concept is in svn head
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4725">[ date ]</a>
+              <a href="thread.html#4725">[ thread ]</a>
+              <a href="subject.html#4725">[ subject ]</a>
+              <a href="author.html#4725">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>OK, Chris and Gary, take a look at gpsctrl.c in SVN head.
+
+I was careful about the layer separation between libpsd(3) qnd the
+policy logic in gpsd.c for a reason, and the fact that I can write an
+entire device-control tool in less than one day (during which I've
+also taken plenty of time to sleep late, make love with my wife, play
+with our cats, eat a superb mushroom-and-andouille omelette, read the
+news, and practice swordfighting with the aforesaid wife) is exactly
+that reason.
+
+Note how it tries to change parameters through the daemon first.  The
+advantage of this is that you don't need root and don't need to
+specify a device (in the usual case of just one GPS and no other users).
+
+If it can't connect to the daemon, it uses the same library primitives
+gpsd itself does to open a device directly, and to sniff packets until
+it gets a lock on baud-rate and GPS type.  It then does its control
+functions through the driver of the device type it determined via the
+packet sniff.
+
+This tool will instantly and automatically support any GPS for which
+we have the required driver capabilities.  All GPS-type detection
+lives in *one* place -- packet.c.  All GPS-type-dependent magic lives
+in *one* place -- the driver for the type.  There is only one copy
+of the autobauding logic. Maintenance hassles are kept to a minimum.
+
+Adding an option to preset the driver type rather than going through
+the hunt loop, so the tool doesn't depend on packet.c, is left as an
+utterly trivial exercise -- hint: look at the function
+gpsd_switch_driver() in libgpsd_core.c.
+
+It should be pellucidly clear how to add new control functions 
+like setting the static-nav bit.  
+
+1. Add a new method to the libgpsd(3) driver structure.
+2. (Optional) Add a new request/response type to the gpsd protocol.
+3. Add a new option to gpsctrl, with code in the 'lowlevel' branch
+   that either complains and exits if the driver method is NULL
+   or invokes it with appropriate arguments.
+4. If you did step 2, add a gps_query() call to the non-lowlevel branch.
+
+The *only* downside of this approach is that over time the driver structure
+might grow a method or two that gpsctl uses but gpsd doesn't.  And
+if that ever becomes a footprint issue, I already know how to fix the
+architecture to make it go away (sketch: two parallel arrays of method
+structures, with only one of them linked in gpsd).
+
+Now, Chris, please do us all a favor.  You're the guy with the major use
+case, so test this puppy and pound out any minor bugs I've left in.
+Then take sirfctl, garminctl, and itraxctl out behind the barn and
+*shoot them through the head*.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004728.html">[Gpsd-dev] RPM tester on FC3 with rpmbuild
+</A></li>
+	<LI>Next message: <A HREF="004735.html">[Gpsd-dev] gpsctrl proof-of-concept is in svn head
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4725">[ date ]</a>
+              <a href="thread.html#4725">[ thread ]</a>
+              <a href="subject.html#4725">[ subject ]</a>
+              <a href="author.html#4725">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

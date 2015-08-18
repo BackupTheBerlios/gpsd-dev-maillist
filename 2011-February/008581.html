@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Preparing for release
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-February/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Preparing%20for%20release&In-Reply-To=%3C20110223204318.GB1217%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008578.html">
+   <LINK REL="Next"  HREF="008582.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Preparing for release</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Preparing%20for%20release&In-Reply-To=%3C20110223204318.GB1217%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Preparing for release">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Feb 23 21:43:18 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008578.html">[Gpsd-dev] Preparing for release
+</A></li>
+        <LI>Next message: <A HREF="008582.html">[Gpsd-dev] Preparing for release
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8581">[ date ]</a>
+              <a href="thread.html#8581">[ thread ]</a>
+              <a href="subject.html#8581">[ subject ]</a>
+              <a href="author.html#8581">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;:
+&gt;<i> 
+</I>&gt;<i> I tested:
+</I>&gt;<i> 
+</I>&gt;<i>   commit 52aa2ecf4811c5e98227585922fa328398d787e1
+</I>&gt;<i>   Author: Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt;
+</I>&gt;<i>   Date:   Tue Feb 22 23:14:10 2011 -0500
+</I>&gt;<i> 
+</I>&gt;<i> and, on NetBSD/i386 5.1ish:
+</I>&gt;<i> 
+</I>&gt;<i>   'gmake check' shows only ac12_binary failing; all else is well
+</I>
+Yeah, let's try to nail this one before release.  A point error like that 
+probably means some sort of word-length or endianness dependency in a driver
+somewhere.  What binary driver type does it invoke?
+ 
+&gt;<i>   gpsd works fine with uBlox Antaris 4 devkit (USB)
+</I>&gt;<i> 
+</I>&gt;<i>   cgps works with the above
+</I>
+That's all good.
+ 
+&gt;<i>   2.95 cgps fails against git gpsd (json proto only?)
+</I>
+Dunno what's going on there. cgps is working here, though I just spotted a 
+display glitch probaly related to changing MAXCHANNELS to 72.  That should
+be easy to fix.
+
+&gt;<i>   xgps fails - no data is displayed, against git gpsd and 2.95 gpsd.
+</I>&gt;<i> 
+</I>&gt;<i>   2.95 xgps fails against git gpsd:
+</I>&gt;<i>     Traceback (most recent call last):
+</I>&gt;<i>       File &quot;/usr/pkg/bin/xgps&quot;, line 608, in handle_response
+</I>&gt;<i>         self.update_gpsdata(self.daemon.data)
+</I>&gt;<i>       File &quot;/usr/pkg/bin/xgps&quot;, line 562, in update_gpsdata
+</I>&gt;<i>         widget.set_text(hook(self, tpv))
+</I>&gt;<i>     TypeError: Gtk.Entry.set_text() argument 1 must be string, not float
+</I>
+xgps is working gere.  First step with this kind of bug is always to run
+with -D 1 so we see each sentence of JSON on stdout and can easily identify
+the one that threw the error. Try that?
+ 
+&gt;<i>   ntpd shm works if I start with -n, but not without.  Probably this is
+</I>&gt;<i>   how it has been and mostly makes sense.
+</I>
+Check with the timekeeping mavens (Gary and Chris) but I think you're right.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 190 bytes
+Desc: Digital signature
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110223/56dce09c/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110223/56dce09c/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008578.html">[Gpsd-dev] Preparing for release
+</A></li>
+	<LI>Next message: <A HREF="008582.html">[Gpsd-dev] Preparing for release
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8581">[ date ]</a>
+              <a href="thread.html#8581">[ thread ]</a>
+              <a href="subject.html#8581">[ subject ]</a>
+              <a href="author.html#8581">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,95 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] connection problems with Garmin eTrex
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20connection%20problems%20with%20Garmin%20eTrex&In-Reply-To=%3C20060611174402.GB24242%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003796.html">
+   <LINK REL="Next"  HREF="003789.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] connection problems with Garmin eTrex</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20connection%20problems%20with%20Garmin%20eTrex&In-Reply-To=%3C20060611174402.GB24242%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] connection problems with Garmin eTrex">esr at thyrsus.com
+       </A><BR>
+    <I>Sun Jun 11 19:44:02 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003796.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+        <LI>Next message: <A HREF="003789.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3798">[ date ]</a>
+              <a href="thread.html#3798">[ thread ]</a>
+              <a href="subject.html#3798">[ subject ]</a>
+              <a href="author.html#3798">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+&gt;<i> &gt; What's the motivation for the second flush, as opposed to a longer
+</I>&gt;<i> &gt; delay length?
+</I>&gt;<i> 
+</I>&gt;<i> Well, I think with a USB device the change will not happen immediately (as
+</I>&gt;<i> with a UART) because it has to be sent as a message to the external
+</I>&gt;<i> processor that has to act upon it, and may still have buffered data.  It
+</I>&gt;<i> may be that the flush is not asking the external processor to flush its
+</I>&gt;<i> buffers as well, but will only clear the kernel buffers.  So, there will
+</I>&gt;<i> be some time that old data is still arriving even after the speed change
+</I>&gt;<i> command has been sent.
+</I>&gt;<i> 
+</I>&gt;<i> That is why I suggested to delay first and then flush.  But as the exact
+</I>&gt;<i> implementation may be different, I thought it may be prudent to flush,
+</I>&gt;<i> delay and flush again.
+</I>
+Wisely thought and well spoken.  I'm going to add an explanatory comment 
+to the code based on this analysis.  
+
+My only demurral will be that the change doesn't happen instantly with
+UARTs either; I know this from reading a Serial Device HOWTO sometime
+back.  But from userspace it can *look* instant because a well-written
+device driver for a simple device like the 14550 with fixed response
+timings can deterministically delay the return until the UART is in a
+good state.  What you've done is pointed out why a USB converter can't
+necessarily do that.
+
+We'll then merge in the sequence of flush/delay/flush that Til reports
+working.
+
+Finally, we'll try to tune the delays based on Chris Kuethe's character-time
+analysis.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003796.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+	<LI>Next message: <A HREF="003789.html">[Gpsd-dev] connection problems with Garmin eTrex
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3798">[ date ]</a>
+              <a href="thread.html#3798">[ thread ]</a>
+              <a href="subject.html#3798">[ subject ]</a>
+              <a href="author.html#3798">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

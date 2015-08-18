@@ -1,0 +1,117 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Time to ship?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Time%20to%20ship%3F&In-Reply-To=%3C1312157318.96130.YahooMailNeo%40web32502.mail.mud.yahoo.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="009383.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Time to ship?</H1>
+    <B>Michael R. Davis</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Time%20to%20ship%3F&In-Reply-To=%3C1312157318.96130.YahooMailNeo%40web32502.mail.mud.yahoo.com%3E"
+       TITLE="[Gpsd-dev] Time to ship?">mrdvt92 at yahoo.com
+       </A><BR>
+    <I>Mon Aug  1 02:08:38 CEST 2011</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="009383.html">[Gpsd-dev] Time to ship?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9382">[ date ]</a>
+              <a href="thread.html#9382">[ thread ]</a>
+              <a href="subject.html#9382">[ subject ]</a>
+              <a href="author.html#9382">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Eric,
+
+&gt;&gt;<i> One reason is that nobody has committed my Perl HTTP example and RPM updates.
+</I>
+&gt;<i> I wondered what had becomer of those.&#160; Where can I get an up-to-date
+</I>version of your changes?
+
+I did a fresh pull and these are the only differences from my git repo.&#160; Thanks for getting the Perl CGI scripts in the origin/master.
+
+I have two major install issue that I do not know how to get around.
+
+&#160;1) scons prefix should be set to %{_prefix} but if I do that then it puts every thing in /usr/usr...
+
+&#160;%build
++### KLUDGE ALERT prefix should be %{_prefix}
++scons %{_smp_mflags}&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160; \
++&#160;&#160; prefix=/&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160; \
++&#160;&#160; bindir=%{_bindir}&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160; \
++&#160;&#160; includedir=%{_includedir} \
++&#160;&#160; libdir=%{_libdir}&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160; \
++&#160;&#160; sbindir=%{_sbindir}&#160;&#160;&#160;&#160;&#160;&#160; \
++&#160;&#160; mandir=%{_mandir}&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160; \
++&#160;&#160; docdir=%{_docdir}&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160; \
++&#160;&#160; PYTHONPATH=%{python_sitearch}
++
+
+2) python_lib_dir WTF
+
+-python_lib_dir = sysconfig.get_python_lib(
+-&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160; plat_specific=1,
+-&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160; standard_lib=0,
+-&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160; prefix=env['prefix']
+-&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160; )
++python_lib_dir = sysconfig.get_python_lib(1)
+
+BSD uses the&#160;key value pair versoin; Fedora&#160;uses the &quot;1&quot; version. I have no idea why.&#160; Should we put a switch in there?&#160; What is the LSB say?
+
+On Fedora they should go in /usr/lib64/python2.6/site-packages not &quot;/lib64/python2.6/site-packages/gps&quot; as calculated&#160;maybe this is related to the &quot;bad&quot; prefix above and is moot.
+
+The other small changes are&#160;
+&#160;1) tilde in version not allowed in RPM not a production issue but still a pain for dev.&#160; Why not just keep incrementing?
+&#160;2) man pages for all binaries 
+&#160;3) dropped hotplug wrapper from RPM
+&#160; 4) scons paths
+&#160; 5) scons install
+&#160; 6) httpd rpm requires
+&#160; 7) rpmlint pass (dropped tabs)
+&#160; 8) add gegps
+&#160; 9) add gpsdctl
+
+Thanks,
+Mike
+
+
+mrdvt92
+-------------- next part --------------
+An embedded and charset-unspecified text was scrubbed...
+Name: gpsd_mrdvt92-2011-07-31_diff.txt
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110731/f1043a88/attachment.txt">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20110731/f1043a88/attachment.txt</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="009383.html">[Gpsd-dev] Time to ship?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9382">[ date ]</a>
+              <a href="thread.html#9382">[ thread ]</a>
+              <a href="subject.html#9382">[ subject ]</a>
+              <a href="author.html#9382">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

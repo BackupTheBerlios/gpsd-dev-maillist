@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Getting the leap-second offset
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Getting%20the%20leap-second%20offset&In-Reply-To=%3C20815.213.84.187.156.1149785467.squirrel%40webmail.xs4all.nl%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003640.html">
+   <LINK REL="Next"  HREF="003716.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Getting the leap-second offset</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Getting%20the%20leap-second%20offset&In-Reply-To=%3C20815.213.84.187.156.1149785467.squirrel%40webmail.xs4all.nl%3E"
+       TITLE="[Gpsd-dev] Getting the leap-second offset">gpsd at xs4all.nl
+       </A><BR>
+    <I>Thu Jun  8 18:51:07 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003640.html">[Gpsd-dev] Getting the leap-second offset
+</A></li>
+        <LI>Next message: <A HREF="003716.html">[Gpsd-dev] Getting the leap-second offset
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3650">[ date ]</a>
+              <a href="thread.html#3650">[ thread ]</a>
+              <a href="subject.html#3650">[ subject ]</a>
+              <a href="author.html#3650">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> Does anyone know of other sources?  In particular,
+</I>&gt;<i> is it possible to get this information from a local instance of ntpd?
+</I>
+ntpd does not know anything about GPS time.  so, it cannot tell you if
+the current GPS time offset is 13 or 14 seconds.
+
+What ntpd *could* tell you, is that a leap second is coming up, and when.
+However, I don't think that is particularly interesting information at
+the current rate at which leap seconds are applied.
+
+(and for this information it has to rely on data from other timeservers.
+at the last leap second half a year ago, big mess resulted from some
+servers knowing about the upcoming leapsecond, and other not knowing
+about it.  I am not sure about the actual implementation in NTP, but it
+would seem logical to me that servers could communicate &quot;leap second
+coming up&quot;, &quot;no leap second coming up&quot;, and &quot;don't know&quot;.  However, it
+looked like there is no &quot;don't know&quot; status and servers not implementing
+a pre-announcement of the leapsecond just assumed there was none, even
+when peers told them there was.   I don't know if this was a bug in
+NTP implementations or an omission in the protocol.)
+
+That said, we don't have support for leap second announcement in gpsd.
+Is anyone aware of any announcement information in the protocols that
+we currently support?  I have encountered current GPS time offset in
+a couple of protocols, and if I remember well, no annoucements.
+Longwave timestandard transmitters often announce the upcoming leapsecond
+some time in advance, and ntpd (and the Linux kernel) can use this
+annoucement to neatly insert the extra second without having to slowly
+lock onto a suddenly changed reference time.  My system heard about the
+leapsecond from DCF77, neatly inserted the extra second, and remained
+in sync with GPS (via gpsd) which just stepped time.  Others lost sync
+and slowly locked on the new reference time, thinking the local clock
+was one second off.
+
+As I did not see this in protocol references yet, I assumed that GPS
+does not send those announcements and just updates the offset at the
+right moment.  However, during the last leap second it appeared that
+some GPS-referenced servers knew about the leap second.
+Maybe it is available somewhere in the almanac data...  but as we know,
+it is no joy to decode information from there :-)
+
+Of course, when you have ntpd setup to lock onto gpsd (via SHM) and also
+have several external timeservers in the ntpd configuration, you could
+determine the actual GPS time offset by looking at the difference between
+system time and GPS time when ntpd is locked to some external sources.
+However, I think this is not a very wise strategy as you have to
+completely rely on the selection of timeservers by ntpd (which often
+seems quite nondeterministic) and hope that the accuracy of locked
+system time and time in messages from your GPS receiver is good enough
+to reliably determine the integral difference between them.
+It also requires an uncommon system configuration (ntpd configured with
+both gpsd and several reachable external servers).0
+
+Rob
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003640.html">[Gpsd-dev] Getting the leap-second offset
+</A></li>
+	<LI>Next message: <A HREF="003716.html">[Gpsd-dev] Getting the leap-second offset
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3650">[ date ]</a>
+              <a href="thread.html#3650">[ thread ]</a>
+              <a href="subject.html#3650">[ subject ]</a>
+              <a href="author.html#3650">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

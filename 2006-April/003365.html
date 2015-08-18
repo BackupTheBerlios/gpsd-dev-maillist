@@ -1,0 +1,197 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Altitude%20not%20always%20being%20reported&In-Reply-To=%3Cp06230900c0565289d3da%40%5B58.163.136.223%5D%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="003367.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported</H1>
+    <B>Robin L Darroch</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Altitude%20not%20always%20being%20reported&In-Reply-To=%3Cp06230900c0565289d3da%40%5B58.163.136.223%5D%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported">robin at spade-men.com
+       </A><BR>
+    <I>Mon Apr  3 06:41:33 CEST 2006</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="003367.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3365">[ date ]</a>
+              <a href="thread.html#3365">[ thread ]</a>
+              <a href="subject.html#3365">[ subject ]</a>
+              <a href="author.html#3365">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Yes - I'd discovered that too (plays merry hell with my gpstoge 
+program - try passing &quot;nan&quot; in a KML file as the direction for Google 
+Earth to look). I've patched my own gpstoge (fairly trivial), but the 
+behaviour really isn't right for gpsd.  Here's what happens with a 
+typical NMEA GPS:
+
+... (previous frames) ...
+[start of frame]
+1) receives a GGA with a new timestamp. Correctly recognises this as 
+the start of a new frame and sets the CYCLE_START_SET flag, which 
+resets all PVT data.  GGA includes position, time, fix type, number 
+of satellites, HDOP, and altitude data
+2) receives an RMC with the same timestamp. Recognises this as the 
+same frame and preserves existing data, integrating new/updated data 
+from RMC sentence.  RMC includes position, time, date, speed, course, 
+and some mode information
+[may also receive additional sentences such as GSA to set/update mode 
+&amp; satellite visibility information]
+[end of frame]
+[a little less than 1 second pause]
+[start of next frame]
+
+The new problem arises when a query is sent to GPSD between (1) and 
+(2) above.  At that point, it's cleared the velocity data from the 
+previous frame, but has not yet received updated velocity data from 
+the new frame.
+
+Now, here's my question to the dev-list: is there actually a reason 
+to cause GPSD to discard the last frame's data at the beginning of a 
+new frame?  We already have logic which prevents returning old data 
+to those queries if the device has lost its fix - otherwise, the most 
+correct answer (in the instant between a GGA and an RMC sentence) to 
+&quot;where am I going&quot; is that information received from the *last* RMC 
+sentence, not &quot;I can't tell you&quot;.
+
+In turn, the question arises: is there a reason to clear all data at 
+&quot;CYCLE_START_SET&quot; at all... and if there still is for other 
+protocols, should we update the NMEA handler to omit setting that 
+flag?
+
+For the time being, I'll be updating my own GPSD to omit the line in 
+libgpsd_core.c where the fix data is cleared by CYCLE_START_SET - it 
+still resets the daemon believing it has a fix until it's confirmed 
+by whatever sentence it received, so I won't be getting any false 
+data from the daemon... but I should still get valid velocity data 
+immediately after a GGA sentence.
+
+Patch follows, and comments welcome!
+
+Cheers,
+Robin
+
+At 14:38 +1100 27/3/06, Karl von Muller wrote:
+&gt;<i>Have tried this patch on 2.30, havent tested it extensively yet, but 
+</I>&gt;<i>it appears to work well. Only thing is that course and velocity 
+</I>&gt;<i>occasionally now come up as nan...
+</I>&gt;<i>
+</I>&gt;<i>On 3/23/06, Robin L Darroch 
+</I>&gt;<i>&lt;&lt;mailto:<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>&gt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;<i>As requested, here's the patch without indenting changes, and also 
+</I>&gt;<i>without my additional debug report lines (although this has been 
+</I>&gt;<i>done manually and in something of a hurry, so hopefully I didn't 
+</I>&gt;<i>miss anything - if you find any problems with this patch, please 
+</I>&gt;<i>cross-check with my original post):
+</I>&gt;<i>
+</I>&gt;<i>Index: nmea_parse.c
+</I>&gt;<i>===================================================================
+</I>&gt;<i>--- nmea_parse.c        (revision 3276)
+</I>&gt;<i>+++ nmea_parse.c        (working copy)
+</I>&gt;<i>@@ -258,6 +258,9 @@
+</I>&gt;<i>         else {
+</I>&gt;<i>             mask |= TIME_SET;
+</I>&gt;<i>             session-&gt;gpsdata.newdata.time = 
+</I>&gt;<i>(double)mkgmtime(&amp;session-&gt;driver.nmea.date)+session-&gt;driver.nmea.subseconds;
+</I>&gt;<i>+               if (session-&gt;gpsdata.sentence_time != 
+</I>&gt;<i>session-&gt;gpsdata.newdata.time)
+</I>&gt;<i>+                       mask |= CYCLE_START_SET;
+</I>&gt;<i>+               session-&gt;gpsdata.sentence_time = 
+</I>&gt;<i>session-&gt;gpsdata.newdata.time;
+</I>&gt;<i>         }
+</I>&gt;<i>         do_lat_lon(&amp;field[2], &amp;session-&gt;gpsdata);
+</I>&gt;<i>         mask |= LATLON_SET;
+</I>&gt;<i>Index: report.c
+</I>&gt;<i>===================================================================
+</I>&gt;<i>--- report.c    (revision 3276)
+</I>&gt;<i>+++ report.c    (working copy)
+</I>&gt;<i>@@ -2,8 +2,9 @@
+</I>&gt;<i>#include &lt; stdarg.h&gt;
+</I>&gt;<i>#include &quot;gpsd.h&quot;
+</I>&gt;<i>
+</I>&gt;<i>+/* stub logger for clients that don't supply one */
+</I>&gt;<i>+/* can we remove this?  getting multiple definition warnings and no 
+</I>&gt;<i>control over debug level
+</I>&gt;<i>void gpsd_report(int errlevel UNUSED, const char *fmt, ... )
+</I>&gt;<i>-/* stub logger for clients that don't supply one */
+</I>&gt;<i>{
+</I>&gt;<i>      va_list ap;
+</I>&gt;<i>
+</I>&gt;<i>@@ -12,3 +13,5 @@
+</I>&gt;<i>      va_end(ap);
+</I>&gt;<i>}
+</I>&gt;<i>
+</I>&gt;<i>+ */
+</I>&gt;<i>+
+</I>&gt;<i>\ No newline at end of file
+</I>&gt;<i>Index: libgpsd_core.c
+</I>&gt;<i>===================================================================
+</I>&gt;<i>--- libgpsd_core.c      (revision 3276)
+</I>&gt;<i>+++ libgpsd_core.c      (working copy)
+</I>&gt;<i>@@ -556,7 +556,6 @@
+</I>&gt;<i>                                       (char *)session-&gt;outbuffer,
+</I>&gt;<i>                                       (size_t)session-&gt;outbuflen, 2);
+</I>&gt;<i>         /*@ -nullstate @*/
+</I>&gt;<i>-       session-&gt;gpsdata.sentence_time = NAN;
+</I>&gt;<i>         session-&gt;gpsdata.sentence_length = session-&gt;outbuflen;
+</I>&gt;<i>         session-&gt;gpsdata.d_recv_time = timestamp();
+</I>&gt;<i>
+</I>&gt;<i>--
+</I>&gt;<i>
+</I>&gt;<i>-------------------------------------------------------------------------
+</I>&gt;<i>Robin L. Darroch - PO Box 2715, South Hedland WA 6722 - +61 421 503 966
+</I>&gt;<i>       &lt;mailto:<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at darroch.id.au</A>&gt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at darroch.id.au</A> - 
+</I>&gt;<i>&lt;mailto:<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at nyca.org.au</A>&gt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at nyca.org.au</A> - 
+</I>&gt;<i>&lt;mailto:<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>&gt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>
+</I>&gt;<i>
+</I>&gt;<i>_______________________________________________
+</I>&gt;<i>Gpsd-users mailing list
+</I>&gt;<i>&lt;mailto:<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-users at lists.berlios.de</A>&gt; <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-users at lists.berlios.de</A>
+</I>&gt;<i>&lt;<A HREF="http://lists.berlios.de/mailman/listinfo/gpsd-users">http://lists.berlios.de/mailman/listinfo/gpsd-users</A>&gt;<A HREF="http://lists.berlios.de/mailman/listinfo/gpsd-users">http://lists.berlios.de/mailman/listinfo/gpsd-users</A>
+</I>
+
+-- 
+
+-------------------------------------------------------------------------
+  Robin L. Darroch - PO Box 2715, South Hedland WA 6722 - +61 421 503 966
+       <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at darroch.id.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at nyca.org.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="003367.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3365">[ date ]</a>
+              <a href="thread.html#3365">[ thread ]</a>
+              <a href="subject.html#3365">[ subject ]</a>
+              <a href="author.html#3365">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

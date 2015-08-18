@@ -1,0 +1,215 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Procedure for cross building gpsd using scratchbox
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Procedure%20for%20cross%20building%20gpsd%20using%20scratchbox&In-Reply-To=%3CF0679C9F2304124DAF813304510F844069C6C4%40msiexch01.marvell.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005788.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Procedure for cross building gpsd using scratchbox</H1>
+    <B>Alexander Wolfson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Procedure%20for%20cross%20building%20gpsd%20using%20scratchbox&In-Reply-To=%3CF0679C9F2304124DAF813304510F844069C6C4%40msiexch01.marvell.com%3E"
+       TITLE="[Gpsd-dev] Procedure for cross building gpsd using scratchbox">awolfson at marvell.com
+       </A><BR>
+    <I>Wed Nov 28 19:58:37 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005788.html">[Gpsd-dev] Ubuntu - Debian import freeze ahead
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5789">[ date ]</a>
+              <a href="thread.html#5789">[ thread ]</a>
+              <a href="subject.html#5789">[ subject ]</a>
+              <a href="author.html#5789">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi All,
+ 
+I had problems with cross building the gpsd for ARM target and was not
+able to find any instructions how to do it on the Net.
+So after successfully cross building gpsd I wrote down an instruction,
+which I would like to share.
+It is not perfect and probably already obsolete from the point of view
+of versions I used, but hopefully better then nothing :)
+I posted non finished version here before trying to get some answers why
+not everything works.
+This version is extended and describes the working process. At least it
+worked for me.
+ 
+Thanks,
+ 
+Alex Wolfson
+ 
+
+=================================
+
+ USING SCRATCHBOX TO BUILD GPSD
+------------------------------
+
+ Environment: Ubuntu 6.06 LTS
+
+ Scratchbox installation:
+------------------------
+
+ Script is taken from <A HREF="http://tablets-dev.nokia.com/unstable/4.0beta/">http://tablets-dev.nokia.com/unstable/4.0beta/</A>
+
+ Installing:
+
+ add USER to sbox group
+
+ run
+
+ &gt;sudo ./maemo-scratchbox-install_4.0beta.sh -u USER -s /scratchbox -d
+
+ From
+<A HREF="http://www.mail-archive.com/maemo-developers@maemo.org/msg11382.html">http://www.mail-archive.com/maemo-developers@maemo.org/msg11382.html</A>
+------------------------------------------------------------------------
+--{
+
+By default the 3.1 install does not install host-gcc
+you need to add this by hand
+
+wget
+<A HREF="http://www.scratchbox.org/download/files/sbox-releases/apophis/tarball/">http://www.scratchbox.org/download/files/sbox-releases/apophis/tarball/</A>
+scratchbox-toolchain-host-gcc-1.0.7-i386.tar.gz
+
+tar zvxf  scratchbox-toolchain-host-gcc-1.0.7-i386.tar.gz -C /
+or where ever your root sbox install is placedfind -type f -perm
+-001|xargs tar czf gps.tgz libgps.so libgps.so.16
+------------------------------------------------------------------------
+--}
+
+login to scratchbox
+-------------------
+
+Check if you are a member of sbox group.
+
+&gt;<i>groups
+</I>
+if sbox is not the first or absent 
+
+&gt;<i>newgrp sbox
+</I>
+Now login to scratchbox
+
+&gt;<i>/scratchbox/login
+</I>
+run sb-menu to setup target
+---------------------------
+&gt;<i>sb-menu
+</I>find -type f -perm -001|xargs tar czf gps.tgz libgps.so libgps.so.16
+create new target and choose cputrans,  doctools and qemu-arm-cvs for
+it.
+(not sure that this all is necessary, but that is what I did)
+
+install c library on the target 
+-------------------------------
+&gt;<i>sb-conf install -c
+</I>
+testing the installation
+------------------------
+copy hello-world to your home directory and run autogen.sh
+&gt;<i>./hello 
+</I>
+shall print &quot;Hello World&quot;
+
+in the different session copy hello to the target hardware and run
+
+Compiling gpsd
+--------------
+I have problems compiling gpsd-2.34 and succesfully compiled the
+revision 4440 (the head at the time)
+
+ to get it:
+
+svn checkout -r 4440 <A HREF="http://svn.berlios.de/svnroot/repos/gpsd/trunk">http://svn.berlios.de/svnroot/repos/gpsd/trunk</A>
+
+Build ncurses:
+
+TODO: details here
+
+Being outside of scratchbox copy gpsd and ncurses code into your home
+directory in scratchbox.
+It is 
+/scratchbox/users/USER/home/USER
+
+run the following script:
+
+#!/bin/bash
+./autogen.sh \
+--disable-python \
+--disable-tsip \
+--disable-fv18 \
+--disable-tripmate \
+--disable-earthmate \
+--disable-evermore \
+--disable-rtcm104 \
+--disable-ntrip \
+--disable-profiling \
+--disable-dbus \
+--disable-X11 \
+--without-x
+make
+make install
+
+the builded libraries and programms will be in
+
+/scratchbox/users/USER/targets/TARGET/usr/local subtree
+copy /usr/local part of this subtree to the target
+
+On the target
+-------------
+
+gpsd uses a getprotobyname() so
+Check if /etc/protocols is available on your target. If not copy it from
+your host.(Probably unnecessary anymore, but I did not check)
+
+You might need to modify LD_LIBRARY_PATH to add the current
+/usr/local/lib
+export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+
+Also on the target I have to run the following command to make gpsd
+work. Basicaly I copied settings from the desktop.
+Idealy those settings probably have to be part of the gpsd code
+
+stty -F /dev/ttyS0
+1:4:cbc:8a20:3:1c:7f:15:4:0:1:0:11:13:1a:0:12:f:17:16:0:0:0:0:0:0:0:0:0:
+0:0:0:0:0:0:0
+/usr/local/sbin/gpsd /dev/ttyS0
+
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005788.html">[Gpsd-dev] Ubuntu - Debian import freeze ahead
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5789">[ date ]</a>
+              <a href="thread.html#5789">[ thread ]</a>
+              <a href="subject.html#5789">[ subject ]</a>
+              <a href="author.html#5789">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

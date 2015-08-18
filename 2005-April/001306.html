@@ -1,0 +1,103 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] We must get 2.21 out
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20We%20must%20get%202.21%20out&In-Reply-To=%3C20050411080442.GA30062%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001305.html">
+   <LINK REL="Next"  HREF="001309.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] We must get 2.21 out</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20We%20must%20get%202.21%20out&In-Reply-To=%3C20050411080442.GA30062%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] We must get 2.21 out">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Apr 11 10:04:42 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001305.html">[Gpsd-dev] We must get 2.21 out
+</A></li>
+        <LI>Next message: <A HREF="001309.html">[Gpsd-dev] We must get 2.21 out
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1306">[ date ]</a>
+              <a href="thread.html#1306">[ thread ]</a>
+              <a href="subject.html#1306">[ subject ]</a>
+              <a href="author.html#1306">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Gary E. Miller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>&gt;:
+&gt;<i> I fixed a number of places in gps_unpack() that were coredumping
+</I>&gt;<i> or doing stange things to the data.  They used to be guarded by
+</I>&gt;<i> the check for &quot;?&quot; on line 78.   I probably was a bit over zealous
+</I>&gt;<i> but I think this is the right direction to move in.  When an =?
+</I>&gt;<i> is seen that can be used to flag daat as now invalid.
+</I>
+Yup, I saw those changes.  They look good.
+ 
+&gt;<i> Uh, oh, looks like we were both in the same file and went in
+</I>&gt;<i> slightly different directions...
+</I>
+Don't worry, I was being careful about that.  We both touched gpsd.c
+tonight but in different places.
+
+&gt;<i> There is still an annoyance in the code that is probably a
+</I>&gt;<i> show stopper.  When I cover my Garmin to kill the signle, this
+</I>&gt;<i> is detected by gpsd, but the information is not being passwd on
+</I>&gt;<i> to xgps.  At that point if I kill xgps and restart it then xgps
+</I>&gt;<i> sees that no signal has been found.
+</I>
+I'm not sure quite what sequence of events you're talking about here.
+When you say &quot;is detected by gpsd&quot;, what do you mean?  Does it ship
+X=0 to the client?  You should be able to check this by telnetting to
+port 2947, enabling watcher mode, and seeing what happens when you
+unplug the GPS.
+
+&gt;<i> Not sure how libgps.c is supposed to detect this condition.
+</I>
+It should see &quot;X=0&quot; coming up the pipe.  It's supposed to display
+a status of &quot;OFFLINE&quot; when that happens.
+
+&gt;<i>                                                              There
+</I>&gt;<i> used to be timeouts but no more?  Maybe it would be best to let the
+</I>&gt;<i> '?' fall past line 78 and let the switch clear the data valid flags?
+</I>
+No, there were never timeouts in the client that I recall.  I explicitly
+want to leave clearing the validity flags up to the client code, so users
+have a choice about whether their status flags contains cumulative or
+this-update-only flags.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001305.html">[Gpsd-dev] We must get 2.21 out
+</A></li>
+	<LI>Next message: <A HREF="001309.html">[Gpsd-dev] We must get 2.21 out
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1306">[ date ]</a>
+              <a href="thread.html#1306">[ thread ]</a>
+              <a href="subject.html#1306">[ subject ]</a>
+              <a href="author.html#1306">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

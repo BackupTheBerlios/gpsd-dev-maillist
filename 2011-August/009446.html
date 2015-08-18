@@ -1,0 +1,197 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] FreeBSD porting problems of gpsd-3.0
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20FreeBSD%20porting%20problems%20of%20gpsd-3.0&In-Reply-To=%3C20110824130232.GB43489%40hades.panopticon%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="009464.html">
+   <LINK REL="Next"  HREF="009447.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] FreeBSD porting problems of gpsd-3.0</H1>
+    <B>Dmitry Marakasov</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20FreeBSD%20porting%20problems%20of%20gpsd-3.0&In-Reply-To=%3C20110824130232.GB43489%40hades.panopticon%3E"
+       TITLE="[Gpsd-dev] FreeBSD porting problems of gpsd-3.0">amdmi3 at amdmi3.ru
+       </A><BR>
+    <I>Wed Aug 24 15:02:32 CEST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="009464.html">[Gpsd-dev] 3.0 has shipped
+</A></li>
+        <LI>Next message: <A HREF="009447.html">[Gpsd-dev] FreeBSD porting problems of gpsd-3.0
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9446">[ date ]</a>
+              <a href="thread.html#9446">[ thread ]</a>
+              <a href="subject.html#9446">[ subject ]</a>
+              <a href="author.html#9446">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi!
+
+I've been helping the maintainer of FreeBSD gpsd port ([1]) to
+update it to version 3.0 and had ran into several problems with
+build. I'll list them here in hope that they will be fixed upstream
+and/or this helps other packagers.
+
+1. Parallel build doesn't work. If scons is called with -j the build
+may fail. As I understand, it's because some programs from gpsd
+distribution are linked with -lgpsd without dependency on scons
+target which builds libgpsd:
+
+gpsdlibs = [&quot;-lgpsd&quot;] + usblibs + bluezlibs + gpslibs
+...
+gpsdecode = env.Program('gpsdecode', ['gpsdecode.c'], parse_flags=gpsdlibs+rtlibs
+
+SCons doesn't know of this implicit dependency and by the time these
+programs are linked, libgpsd may not be ready yet.
+
+2. Build failures with some options disabled: netfeed=no, reconfigure=no
+or socket_export=no:
+
+<A HREF="http://people.freebsd.org/~amdmi3/gpsd-nonetfeed-3.0.log">http://people.freebsd.org/~amdmi3/gpsd-nonetfeed-3.0.log</A>
+<A HREF="http://people.freebsd.org/~amdmi3/gpsd-noreconfigure-3.0.log">http://people.freebsd.org/~amdmi3/gpsd-noreconfigure-3.0.log</A>
+<A HREF="http://people.freebsd.org/~amdmi3/gpsd-nosockexport-3.0.log">http://people.freebsd.org/~amdmi3/gpsd-nosockexport-3.0.log</A>
+
+3. As I understand pydistutils (setup.py) is called right from
+SCons. Normally, when some port (for example, of some python module)
+uses pydistutils, it provides setup.py with certain arguments, for
+example, -c -O1 so python bytecode files (.pyc, .pyo) are created.
+Obviously this can't be done in this case.
+
+This results in only *.py files installed, so if some python program
+which uses `gps' module is run by root user, python will create
+.pyc/.pyo files on its own, polluting system directory and making a
+port unable to deinstall cleanly.
+
+I've solved this with calling python from a port after the installation
+to create the bytecode.
+
+4. SConscript takes some variables to customize build from the
+environement, which is great, as FreeBSD ports are required to respect
+syetemwide CC/CXX/CFLAGS/CXXFLAGS. However, if {C,CXX}FLAGS has multiple
+arguments (e.g. &quot;-O2 -pipe -march=prescott&quot;), it takes these as a single
+argument, which leads to gcc error. Here's how I've solved it:
+
+-        env[j]=os.getenv(i)
++        if i == &quot;CFLAGS&quot; or i == &quot;CCFLAGS&quot;:
++           env.Replace(**{j: Split(os.getenv(i))})
++        else:
++           env.Replace(**{j: os.getenv(i)})
+
+5. Some warnings are enabled if the compiler is gcc. However on FreeBSD,
+gcc is named cc, so:
+
+-if env['CC'] == 'gcc':
++if env['CC'] == 'gcc' or env['CC'] == 'cc':
+     # Enable all GCC warnings except uninitialized and
+     # missing-field-initializers, which we can't help triggering because
+     # of the way some of the JSON-parsing code is generated.
+
+This is not the solution though, as gcc (and other gcc-compatible
+compilers) may have other names, such as gcc45 or clang. This
+condition should not be based on a compiler binary name.
+
+6. FreeBSD has some libraries in the base system (as opposed to the
+ports collection), and this includes libncurses and libusb.
+Base system doesn't use pkg-config, so .pc files for these libraries
+are not available at all, so pkg-config (which is installed from
+ports) doesn't know anything of ncurses or libusb and cannot be used
+to detect them. I've fixed that by replacing pkg-config calls with
+library names, which is ok since being in the base system, they do
+not require any specific compile/link flags.
+
+if env['ncurses']:
+-    if config.CheckPKG('ncurses'):
+-        ncurseslibs = pkg_config('ncurses')
+-    elif config.CheckExecutable('ncurses5-config --version', 'ncurses5-config'):
+-        ncurseslibs = ['!ncurses5-config --libs --cflags']
+-    else:
+-        ncurseslibs= []
++    ncurseslibs= [ '-lncurses' ]
+ else:
+      ncurseslibs= []
+
+-if env['usb'] and config.CheckPKG('libusb-1.0'):
+-    confdefs.append(&quot;#define HAVE_LIBUSB 1\n&quot;)
+-    try:
+-        usblibs = pkg_config('libusb-1.0')
+-    except OSError:
+-        print &quot;pkg_config is confused about the state of libusb-1.0.&quot;
+-        usblibs = []
++if env['usb']:
++    usblibs = [ &quot;-lusb&quot; ]
+ else:
+      confdefs.append(&quot;/* #undef HAVE_LIBUSB */\n&quot;)
+           usblibs = []
+
+7. On FreeBSD, pkgconfig files are installed into
+${PREFIX}/libdata/pkgconfig, not ${PREFIX}/lib/pkgconfig, so
+
+-pkgconfigdir = os.path.join(installdir('libdir'), 'pkgconfig')
++pkgconfigdir = os.path.join(env['prefix'], 'libdata', 'pkgconfig')
+
+I guess that can be made custimizable via pathopts.
+
+8. Last but not least, the only problem I couldn't solve is dbus
+support. On FreeBSD dbus is installed from the ports, so pkg-config
+knows about it. However gpsd doesn't build with dbus_export=yes:
+
+cc -o ais_json.os -c -Wextra -Wall -Wno-uninitialized -Wno-missing-field-initializers -Wcast-align -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wreturn-type -Wimplicit-function-declaration -D_GNU_SOURCE -O2 -pipe -fno-strict-aliasing -O2 -fPIC ais_json.c
+In file included from ais_json.c:18:
+gpsd.h:979:23: error: dbus/dbus.h: No such file or directory
+
+looks like SCons doesn't take cflags from pkgconfig at all, and I
+couldn't figure out how to make it do so.
+
+PS. Judging from my own experience as both packager and ex- scons
+user, I'd warn you against switching to SCons. It doesn't do enough
+job required from build system, and its build scripts, instead of
+being an abstraction from target system, tend to become unmaintainable
+shell-script-alikes written in python consisting of endless tests and
+conditions for certain features of target systems. CMake is a much
+better alternative, providing clearer syntax and doing most work
+for a user (library detection, for instance: as easy as
+find_package(Curses) and you have compiler/linker arguments to use
+the library, and you shouldn't care of pkg-config, or other methods
+to determine path to the includes/library), also being friendly to
+packagers, as many aspects of its work is customizable with command
+line arguments.
+
+[1] <A HREF="http://www.freshports.org/astro/gpsd">http://www.freshports.org/astro/gpsd</A>
+
+-- 
+Dmitry Marakasov   .   55B5 0596 FF1E 8D84 5F56  9510 D35A 80DD F9D2 F77D
+<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">amdmi3 at amdmi3.ru</A>  ..:  jabber: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">amdmi3 at jabber.ru</A>    <A HREF="http://www.amdmi3.ru">http://www.amdmi3.ru</A>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="009464.html">[Gpsd-dev] 3.0 has shipped
+</A></li>
+	<LI>Next message: <A HREF="009447.html">[Gpsd-dev] FreeBSD porting problems of gpsd-3.0
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9446">[ date ]</a>
+              <a href="thread.html#9446">[ thread ]</a>
+              <a href="subject.html#9446">[ subject ]</a>
+              <a href="author.html#9446">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

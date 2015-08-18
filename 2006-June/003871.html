@@ -1,0 +1,159 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Net::GPSD won't fix
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Net%3A%3AGPSD%20won%27t%20fix&In-Reply-To=%3C4493074C.2090206%40xmission.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003870.html">
+   <LINK REL="Next"  HREF="003876.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Net::GPSD won't fix</H1>
+    <B>Brad Midgley</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Net%3A%3AGPSD%20won%27t%20fix&In-Reply-To=%3C4493074C.2090206%40xmission.com%3E"
+       TITLE="[Gpsd-dev] Net::GPSD won't fix">bmidgley at xmission.com
+       </A><BR>
+    <I>Fri Jun 16 21:32:28 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003870.html">[Gpsd-dev] Net::GPSD won't fix
+</A></li>
+        <LI>Next message: <A HREF="003876.html">[Gpsd-dev] Net::GPSD won't fix
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3871">[ date ]</a>
+              <a href="thread.html#3871">[ thread ]</a>
+              <a href="subject.html#3871">[ subject ]</a>
+              <a href="author.html#3871">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Michael
+
+Net::GPSD Version:      0.24
+gpsd Version:           2.30
+
+i noticed some more strange behavior. i made the perl code loop on
+reading points... so then when i had a simultaneous telnet session and i
+typed &quot;o&quot; then the perl code would sometimes produce a few points and
+then go back to claiming no fix.
+
+the gps itself has a fix the whole time. fwiw, i consistently get
+&quot;GPSD,O=?&quot; as the first response to &quot;o&quot; in the telnet session even when
+the gps has a constant fix. subsequent responses show the coords.
+
+Brad
+
+&gt;<i> I just changed some logic to the fix method (v0.24).  So, I need to
+</I>&gt;<i> know which versions you are running.  But, the code you sent (hitting a
+</I>&gt;<i> local gpsd) works on my box.  So, my guess is that you don't have a
+</I>&gt;<i> fix.
+</I>&gt;<i> 
+</I>&gt;<i> There are also 8 example scripts at
+</I>&gt;<i> <A HREF="http://search.cpan.org/~mrdvt/Net-GPSD-0.24/">http://search.cpan.org/~mrdvt/Net-GPSD-0.24/</A>
+</I>&gt;<i> Try 'em...
+</I>&gt;<i> 
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">root at sl</A>:~# perl -e 'use Net::GPSD;
+</I>&gt;&gt;<i> $gps=new Net::GPSD;
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> print &quot;Net::GPSD Version:\t&quot;, $gps-&gt;VERSION. &quot;\n&quot;;
+</I>&gt;&gt;<i> print &quot;gpsd Version:\t\t&quot;, $gps-&gt;daemon. &quot;\n&quot;;
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> my $point=$gps-&gt;get;
+</I>&gt;&gt;<i> if ($point-&gt;fix) {
+</I>&gt;&gt;<i>   print $point-&gt;latlon. &quot;\n&quot;;
+</I>&gt;&gt;<i> } else {
+</I>&gt;&gt;<i>   print &quot;No fix.\n&quot;;
+</I>&gt;&gt;<i> }
+</I>&gt;&gt;<i> '
+</I>&gt;<i> Net::GPSD Version:      0.24
+</I>&gt;<i> gpsd Version:           2.33
+</I>&gt;<i> 38.865988 -77.108635
+</I>&gt;<i> 
+</I>&gt;<i> PS: Next time I come to Park City.  I'll ski ya.
+</I>&gt;<i> 
+</I>&gt;<i> Mike
+</I>&gt;<i> 
+</I>&gt;<i> --- Brad Midgley &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">bmidgley at xmission.com</A>&gt; wrote:
+</I>&gt;<i> 
+</I>&gt;&gt;<i> Hey
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I am trying to run the example from the Net::GPSD perldocs. Am I
+</I>&gt;&gt;<i> doing
+</I>&gt;&gt;<i> anything obviously wrong?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>         use Net::GPSD;
+</I>&gt;&gt;<i>         $gps=new Net::GPSD;
+</I>&gt;&gt;<i>         my $point=$gps-&gt;get;
+</I>&gt;&gt;<i>         if ($point-&gt;fix) {
+</I>&gt;&gt;<i>           print $point-&gt;latlon. &quot;\n&quot;;
+</I>&gt;&gt;<i>         } else {
+</I>&gt;&gt;<i>           print &quot;No fix.\n&quot;;
+</I>&gt;&gt;<i>         }
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> it always prints &quot;no fix.&quot; I am running ubuntu dapper and I used cpan
+</I>&gt;&gt;<i> to
+</I>&gt;&gt;<i> get Net::GPSD. fwiw, I can telnet to gpsd:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> # telnet localhost 2947
+</I>&gt;&gt;<i> Trying 127.0.0.1...
+</I>&gt;&gt;<i> Connected to localhost.
+</I>&gt;&gt;<i> Escape character is '^]'.
+</I>&gt;&gt;<i> o
+</I>&gt;&gt;<i> GPSD,O=?
+</I>&gt;&gt;<i> o
+</I>&gt;&gt;<i> GPSD,O=RMC 1150464347.00 0.005 40.771653 -111.899428          ?      
+</I>&gt;&gt;<i>  ?
+</I>&gt;&gt;<i> ?  49.7900    0.087          ?             ?        ?        ?
+</I>&gt;&gt;<i> o
+</I>&gt;&gt;<i> GPSD,O=RMC 1150464349.00 0.005 40.771653 -111.899428          ?      
+</I>&gt;&gt;<i>  ?
+</I>&gt;&gt;<i> ?  40.6400    0.036          ?             ?        ?        ?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Brad
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> ps should I worry that everyone now knows which bus stop I'm sitting
+</I>&gt;&gt;<i> at? :)
+</I>&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;<i> Gpsd-dev mailing list
+</I>&gt;&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;&gt;<i> <A HREF="http://lists.berlios.de/mailman/listinfo/gpsd-dev">http://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;&gt;<i>
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> __________________________________________________
+</I>&gt;<i> Do You Yahoo!?
+</I>&gt;<i> Tired of spam?  Yahoo! Mail has the best spam protection around 
+</I>&gt;<i> <A HREF="http://mail.yahoo.com">http://mail.yahoo.com</A> 
+</I>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003870.html">[Gpsd-dev] Net::GPSD won't fix
+</A></li>
+	<LI>Next message: <A HREF="003876.html">[Gpsd-dev] Net::GPSD won't fix
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3871">[ date ]</a>
+              <a href="thread.html#3871">[ thread ]</a>
+              <a href="subject.html#3871">[ subject ]</a>
+              <a href="author.html#3871">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

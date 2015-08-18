@@ -1,0 +1,124 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH 3/5] Adding GPGST parsing code to NEMA driver
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%203/5%5D%20Adding%20GPGST%20parsing%20code%20to%20NEMA%20driver&In-Reply-To=%3C1295498892.17762.38119.camel%40rudd%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008535.html">
+   <LINK REL="Next"  HREF="008509.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH 3/5] Adding GPGST parsing code to NEMA driver</H1>
+    <B>Thomas Sprinkmeier</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%203/5%5D%20Adding%20GPGST%20parsing%20code%20to%20NEMA%20driver&In-Reply-To=%3C1295498892.17762.38119.camel%40rudd%3E"
+       TITLE="[Gpsd-dev] [PATCH 3/5] Adding GPGST parsing code to NEMA driver">thomas.sprinkmeier at cohdawireless.com
+       </A><BR>
+    <I>Thu Jan 20 05:48:12 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008535.html">[Gpsd-dev] [PATCH 2/5] Bumping up gps_mask_t from &quot;unsigned int&quot; to &quot;uint64_t&quot; to allow more bits (i.e. NOISE_SET)
+</A></li>
+        <LI>Next message: <A HREF="008509.html">[Gpsd-dev] [PATCH 4/5] Added JSON parsing code for NOISE.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8508">[ date ]</a>
+              <a href="thread.html#8508">[ thread ]</a>
+              <a href="subject.html#8508">[ subject ]</a>
+              <a href="author.html#8508">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Parsing $GPGST....
+
+---
+ driver_nmea.c |   34 ++++++++++++++++++++++++++++++++++
+ 1 files changed, 34 insertions(+), 0 deletions(-)
+
+diff --git a/driver_nmea.c b/driver_nmea.c
+index b540503..5294730 100644
+--- a/driver_nmea.c
++++ b/driver_nmea.c
+@@ -407,6 +407,39 @@ static gps_mask_t processGPGGA(int c UNUSED, char *field[],
+     return mask;
+ }
+ 
++
++static gps_mask_t processGPGST(int count, char *field[], struct gps_device_t *session)
++/* GST - GPS Pseudorange Noise Statistics */
++{
++    /*
++     * GST,hhmmss.ss,x,x,x,x,x,x,x,*hh
++     * 1 TC time of associated GGA fix
++     * 2 Total RMS standard deviation of ranges inputs to the navigation solution
++     * 3 Standard deviation (meters) of semi-major axis of error ellipse
++     * 4 Standard deviation (meters) of semi-minor axis of error ellipse
++     * 5 Orientation of semi-major axis of error ellipse (true north degrees)
++     * 6 Standard deviation (meters) of latitude error
++     * 7 Standard deviation (meters) of longitude error
++     * 8 Standard deviation (meters) of altitude error
++     * 9 Checksum
++*/
++    if (count &lt; 8) {
++        return ERROR_SET;
++    }
++
++    session-&gt;gpsdata.noise_stats.utctime = atof(field[1]);
++    session-&gt;gpsdata.noise_stats.rms_deviation = atof(field[2]);
++    session-&gt;gpsdata.noise_stats.smajor_deviation = atof(field[3]);
++    session-&gt;gpsdata.noise_stats.sminor_deviation = atof(field[4]);
++    session-&gt;gpsdata.noise_stats.smajor_orientation = atof(field[5]);
++    session-&gt;gpsdata.noise_stats.lat_err_deviation = atof(field[6]);
++    session-&gt;gpsdata.noise_stats.longt_err_deviation = atof(field[7]);
++    session-&gt;gpsdata.noise_stats.alt_err_deviation = atof(field[8]);
++
++    return NOISE_SET;
++}
++
++
+ static gps_mask_t processGPGSA(int count, char *field[],
+ 			       struct gps_device_t *session)
+ /* GPS DOP and Active Satellites */
+@@ -963,6 +996,7 @@ gps_mask_t nmea_parse(char *sentence, struct gps_device_t * session)
+ 	{
+ 	&quot;RMC&quot;, 8, processGPRMC}, {
+ 	&quot;GGA&quot;, 13, processGPGGA}, {
++        &quot;GST&quot;, 8, processGPGST}, {
+ 	&quot;GLL&quot;, 7, processGPGLL}, {
+ 	&quot;GSA&quot;, 17, processGPGSA}, {
+ 	&quot;GSV&quot;, 0, processGPGSV}, {
+-- 
+1.7.0.4
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008535.html">[Gpsd-dev] [PATCH 2/5] Bumping up gps_mask_t from &quot;unsigned int&quot; to &quot;uint64_t&quot; to allow more bits (i.e. NOISE_SET)
+</A></li>
+	<LI>Next message: <A HREF="008509.html">[Gpsd-dev] [PATCH 4/5] Added JSON parsing code for NOISE.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8508">[ date ]</a>
+              <a href="thread.html#8508">[ thread ]</a>
+              <a href="subject.html#8508">[ subject ]</a>
+              <a href="author.html#8508">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,111 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] oncore / jupiter_t binary driver
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20oncore%20/%20jupiter_t%20binary%20driver&In-Reply-To=%3Calpine.DEB.1.10.0907160908140.10066%40org-pc51.fy.chalmers.se%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006776.html">
+   <LINK REL="Next"  HREF="006778.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] oncore / jupiter_t binary driver</H1>
+    <B>H&#229;kan Johansson</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20oncore%20/%20jupiter_t%20binary%20driver&In-Reply-To=%3Calpine.DEB.1.10.0907160908140.10066%40org-pc51.fy.chalmers.se%3E"
+       TITLE="[Gpsd-dev] oncore / jupiter_t binary driver">f96hajo at chalmers.se
+       </A><BR>
+    <I>Thu Jul 16 09:29:16 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006776.html">[Gpsd-dev] oncore / jupiter_t binary driver
+</A></li>
+        <LI>Next message: <A HREF="006778.html">[Gpsd-dev] oncore / jupiter_t binary driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6777">[ date ]</a>
+              <a href="thread.html#6777">[ thread ]</a>
+              <a href="subject.html#6777">[ subject ]</a>
+              <a href="author.html#6777">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+On Wed, 15 Jul 2009, Chris Kuethe wrote:
+
+&gt;<i> I just committed the beginnings of a driver. It's quite rough, and
+</I>&gt;<i> doesn't do anything useful, but it's a start...
+</I>
+Great!  With the module enabled, it eats data.  Sometimes the packet 
+sniffer terminates early by finding a trailer within the payload.  I've 
+attached a patch to always take the message sizes as given in the manual. 
+I have tested the commands giving different response IDs, except Cc and Ck 
+(GT version only).
+
+Is it ok with a switch-statement in oncore_payload_length, or should it be 
+an array?
+
+Question for further decoding of satellite data (az, el and ss not in 
+the same message):
+
+The Bb message, which at most is output whenever the data changes, i.e. 
+not every second, but usually around every 4th, gives the azimuth and 
+elevation for 12 satellites.  There are always 12 items, some may be 
+unused (PRN = 0).
+
+The Ea message gives the signal strength, and also tell which satellites 
+are used.  This is given for 8 satellites.  This is (can be) given each 
+second.  I have not checked, but suspect that whatever satellites are in 
+the Ea message is a subset of those a preceeding Bb message.  The order is 
+different though.  Bb is sorted, Ea looks random.
+
+The Oncore devices generate whatever messages once per second.  When 
+enabled, the Ea message comes before the Bb message.  At start-up, usually 
+5-10 minutes before acquiring an almanac, Bb messages are not delivered at 
+all, but Ea messages come.
+
+The problem then is if one clears the satellite data with 
+gpsd_zero_satellites on either Ea or Bb, the other information will be 
+lost.  Would it be an acceptable solution to do the clear on the Bb 
+message, but retain the information from any Ea to fill that out again. 
+On Ea, the new Ea message is just filled in.
+
+Are there any other drivers which face similar problems with split 
+satellite data which may serve as example?
+
+// H&#229;kan
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: oncore_payload_length.diff
+Type: text/x-diff
+Size: 4932 bytes
+Desc: 
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090716/a8eade50/attachment.diff">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090716/a8eade50/attachment.diff</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006776.html">[Gpsd-dev] oncore / jupiter_t binary driver
+</A></li>
+	<LI>Next message: <A HREF="006778.html">[Gpsd-dev] oncore / jupiter_t binary driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6777">[ date ]</a>
+              <a href="thread.html#6777">[ thread ]</a>
+              <a href="subject.html#6777">[ subject ]</a>
+              <a href="author.html#6777">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

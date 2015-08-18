@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: Possible problem with gpxlogger
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20Possible%20problem%20with%20gpxlogger&In-Reply-To=%3C91981b3e050808233823c1d5f4%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002846.html">
+   <LINK REL="Next"  HREF="002848.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: Possible problem with gpxlogger</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20Possible%20problem%20with%20gpxlogger&In-Reply-To=%3C91981b3e050808233823c1d5f4%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Re: Possible problem with gpxlogger">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Tue Aug  9 08:38:49 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002846.html">[Gpsd-dev] Possible problem with gpxlogger
+</A></li>
+        <LI>Next message: <A HREF="002848.html">[Gpsd-dev] Re: Possible problem with gpxlogger
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2847">[ date ]</a>
+              <a href="thread.html#2847">[ thread ]</a>
+              <a href="subject.html#2847">[ subject ]</a>
+              <a href="author.html#2847">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 8/8/05, Belgabor &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">belgabor at gmx.de</A>&gt; wrote:
+&gt;<i> Hi Chris,
+</I>&gt;<i> 
+</I>&gt;<i> there might be a small timing problem with your gpxlogger. As I read the
+</I>&gt;<i> script, you read the data from gpsd, transform it to gpx and write it. Then
+</I>&gt;<i> sleep is called with the specified update period. The problem that could
+</I>&gt;<i> occur is when this period is set to low values (lets talk about 1 sec as I
+</I>&gt;<i> plan to use it) as the true write period is surely more than one second
+</I>&gt;<i> (maybe even severly more if the harddisc is busy).
+</I>
+Ah... you're worried about the overhead of sleep() and other stuff.
+I'm not. If you'd like to profile the code and see how long it takes
+to run so we can say sleep(1-$small_fudge_factor) , fine, but make
+sure it's right to all possible platforms. You can start by checking
+the return value of sleep (see the Time::HiRes documentation).
+Seriously, unless your system is thrashing into oblivion I can't see
+this being a problem. A 400MHz XScale (ARM) swapping to a microdrive
+is probably going to hurt your sleep() performance. A Real Computer or
+a Well Designed System is not going to have that problem.
+
+I don't think hard disk activity is going to be a serious problem if I
+turn off autoflush on the output file descriptor. That a) tends to
+speed up output by about 10% and b) allows the buffer cache to
+schedule a good time to write the logs. Anyway, I was targetting
+gpxlogger at people who want a quick and easy way to take gpsd and
+make gpx logs to feed into some app that groks gpx. For higher
+resolution applications, I'd suggest writing a custom tool.
+
+As I'm not fond of providing solutions to problems that don't exist,
+under what circumstances are you running gpsd and gpxlogger where your
+system is so loaded and thrashing so hard that you can't find a moment
+every minute to flush a couple of KB to disk? If your system resource
+are that tight, perl may not be the tool for the job.
+
+&gt;<i> Wouldn't it be better to
+</I>&gt;<i> poll gpsd as often as possible and handle write period via the transmitted
+</I>&gt;<i> fix timepoint?
+</I>
+Probably not. polling on subsecond intervals is probably silly, both
+because it'll generate un-necessary network traffic and because
+there's a non-zero chance the GPS data won't get refreshed more than
+once a second anyway.
+
+&gt;<i> It might be also a good idea to add a
+</I>&gt;<i> write-as-often-as-possible option (writing whenever a new fix time is
+</I>&gt;<i> polled). The same code could also check for lon and lat. No need to write a
+</I>&gt;<i> new waypoint if the gps hasn't moved ;-)
+</I>
+&quot;-i 1&quot; is effectively as often as possible. NMEA output and probably
+most vendor binary protocols only give one solution per second unless
+you make a heroic effort to convince your receiver otherwise. Plus,
+there is very often some noise in the least significant digits of the
+position and/or altitude. Often every second. Which means you'd have a
+new position to write every second unless your receiver was doing
+static navigation. Also, I'd rather have my raw tracklogs be more or
+less continous, and filter out duplicated points during
+postprocessing. I suppose I could hack in an option to effectively
+&quot;uniq&quot; adjacent fixes, but I'm not likely to use it on a regular
+basis.
+
+I'm not trying to be sarcastic, but I don't understand the problem you
+wish to solve.
+
+CK
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002846.html">[Gpsd-dev] Possible problem with gpxlogger
+</A></li>
+	<LI>Next message: <A HREF="002848.html">[Gpsd-dev] Re: Possible problem with gpxlogger
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2847">[ date ]</a>
+              <a href="thread.html#2847">[ thread ]</a>
+              <a href="subject.html#2847">[ subject ]</a>
+              <a href="author.html#2847">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,92 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] segfault in ISO8601 parsing
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2008-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20segfault%20in%20ISO8601%20parsing&In-Reply-To=%3Crmiprks9b0a.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006190.html">
+   <LINK REL="Next"  HREF="006192.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] segfault in ISO8601 parsing</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20segfault%20in%20ISO8601%20parsing&In-Reply-To=%3Crmiprks9b0a.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] segfault in ISO8601 parsing">gdt at ir.bbn.com
+       </A><BR>
+    <I>Tue Nov 18 18:53:09 CET 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006190.html">[Gpsd-dev] Yay, we get a leap second added this year
+</A></li>
+        <LI>Next message: <A HREF="006192.html">[Gpsd-dev] bug with callbacks and gpsd_close
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6191">[ date ]</a>
+              <a href="thread.html#6191">[ thread ]</a>
+              <a href="subject.html#6191">[ subject ]</a>
+              <a href="author.html#6191">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+I have a program that uses libgps, and when running it against Chris's
+server it segfaults.  When running against Gary's or my own servers, it
+works fine.  I found the following problem:
+
+Index: gpsutils.c
+===================================================================
+--- gpsutils.c	(revision 9628)
++++ gpsutils.c	(revision 9629)
+@@ -178,7 +178,7 @@
+     struct tm tm;
+ 
+     /*@i1@*/dp = strptime(isotime, &quot;%Y-%m-%dT%H:%M:%S&quot;, &amp;tm);
+-    if (*dp == '.')
++    if (dp &amp;&amp; *dp == '.')
+ 	usec = strtod(dp, NULL);
+     else
+ 	usec = 0;
+
+but the mystery of why isotime has the value &quot;52&quot; remains.  I do get
+good fixes from Chris's server, once I avoid crashing on the bad time
+strings.
+
+(I may have threading bugs in my code, so the 52 maybe spurious, but the
+above is needed to be safe.)
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 193 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20081118/02a705c1/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20081118/02a705c1/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006190.html">[Gpsd-dev] Yay, we get a leap second added this year
+</A></li>
+	<LI>Next message: <A HREF="006192.html">[Gpsd-dev] bug with callbacks and gpsd_close
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6191">[ date ]</a>
+              <a href="thread.html#6191">[ thread ]</a>
+              <a href="subject.html#6191">[ subject ]</a>
+              <a href="author.html#6191">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

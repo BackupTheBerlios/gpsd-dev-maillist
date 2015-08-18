@@ -1,0 +1,120 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Patch against svn.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2008-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Patch%20against%20svn.&In-Reply-To=%3Calpine.LNX.1.00.0801201426540.22538%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005964.html">
+   <LINK REL="Next"  HREF="005966.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Patch against svn.</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Patch%20against%20svn.&In-Reply-To=%3Calpine.LNX.1.00.0801201426540.22538%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] Patch against svn.">gem at rellim.com
+       </A><BR>
+    <I>Mon Jan 21 00:36:11 CET 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005964.html">[Gpsd-dev] Release status?
+</A></li>
+        <LI>Next message: <A HREF="005966.html">[Gpsd-dev] SVN rev #s
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5943">[ date ]</a>
+              <a href="thread.html#5943">[ thread ]</a>
+              <a href="subject.html#5943">[ subject ]</a>
+              <a href="author.html#5943">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo John!
+
+On Wed, 16 Jan 2008, John Arthur wrote:
+
+&gt;<i> I've done a diff on SVN fixing the Bugs I mentioned and adding
+</I>&gt;<i> 18-5hz support along with the generic 1hz square wave support.
+</I>
+I finally had time to sit down and look at your 300 line patch for a while.
+Submitting more but smaller patches will get them in the SVN much faster.
+Given how often we break things the SVN commits are better done as small
+bits so we can tell what small change broke things.
+
+Right now I am trying to carve out the first nice chunk and the vetting
+is slow.
+
+gpsd is C, not C++, so although some C compilers accept C++ comments,
+many do not.  So this is not acceptable.
+
+- -       /* reset some config, AutoFix, WGS84, PPS */
+- -       (void)nmea_send(session-&gt;gpsdata.gps_fd, &quot;$PGRMC,A,,100,,,,,,A,,1,2,4,30
+&quot;);
++//     /* reset some config, AutoFix, WGS84, PPS */
++//     (void)nmea_send(session-&gt;gpsdata.gps_fd, &quot;$PGRMC,A,,100,,,,,,A,,1,2,4,30
+&quot;);
+
+That code fragment it setup for this, which just adds one line to the comment
+and changes one integer:
+
++       /*
++         * reset some config, AutoFix, WGS84, PPS
++         * Set the PPS pulse length to 40ms which leaves the 18-5hz with a 160m
+s
++         * low state.
++        */
++       (void)nmea_send(session-&gt;gpsdata.gps_fd, &quot;$PGRMC,A,,100,,,,,,A,,1,2,1,30
+&quot;);
+
+Way too verbose for such a small change.  Check out what I did in SVN
+for a more compact version.  (Try to ignore that I can not figure out
+how to get SVN to ignore [SPACE]/[TAB] changes even if they are the
+same width.)  Then see if it works for you.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 109 NW Wilmington Ave., Suite E, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFHk9rv8KZibdeR3qURAvHUAKDVwd8BH+QW3mqbtu6LMXGDwnnkCgCgpjm6
+0KDmHNe+BVfLjUiVoeEvLH0=
+=d3CN
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005964.html">[Gpsd-dev] Release status?
+</A></li>
+	<LI>Next message: <A HREF="005966.html">[Gpsd-dev] SVN rev #s
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5943">[ date ]</a>
+              <a href="thread.html#5943">[ thread ]</a>
+              <a href="subject.html#5943">[ subject ]</a>
+              <a href="author.html#5943">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

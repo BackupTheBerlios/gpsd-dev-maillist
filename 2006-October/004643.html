@@ -1,0 +1,373 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPSD protocol extension
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20protocol%20extension&In-Reply-To=%3C200610242246.k9OMkkcM004582%40snark.thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004642.html">
+   <LINK REL="Next"  HREF="004644.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPSD protocol extension</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20protocol%20extension&In-Reply-To=%3C200610242246.k9OMkkcM004582%40snark.thyrsus.com%3E"
+       TITLE="[Gpsd-dev] GPSD protocol extension">esr at thyrsus.com
+       </A><BR>
+    <I>Wed Oct 25 00:46:46 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004642.html">[Gpsd-dev] Time accuracy without fix
+</A></li>
+        <LI>Next message: <A HREF="004644.html">[Gpsd-dev] GPSD protocol extension
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4643">[ date ]</a>
+              <a href="thread.html#4643">[ thread ]</a>
+              <a href="subject.html#4643">[ subject ]</a>
+              <a href="author.html#4643">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>There was a thread at
+&lt;<A HREF="http://marc.theaimsgroup.com/?t=115940558500017&amp;r=1&amp;w=2">http://marc.theaimsgroup.com/?t=115940558500017&amp;r=1&amp;w=2</A>&gt;, which was
+Chris and Gary kicking an extended GPSD protocol design ideas back and
+forth.  I'm responding here and have added my comments.
+
+Note: I *love* this sort of thing.  I particularly enjoy writing
+compilers, interpreters, language and markup-format and protocol
+translators, command parsers, state machines, and anything along those
+lines, and I think about this kind of design a lot.  It's not atypical
+that my most recent new release is a C-to-Python language translator.
+If I can be said to have a specialty within programming, this topic
+lands us smack dab in the middle of it.
+
+(And yes, this is part of the reason gpsd has a packet sniffer.  It's
+not just that the thing was functionally necessary to get to zero
+configuration once I'd decided on that goal -- for me, it was just way
+too much fun to pass up.)
+
+Accordingly, I expect to write the extended command parser and its
+test framework myself.  Actually you'd probably have to use a crowbar
+to pry the job away from me even if I weren't the project lead :-).
+
+Late in the thread, Chris asks the thousand-dollar question:
+
+Chris:
+&gt;<i>                      I'm asking a serious question here, to all you
+</I>&gt;<i>gpsd users and developers: &quot;how does the current gpsd protocol fail to
+</I>&gt;<i>meet your needs?&quot;
+</I>
+Maybe it doesn't.  Fail, that is.  As much as I love designing 
+protocol-like things, my policy has been to put off actually doing
+the big command extension as long as possible.  We don't have
+a demonstrated need for it yet -- this discussion is design-ahead for 
+when we do.  
+
+My goal isn't to get a spec for immediate implementation, but a
+consensus we can stash in a design whitepaper on the webnsite
+(or in the Hacking Guide) against the day we actually need it.
+
+Gary suggests:
+&gt;<i>We could do something like the J command.  Use the old single letters
+</I>&gt;<i>by default.  Then step up to the full feature set on request.
+</I>
+Of course.  That's how it will work.  The old single-character command
+set will continue to be supported, if only because it's just slightly
+more penurious of bandwidth.  Chris got this right in his response:
+
+Chris:
+&gt;<i>I'm not advocating killing off v3... for what it is, I like it. Just
+</I>&gt;<i>about everything I need, I get from 'O'. Put that in your pipe and
+</I>&gt;<i>smoke it, NMEA!
+</I>
+Thank you, that *is* the effect I intended when I designed it. :-)  And:
+
+Chris:
+&gt;<i>I was going to say that perhaps '@' by itself is special, causing gpsd
+</I>&gt;<i>to escalate to v4, but then I remembered the 'L' command. Clients
+</I>&gt;<i>wishing to use protocol 4 features must send 'L' first, to see if the
+</I>&gt;<i>daemon support v4. From there, the v4 parser can be probed for which
+</I>&gt;<i>commands it supports.
+</I>
+Gary concurred, and so do I.
+
+Now, onto the actual v4 design:
+
+Chris Kuethe wrote (I'm merging in a later thread here):
+&gt;<i> There's not much that protocol 3 doesn't give us for standard PVT
+</I>&gt;<i> reports. Thus, I'm in favor of using an escape character like @ or ^
+</I>&gt;<i> to signal that the following characters need to be fed to the extended
+</I>&gt;<i> parser. Then we can have long command names and other goodness...
+</I>
+&gt;<i>I'd like to suggest for protocol v4 something like this:
+</I>&gt;<i>
+</I>&gt;<i>@&lt;cmdA&gt;[:&lt;cmdAparam1&gt;[,&lt;cmdAparam2&gt;[,...,&lt;cmdAparamN&gt;]]];
+</I>&gt;<i>
+</I>&gt;<i>So...
+</I>&gt;<i>- Command strings are &quot;C&quot; strings.
+</I>&gt;<i>- Command names can be some number of alphanumeric characters {0}
+</I>&gt;<i>- Command strings must be terminated by a semicolon {1}
+</I>&gt;<i>- Commands may have a variable number of parameters
+</I>&gt;<i>- Commands are separated from their parameters (if any) by a colon.
+</I>&gt;<i>- Reserved characters are colon, semicolon and comma [:;,] - these
+</I>&gt;<i>must not be used in a command name or command parameter.
+</I>
+This is all perfectly sound, IMO, and I might have written the same
+spec myself -- that is, there are other styles possible, but this one
+is among the simplest and will work.  I would add:
+
+- Whitespace before or after reserved characters is forbidden, 
+  except that LF or CR-LF may occur after &quot;;&quot;.
+
+Unlike a short command-length limit, that really *will* simplify the
+parser; trust me on this :-).  If the protocol ever needs string literals
+we'll allow whitespace within them, of course.
+
+The biggest argument anybody could have with the rest of it is the
+introducer character.  In a later post, Chris wrote:
+
+&gt;<i>           That leaves a short list of symbols that would be
+</I>&gt;<i> appropriate: @|%^+-/
+</I>&gt;<i> '/' might not be bad - people are used to /command in instant
+</I>&gt;<i> messaging programs.
+</I>&gt;<i> '^' might work - the caret sort of suggests escalating or raising
+</I>&gt;<i> '@' might work because one thinks of chat, and email and longer messages
+</I>&gt;<i> '+' and '-' have been used as command line flag indicators as ages
+</I>&gt;<i> '%' i'm neutral on that, except that it's used as a shell prompt character
+</I>&gt;<i> 
+</I>&gt;<i> '|' should be reserved for passthrough mode... pipe. it just feels right.
+</I>&gt;<i> 
+</I>&gt;<i> '$' is bad, because NMEA uses it for a sentence starter
+</I>&gt;<i> '*' is bad because NMEA uses it to delimit the checksum
+</I>&gt;<i> '=' is bad because we use that as an assignment operator
+</I>&gt;<i> '#' is bad because we unix-heads think of it as a comment character
+</I>
+I'm agreed on Chris's washouts, including |.  I would further wash out
+(){}[]&lt;&gt; and both string quotes because we might want to use them
+syntactically someday, and besides using half of a paired delimiter
+character would just look ugly and never mind that there's some
+tradition of using '&gt;' for this.  The '.' is too close to invisible to
+make a good introducer, and '\' has an escape-character use in Unix
+convention that we're somewhat likely to want later.
+
+But, Chris, I'm wondering why you left out '&amp;' and '!' and '?'.  Any
+of those three seem like reasonable introducers to me.  I might favor
+'?' over the '@' you're suggesting, in fact.  I'm a bit inclined to
+avoid '@' these days because it has become so closely associated with
+network addresses
+
+(Feel free to argue from either Unix precedent or inchoate good taste 
+in responding.  This choice is all about aesthetics and gut feel; from
+a purely technical point of view any of these is as good as any other.)
+
+&gt;<i>- Command strings, including leading '@' and terminating ';\0' shall
+</I>&gt;<i>fit into uint8_t buf[1024]. If a ';' is not found before buf[1023],
+</I>&gt;<i>the command is not valid and will be discarded. {2}
+</I>
+Good.  I'll argue about the length limit in a bit.
+
+&gt;<i>- Only one command shall be sent at a time. Even if they take no
+</I>&gt;<i>parameters &quot;@cmdA;cmdB;&quot; is not valid. Processing will stop before
+</I>&gt;<i>cmdB.{3}
+</I>
+I don't think this restriction is necessary, though it might be
+desirable to simplify error reporting.  More discussion below.
+
+&gt;<i>{0} do we want to allow arbitrarily long command names?
+</I>
+Gary observed correctly that we're about out of letters.  Chris said
+&quot;I wasn't sure if I should allow 3, or 8 or n characters. Y'know...
+for parser simplicity.&quot;  
+
+Gary replied:
+&gt;<i>When I did parsers in assembly I would care about this.  Not now.
+</I>&gt;<i>Even CKermit could do shortest unambiguous match.   Over the 4800
+</I>&gt;<i>baud link keeping it short is important, but once we are running
+</I>&gt;<i>at TCP/IP speeds to cgps speed is not an issue.
+</I>
+I think Gary is correct about the (absence of) performance issue here.
+
+Chris replied:
+&gt;<i>Sounds like you have more experience than I do at maintaining
+</I>&gt;<i>shortest-match parsers - you're saying this is is not a long-term
+</I>&gt;<i>maintenance headache, keeping a shortest-match parser up to date?
+</I>
+Nah.  The code is pretty trivial, even in C.  The basic trick is, you
+stash all your leader tokens in an array initializer and write a loop
+overr that. The array changes when you extend your command set, but the
+shortest-match code doesn't.
+
+(Dunno about Gary but I've written shortest-match recognizers so many
+times I probably bang one out while blind drunk.  If I ever drank,
+which I don't.)
+
+Given that the implementation language is C, there are really only three
+levels of potential complexity here:
+
+0) All commands are one character
+1) All commands are strings of length less than some fixed N.
+2) Commands may be of any length.
+
+In particular, in C on modern hardware the value of N under case 1 is
+not significant -- it's not measurably faster to recognize
+32-character commands than it is to recognize 2-character commands.
+Nor does that value have any impact on the complexity of the parser,
+which is basically going to be a big if/then/else with strcmp() calls
+or scanf() calls in the guards.
+
+Yes, we could use a fancier approach like Yacc/Lex, but IMO it would
+be overkill.  For this application, with its relatively simple command
+set being both emitted and parsed by programs rather than humans, I'll
+choose the approach that minimizes code complexity in the parser
+rather than maximizing flexibility and robustness near the sorts of
+funky edge cases humans emit.
+
+I land squarely on alternative 1, with a maximum command size one less
+than our maximum line size (to allow for the introducer character).
+
+The only potential reason to make N smaller is if we are so
+obsessively worried about code footprint in embedded systems that the
+size of *one single* command buffer makes a difference.  I'm an old
+assembler hand too, and I still have a ghost of the same reflex Chris
+was displaying (as I'll bet Gary does too).  But it's 2006, I don't
+think we have that problem any more.
+
+&gt;<i>{1} if ((buf[strlen(buf) - 1]) != ';') return ERROR; /* nice and easy */
+</I>
+Gary suggested allowing ';' anywhere in the buffer so multiple commands
+could be stacked on a single line.  Chris was mildly against this, arguing
+it would keep parsing and error reporting simpler.
+
+I'm fairly neutral on this issue.  Allowing stacking really won't
+complicate the parser much; I am so used to this kind of hacking that
+I could write the extra layer of state transitions or looping in my
+sleep (or blind drunk :-)) and probably get it right.  Gary's comment
+
+&gt;<i>Just use a strchr() in a while() loop  to chop the string at each ';'
+</I>
+is quite correct.
+
+&gt;<i>{2} is 1023 bytes enough?
+</I>
+I'm with Gary on this one; like him, I prefer protocols I can fit in an
+editor.  SMTP's 76-character soft limit is a bit archaic, but we should 
+prefer 78 chars or less per line (yes, I know the Y message violates this).
+
+Chris replied
+&gt;<i>You mean you prefer protocols where you can fit the MTU into one
+</I>&gt;<i>screenful, preferably one line? I was thinking the same. First I
+</I>&gt;<i>though 80 characters, then I though maybe 256 if we're uploading an
+</I>&gt;<i>hexdump of an ephemeris, and then I though I might want more. But I
+</I>&gt;<i>wanted to go bounded. Either a one-time malloc buffer or a static
+</I>&gt;<i>buffer. I'm tempted to allow 4K, because that's a modern memory page.
+</I>
+MTU size isn't the issue here, it's keeping logs easily browseable and
+test loads easily editable that we want.
+
+Trust me, I understand your issue with wanting to keep the protocol
+dead simple while supporting data dumps that won't fit on one line.
+I've been in this bind myself more than once, and I have a solution.
+That is to bite the bullet and allow not multiline commands but 
+multiline *responses*.
+
+Here's how it works.  We make the protocol line limit really short.
+But we allow a response to consist of more than one line, byte-stuffed
+a la SMTP and terminated by a line consisting of a single '.' And
+(here's the trivial-sounding but important bit) the clue that a
+multiline response is coming is part of the *syntax*, not dispatched
+on the semantics of the command.  Thus there would be two kinds of response
+to a hypothetical '?X' extended command: single line like this
+
+?X:asdfghjkl;
+
+or multiline like this:
+
+?X:
+asdf
+ghjkl
+.
+
+The handler code for extended-X cannot see the difference; all it knows is 
+that it gets back a buffer full of data.
+
+(You know, this time around I'm even kind of tempted to use '.' as the
+terminator for both forms.  That would be elegant.  Then, the syntax
+rule becomes identical for both cases with all embedded newlines and
+the string &quot;\n..&quot; being ignored.)
+
+(Damn shame ASCII doesn't include the Spanish inverted questionmark,
+I'd love to make *that* the terminator character for both forms.)
+
+(Did I mention that I get off on doing this sort of design? :-))
+
+Now, your *multiline* response can have a big size limit without having to 
+make the maximum line length that big.  And in C or Python, the little 
+state machine required to collect it is simple enough to be easily 
+maintainable.
+
+&gt;<i>{3} do we want to allow multiple commands on a line, or is it fair
+</I>&gt;<i>trade the ability to specify multiple command for the possibility of a
+</I>&gt;<i>very rich, extensible command set?
+</I>
+These things are not mutually contradictory.  We can have both.  The
+key point here is that we have unambiguous introducer and terminator
+characters in the syntax.  The parser won't *care* whether the
+commands are one-per-line or stacked, nor will the code the
+parser is driving.  
+
+Gary wrote:
+&gt;<i>I much prefer one command per line.  Much easier to debug.  But eric
+</I>&gt;<i>has been moving the other way.  If we allow commands to stack on ';',
+</I>&gt;<i>like in SQL, then each person can do it his way.
+</I>
+The only argument for one-per-line is that it means an error report
+could unambiguously locate a command by line or sequence number.  I
+don't think that's a big deal here.
+
+Chris also suggested:
+&gt;<i>I think we should reserve commands of the form &quot;GPSD[A-Z]&quot; which map
+</I>&gt;<i>to the version 3 single character commands.
+</I>
+Gary replied:
+&gt;<i>I like that.  That would be a nice gesture to allow quick upgrading of
+</I>&gt;<i>clients while opening the door to major updates as well.
+</I>
+I concur.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+The IRS has become morally corrupted by the enormous power which we in
+Congress have unwisely entrusted to it. Too often it acts like a
+Gestapo preying upon defenseless citizens.
+	-- Senator Edward V. Long
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004642.html">[Gpsd-dev] Time accuracy without fix
+</A></li>
+	<LI>Next message: <A HREF="004644.html">[Gpsd-dev] GPSD protocol extension
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4643">[ date ]</a>
+              <a href="thread.html#4643">[ thread ]</a>
+              <a href="subject.html#4643">[ subject ]</a>
+              <a href="author.html#4643">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,89 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] gpsd should not return error code when started in daemon mode
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20gpsd%20should%20not%20return%20error%20code%20when%20started%20in%20daemon%20mode&In-Reply-To=%3CE1CnguJ-0004Yc-Ga%40saruman.uio.no%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000496.html">
+   <LINK REL="Next"  HREF="000489.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] gpsd should not return error code when started in daemon mode</H1>
+    <B>Petter Reinholdtsen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20gpsd%20should%20not%20return%20error%20code%20when%20started%20in%20daemon%20mode&In-Reply-To=%3CE1CnguJ-0004Yc-Ga%40saruman.uio.no%3E"
+       TITLE="[Gpsd-dev] [PATCH] gpsd should not return error code when started in daemon mode">pere at hungry.com
+       </A><BR>
+    <I>Sun Jan  9 18:31:15 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000496.html">[Gpsd-dev] Please add HAiCOM HI-204E to the list of supported GPSes
+</A></li>
+        <LI>Next message: <A HREF="000489.html">[Gpsd-dev] [PATCH] gpsd should not return error code when started in daemon mode
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#488">[ date ]</a>
+              <a href="thread.html#488">[ thread ]</a>
+              <a href="subject.html#488">[ subject ]</a>
+              <a href="author.html#488">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>When gpsd i started in daemon mode, it return an error code instead of
+0.  The code seem to try to return the pid, but this is not really
+working very well.  This change fixes the problem.  I'm not sure why
+_exit() was used, so I changed it to exit().
+
+I also added a 'return 0' at the end of main().
+
+Index: gpsd.c
+===================================================================
+--- gpsd.c      (revision 1302)
++++ gpsd.c      (working copy)
+@@ -64,7 +64,7 @@
+     case 0:
+        break;
+     default:
+-       _exit(pid);
++       exit(0);
+     }
+
+     if (setsid() == -1)
+@@ -615,6 +615,7 @@
+     }
+
+     gpsd_wrap(session);
++    return 0;
+ }
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000496.html">[Gpsd-dev] Please add HAiCOM HI-204E to the list of supported GPSes
+</A></li>
+	<LI>Next message: <A HREF="000489.html">[Gpsd-dev] [PATCH] gpsd should not return error code when started in daemon mode
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#488">[ date ]</a>
+              <a href="thread.html#488">[ thread ]</a>
+              <a href="subject.html#488">[ subject ]</a>
+              <a href="author.html#488">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

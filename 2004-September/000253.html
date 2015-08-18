@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] USB scanning code
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20USB%20scanning%20code&In-Reply-To=%3C20040920210348.GA9726%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000252.html">
+   <LINK REL="Next"  HREF="000254.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] USB scanning code</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20USB%20scanning%20code&In-Reply-To=%3C20040920210348.GA9726%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] USB scanning code">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Sep 20 23:03:48 CEST 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000252.html">[Gpsd-dev] USB scanning code
+</A></li>
+        <LI>Next message: <A HREF="000254.html">[Gpsd-dev] USB scanning code
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#253">[ date ]</a>
+              <a href="thread.html#253">[ thread ]</a>
+              <a href="subject.html#253">[ subject ]</a>
+              <a href="author.html#253">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Remco Treffkorn &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">remco at rvt.com</A>&gt;:
+&gt;<i> I don't think we should add convenience code to gpsd. I think that could be 
+</I>&gt;<i> handled by another program. It just does all the h/w snooping and USB magic,
+</I>&gt;<i> and drops a valid configuration for gpsd to pick up. (did I mention electra?)
+</I>
+If the device path associated with a USB GPS never varied after boot
+time, we could do it that way -- deduce the right device at daemon
+startup time and hand gpsd a -p argument.  Alas, life is not so simple; 
+the GPS device can move around while the daemon is running due to 
+hotplug events.  
+
+So we actually need to rerun discovery on every activate() call.  It's
+actually a (minor) bug that we're not doing this now; in some
+not-very-implausible scenarious involving a system with both USB
+mouse and keyboard, gpsd could end up reading from the wrong source!
+
+I hear and agree with your concern about code bloat.  One of the things 
+that really pleases me about this project is that the 2.0 code is smaller
+and simpler than 1.10 was (getting rid of gpsplay and factoring the 
+daemon into library plus daemon framework helped a lot).  
+
+I thunk we can prsserve leanness and meanness for embedded systems by having
+all the discovery code conditioned on #ifdef USB/#endif and making USB a 
+configure-time feature switch.
+
+&gt;<i> As for the current build system: blech...
+</I>
+It is no secret that I agree with your blech.  I was persuaded to adopt
+libtool only because when I did the research all the alternatives looked
+even nastier.
+ 
+&gt;<i> I understand the uglyness comes from the fact that we use a shared
+</I>&gt;<i> library. Do we really need to do that? Or can we get away with a
+</I>&gt;<i> regular .a lib and link statically? Makes debugging so much nicer. I
+</I>&gt;<i> can see that glibc should be shared, but how many clients does our
+</I>&gt;<i> lib feed?
+</I>
+Well, my use case involves running gpsdrive and kismet simultaneously.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000252.html">[Gpsd-dev] USB scanning code
+</A></li>
+	<LI>Next message: <A HREF="000254.html">[Gpsd-dev] USB scanning code
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#253">[ date ]</a>
+              <a href="thread.html#253">[ thread ]</a>
+              <a href="subject.html#253">[ subject ]</a>
+              <a href="author.html#253">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

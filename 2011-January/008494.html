@@ -1,0 +1,152 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPS%20date%20fail%20due%20to%20week%20counter%20rollover%20%28not%20a%0A%20gpsd%20bug%29&In-Reply-To=%3C4D332BF2.6030905%40navlost.eu%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008495.html">
+   <LINK REL="Next"  HREF="008497.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)</H1>
+    <B>Diego Berge</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPS%20date%20fail%20due%20to%20week%20counter%20rollover%20%28not%20a%0A%20gpsd%20bug%29&In-Reply-To=%3C4D332BF2.6030905%40navlost.eu%3E"
+       TITLE="[Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)">gpsd at navlost.eu
+       </A><BR>
+    <I>Sun Jan 16 18:33:38 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008495.html">[Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)
+</A></li>
+        <LI>Next message: <A HREF="008497.html">[Gpsd-dev] [PATCH] Restore leapsecond.py Python output
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8494">[ date ]</a>
+              <a href="thread.html#8494">[ thread ]</a>
+              <a href="subject.html#8494">[ subject ]</a>
+              <a href="author.html#8494">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+On 14/01/11 18:28, Eric Raymond wrote:
+
+&gt;<i> It is probably true that we could curve-fit the decline in Earth's
+</I>&gt;<i> orbital speed to produce a function from leap-second count to a year
+</I>&gt;<i> estimate.  That's a very clever idea.  But there's a problem with it.
+</I>&gt;<i> 
+</I>&gt;<i> The problem with is that the estimate wouldn't be accurate within
+</I>&gt;<i> about two years - as we speak, it's January 2010 and the last leap
+</I>&gt;<i> second was at the end of December 2008. In the future, that two-year
+</I>&gt;<i> slop could easily put our estimate on the wrong side of a recent or
+</I>&gt;<i> near-future week rollover from actual present time.
+</I>&gt;<i> 
+</I>&gt;<i> However, there's a variant of this idea I can and will use.  We know
+</I>&gt;<i> the leap-second offsets for past times; if we have a leap-second
+</I>&gt;<i> offset, we can at least check whether it's inconsistent with the year
+</I>&gt;<i> the GPS is reporting. This will detect some rollovers.
+</I>
+   That's correct. What I would propose would be something as follows:
+
+ 1. UTC message received
+ 2. Obtain current &#916;t from UTC message
+ 3. Lookup &#916;t in precompiled table (&#916;t, date_firstvalid, date_lastvalid)
+ 4. If current date as reported by GPS is between the values obtained
+from the table, all good, stop.
+ 5. If values disagree, a week rollover error must have occurred,
+correct the GPS reported date if unambiguous, or report an error, and stop.
+ 6. If &#916;t is not found in the precompiled table, and &#916;t &#8804; &#916;tN + &#949;, then
+curve fit a date and compare against currently reported date.
+ 7. If values from previous calculation agree, stop.
+ 8. If values disagree, report an error, stop. Do not attempt to correct.
+
+   Where:
+
+ * &#916;t is the same as &#916;tUTC as defined in 20.3.3.5.2.4 in IS-GPS-200E
+ * date_{first,last}valid are the times when a particular &#916;t first
+becomes valid, and just before the next leap second occurrence. Note
+that this a logical, not physical, representation (meaning one only
+needs to store a list of (&#916;t, time_of_occurrence) pairs.
+ * &#916;tN is the last &#916;t value in our precompiled table. This would be
+expected to be up to six months in the future, counting from the release
+date of a particular gpsd version (leaps second
+adjustments/non-adjustments are announced about six months in advance).
+ * &#949; is a small integer (e.g., 0, &#177;1 or &#177;2) such that a curve (or
+linear) fit of the last few values in our precompiled table would have a
+fighting chance of success. This covers the case where the user has a
+non-recent but not too old version of gpsd.
+
+   Notes/caveats:
+
+ * Keep in mind that leap seconds may be positive or negative (hence why
+&#949; is not defined as a small *positive* integer).
+ * In the event of negative leap seconds, the precompiled table will
+contain ambiguities, which could cause false negatives. It also makes it
+unadvisable to correct the rollover error in the presence of an ambiguity.
+ * Similarly, the application of a polynomial fit for values outside our
+table introduces the possibility of false positives (the probability
+increasing directly with time, hence why &#949;), so although we can report
+if we think something might be out of whack, it would not be wise to
+correct the rollover error, as we might be dealing with a false
+positive. As Eric says, in light of this it might not even be worth
+bothering with steps 6-8.
+
+
+Christoph,
+
+   I am not entirely clear what are the risks involved with this method
+(this could always be complemented by the -15 years test that you
+suggest). Could you please give your opinion on the above approach?
+
+   I do think that this kind of correction might be slightly on the
+overkill side of things, but if it's cleanly implemented, I can't see it
+introducing an excessive amount of complexity in the code.
+
+   If nothing else, it puts gpsd on the &quot;only we can do this&quot; category,
+and creates prior art which might deprive someone of a preposterous
+patent someday.
+
+
+Regards,
+Diego Berge.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - <A HREF="http://enigmail.mozdev.org/">http://enigmail.mozdev.org/</A>
+
+iEYEARECAAYFAk0zK/IACgkQmlKEtSWrbj1kKQCfYhpcPEir8rxrfmMVxaE4ZaUX
+vHUAnivBOwa6Dpy6gGzPHYsooSr7d55f
+=Q+iL
+-----END PGP SIGNATURE-----
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008495.html">[Gpsd-dev] GPS date fail due to week counter rollover (not a gpsd bug)
+</A></li>
+	<LI>Next message: <A HREF="008497.html">[Gpsd-dev] [PATCH] Restore leapsecond.py Python output
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8494">[ date ]</a>
+              <a href="thread.html#8494">[ thread ]</a>
+              <a href="subject.html#8494">[ subject ]</a>
+              <a href="author.html#8494">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

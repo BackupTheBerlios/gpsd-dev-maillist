@@ -1,0 +1,104 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: Passing the talker ID to the client
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20Passing%20the%20talker%20ID%20to%20the%20client&In-Reply-To=%3Cca02e73505033012564b7d7000%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001153.html">
+   <LINK REL="Next"  HREF="001132.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: Passing the talker ID to the client</H1>
+    <B>Dave Parker</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20Passing%20the%20talker%20ID%20to%20the%20client&In-Reply-To=%3Cca02e73505033012564b7d7000%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Re: Passing the talker ID to the client">daveparker01 at gmail.com
+       </A><BR>
+    <I>Wed Mar 30 22:56:58 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001153.html">[Gpsd-dev] Re: [Gpsd-users] Preparing for 2.20
+</A></li>
+        <LI>Next message: <A HREF="001132.html">[Gpsd-dev] Re: Passing the talker ID to the client
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1128">[ date ]</a>
+              <a href="thread.html#1128">[ thread ]</a>
+              <a href="subject.html#1128">[ subject ]</a>
+              <a href="author.html#1128">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Wed, 30 Mar 2005 11:49:08 -0500, Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+&gt;<i> My design problem with this is that &quot;talker ID&quot; is really a NMEA-specific
+</I>&gt;<i> concept.  It's not clear what to report for, say, a SiRF or Zodiac chip.
+</I>&gt;<i> Do we fake a talker ID?  If so, from what?  What is the appropriate
+</I>&gt;<i> namespace tag?
+</I>
+According to this:
+
+<A HREF="http://pcptpp030.psychologie.uni-regensburg.de/trafficresearch/NMEA0183/">http://pcptpp030.psychologie.uni-regensburg.de/trafficresearch/NMEA0183/</A>
+
+There's a provision in the protocol for &quot;proprietary sentences&quot; - the
+talker id for these is the single character &quot;P&quot;, where the remainder
+is left undefined.   Perhaps that's a hook? Else, maybe it's ok to fit
+something into the &quot;holes&quot; in this list:
+
+<A HREF="http://pcptpp030.psychologie.uni-regensburg.de/trafficresearch/NMEA0183/talkers.txt">http://pcptpp030.psychologie.uni-regensburg.de/trafficresearch/NMEA0183/talkers.txt</A>
+
+&gt;<i> Implementing this would involve adding a talker-ID field to the 'o'
+</I>&gt;<i> command, and a command to query the talker ID in the last report
+</I>&gt;<i> (perhaps 'J').
+</I>
+Ok - I'm kind of reluctant to get into this, but (here I go)...
+
+Might another approach be to let clients &quot;subscribe&quot; to one or more
+talker's &quot;conversations&quot;?
+
+Example: I have two client programs.  One is interested in GP data.
+Another is interested in both LC and GP data.  In either of these
+cases (assuming both devices are on the bus), the programs would need
+to poll the gpsd server in order to get the data they're interested
+in. If a client could instead subscribe to one or more conversations,
+they'd be assured of getting only what they want.  The default would
+be that you're subscribed to everything, but you could change that.
+
+Then, doesn't it make sense that the talker namespace tag would be
+valuable in  all of a,c,d,e,f,i,m,o,p,q,s,t,u,v, and y?  If you had a
+&quot;GP&quot; and an &quot;II&quot; on the same bus, you might have a lot of data
+competing for storage in a flat namespace.
+
+The reason I'm reluctant here is that if the multiple talkers is on
+whole an edge use case, it's a lot of work and change for something
+that's not likely to crop up real often (regardless of the
+&quot;correctness&quot; of it).
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001153.html">[Gpsd-dev] Re: [Gpsd-users] Preparing for 2.20
+</A></li>
+	<LI>Next message: <A HREF="001132.html">[Gpsd-dev] Re: Passing the talker ID to the client
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1128">[ date ]</a>
+              <a href="thread.html#1128">[ thread ]</a>
+              <a href="subject.html#1128">[ subject ]</a>
+              <a href="author.html#1128">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

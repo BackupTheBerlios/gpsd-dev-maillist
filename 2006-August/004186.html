@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Fix repeatedly lost on a TomTom ONE.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Fix%20repeatedly%20lost%20on%20a%20TomTom%20ONE.&In-Reply-To=%3C1156455213.12205.24.camel%40localhost.localdomain%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004184.html">
+   <LINK REL="Next"  HREF="004189.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Fix repeatedly lost on a TomTom ONE.</H1>
+    <B>Stelian Pop</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Fix%20repeatedly%20lost%20on%20a%20TomTom%20ONE.&In-Reply-To=%3C1156455213.12205.24.camel%40localhost.localdomain%3E"
+       TITLE="[Gpsd-dev] Fix repeatedly lost on a TomTom ONE.">stelian at popies.net
+       </A><BR>
+    <I>Thu Aug 24 23:33:33 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004184.html">[Gpsd-dev] Moving towards a release
+</A></li>
+        <LI>Next message: <A HREF="004189.html">[Gpsd-dev] Fix repeatedly lost on a TomTom ONE.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4186">[ date ]</a>
+              <a href="thread.html#4186">[ thread ]</a>
+              <a href="subject.html#4186">[ subject ]</a>
+              <a href="author.html#4186">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+I'm trying to set-up gpsd and (a customized version of) cgpxlogger on a
+TomTom ONE navigation system (the TomTom has an ARM processor, has a
+Sirf Star III GPS, runs Linux, and the navigation system is done by a
+proprietary application).
+
+I have a problem with gpsd losing the fix something like every one or
+two seconds. Launching cgps for example shows the fix is acquired for
+one or two seconds, then the fix is lost and the values go n/a, then it
+comes back again and again...
+
+Hacking the source I found out the culprit to be the
+	 mask |= CYCLE_START_SET
+set in nmea_parse.c:processGPGGA(). In my tests (look at the NMEA data
+below), 'gpsdata.sentence_time' is always one second before
+'gpsdata.newdata.time'.
+
+If I comment the CYCLE_START_SET line, the fix is no longer lost, and
+all seems perfect. This is with the latest SVN version.
+
+I'm not sure if this is a bug in my GPS device or a bug in the code. My
+limited understanding of the NMEA protocol may be the issue...
+
+(FYI, I've kept in the log blow a few unknown sentences reported by
+gpsd. These are most probably not related to my problem...)
+
+Thanks,
+
+Stelian.
+
+gpsd: &lt;= GPS: $PFEC,GPint,GSA01,DTM00,ZDA01,RMC01,GLL00,VTG00,GSV05*3B
+gpsd: unknown sentence: &quot;$PFEC,GPint,GSA01,DTM00,ZDA01,RMC01,GLL00,VTG00,GSV05*3B\x0d\x0a&quot;
+gpsd: &lt;= GPS: $PMOTG,ZDA,1*2F
+gpsd: unknown sentence: &quot;$PMOTG,ZDA,1*2F\x0d\x0a&quot;
+gpsd: &lt;= GPS: $PGRMCE*0E
+gpsd: unknown sentence: &quot;$PGRMCE*0E\x0d\x0a&quot;
+gpsd: &lt;= GPS: $PSRF105,1*3E
+gpsd: unknown sentence: &quot;$PSRF105,1*3E\x0d\x0a&quot;
+gpsd: &lt;= GPS: $GPGGA,210907.000,4852.5776,N,00223.0439,E,1,04,4.8,96.6,M,47.3,M,,0000*65
+gpsd: GPGGA sets status 1
+gpsd: &lt;= GPS: $GPGSA,A,3,06,21,18,22,,,,,,,,,6.5,4.8,4.3*36
+gpsd: GPGSA sets mode 3
+gpsd: &lt;= GPS: $GPRMC,210907.000,A,4852.5776,N,00223.0439,E,0.00,307.53,240806,,*01
+gpsd: &lt;= GPS: $GPGGA,210908.000,4852.5776,N,00223.0439,E,1,04,4.8,96.6,M,47.3,M,,0000*6A
+gpsd: GPGGA sets status 1
+gpsd: &lt;= GPS: $GPGSA,A,3,06,21,18,22,,,,,,,,,6.5,4.8,4.3*36
+gpsd: GPGSA sets mode 3
+gpsd: &lt;= GPS: $GPRMC,210908.000,A,4852.5776,N,00223.0439,E,0.00,307.53,240806,,*0E
+gpsd: &lt;= GPS: $GPGGA,210909.000,4852.5776,N,00223.0439,E,1,04,4.8,96.6,M,47.3,M,,0000*6B
+gpsd: GPGGA sets status 1
+gpsd: &lt;= GPS: $GPGSA,A,3,06,21,18,22,,,,,,,,,6.5,4.8,4.3*36
+gpsd: GPGSA sets mode 3
+gpsd: &lt;= GPS: $GPRMC,210909.000,A,4852.5776,N,00223.0439,E,0.00,307.53,240806,,*0F
+gpsd: &lt;= GPS: $GPGGA,210910.000,4852.5776,N,00223.0439,E,1,04,4.8,96.6,M,47.3,M,,0000*63
+gpsd: GPGGA sets status 1
+gpsd: &lt;= GPS: $GPGSA,A,3,06,21,18,22,,,,,,,,,6.5,4.8,4.3*36
+gpsd: GPGSA sets mode 3
+gpsd: &lt;= GPS: $GPRMC,210910.000,A,4852.5776,N,00223.0439,E,0.00,307.53,240806,,*07
+gpsd: &lt;= GPS: $GPGGA,210911.000,4852.5776,N,00223.0439,E,1,04,4.8,96.6,M,47.3,M,,0000*62
+gpsd: GPGGA sets status 1
+gpsd: &lt;= GPS: $GPGSA,A,3,06,21,18,22,,,,,,,,,6.5,4.8,4.3*36
+gpsd: GPGSA sets mode 3
+
+-- 
+Stelian Pop &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">stelian at popies.net</A>&gt;
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004184.html">[Gpsd-dev] Moving towards a release
+</A></li>
+	<LI>Next message: <A HREF="004189.html">[Gpsd-dev] Fix repeatedly lost on a TomTom ONE.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4186">[ date ]</a>
+              <a href="thread.html#4186">[ thread ]</a>
+              <a href="subject.html#4186">[ subject ]</a>
+              <a href="author.html#4186">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

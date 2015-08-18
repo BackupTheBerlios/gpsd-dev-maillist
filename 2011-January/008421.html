@@ -1,0 +1,145 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Almanac
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Almanac&In-Reply-To=%3C20110103162804.GB18728%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008419.html">
+   <LINK REL="Next"  HREF="008423.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Almanac</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Almanac&In-Reply-To=%3C20110103162804.GB18728%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Almanac">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Jan  3 17:28:04 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008419.html">[Gpsd-dev] Almanac
+</A></li>
+        <LI>Next message: <A HREF="008423.html">[Gpsd-dev] Almanac
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8421">[ date ]</a>
+              <a href="thread.html#8421">[ thread ]</a>
+              <a href="subject.html#8421">[ subject ]</a>
+              <a href="author.html#8421">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+&gt;<i> The problem with even an opaque blob is that it typically needs some
+</I>&gt;<i> kind of interaction to send it to the gps - usually simple cutting it
+</I>&gt;<i> up into blocks and using checksums, but then commands for entering the
+</I>&gt;<i> mode and exiting.
+</I>&gt;<i> 
+</I>&gt;<i> This is probably something which should wait until AFTER THIS RELEASE
+</I>
+Very much so, yes. I'm not yet convinced it's a good idea.
+
+&gt;<i> I think the feature addtions are getting a bit out of hand, at least
+</I>&gt;<i> for a monolithic gpsd-ng.  Perhaps the device drivers should be plugin
+</I>&gt;<i> modules that for gpsd itself, just return that data, but then have
+</I>&gt;<i> APIs (and perhaps individual control programs) for all the special
+</I>&gt;<i> cases.
+</I>
+*Shudder*  Individual control programs and proliferating special cases 
+is *exactly* what I've worked hard to get us away from. In that direction
+lies only an unmaintainable mess. I'll return to the plugin issue below.
+
+&gt;<i> gpsd is basically a multiplexer-demultiplexer - getting data from one
+</I>&gt;<i> or more sources, and sending it to one or more sinks.  The sinks can
+</I>&gt;<i> be quite different, but the sources are already getting that way.
+</I>&gt;<i> When it was just Garmin and NMEA it was ugly.  Now it is multiple
+</I>&gt;<i> binary and multiple NMEA-wth-quirks and extensions.
+</I>
+Yes. Unavoidably so, given the hardware territory it has to cover just
+to deliver basic GPS data.  The newer stuff like AIS is only a
+relatively small increment of complexity over what's irreducibly
+required to do GPS right, given that we have a dozen vendor binary
+protocols to cope with.
+
+&gt;<i> I would prefer to split the NMEA basic (and/or equivalent from the
+</I>&gt;<i> binary) support which is what gpsd will be used for in 99.9% of the
+</I>&gt;<i> time, from the other interesting data and/or setup.
+</I>
+We have configure switches to invidually suppress the features beyond NMEA.
+This is possible because most of the device-specific complexity is pushed
+down into drivers that are quite well isolated from each other.
+
+The driver architecture we already have (with the relatively thin layer 
+of dispatcher/multiplexor code on top) does about everything a &quot;plugin&quot;
+architecture could do, except dynamically load the driver parts. I don't
+think the driver parts are large enough to justify dynamic loading; they
+sum total to about 200K of object code and average 12.5K each.
+
+&gt;<i>               Ought things like barometric pressure and gyro data
+</I>&gt;<i> be provided by gpsd in event driven JSON?  Or should there be a second
+</I>&gt;<i> or different program (since I like the architecture) that can act as
+</I>&gt;<i> the catch-all for the sensor information which is not strict GPS and
+</I>&gt;<i> might not even be strictly for navigation?
+</I>
+I think you're confounding two distinct questions here.
+
+1. Would there be any gain from splitting gpsd into multiple separate
+daemons to handle different subsets of the data it now handles?
+
+2. What sorts of data are in scope for gpsd?
+
+1 is a question mainly about software engineering tradeoffs and I think the
+answer is clearly &quot;no&quot;.  All such a split would accomplish is to require
+multiple instances of the dispatcher/multiplexer layer to be maintained
+separately, and complicate life for clients because they'd have to
+monitor multiple service ports.  Aggregate complexity would substantially
+increase.
+ 
+2 is a more interesting question, less about nuts-and-bolts software
+engineering and more philosophical. I don't claim to have a final
+answer to it.  Anything GPS-related is clearly in scope.  I think AIS
+is too as it is interesting navigational information meant to be used
+in conjunction with GPS.  Likewise for the take from magnetic
+compasses.
+
+We get into a gray area with stuff like water-temperature sensors
+and fish finders. I'd have to think long and hard before adding those.
+On the other hand, merging in the take from aircraft transponders would 
+be an obvious win.
+
+I guess my figure of merit for stuff like this is &quot;how close to the
+navigation problem&quot; divided by &quot;LOC to implement&quot;.  Close stuff like
+AIS justifies substantial code additions; things further away might
+slip in if the code weight of the driver is low. 
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008419.html">[Gpsd-dev] Almanac
+</A></li>
+	<LI>Next message: <A HREF="008423.html">[Gpsd-dev] Almanac
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8421">[ date ]</a>
+              <a href="thread.html#8421">[ thread ]</a>
+              <a href="subject.html#8421">[ subject ]</a>
+              <a href="author.html#8421">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,173 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: GPGSV
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20GPGSV&In-Reply-To=%3CPine.LNX.4.63.0508042331320.26211%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002803.html">
+   <LINK REL="Next"  HREF="002805.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: GPGSV</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20GPGSV&In-Reply-To=%3CPine.LNX.4.63.0508042331320.26211%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] Re: GPGSV">gem at rellim.com
+       </A><BR>
+    <I>Fri Aug  5 09:03:59 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002803.html">[Gpsd-dev] GPS==p (-1)
+</A></li>
+        <LI>Next message: <A HREF="002805.html">[Gpsd-dev] Re: GPGSV
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2804">[ date ]</a>
+              <a href="thread.html#2804">[ thread ]</a>
+              <a href="subject.html#2804">[ subject ]</a>
+              <a href="author.html#2804">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Wolfgang!
+
+On Wed, 3 Aug 2005, Wolfgang S. Rupprecht wrote:
+
+&gt;<i> &gt; I have firmware version 2.70.  Version 2.80 is current.  Nothing in
+</I>&gt;<i> &gt; the Change Log about GPGSV.
+</I>&gt;<i>
+</I>&gt;<i> Does the gps show the same sentence order when tip-ing to it or
+</I>&gt;<i> otherwise connecting with some terminal emulator?
+</I>
+Well I'm glad you asked to double check this, because now when I
+minicom, or simply 'cat', the device the GPGSV looks in the correct
+order.  But gpspipe and gpsd logs show the bad order.  So the problem is
+in gpsd somewhere.
+
+Here is a data dump:
+
+$GPRMC,064917,A,4405.5592,N,12118.3942,W,000.0,112.0,050805,016.8,E*65
+$GPGGA,064917,4405.5592,N,12118.3942,W,1,05,2.2,1077.1,M,-20.1,M,,*4F
+$GPGSA,A,3,,02,04,05,,,09,10,,,,,3.5,2.2,2.7*3A
+$GPGSV,3,1,11,01,00,331,00,02,73,152,45,04,45,055,46,05,72,293,44*75
+$GPGSV,3,2,11,06,09,267,00,07,15,079,00,09,32,214,43,10,07,152,42*77
+$GPGSV,3,3,11,24,06,041,00,30,34,307,00,48,00,000,00*40
+$GPRMC,064918,A,4405.5592,N,12118.3942,W,000.0,136.7,050805,016.8,E*6B
+$GPGGA,064918,4405.5592,N,12118.3942,W,1,05,2.2,1076.9,M,-20.1,M,,*49
+$GPGSA,A,3,,02,04,05,,,09,10,,,,,3.5,2.2,2.7*3A
+$GPGSV,3,1,11,01,00,331,00,02,73,152,45,04,45,055,46,05,72,293,44*75
+$GPGSV,3,2,11,06,10,268,00,07,15,079,00,09,32,214,43,10,07,152,42*70
+$GPGSV,3,3,11,24,06,041,00,30,34,307,00,48,00,000,00*40
+
+If I feed just that in to gpsfake it works fine.  This is just odd.
+
+Here is how the serial port looks when gpsd is on it:
+
+# stty -F /dev/ttyS1 -a
+speed 19200 baud; rows 0; columns 0; line = 0;
+intr = &lt;undef&gt;; quit = &lt;undef&gt;; erase = &lt;undef&gt;; kill = &lt;undef&gt;; eof = &lt;undef&gt;;
+eol = &lt;undef&gt;; eol2 = &lt;undef&gt;; start = &lt;undef&gt;; stop = &lt;undef&gt;; susp = &lt;undef&gt;;
+rprnt = &lt;undef&gt;; werase = &lt;undef&gt;; lnext = &lt;undef&gt;; flush = &lt;undef&gt;;
+min = 1; time = 0;
+- -parenb -parodd cs8 hupcl -cstopb cread clocal -crtscts
+- -ignbrk -brkint -ignpar -parmrk -inpck -istrip -inlcr -igncr -icrnl -ixon
+- -ixoff -iuclc -ixany -imaxbel
+- -opost -olcuc -ocrnl -onlcr -onocr -onlret -ofill -ofdel nl0 cr0 tab0 bs0 vt0
+ff0
+- -isig -icanon -iexten -echo -echoe -echok -echonl -noflsh -xcase -tostop
+- -echoprt -echoctl -echoke
+
+Nothing odd there.  Could having PPS in the CD line do bad things?
+
+Here is what -D 5 shows:
+
+gpsd: ISGPS parity failure, lost lock
+gpsd: carrier-detect on /dev/ttyS1 changed to 0
+gpsd: &lt;= GPS: $GPGSA,A,3,,02,04,05,,,09,10,,30,,,2.8,1.9,2.0*3A
+gpsd: GPGSA sets mode 3
+gpsd: &lt;= GPS: $GPGSV,3,2,11,06,13,271,00,07,11,082,00,09,27,211,40,10,12,149,39*7B
+gpsd: Partial satellite data (2 of 3).
+gpsd: ISGPS parity failure, lost lock
+gpsd: carrier-detect on /dev/ttyS1 changed to 1
+gpsd: ntpshm_pps: precision -14
+gpsd: &lt;= GPS: $GPRMC,070034,A,4405.5591,N,12118.3944,W,000.0,020.1,050805,016.8,E*6C
+gpsd: carrier-detect on /dev/ttyS1 changed to 0
+gpsd: &lt;= GPS: $GPGSA,A,3,,02,04,05,,,09,10,,30,,,2.8,1.9,2.0*3A
+gpsd: GPGSA sets mode 3
+gpsd: &lt;= GPS: $GPGSV,3,2,11,06,13,271,00,07,11,082,00,09,27,211,40,10,12,149,39*7B
+gpsd: internal error - too many satellites!
+gpsd: Partial satellite data (2 of 3).
+gpsd: ISGPS parity failure, lost lock
+gpsd: carrier-detect on /dev/ttyS1 changed to 1
+gpsd: ntpshm_pps: precision -15
+gpsd: &lt;= GPS: $GPRMC,070035,A,4405.5591,N,12118.3944,W,000.0,034.2,050805,016.8,E*6B
+gpsd: carrier-detect on /dev/ttyS1 changed to 0
+gpsd: &lt;= GPS: $GPGSA,A,3,,02,04,05,,,09,10,,30,,,2.8,1.9,2.0*3A
+gpsd: GPGSA sets mode 3
+gpsd: &lt;= GPS: $GPGSV,3,2,11,06,13,271,00,07,11,082,00,09,27,211,40,10,12,149,39*7B
+gpsd: Partial satellite data (2 of 3).
+gpsd: &lt;= GPS: $GPGSV,3,3,11,24,02,041,00,30,38,307,35,40,00,000,00*46
+gpsd: GPGSV field 3 value of 11 != actual count 7
+gpsd: Satellite data OK.
+gpsd: carrier-detect on /dev/ttyS1 changed to 1
+gpsd: ntpshm_pps: precision -15
+gpsd: &lt;= GPS: $GPRMC,070036,A,4405.5591,N,12118.3944,W,000.0,352.4,050805,016.8,E*6D
+gpsd: ISGPS parity failure, lost lock
+gpsd: carrier-detect on /dev/ttyS1 changed to 0
+gpsd: &lt;= GPS: $GPGSA,A,3,,02,04,05,,,09,10,,30,,,3.4,2.3,2.4*3A
+gpsd: GPGSA sets mode 3
+gpsd: &lt;= GPS: $GPGSV,3,2,11,06,13,271,00,07,11,082,00,09,27,211,40,10,12,149,39*7B
+gpsd: Partial satellite data (2 of 3).
+gpsd: ISGPS parity failure, lost lock
+
+- -D 1 gives similar results.
+
+Guess I have more to look at in the morning.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588 Fax: +1(541)382-8676
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.1 (GNU/Linux)
+
+iD8DBQFC8w9i8KZibdeR3qURAgoMAKDz12vpZbbtfiD57FdiN2I3Ui4dgwCg6n5t
+qM44b8YBYiIwv/9uO3zWE0Y=
+=8bxT
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002803.html">[Gpsd-dev] GPS==p (-1)
+</A></li>
+	<LI>Next message: <A HREF="002805.html">[Gpsd-dev] Re: GPGSV
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2804">[ date ]</a>
+              <a href="thread.html#2804">[ thread ]</a>
+              <a href="subject.html#2804">[ subject ]</a>
+              <a href="author.html#2804">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

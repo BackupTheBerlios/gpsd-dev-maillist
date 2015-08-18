@@ -1,0 +1,98 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Automake perversity
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Automake%20perversity&In-Reply-To=%3C20050729015347.GA23002%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002673.html">
+   <LINK REL="Next"  HREF="002662.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Automake perversity</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Automake%20perversity&In-Reply-To=%3C20050729015347.GA23002%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Automake perversity">esr at thyrsus.com
+       </A><BR>
+    <I>Fri Jul 29 03:53:47 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002673.html">[Gpsd-dev] svn head working again
+</A></li>
+        <LI>Next message: <A HREF="002662.html">[Gpsd-dev] svn head working again - the bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2678">[ date ]</a>
+              <a href="thread.html#2678">[ thread ]</a>
+              <a href="subject.html#2678">[ subject ]</a>
+              <a href="author.html#2678">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rob Janssen &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at xs4all.nl</A>&gt;:
+&gt;<i> &gt; Whereas it works just fine here.  Send me your Makefile generated from
+</I>&gt;<i> &gt; svn head?  I want to diff it against mine.
+</I>&gt;<i> 
+</I>&gt;<i> I have attached it.
+</I>&gt;<i> I think you need an explicit dependency upon packet_names.h for the
+</I>&gt;<i> packet.o target, then it would generate that file before trying to compile
+</I>&gt;<i> packet.c
+</I>
+I looked, then dove deep into the automake documentation.  I understand
+it better now.  Mind you, I'm not saying I *like* it better...
+
+Trying to add an explicit dependency causes a lot of horrible breakage.
+It doesn't play nicely with the screwy mechanism automake uses to compute
+header dependencies, which basically consists of abusing the compiler until it
+pukes up a list of included .h files.  The list gets munged into a
+hidden subdirectory and re-incorporated into the main makefile by
+a boatload of automake-generated includes
+
+Because the stuff the includes are pointing at is not actually there
+until compile time, dependencies gone missing during the first make
+are actually fairly common.  You will probably not be surprised to
+learn that automake has four separate workarounds for this problems,
+one of which the manual itself describes as nearly useless (!).
+
+It appears that the most appropriate incantation in this case is to add
+
+nodist_libgps_la_SOURCES = packet_names.h
+
+to Makefile.am.  As I write, I'm eating dinner in a steakhouse.  When
+I get home, I'll check this fix into the repo.
+
+Unfortunately, we have more autotools jollies coming up.  Something I
+read in the manual convinced me that I need to rewrite autogen.sh
+not to use aclocal.  Ugh.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002673.html">[Gpsd-dev] svn head working again
+</A></li>
+	<LI>Next message: <A HREF="002662.html">[Gpsd-dev] svn head working again - the bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2678">[ date ]</a>
+              <a href="thread.html#2678">[ thread ]</a>
+              <a href="subject.html#2678">[ subject ]</a>
+              <a href="author.html#2678">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

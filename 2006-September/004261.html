@@ -1,0 +1,689 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] lcdproc client for gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20lcdproc%20client%20for%20gpsd&In-Reply-To=%3C20060908173007.GE9845%40www.gritch.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004255.html">
+   <LINK REL="Next"  HREF="004264.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] lcdproc client for gpsd</H1>
+    <B>Jeff Francis</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20lcdproc%20client%20for%20gpsd&In-Reply-To=%3C20060908173007.GE9845%40www.gritch.org%3E"
+       TITLE="[Gpsd-dev] lcdproc client for gpsd">jeff at gritch.org
+       </A><BR>
+    <I>Fri Sep  8 19:30:07 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004255.html">[Gpsd-dev] gpsd-dev&#27096;&#12408;&#12398;&#12469;&#12509;&#12540;&#12488;&#12434;&#24076;&#26395;&#12375;&#12390;&#12356;&#12414;&#12377;&#12290;
+</A></li>
+        <LI>Next message: <A HREF="004264.html">[Gpsd-dev] lcdproc client for gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4261">[ date ]</a>
+              <a href="thread.html#4261">[ thread ]</a>
+              <a href="subject.html#4261">[ subject ]</a>
+              <a href="author.html#4261">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>  Files attached.  This turns a small LCD screen attached to your box
+running gpsd and lcdproc into a very expensive feature-free gps
+receiver.  I use it in my truck.
+
+-- 
++--------------------------+------------------------------------------+
+|<i>   Jeff Francis - N0GQ    | Calvin:  How come you know so much?      |
+</I>|<i> Snohomish, WA USA, Earth |                                          |
+</I>|<i>     <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>      | Calvin's Dad:  It's all in the book you  |
+</I>|<i>  <A HREF="http://blog.gritch.org">http://blog.gritch.org</A>  | get when you become a father.            |
+</I>+--------------------------+------------------------------------------+
+-------------- next part --------------
+/*
+ * Copyright (c) 2005 Jeff Francis &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>&gt;
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED &quot;AS IS&quot; AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+/*
+  Jeff Francis
+  <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>
+  $Id:$
+
+  A client that passes gpsd data to lcdproc, turning your car computer
+  into a very expensive feature-free GPS receiver ;^).  Currently
+  assumes a 4x40 LCD and writes data formatted to fit that size
+  screen.  Plans to later support 2x40, 2x20, and maybe even 2x16 (if
+  I can squeeze the output down that much).  Also displays 6-character
+  Maidenhead grid square output, for the hams among us.
+
+  This program assumes that LCDd (lcdproc) is running locally on the
+  default (13666) port.  An option will be added later (in my copious
+  free time) to talk to a remote LCDd on an arbitrary port.  For now,
+  the #defines (LCDDHOST and LCDDPORT) can be changed, and the code
+  recompiled if something other than the default port on localhost is
+  required.
+*/
+
+#define LCDDHOST &quot;localhost&quot;
+#define LCDDPORT 13666
+
+/* Not tested. */
+#undef CPUTEMP 1
+
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;ctype.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;math.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;sys/select.h&gt;
+#include &lt;sys/socket.h&gt;
+
+#include &lt;sys/time.h&gt; /* select() */
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;termios.h&gt;
+
+#include &lt;netinet/in.h&gt;
+#include &lt;arpa/inet.h&gt;
+#include &lt;netdb.h&gt;
+#include &lt;errno.h&gt;
+
+#include &lt;signal.h&gt;
+
+#include &quot;gps.h&quot;
+
+/* Macro for declaring function arguments unused. */
+#if defined(__GNUC__)
+#  define UNUSED __attribute__((unused)) /* Flag variable as unused */
+#else /* not __GNUC__ */
+#  define UNUSED
+#endif
+
+static struct gps_data_t *gpsdata;
+static float altfactor = METERS_TO_FEET;
+static float speedfactor = MPS_TO_MPH;
+static char *altunits = &quot;ft&quot;;
+static char *speedunits = &quot;mph&quot;;
+
+/* Global socket descriptor for LCDd. */
+int sd;
+
+#ifdef CPUTEMP
+/* Get the CPU temp from ACPI. */
+int cputemp()
+{
+  int res, file, from=0, to=0, len, i, temp;
+  char tempstring[255];
+  char numstring[255];
+
+  /* Open the input file. */
+  if((file=fopen(&quot;/proc/acpi/thermal_zone/THRM/temperature&quot;,&quot;r&quot;))==NULL) {
+    return(0);
+  }
+
+  /* Grab the data. */
+  if((res=fgets(tempstring,255,file))==EOF) {
+    return(0);
+  }
+
+  /* Close the file. */
+  fclose(file);
+
+  /* How long is the string? */
+  len=strlen(tempstring);
+  if(len&gt;255) len=255;
+
+  /* Copy the numeric digits out and terminate the string. */
+  for(i=0;i&lt;len;i++) {
+    if(isdigit(tempstring[from++])) {
+      numstring[to++]=tempstring[from-1];
+    }
+  }
+  numstring[to]=(char)0;
+
+  /* Convert the string to a number and convert from C to F. */
+  temp=((atoi(numstring)*9)/5)+32;
+
+  /* Return the result. */
+  return(temp);
+}
+#endif
+
+/* Convert lat/lon to Maidenhead.  Lifted from QGrid -
+   <A HREF="http://users.pandora.be/on4qz/qgrid/">http://users.pandora.be/on4qz/qgrid/</A> */
+void latlon2maidenhead(char *st,float n,float e)
+{
+  int t1;
+  e=e+180.0;
+  t1=(int)(e/20);
+  st[0]=t1+'A';
+  e-=(float)t1*20.0;
+  t1=(int)e/2;
+  st[2]=t1+'0';
+  e-=(float)t1*2;
+  st[4]=(int)(e*12.0+0.5)+'A';
+
+  n=n+90.0;
+  t1=(int)(n/10.0);
+  st[1]=t1+'A';
+  n-=(float)t1*10.0;
+  st[3]=(int)n+'0';
+  n-=(int)n;
+  n*=24; // convert to 24 division
+  st[5]=(int)(n+0.5)+'A';
+}
+
+/* Daemonize me. */
+static void daemonize(void) {
+  int i;
+
+  /* Run as my child. */
+  i=fork();
+  if (i&lt;0) exit(1); /* fork error */
+  if (i&gt;0) exit(0); /* parent exits */
+
+  /* Obtain a new process group. */
+  setsid();
+
+  /* Close all open descriptors. */
+  for(i=getdtablesize();i&gt;=0;--i)
+    close(i);
+
+  /* Reopen STDIN, STDOUT, STDERR to /dev/null. */
+  i=open(&quot;/dev/null&quot;,O_RDWR); /* STDIN */
+  dup(i); /* STDOUT */
+  dup(i); /* STDERR */
+
+  /* Know thy mask. */
+  umask(027);
+
+  /* Run from a known spot. */
+  chdir(&quot;/&quot;);
+
+  /* Catch child sig */
+  signal(SIGCHLD,SIG_IGN);
+
+ /* Ignore tty signals */
+  signal(SIGTSTP,SIG_IGN);
+  signal(SIGTTOU,SIG_IGN);
+  signal(SIGTTIN,SIG_IGN);
+}
+
+/*  Read a line from a socket  */
+ssize_t sockreadline(int sockd,void *vptr,size_t maxlen) {
+  ssize_t n,rc;
+  char    c,*buffer;
+
+  buffer=vptr;
+
+  for (n=1;n&lt;maxlen;n++) {
+
+    if((rc=read(sockd,&amp;c,1))==1) {
+      *buffer++=c;
+      if(c=='\n')
+	break;
+    }
+    else if(rc==0) {
+      if(n==1)
+	return(0);
+      else
+	break;
+    }
+    else {
+      if(errno==EINTR)
+	continue;
+      return(-1);
+    }
+  }
+
+  *buffer=0;
+  return(n);
+}
+
+/*  Write a line to a socket  */
+ssize_t sockwriteline(int sockd,const void *vptr,size_t n) {
+  size_t      nleft;
+  ssize_t     nwritten;
+  const char *buffer;
+
+  buffer=vptr;
+  nleft=n;
+
+  while(nleft&gt;0) {
+    if((nwritten= write(sockd,buffer,nleft))&lt;=0) {
+      if(errno==EINTR)
+	nwritten=0;
+      else
+	return(-1);
+    }
+    nleft-=nwritten;
+    buffer+=nwritten;
+  }
+
+  return(n);
+}
+
+/* send a command to the LCD */
+int send_lcd(char *buf) {
+
+  int res;
+  char rcvbuf[255];
+
+  /* Limit the size of outgoing strings. */
+  if(strlen(buf)&gt;255) {
+    buf[255]=0;
+  }
+
+  /* send the command */
+  res=sockwriteline(sd,buf,strlen(buf));
+
+  /* TODO:  check return status */
+
+  /* read the data */
+  res=sockreadline(sd,rcvbuf,255);
+
+  /* null-terminate the string before printing */
+  /* rcvbuf[res-1]=0; XXX not using this at the moment... */
+
+  /* return the result */
+  return(res);
+}
+
+/* reset the LCD */
+static void reset_lcd(void) {
+
+  /* Initialize.  In theory, we should look at what's returned, as it
+     tells us info on the attached LCD module.  TODO. */
+  send_lcd(&quot;hello\n&quot;);
+
+  /* Set up the screen */
+  send_lcd(&quot;client_set name {GPSD test}\n&quot;);
+  send_lcd(&quot;screen_add gpsd\n&quot;);
+  send_lcd(&quot;widget_add gpsd one string\n&quot;);
+  send_lcd(&quot;widget_add gpsd two string\n&quot;);
+  send_lcd(&quot;widget_add gpsd three string\n&quot;);
+  send_lcd(&quot;widget_add gpsd four string\n&quot;);
+#ifdef CPUTEMP
+  send_lcd(&quot;widget_add gpsd five string\n&quot;);
+#endif
+}
+
+static enum deg_str_type deg_type = deg_dd;
+
+/* This gets called once for each new sentence. */
+static void update_lcd(struct gps_data_t *gpsdata,
+			 char *message,
+			 size_t len,
+			 int level UNUSED)
+{
+  char tmpbuf[255];
+  char maidenhead[7];
+  maidenhead[6]=0;
+  char *s;
+  int newstate;
+
+  /* Get our location in Maidenhead. */
+  latlon2maidenhead(maidenhead,gpsdata-&gt;fix.latitude,gpsdata-&gt;fix.longitude);
+
+  /* Fill in the latitude and longitude. */
+  if (gpsdata-&gt;fix.mode &gt;= MODE_2D) {
+
+    s = deg_to_str(deg_type,  fabs(gpsdata-&gt;fix.latitude));
+    sprintf(tmpbuf,&quot;widget_set gpsd one 1 1 {Lat: %s %c}\n&quot;, s, (gpsdata-&gt;fix.latitude &lt; 0) ? 'S' : 'N');
+    send_lcd(tmpbuf);
+
+    s = deg_to_str(deg_type,  fabs(gpsdata-&gt;fix.longitude));
+    sprintf(tmpbuf,&quot;widget_set gpsd two 1 2 {Lon: %s %c}\n&quot;, s, (gpsdata-&gt;fix.longitude &lt; 0) ? 'W' : 'E');
+    send_lcd(tmpbuf);
+
+    sprintf(tmpbuf,&quot;widget_set gpsd three 1 3 {%.1f %s %d deg}\n&quot;,
+            gpsdata-&gt;fix.speed*speedfactor, speedunits,
+            (int)(gpsdata-&gt;fix.track));
+    send_lcd(tmpbuf);
+
+  } else {
+
+    send_lcd(&quot;widget_set gpsd one 1 1 {Lat: n/a}\n&quot;);
+    send_lcd(&quot;widget_set gpsd two 1 2 {Lon: n/a}\n&quot;);
+    send_lcd(&quot;widget_set gpsd three 1 3 {n/a}\n&quot;);
+  }
+
+  /* Fill in the altitude and fix status. */
+  if (gpsdata-&gt;fix.mode == MODE_3D) {
+    sprintf(tmpbuf,&quot;widget_set gpsd four 1 4 {%.1f %s  %s}\n&quot;,
+            gpsdata-&gt;fix.altitude*altfactor, altunits, maidenhead);
+  } else {
+    sprintf(tmpbuf,&quot;widget_set gpsd four 1 4 {n/a}\n&quot;);
+  }
+  send_lcd(tmpbuf);
+
+#ifdef CPUTEMP
+  sprintf(tmpbuf,&quot;widget_set gpsd five 35 4 {%d}\n&quot;,cputemp());
+  send_lcd(tmpbuf);
+#endif
+}
+
+static void usage( char *prog)
+{
+  (void)fprintf(stderr,
+		&quot;Usage: %s [-h] [-v] [-V] [-s] [-l {d|m|s}] [-u {i|m|n}] [server[:port:[device]]]\n\n&quot;
+		&quot;  -h          Show this help, then exit\n&quot;
+		&quot;  -v          Show version, then exit\n&quot;
+		&quot;  -V          Show version, then exit\n&quot;
+		&quot;  -s          Sleep for 10 seconds before starting\n&quot;
+		&quot;  -l {d|m|s}  Select lat/lon format\n&quot;
+		&quot;                d = DD.dddddd (default)\n&quot;
+		&quot;                m = DD MM.mmmm'\n&quot;
+		&quot;                s = DD MM' SS.sss\&quot;\n&quot;
+		&quot;  -u {i|m|n}  Select Units\n&quot;
+		&quot;                i = Imperial (default)\n&quot;
+		&quot;                m = Metric'\n&quot;
+		&quot;                n = Nautical\&quot;\n&quot;
+                , prog);
+
+  exit(1);
+}
+
+int main(int argc, char *argv[])
+{
+  int option;
+  char *arg = NULL, *colon1, *colon2, *device = NULL, *server = NULL, *port = DEFAULT_GPSD_PORT;
+  char *err_str = NULL;
+
+  int rc;
+  struct sockaddr_in localAddr, servAddr;
+  struct hostent *h;
+
+  struct timeval timeout;
+  fd_set rfds;
+  int data;
+
+  /* Process the options.  Print help if requested. */
+  while ((option = getopt(argc, argv, &quot;hvsl:u:&quot;)) != -1) {
+    switch (option) {
+      case 'v':
+      case 'V':
+        (void)fprintf(stderr, &quot;$Id:$\n&quot;);
+        exit(0);
+      case 's':
+        sleep(10);
+        continue;
+      case 'l':
+        switch ( optarg[0] ) {
+          case 'd':
+            deg_type = deg_dd;
+            continue;
+          case 'm':
+            deg_type = deg_ddmm;
+            continue;
+          case 's':
+            deg_type = deg_ddmmss;
+            continue;
+          default:
+            (void)fprintf(stderr, &quot;Unknown -l argument: %s\n&quot;, optarg);
+            /*@ -casebreak @*/
+        }
+      case 'u':
+        switch ( optarg[0] ) {
+          case 'i':
+            altfactor = METERS_TO_FEET;
+            altunits = &quot;ft&quot;;
+            speedfactor = MPS_TO_MPH;
+            speedunits = &quot;mph&quot;;
+            continue;
+          case 'n':
+            altfactor = METERS_TO_FEET;
+            altunits = &quot;ft&quot;;
+            speedfactor = MPS_TO_KNOTS;
+            speedunits = &quot;knots&quot;;
+            continue;
+          case 'm':
+            altfactor = 1;
+            altunits = &quot;m&quot;;
+            speedfactor = MPS_TO_KPH;
+            speedunits = &quot;kph&quot;;
+            continue;
+          default:
+            (void)fprintf(stderr, &quot;Unknown -u argument: %s\n&quot;, optarg);
+            /*@ -casebreak @*/
+        }
+      case 'h': default:
+        usage(argv[0]);
+        break;
+    }
+  }
+
+  /* Grok the server, port, and device. */
+  /*@ -branchstate @*/
+  if (optind &lt; argc) {
+    arg = strdup(argv[optind]);
+    /*@i@*/colon1 = strchr(arg, ':');
+    server = arg;
+    if (colon1 != NULL) {
+      if (colon1 == arg)
+        server = NULL;
+      else
+        *colon1 = '\0';
+      port = colon1 + 1;
+      colon2 = strchr(port, ':');
+      if (colon2 != NULL) {
+        if (colon2 == port)
+          port = NULL;
+        else
+          *colon2 = '\0';
+        device = colon2 + 1;
+      }
+    }
+    colon1 = colon2 = NULL;
+  }
+  /*@ +branchstate @*/
+
+  /* Daemonize... */
+  daemonize();
+
+  /* Open the stream to gpsd. */
+  /*@i@*/gpsdata = gps_open(server, port);
+  if (!gpsdata) {
+    switch ( errno ) {
+      case NL_NOSERVICE: 	err_str = &quot;can't get service entry&quot;; break;
+      case NL_NOHOST: 	err_str = &quot;can't get host entry&quot;; break;
+      case NL_NOPROTO: 	err_str = &quot;can't get protocol entry&quot;; break;
+      case NL_NOSOCK: 	err_str = &quot;can't create socket&quot;; break;
+      case NL_NOSOCKOPT: 	err_str = &quot;error SETSOCKOPT SO_REUSEADDR&quot;; break;
+      case NL_NOCONNECT: 	err_str = &quot;can't connect to host&quot;; break;
+      default:             	err_str = &quot;Unknown&quot;; break;
+    }
+    (void)fprintf( stderr,
+                   &quot;cgps: no gpsd running or network error: %d, %s\n&quot;,
+                   errno, err_str);
+    exit(2);
+  }
+
+  /* Connect to LCDd */
+  h = gethostbyname(LCDDHOST);
+  if(h==NULL) {
+    printf(&quot;%s: unknown host '%s'\n&quot;,argv[0],LCDDHOST);
+    exit(1);
+  }
+
+  servAddr.sin_family = h-&gt;h_addrtype;
+  memcpy((char *) &amp;servAddr.sin_addr.s_addr, h-&gt;h_addr_list[0], h-&gt;h_length);
+  servAddr.sin_port = htons(LCDDPORT);
+
+  /* create socket */
+  sd = socket(AF_INET, SOCK_STREAM, 0);
+  if(sd&lt;0) {
+    perror(&quot;cannot open socket &quot;);
+    exit(1);
+  }
+
+  /* bind any port number */
+  localAddr.sin_family = AF_INET;
+  localAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+  localAddr.sin_port = htons(0);
+
+  rc = bind(sd, (struct sockaddr *) &amp;localAddr, sizeof(localAddr));
+  if(rc&lt;0) {
+    printf(&quot;%s: cannot bind port TCP %u\n&quot;,argv[0],LCDDPORT);
+    perror(&quot;error &quot;);
+    exit(1);
+  }
+
+  /* connect to server */
+  rc = connect(sd, (struct sockaddr *) &amp;servAddr, sizeof(servAddr));
+  if(rc&lt;0) {
+    perror(&quot;cannot connect &quot;);
+    exit(1);
+  }
+
+  /* Do the initial field label setup. */
+  reset_lcd();
+
+  /* Here's where updates go. */
+  gps_set_raw_hook(gpsdata, update_lcd);
+
+  /* If the user requested a specific device, try to change to it. */
+  if (device) {
+    char *channelcmd = (char *)malloc(strlen(device)+3);
+
+    if (channelcmd) {
+      /*@i@*/(void)strcpy(channelcmd, &quot;F=&quot;);
+      (void)strcpy(channelcmd+2, device);
+      (void)gps_query(gpsdata, channelcmd);
+      (void)free(channelcmd);
+    }
+  }
+
+  /* Request &quot;w+x&quot; data from gpsd. */
+  (void)gps_query(gpsdata, &quot;w+x\n&quot;);
+
+  for (;;) { /* heart of the client */
+
+    /* watch to see when it has input */
+    FD_ZERO(&amp;rfds);
+    FD_SET(gpsdata-&gt;gps_fd, &amp;rfds);
+
+    /* wait up to five seconds. */
+    timeout.tv_sec = 5;
+    timeout.tv_usec = 0;
+
+    /* check if we have new information */
+    data = select(gpsdata-&gt;gps_fd + 1, &amp;rfds, NULL, NULL, &amp;timeout);
+
+    if (data == -1) {
+      fprintf( stderr, &quot;cgps: socket error\n&quot;);
+      exit(2);
+    }
+    else if( data ) {
+      /* code that calls gps_poll(gpsdata) */
+      (void)gps_poll(gpsdata);
+    }
+
+  }
+
+}
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: gpsdlcdd.xml
+Type: text/xml
+Size: 2275 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20060908/4013a3f8/attachment.xml">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20060908/4013a3f8/attachment.xml</A>&gt;
+-------------- next part --------------
+Index: Makefile.am
+===================================================================
+--- Makefile.am	(revision 3453)
++++ Makefile.am	(working copy)
+@@ -22,7 +22,7 @@
+ RTCM104PAGES = rtcmdecode.1
+ endif
+ 
+-bin_PROGRAMS = $(DBUSPROGS) $(MOTIF_PROGS) $(RTCM104PROGS) sirfmon gpspipe gpsflash cgps cgpxlogger
++bin_PROGRAMS = $(DBUSPROGS) $(MOTIF_PROGS) $(RTCM104PROGS) sirfmon gpspipe gpsflash cgps gpsdlcdd cgpxlogger
+ dist_bin_SCRIPTS = gpsprof gpsfake 
+ sbin_PROGRAMS = gpsd
+ check_PROGRAMS = bits_test gpsmm_test packet_test
+@@ -54,6 +54,12 @@
+ cgps_LDADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) -lncurses libgps.la -lm $(LIBPTHREAD)
+ 
+ #
++# Build gpsdlcdd
++#
++gpsdlcdd_SOURCES = gpsdlcdd.c
++gpsdlcdd_LDADD = $(LIBM) $(LIBC) $(LIBNSL) $(LIBSOCKET) -lncurses libgps.la -lm $(LIBPTHREAD)
++
++#
+ # Build cgpxlogger
+ #
+ cgpxlogger_SOURCES = cgpxlogger.c
+@@ -161,6 +167,7 @@
+ man_MANS = \
+ 	gpsd.8 \
+ 	gps.1 \
++	gpsdlcdd.1 \
+ 	xgps.1 \
+ 	xgpsspeed.1 \
+ 	cgps.1 \
+@@ -183,6 +190,9 @@
+ gps.1 xgps.1 xgpsspeed.1 cgps.1 cgpxlogger.1: gps.xml
+ 	-$(XMLTO) man gps.xml
+ 
++gpsdlcdd.1: gpsdlcdd.xml
++	-$(XMLTO) man gpsdlcdd.xml
++
+ libgps.3: libgps.xml
+ 	-$(XMLTO) man libgps.xml
+ 
+@@ -267,6 +277,8 @@
+ 	-splint -exportlocal $(xgps_SOURCES)
+ 	@echo &quot;Running splint on cgps...&quot;
+ 	-splint -exportlocal $(cgps_SOURCES)
++	@echo &quot;Running splint on gpsdlcdd...&quot;
++	-splint -exportlocal $(gpsdlcdd_SOURCES)
+ 	@echo &quot;Running splint on xgpsspeed...&quot;
+ 	-splint -exportlocal $(xgpsspeed_c_sources)
+ 	@echo &quot;Running splint on sirfmon...&quot;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004255.html">[Gpsd-dev] gpsd-dev&#27096;&#12408;&#12398;&#12469;&#12509;&#12540;&#12488;&#12434;&#24076;&#26395;&#12375;&#12390;&#12356;&#12414;&#12377;&#12290;
+</A></li>
+	<LI>Next message: <A HREF="004264.html">[Gpsd-dev] lcdproc client for gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4261">[ date ]</a>
+              <a href="thread.html#4261">[ thread ]</a>
+              <a href="subject.html#4261">[ subject ]</a>
+              <a href="author.html#4261">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

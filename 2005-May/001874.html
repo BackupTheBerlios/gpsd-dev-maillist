@@ -1,0 +1,80 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Fix for Rob Jannsen's multisession bug
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Fix%20for%20Rob%20Jannsen%27s%20multisession%20bug&In-Reply-To=%3C12609.213.84.187.156.1116926927.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001873.html">
+   <LINK REL="Next"  HREF="001876.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Fix for Rob Jannsen's multisession bug</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Fix%20for%20Rob%20Jannsen%27s%20multisession%20bug&In-Reply-To=%3C12609.213.84.187.156.1116926927.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] Fix for Rob Jannsen's multisession bug">gpsd at xs4all.nl
+       </A><BR>
+    <I>Tue May 24 11:28:47 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001873.html">[Gpsd-dev] Fix for Rob Jannsen's multisession bug
+</A></li>
+        <LI>Next message: <A HREF="001876.html">[Gpsd-dev] Fix for Rob Jannsen's multisession bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1874">[ date ]</a>
+              <a href="thread.html#1874">[ thread ]</a>
+              <a href="subject.html#1874">[ subject ]</a>
+              <a href="author.html#1874">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;&gt;<i> Look at packet_accept(), especially the line with the arrow:
+</I>&gt;&gt;<i> The packet copy gets done only if it will fit in the output buffer.
+</I>&gt;<i>
+</I>&gt;<i> Yes, but that is in the patch that I sent you this morning...  after I got
+</I>&gt;<i> bitten by this.
+</I>
+Also, even when packet_accept rejects the packet, the type is still set in
+the calling code.  This caused trouble because junk misrecognized as TSIP
+would still switch the protocol to TSIP.  That is why I added an extra
+length check for TSIP packets in packet_get.
+
+Probably cleaner would be to pass the packet type as a parameter to
+packet_accept and only set it when the packet is really accepted there.
+
+However, that still leaves the setting of packet_state to GROUND_STATE in
+that case.
+Is there a reason why the state is left in the xxx_RECOGNIZED state after
+handling a packet, and not always reset to GROUND_STATE?
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001873.html">[Gpsd-dev] Fix for Rob Jannsen's multisession bug
+</A></li>
+	<LI>Next message: <A HREF="001876.html">[Gpsd-dev] Fix for Rob Jannsen's multisession bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1874">[ date ]</a>
+              <a href="thread.html#1874">[ thread ]</a>
+              <a href="subject.html#1874">[ subject ]</a>
+              <a href="author.html#1874">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

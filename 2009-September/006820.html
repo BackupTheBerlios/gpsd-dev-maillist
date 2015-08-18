@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPSD runs as wrong group when using serial port console
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20runs%20as%20wrong%20group%20when%20using%20serial%20port%20console&In-Reply-To=%3C4AA146A7.9070802%40wildgooses.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="006821.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPSD runs as wrong group when using serial port console</H1>
+    <B>Ed W</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20runs%20as%20wrong%20group%20when%20using%20serial%20port%20console&In-Reply-To=%3C4AA146A7.9070802%40wildgooses.com%3E"
+       TITLE="[Gpsd-dev] GPSD runs as wrong group when using serial port console">lists at wildgooses.com
+       </A><BR>
+    <I>Fri Sep  4 18:56:07 CEST 2009</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="006821.html">[Gpsd-dev] GPSD runs as wrong group when using serial port	console
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6820">[ date ]</a>
+              <a href="thread.html#6820">[ thread ]</a>
+              <a href="subject.html#6820">[ subject ]</a>
+              <a href="author.html#6820">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi, I am trying to patch the gentoo ebuild to suit my situation which is 
+an embedded platform with a serial console on /dev/ttyS0 (linux).
+
+The implications of this are that if you don't have a device on the 
+command line when you start gpsd (eg using udev) then the code scans 
+/dev/ttyS0 and uses the same group owner as that device.  However, it 
+would appear that if you have a serial port console enabled
+then the perms are set to be owned by root on the serial port:
+
+$ ls -al /dev/ttyS0
+crw--w----    1 root     root       4,  64 Sep  4 15:57 /dev/ttyS0
+
+So the end result is that starting gpsd gives:
+
+Sep  4 15:58:57 localhost user.notice gpsd[4108]: gpsd: Testing: 
+/dev/ttyS0. changing to group 0
+Sep  4 15:58:57 localhost user.notice gpsd[4108]: gpsd: running with 
+effective group ID 0
+Sep  4 15:58:57 localhost user.notice gpsd[4108]: gpsd: running with 
+effective user ID 65534
+
+When I plug in my BU-353 I get:
+
+Sep  4 16:00:45 localhost user.info kernel: [  217.860580] usb 2-1: new 
+full speed USB device using ohci_hcd and address 3
+Sep  4 16:00:45 localhost user.info kernel: [  218.078353] usb 2-1: 
+configuration #1 chosen from 1 choice
+Sep  4 16:00:45 localhost user.info kernel: [  218.080127] pl2303 
+2-1:1.0: pl2303 converter detected
+Sep  4 16:00:45 localhost user.info kernel: [  218.102419] usb 2-1: 
+pl2303 converter now attached to ttyUSB0
+Sep  4 16:00:46 localhost daemon.info gpsd.hotplug: 
+gpsd_control(action=add, arg=/dev/ttyUSB0)
+Sep  4 16:00:46 localhost user.notice gpsd[4108]: gpsd: control socket 
+connect on 7
+Sep  4 16:00:46 localhost daemon.info gpsd.hotplug: reached a running gpsd
+Sep  4 16:00:46 localhost user.notice gpsd[4108]: gpsd: &lt;= control(7): 
++/dev/ttyUSB0\x0d
+Sep  4 16:00:46 localhost user.notice gpsd[4108]: gpsd: &lt;= control(7): 
+adding /dev/ttyUSB0
+Sep  4 16:00:46 localhost user.notice gpsd[4108]: gpsd: opening GPS data 
+source at '/dev/ttyUSB0'
+Sep  4 16:00:46 localhost user.err gpsd[4108]: gpsd: device open failed: 
+Permission denied - retrying read-only
+Sep  4 16:00:46 localhost user.err gpsd[4108]: gpsd: read-only device 
+open failed: Permission denied
+Sep  4 16:00:46 localhost user.notice gpsd[4108]: gpsd: select waits
+Sep  4 16:00:46 localhost daemon.info gpsd.hotplug: gpsd_control result: 
+ERROR
+
+
+Note that this is mainly going to hit server users and embedded appliances -
+hopefully both a reasonably interesting category of users...
+
+Therefore the my options would seem to be (assuming I fix this for 
+everyone, not just for me):
+- patch to allow a configurable device to test (ugly and error prone)
+- patch to allow a hard coded group (gpsd already has a &quot;run as user&quot; 
+option)
+- patch to setup a new user with a known group and set this as the hardcoded
+user. This seems the most conventional route, but doesn't seem popular 
+with one gentoo developer
+
+Does anyone else have any suggestions on how to fix this or other 
+comments?  Would a patch to implement option 2) above (configurable 
+group owner) be accepted?
+
+Thanks
+
+Ed W
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="006821.html">[Gpsd-dev] GPSD runs as wrong group when using serial port	console
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6820">[ date ]</a>
+              <a href="thread.html#6820">[ thread ]</a>
+              <a href="subject.html#6820">[ subject ]</a>
+              <a href="author.html#6820">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

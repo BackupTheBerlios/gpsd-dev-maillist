@@ -1,0 +1,147 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-users]  Preparing for 2.93 point release
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2010-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-users%5D%20%20Preparing%20for%202.93%20point%20release&In-Reply-To=%3C20100408225435.GA17470%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007642.html">
+   <LINK REL="Next"  HREF="007646.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-users]  Preparing for 2.93 point release</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-users%5D%20%20Preparing%20for%202.93%20point%20release&In-Reply-To=%3C20100408225435.GA17470%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] [Gpsd-users]  Preparing for 2.93 point release">esr at thyrsus.com
+       </A><BR>
+    <I>Fri Apr  9 00:54:35 CEST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007642.html">[Gpsd-dev] [Gpsd-users]  Preparing for 2.93 point release
+</A></li>
+        <LI>Next message: <A HREF="007646.html">[Gpsd-dev] [Gpsd-users]  Preparing for 2.93 point release
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7644">[ date ]</a>
+              <a href="thread.html#7644">[ thread ]</a>
+              <a href="subject.html#7644">[ subject ]</a>
+              <a href="author.html#7644">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>H&#229;kan Johansson &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">f96hajo at chalmers.se</A>&gt;:
+&gt;<i> 
+</I>&gt;<i> The recent fix for gpsmon eating 100% CPU has some problem:
+</I>&gt;<i> 
+</I>&gt;<i> For an oncore it works, quits with 'Device went offline' on gpsd exit
+</I>&gt;<i> 
+</I>&gt;<i> For a garmin 18 lvc in nmea mode (no clue how to put it in another
+</I>&gt;<i> mode), gpsmon quits after about 2s with: 'Read error from device' or
+</I>&gt;<i> 'select(2) failed' (only seen once)
+</I>&gt;<i> 
+</I>&gt;<i> The 'select(2) failed' happens if gpsmon is started too early, i.e.
+</I>&gt;<i> gpsd is started, but has not found the GPS yet.  Also seen for the
+</I>&gt;<i> oncore.
+</I>&gt;<i> 
+</I>&gt;<i> For an EM406A (sirfstariii) in nmea mode (using -b), the problem is
+</I>&gt;<i> the same as with the garmin.  In sirf mode, gpsmon works (= does not
+</I>&gt;<i> self-exit after ~2s of operation).
+</I>&gt;<i> 
+</I>&gt;<i> Sorry for the inconvenience,
+</I>&gt;<i> H&#229;kan
+</I>
+That Garmin...USB or serial?  It might make a difference.
+
+In order to fix the spin bug I had to take out a piece of code that made
+gpsd tolerate zero-length read for up to twice the device cycle time.
+Here's my explanation from the log:
+
+   Fix the select()-spin bug on disconnected devices.
+    
+    Addresses Berlios tracker bug #14638: 100% cpu when Bluetooth gps device
+    vanishes.  Also a couple of reports on the mailing lists.
+    
+    The underlying problem here was that:
+    
+    * Disconnecting a USB device causes reads from it to begin returning 0,
+      in effect an end-of-file condition.
+    
+    * select(2) sets an active bit not on &quot;I/O is ready&quot; but on &quot;read would not
+      block&quot; -- including the end-of-file condition.
+    
+    * Therefore, select() will spin any time its fd set includes a disconnected
+      device.
+    
+    The fix is to check for a zero-length read explicitly and always take the
+    device out of the active set when that happens.
+    
+    We were actually doing that here, but the test was defective in two ways:
+    
+    1. The check for a zero return from gpsd_poll(), indicating I/O error
+       or zero-length read, needed to be *before* the check for full paccket
+       rather than after. This effectively disabled it.
+    
+    2. There was a conditional arm in the gpsd_poll() code that made it ignore
+       zero-length reads for up to a full cycle.  I think this may have been a
+       fossil from long ago when I experimented with non-blocking reads on
+       devices.
+    
+    The fix for the gpsmon spin bug is probably quite similar.  That's up next.
+
+Your new bug is almost certainly caused by the analogous change in 
+gpsmon.  The problem is that, the way select(2) works, we seem to be
+stuck with a choice between two bad behaviors.  Either we keep going
+on a 0-length read, in which case we're going to burn CPU, or we don't,
+in which case it's going to be hard to be tolerant in cases where 
+gpsmon/gpsd gets 0-length reads from the underlying device.
+
+Here's the relevant patch for gpsmon.  That is, if you apply this it will
+revert to the old behavior of continuing on a 0-length read.
+
+diff --git a/gpsmon.c b/gpsmon.c
+index 1bf988f..051c32c 100644
+--- a/gpsmon.c
++++ b/gpsmon.c
+@@ -169,7 +169,7 @@ static ssize_t readpkt(void)
+        return EOF;
+
+     changed = gpsd_poll(&amp;session);
+-    if (changed == 0 || (changed &amp; ERROR_SET) != 0)
++    if (changed &amp; ERROR_SET)
+        return EOF;
+
+     if (logfile != NULL) {
+
+You might want to try applying that and seeing how the symptoms change.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007642.html">[Gpsd-dev] [Gpsd-users]  Preparing for 2.93 point release
+</A></li>
+	<LI>Next message: <A HREF="007646.html">[Gpsd-dev] [Gpsd-users]  Preparing for 2.93 point release
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7644">[ date ]</a>
+              <a href="thread.html#7644">[ thread ]</a>
+              <a href="subject.html#7644">[ subject ]</a>
+              <a href="author.html#7644">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Re%3A%20accuracy%20in%20conversion%20from%20meters/sec%20to%20knots&In-Reply-To=%3C20060608154835.GB18273%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003641.html">
+   <LINK REL="Next"  HREF="003661.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Re%3A%20accuracy%20in%20conversion%20from%20meters/sec%20to%20knots&In-Reply-To=%3C20060608154835.GB18273%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots">esr at thyrsus.com
+       </A><BR>
+    <I>Thu Jun  8 17:48:35 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003641.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+        <LI>Next message: <A HREF="003661.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3647">[ date ]</a>
+              <a href="thread.html#3647">[ thread ]</a>
+              <a href="subject.html#3647">[ subject ]</a>
+              <a href="author.html#3647">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Robin L Darroch &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>&gt;:
+&gt;<i> It can't really be there, because gpsd using CaSoC (not sure why I 
+</I>&gt;<i> kept spelling that &quot;CaSoS&quot;, except phonetically) logic has already 
+</I>&gt;<i> discarded the data, so there's nothing sensible that libgps can do to 
+</I>&gt;<i> recover it for query-mode clients, and adding code to handle it just 
+</I>&gt;<i> for watcher mode clients would be a huge waste of time, not to 
+</I>&gt;<i> mention introducing a lot more ways for things to go wrong.  The 
+</I>&gt;<i> trick is, gpsd *knows* the instant a sentence is received that 
+</I>&gt;<i> supercedes previous data, so it can realistically do both options 
+</I>&gt;<i> without risking reporting known-invalid data (I'm not just making it 
+</I>&gt;<i> up: I've done it and tested it to the n'th degree).  libgps, on the 
+</I>&gt;<i> other hand, has no idea what gpsd is receiving from the gps, so it 
+</I>&gt;<i> can't reliably know when to invalidate data in any additional buffer 
+</I>&gt;<i> we might add to it.
+</I>
+Fair point.  This is a good argument for having a switch in the daemon.
+
+&gt;<i> Perhaps this is a compile-time switch rather than a command-line 
+</I>&gt;<i> switch (although I'm not sure why you hate command-line switches 
+</I>&gt;<i> so... they occasionally serve a purpose), but it definitely can't go 
+</I>&gt;<i> further &quot;down the line&quot; than that, because it just won't work.
+</I>
+I hate command-line switches, on this particular project, for three reasons.
+The first doesn't apply to this case; the second and third do.
+
+(1) Command-line switches are often a lazy programmer's way out of writing
+correct adaptive logic.  This is why I keep rejecting requests for a baud-rate 
+switch and a GPS type switch -- the *right* thing is to make the packet-sniffer
+work better, and if I relented in my opposition the pressure to get that
+right would disappear.  Suddenly we'd be back to end-users having to
+fiddle with settings the software ought to figure out for itself, which
+is unacceptable.
+
+(2) Command-line switches without corresponding protocol commands 
+pin the daemon's behavior for its entire lifespan. Why should the user
+have to fix his/her data-hold policy at startup time and never get to 
+change their mind afterwards?  Stupid design...
+
+(3) Command-line switches can only be changed in the hotplug script.  
+Requiring end-users to modify hotplug scripts (or anything else in
+admin space) is a crash landing.
+
+Hm...I think I'll add the above rant to HACKING...
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003641.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+	<LI>Next message: <A HREF="003661.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3647">[ date ]</a>
+              <a href="thread.html#3647">[ thread ]</a>
+              <a href="subject.html#3647">[ subject ]</a>
+              <a href="author.html#3647">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

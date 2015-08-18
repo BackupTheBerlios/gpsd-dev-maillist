@@ -1,0 +1,127 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> No subject
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2012-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20No%20subject&In-Reply-To=%3Cmailman.2.1331732988.2473.gpsd-dev%40lists.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="007089.html">
+   <LINK REL="Next"  HREF="000839.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>No subject</H1>
+    <B></B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20No%20subject&In-Reply-To=%3Cmailman.2.1331732988.2473.gpsd-dev%40lists.berlios.de%3E"
+       TITLE="No subject">
+       </A><BR>
+    <I>Wed Mar 14 14:49:41 CET 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="007089.html">No subject
+</A></li>
+        <LI>Next message: <A HREF="000839.html">No subject
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#768">[ date ]</a>
+              <a href="thread.html#768">[ thread ]</a>
+              <a href="subject.html#768">[ subject ]</a>
+              <a href="author.html#768">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-T option *will be removed*.  I am insistent on this for the same
+reason I implemented autobauding -- I want gpsd to be zero-configuration
+so users don't have to do *any* system administration to use it.  Just
+fire it up and forget about it.
+
+Presently, here's how the autoconfig works.
+
+1. Ay each baud rate gpsd grabs packets until it sees either a
+   well-formed and checksum-verified NMEA packet, a well-formed and
+   checksum-verified SiRF packet, or it sees one of the two special 
+   trigger strings EARTHA or ASTRAL, or it fills a long buffer with garbage
+   (in which case it steps to the next baud rate).
+
+2. If it finds a SiRF packet, it queries the chip for firmware
+   version.  If the version is &lt; 231.000 it drops back to SiRF NMEA.
+   We're done.
+
+3. If it finds EARTHA, it selects the Earthmade driver, which then
+   flips the connection to Zodiac binary mode.  We're done.
+
+4. If it finds ASTRAL, it feeds the TripMate on the other end what
+   it wants and goes to Tripmate NMEA mode.  We're done.
+
+5. If it finds a NMEA packet, it selects the NMEA driver.  This
+   initializes by shipping all vendor-specific initialization strings
+   to the device.  Presently there are two such, one for SiRF and one
+   for the FV-18.  The FV18 just sets some sentence frequencies, but
+   the SiRF one is itself a probe,
+
+6. Now gpsd reads NMEA packets.  If it sees a driver trigger string it
+   invokes the matching driver.  Presently there is really only one of
+   these: &quot;$Ack Input 105.\r\n&quot;, the response to the SiRF probe. On
+   seeing this, gpsd switches from NMEA to SiRF binary mode, probes
+   for firmware version, and either stays in binary or drops back 
+   to SiRF NMEA.
+
+The outcome is that we know exactly what we're looking at, without any
+driver or baud rate options.
+
+The Garmin driver spoils this picture a bit, but Gary is working on
+a probe function.
+
+Now, there is one big piece of configuration left.  We have to specify
+a serial device for gpsd to look at.  Our next big question is: how
+do we get rid of this requirement?  If we could manage that, gpsd
+would be completely zero-configuration.
+
+Serial device discovery is hard.  The main reason it's hard is
+RS232 devices, which (unlike USB devices) don't post any notifications 
+in a well-known place when they go active.  
+
+However, we may get the next best thing.  At FUDcon, David Zeuthen
+told me he wants to integrate GPSD with HAL&lt; the Hardware Abstraction
+Layer.  HAL is implemented by a daemon which listens for hotplug
+events.  When it sees a device go active, its job is to query the
+device and decide what should be dispatched to handle it.  
+
+Given a bit of probe logic, HAL could learn to fire up gpsd on a
+device whenever it detects a GPS at the other end.  This is the
+*other* reason I wrote the autobauding code -- for HAL.
+
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+&quot;The state calls its own violence `law', but that of the individual `crime'&quot;
+	-- Max Stirner
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="007089.html">No subject
+</A></li>
+	<LI>Next message: <A HREF="000839.html">No subject
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#768">[ date ]</a>
+              <a href="thread.html#768">[ thread ]</a>
+              <a href="subject.html#768">[ subject ]</a>
+              <a href="author.html#768">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

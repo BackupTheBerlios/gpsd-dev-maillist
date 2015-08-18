@@ -1,0 +1,156 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Altitude%20not%20always%20being%20reported&In-Reply-To=%3CPine.LNX.4.64.0605251614390.17754%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003551.html">
+   <LINK REL="Next"  HREF="003554.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Altitude%20not%20always%20being%20reported&In-Reply-To=%3CPine.LNX.4.64.0605251614390.17754%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported">gem at rellim.com
+       </A><BR>
+    <I>Fri May 26 01:40:28 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003551.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+        <LI>Next message: <A HREF="003554.html">[Gpsd-dev] GPSD-DEV at LISTS.BERLIOS.DE
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3552">[ date ]</a>
+              <a href="thread.html#3552">[ thread ]</a>
+              <a href="subject.html#3552">[ subject ]</a>
+              <a href="author.html#3552">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Robin!
+
+On Fri, 26 May 2006, Robin L Darroch wrote:
+
+&gt;<i> &gt; I have measured delays of 700mS with jitter over an hour of 500mS.
+</I>&gt;<i>
+</I>&gt;<i> I understand how you've measured the jitter... but how did you measure the
+</I>&gt;<i> delay?
+</I>
+I have a PPS GPS.  So my local clock is always within a few micro
+seconds of gps time. Yes that is .000003 seconds or better.  Then I set
+the test GPS to also feed time to ntpd.  Then ntpd does all the rest of
+the work for me.
+
+Here is what I see right now:
+
+i# ntpdc -p
+     remote           local      st poll reach  delay   offset    disp
+=======================================================================
+=SHM(0)          127.0.0.1        0   16  377 0.00000  0.059453 0.01590
+*SHM(1)          127.0.0.1        0   16  377 0.00000 -0.000001 0.01573
+=time.windows.co 204.17.205.18    2   64  377 0.03337  0.017031 0.14388
+=time-nw.nist.go 204.17.205.18    1   64  377 0.04291  0.001495 0.05588
+=clepsydra.dec.c 204.17.205.18    1   64  377 0.05582 -0.002623 0.05855
+=clock.isc.org   204.17.205.18    1   64  377 0.05498 -0.000550 0.06926
+
+As you can see, ignoring the shitty time.windows.com server, I am right
+now within a few mS of 3 high stratum server.  SHM(1) is the PPS and
+SHM(0) is the NMEA off a Garmin GPS 18 at 38kbps. ntpd claims my SHM(1)
+is stable to -19 or -20.  SHM(1) is only stable to -1!  SHM(0) is after
+a 500mS offset hard coded in to my ntpd.conf.  Depending on the TOD the
+SHM(0) offset wanders around +/- 200mS.
+
+And this is with a nice Garmin at high bps.  Imagine how bad it can be
+at 4800 with an old GPS.
+
+
+&gt;<i> I completely agree this is the best and most conservative way to treat GPS
+</I>&gt;<i> information - my example was more to outline how, if GPSd could ever be
+</I>&gt;<i> expected to extrapolate, there would be no valid reason not to do the
+</I>&gt;<i> extrapolation in the client instead.
+</I>
+If pigs have enough thrust they could fly. RFC 1925, 2.(3)
+
+Sadly this pig does not have enough thrust, at least not using NMEA over
+a slow serial link.  If you want a better data rate then you can get a
+5Hz Garmin for not much more than the basic one.
+
+&gt;<i> (although I admit I'm surprised that the delay between fix and
+</I>&gt;<i> sending-first-sentence-from-fix can be that huge... even 4800bps doesn't
+</I>&gt;<i> account for that magnitude of delay).
+</I>
+I assume the pathetic CPU in that GPS had something to do with it.  They
+decided not to spent more money on the CPU that was required to meet a
+one second update rate.  My old (now dead) EC-10X had troubles with a
+2 sec update rate.
+
+&gt;<i> &gt; OTOH a friend of mine has his survey grade GPS mark his aerial film with
+</I>&gt;<i> &gt; the raw GPS data as he takes the picture.  Then he postprocesses down to
+</I>&gt;<i> &gt; centimeters.
+</I>&gt;<i>
+</I>&gt;<i> Wow... that's fairly impressive!  I'm assuming that's sort of linear
+</I>&gt;<i> regression processing in multiple dimensions... or does he have PPS as well?
+</I>&gt;<i> The ionospheric effect alone accounts for several metres uncertainty without
+</I>&gt;<i> PPS.
+</I>
+He does not care about time, just location.  So the trick is to save the
+raw GPS data (not the NMEA, the time code differences for each sat in
+view).  Then post porocess the data against a set of locally determined
+correction factors for the instant those measurements were taken.
+
+Check this out:
+
+<A HREF="http://69.15.204.66/ionosphere/DesktopDefault.aspx?tabindex=1&amp;tabid=32">http://69.15.204.66/ionosphere/DesktopDefault.aspx?tabindex=1&amp;tabid=32</A>
+<A HREF="http://www.ordnancesurvey.co.uk/oswebsite/business/technical/osnet/faqs.html">http://www.ordnancesurvey.co.uk/oswebsite/business/technical/osnet/faqs.html</A>
+
+Or google for RINEX and RTCM.
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.2.1 (GNU/Linux)
+
+iD8DBQFEdkBv8KZibdeR3qURAvgJAJoDzOc44kBRbJdOV0PgV5s685ydgwCg0xaG
+2iHJs/A1fYzBrm5HAK41GDI=
+=ltYB
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003551.html">[Gpsd-dev] Re: [Gpsd-users] Altitude not always being reported
+</A></li>
+	<LI>Next message: <A HREF="003554.html">[Gpsd-dev] GPSD-DEV at LISTS.BERLIOS.DE
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3552">[ date ]</a>
+              <a href="thread.html#3552">[ thread ]</a>
+              <a href="subject.html#3552">[ subject ]</a>
+              <a href="author.html#3552">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,118 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] Sorting Satellites in SkyView
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Sorting%20Satellites%20in%20SkyView&In-Reply-To=%3C1295386980.2270.98.camel%40adelie%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008497.html">
+   <LINK REL="Next"  HREF="008499.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] Sorting Satellites in SkyView</H1>
+    <B>Thomas Sprinkmeier</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20Sorting%20Satellites%20in%20SkyView&In-Reply-To=%3C1295386980.2270.98.camel%40adelie%3E"
+       TITLE="[Gpsd-dev] [PATCH] Sorting Satellites in SkyView">thomas.sprinkmeier at cohdawireless.com
+       </A><BR>
+    <I>Tue Jan 18 22:43:00 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008497.html">[Gpsd-dev] [PATCH] Restore leapsecond.py Python output
+</A></li>
+        <LI>Next message: <A HREF="008499.html">[Gpsd-dev] [PATCH] Sorting Satellites in SkyView
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8498">[ date ]</a>
+              <a href="thread.html#8498">[ thread ]</a>
+              <a href="subject.html#8498">[ subject ]</a>
+              <a href="author.html#8498">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I want to add support for pseudorange error estimates (GPGST) to gpsd.
+
+This has been mentioned in the list before.
+
+To get my feet wet I thought I'd submit a quick patch to sort the
+satellites in xgps (my GPS reports them in random order so they would
+bounce around annoyingly).
+
+AS for GPGST I think I have to do 3 things:
+	- enable GPGST output during initialisation
+	- add parsing code to driver_nmea.c
+	- add a JSON query (and watch?) option
+
+Does that sound about right?
+
+
+Thomas
+
+---
+ xgps |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
+
+diff --git a/xgps b/xgps
+index f659acc..17c9ff3 100755
+--- a/xgps
++++ b/xgps
+@@ -23,6 +23,11 @@ import cairo
+ 
+ import gps, gps.clienthelpers
+ 
++# how to sort the Satellite List
++# some of (&quot;PRN&quot;,&quot;el&quot;,&quot;az&quot;,&quot;ss&quot;,&quot;used&quot;) with optional '-' to reverse sort
++# by default, used at the top, then sort by SNR and PRN
++SKY_VIEW_SORT_FIELDS=('-used','-ss','PRN')
++
+ class unit_adjustments:
+     &quot;Encapsulate adjustments for unit systems.&quot;
+     def __init__(self, units=None):
+@@ -627,6 +632,13 @@ class Base:
+         &quot;Update the satellite list and skyview.&quot;
+         if hasattr(data, 'satellites'):
+             satellites = data.satellites
++            for fld in reversed(SKY_VIEW_SORT_FIELDS):
++                rev =  (fld[0] == '-')
++                if (rev): fld = fld[1:]
++                satellites = sorted(satellites[:],
++                                    cmp=lambda x,y: cmp(x[fld], 
++                                                        y[fld]),
++                                    reverse = rev)
+             for (i, satellite) in enumerate(satellites): 
+                 self.set_satlist_field(i, 0, satellite.PRN)
+                 self.set_satlist_field(i, 1, satellite.el)
+-- 
+1.7.0.4
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008497.html">[Gpsd-dev] [PATCH] Restore leapsecond.py Python output
+</A></li>
+	<LI>Next message: <A HREF="008499.html">[Gpsd-dev] [PATCH] Sorting Satellites in SkyView
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8498">[ date ]</a>
+              <a href="thread.html#8498">[ thread ]</a>
+              <a href="subject.html#8498">[ subject ]</a>
+              <a href="author.html#8498">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] atan2
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2007-January/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20atan2&In-Reply-To=%3C91981b3e0701172159g58801e22v374cb34a3f3dbf1c%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005511.html">
+   <LINK REL="Next"  HREF="005513.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] atan2</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20atan2&In-Reply-To=%3C91981b3e0701172159g58801e22v374cb34a3f3dbf1c%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] atan2">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Thu Jan 18 06:59:13 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005511.html">[Gpsd-dev] atan2
+</A></li>
+        <LI>Next message: <A HREF="005513.html">[Gpsd-dev] atan2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5512">[ date ]</a>
+              <a href="thread.html#5512">[ thread ]</a>
+              <a href="subject.html#5512">[ subject ]</a>
+              <a href="author.html#5512">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On 1/17/07, Michael R. Davis &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">mrdvt92 at yahoo.com</A>&gt; wrote:
+&gt;<i> &gt;       a = atan2(plus_zero, plus_zero);
+</I>&gt;<i>
+</I>&gt;<i> Chris,
+</I>&gt;<i> Technically, if you get any value for 0/0 you are doing good.  What you
+</I>&gt;<i> are asking; is for a computer to determine what direction a zero length
+</I>&gt;<i> vector is heading without knowledge of the limits on either side.  What
+</I>&gt;<i> is this trying to prove?
+</I>&gt;<i>
+</I>&gt;<i> One suggestion is to rewrite the atan2 function in C so that 0/0
+</I>&gt;<i> returns zero.
+</I>
+This point is not lost on me. I was thinking the much the same
+thing... If your velocity component vectors are all zero, you can't
+possibly have a heading because you're not going anywhere.
+
+Also, if altitude is negative, that's a good sign that perhaps my
+solution is invalid. In reality you probably wouldn't be taking any
+action on a fix that said your position and velocities were
+[[0,0,0],[0,0,0]] because your receiver would have not indicated that
+was a valid solution.
+
+As for rewriting it in C, I think libm is in C already, but the
+different behaviour is due to differences of interpretation of the
+math(3) rules. I think my libm is just being helpful by normalizing
+all zeros.
+
+I realize that I'm lucky if I get a result from 0/0, but depending on
+which 30-second interval of calculus 101 one wakes up for, 0/0 = 1 or
+0/0 does not exist or maybe some other interpretations. ;) As I've
+personally run into at least two different sign-of-zero conventions
+tonight - a fact that is screwing up our regression tests - I decided
+to enforce one convention. Normalized zero.
+
+CK
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005511.html">[Gpsd-dev] atan2
+</A></li>
+	<LI>Next message: <A HREF="005513.html">[Gpsd-dev] atan2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5512">[ date ]</a>
+              <a href="thread.html#5512">[ thread ]</a>
+              <a href="subject.html#5512">[ subject ]</a>
+              <a href="author.html#5512">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

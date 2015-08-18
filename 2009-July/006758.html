@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Thinking about raw data
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Thinking%20about%20raw%20data&In-Reply-To=%3C91981b3e0907022146o48cd9ac7w7a4db2a6dcccd016%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006757.html">
+   <LINK REL="Next"  HREF="006759.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Thinking about raw data</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Thinking%20about%20raw%20data&In-Reply-To=%3C91981b3e0907022146o48cd9ac7w7a4db2a6dcccd016%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] Thinking about raw data">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Fri Jul  3 06:46:53 CEST 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006757.html">[Gpsd-dev] tsip users, please test
+</A></li>
+        <LI>Next message: <A HREF="006759.html">[Gpsd-dev] Thinking about raw data
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6758">[ date ]</a>
+              <a href="thread.html#6758">[ thread ]</a>
+              <a href="subject.html#6758">[ subject ]</a>
+              <a href="author.html#6758">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>A brief survey of my receivers says these can do raw measurement (aka
+pseudorange and/or carrier phase) output:
+     Ashtech: $PASHR,MCA
+     Italk3: message 4 &quot;PSEUDO&quot;
+     SiRF: message 28 &quot;Navigation Library Measurement Data&quot;
+     Superstar2: message 23 &quot;Measurement Block Data&quot;
+     Trimble: message 0x5a &quot;Raw Measurement Data&quot;
+     UBX: message 0x0210 &quot;RXM-RAW&quot;
+     Zodiac: message 1007 &quot;Channel Measurement&quot;
+
+Looking through my docs folder it seems that a bunch of others like
+Delorme, Evermore, Garmin, Hemisphere, Javad, LocSense, Navcom and
+Septentrio can do raw as well, though I don't have any handy to test
+with. Not all protocols give us what we need in the same way. A few
+receivers (ublox, itrax, zodiac) emit one big honkin' message with all
+observations, others emit one observation packet per PRN.
+
+Currently, we have this in gps.h...
+
+#ifdef RAW_ENABLE
+    /* raw measurement data */
+    double codephase[MAXCHANNELS];	/* meters */
+    double carrierphase[MAXCHANNELS];	/* meters */
+    double pseudorange[MAXCHANNELS];	/* meters */
+    double deltarange[MAXCHANNELS];	/* meters/sec */
+    double doppler[MAXCHANNELS];	/* Hz */
+    double mtime[MAXCHANNELS];		/* sec */
+    unsigned satstat[MAXCHANNELS];	/* tracking status */
+#define SAT_ACQUIRED	0x01		/* satellite acquired */
+#define SAT_CODE_TRACK	0x02		/* code-tracking loop acquired */
+#define SAT_CARR_TRACK	0x04		/* carrier-tracking loop acquired */
+#define SAT_DATA_SYNC	0x08		/* data-bit synchronization done */
+#define SAT_FRAME_SYNC	0x10		/* frame synchronization done */
+#define SAT_EPHEMERIS	0x20		/* ephemeris collected */
+#define SAT_FIX_USED	0x40		/* used for position fix */
+#endif /* RAW_ENABLE */
+
+I'm thinking I may have to turn it into a separate structure
+containing a bunch of 32-element arrays - one per PRN whether or not
+they're being used. There are a few more quantities I'll have to shove
+in to be sure I have all the good bits... let's estimate 8
+double-precision values for each of 32 PRNs... so 2kB of state. Oh,
+and another 1.5K of ephemerides and other NAV goo. This of course will
+grow when GLONASS and Galileo receivers get cheap and easy.
+
+Thoughts? I have binary logs with raw measurements for superstar,
+sirf, italk, ubx and trimble which I can make available to parties
+interested in hacking on this with me.
+
+-- 
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006757.html">[Gpsd-dev] tsip users, please test
+</A></li>
+	<LI>Next message: <A HREF="006759.html">[Gpsd-dev] Thinking about raw data
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6758">[ date ]</a>
+              <a href="thread.html#6758">[ thread ]</a>
+              <a href="subject.html#6758">[ subject ]</a>
+              <a href="author.html#6758">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

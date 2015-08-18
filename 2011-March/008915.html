@@ -1,0 +1,94 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPSD Protocol Inconsistencies
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3C20110321003314.GB12760%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008928.html">
+   <LINK REL="Next"  HREF="008858.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPSD Protocol Inconsistencies</H1>
+    <B>Eric Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3C20110321003314.GB12760%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] GPSD Protocol Inconsistencies">esr at thyrsus.com
+       </A><BR>
+    <I>Mon Mar 21 01:33:14 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008928.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+        <LI>Next message: <A HREF="008858.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8915">[ date ]</a>
+              <a href="thread.html#8915">[ thread ]</a>
+              <a href="subject.html#8915">[ subject ]</a>
+              <a href="author.html#8915">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt;:
+&gt;<i> I think the latency figures you are showing are from your &quot;wait for
+</I>&gt;<i> the whole set then emit the fix&quot; algorithm.  It is counting to the
+</I>&gt;<i> GPRMC sentence almost a second at either baud rate.
+</I>
+Except I didn't figure out how to do cycle recognition until a couple
+years after I did the profiling. Back then we had a J command to switch
+between two reporting modes. One was without jitter smoothing, in which
+the equivalent of TPVs were sent on every sentence that reported a (partial) 
+fix.  With jitter-smooting enabled fix data was just cumulated.
+
+So your analysis is clever but that assumption is (though quite
+reasonable on the information you have) incorrect.
+
+&gt;<i> Since I don't have the other details, I can't duplicate the results,
+</I>&gt;<i> but you could try one of the newer GPS units that go from 4800 to
+</I>&gt;<i> 115200 baud and repeat the test.  If there is still nearly one second
+</I>&gt;<i> of latency at 115200 (or if it gets worse the higher you go since the
+</I>&gt;<i> inter-fix pause will get longer) either the aggregation algorithm is
+</I>&gt;<i> broken or the profiling method.
+</I>
+I can no longer duplicate that exact set of results, because the
+profiling method changed when the protocol did. There's now a TIMING
+object; it's deliberately undocumented, but searching for TIMING and
+reading the surrounding code in gpsd.c would tell you what you need to
+know.
+
+Repeating the profiling tests with the new machinery has been a
+low-priority item on my list for some years now.  If you want to take
+it on, read the documentation and code for gpsprof. It was written to
+produce various interesting reports from the raw timing data.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008928.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+	<LI>Next message: <A HREF="008858.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8915">[ date ]</a>
+              <a href="thread.html#8915">[ thread ]</a>
+              <a href="subject.html#8915">[ subject ]</a>
+              <a href="author.html#8915">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

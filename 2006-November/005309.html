@@ -1,0 +1,131 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] SVN 4003 - Confusing output from driver probing code
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-November/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20SVN%204003%20-%20Confusing%20output%20from%20driver%20probing%20code&In-Reply-To=%3C200611261504.12378.mick.durkin%40saunalahti.fi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="005380.html">
+   <LINK REL="Next"  HREF="005310.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] SVN 4003 - Confusing output from driver probing code</H1>
+    <B>Mick Durkin</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20SVN%204003%20-%20Confusing%20output%20from%20driver%20probing%20code&In-Reply-To=%3C200611261504.12378.mick.durkin%40saunalahti.fi%3E"
+       TITLE="[Gpsd-dev] SVN 4003 - Confusing output from driver probing code">mick.durkin at saunalahti.fi
+       </A><BR>
+    <I>Sun Nov 26 14:04:12 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="005380.html">[Gpsd-dev] gpsd garmin probs and patch proposals
+</A></li>
+        <LI>Next message: <A HREF="005310.html">[Gpsd-dev] SVN 4003 - Confusing output from driver probing code
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5309">[ date ]</a>
+              <a href="thread.html#5309">[ thread ]</a>
+              <a href="subject.html#5309">[ subject ]</a>
+              <a href="author.html#5309">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Guys,
+
+I noticed some strange output when running my test driver at LOG_PROG level. 
+The daemon said that it found my driver and then decided it hadn't found a 
+driver after all, even though my driver was chugging away.
+
+Here is the output I got:-
+
+gpsd: opening GPS data source at '/dev/ttyS0'
+gpsd: speed 9600, 8N1
+gpsd: client connect on 4
+gpsd: checking client(0)
+gpsd: client(0): assigning channel...
+gpsd: User requires 2, channel type is -1
+gpsd: opening GPS data source at '/dev/ttyS0'
+gpsd: speed 9600, 8N1
+gpsd: garmin_gps not active.
+gpsd: jupiter_t_probe_detect: Probing for a Jupiter-T device
+gpsd: jupiter_t_set_raw: Changing serial port settings
+gpsd: jupiter_t_sniff: Writing Jupiter-T command '4040436a290d0a', GET_ID
+gpsd: jupiter_t_sniff: Giving Jupiter-T a chance to respond
+gpsd: jupiter_t_probe_detect: Jupiter-T device detected
+gpsd: probe found Jupiter-T binary driver...
+gpsd: no probe matched...
+gpsd: gpsd_activate(1): opened GPS (5)
+.
+.
+
+I traced the conflicting reports to libgpsd_core.
+
+
+The following code fragment is from
+/* $Id: libgpsd_core.c 3949 2006-11-21 09:20:26Z esr $ */
+
+line 216 - 231
+
+==============================================
+    if (gpsd_open(session) &lt; 0)
+	return -1;
+    else {
+#ifdef NON_NMEA_ENABLE
+	struct gps_type_t **dp;
+
+	/*@ -mustfreeonly @*/
+	for (dp = gpsd_drivers; *dp; dp++) {
+	    (void)tcflush(session-&gt;gpsdata.gps_fd, TCIOFLUSH);  /* toss stale data */
+	    if ((*dp)-&gt;probe_detect!=NULL &amp;&amp; (*dp)-&gt;probe_detect(session)!=0) {
+		gpsd_report(LOG_PROG, &quot;probe found %s driver...\n&quot;, (*dp)-&gt;typename);
+		session-&gt;device_type = *dp;
+	    }
+ 	}
+	/*@ +mustfreeonly @*/
+	gpsd_report(LOG_PROG, &quot;no probe matched...\n&quot;);
+==============================================
+
+The last line will unconditionally report no probe match, even when the if() 
+statement inside the for() loop actually finds a driver.
+
+It doesn't look as though anything bad actually happens here, just a &quot;false&quot; 
+report. The daemon found my driver and output was streamed to cgps.
+
+I am not sure exactly where to fix this in case there is something that should 
+be happening that depends on this bit of code.
+
+That said, I suspect the offending line could be moved up by 3 lines, to 
+between the two braces, if it were to get an &quot;else&quot; added in front of it.
+
+Best Regards
+
+Mick
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="005380.html">[Gpsd-dev] gpsd garmin probs and patch proposals
+</A></li>
+	<LI>Next message: <A HREF="005310.html">[Gpsd-dev] SVN 4003 - Confusing output from driver probing code
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5309">[ date ]</a>
+              <a href="thread.html#5309">[ thread ]</a>
+              <a href="subject.html#5309">[ subject ]</a>
+              <a href="author.html#5309">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

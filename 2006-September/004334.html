@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [PATCH] fix compile with --disable-rtcm104
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20fix%20compile%20with%20--disable-rtcm104&In-Reply-To=%3CPine.LNX.4.64.0609141251450.8744%40catbert.rellim.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004333.html">
+   <LINK REL="Next"  HREF="004335.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [PATCH] fix compile with --disable-rtcm104</H1>
+    <B>Gary E. Miller</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BPATCH%5D%20fix%20compile%20with%20--disable-rtcm104&In-Reply-To=%3CPine.LNX.4.64.0609141251450.8744%40catbert.rellim.com%3E"
+       TITLE="[Gpsd-dev] [PATCH] fix compile with --disable-rtcm104">gem at rellim.com
+       </A><BR>
+    <I>Thu Sep 14 21:56:28 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004333.html">[Gpsd-dev] [PATCH] fix compile with --disable-rtcm104
+</A></li>
+        <LI>Next message: <A HREF="004335.html">[Gpsd-dev] [PATCH] fix compile with --disable-rtcm104
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4334">[ date ]</a>
+              <a href="thread.html#4334">[ thread ]</a>
+              <a href="subject.html#4334">[ subject ]</a>
+              <a href="author.html#4334">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Yo Stelian!
+
+On Thu, 14 Sep 2006, Stelian Pop wrote:
+
+&gt;<i> The below patchlet fixes a compile glitch when gpsd is configured with
+</I>&gt;<i> --disable-rtcm104 and --enable-sirf (since the latter activates
+</I>&gt;<i> BINARY_ENABLE).
+</I>
+That does not look right to me.  Then is you enable RTCM104 but
+not BINARY you get a different error.  In that case the &quot;if (buf[2]&quot;
+becomes part of the else.
+
+How about this:
+
+#ifdef RTCM104_ENABLE
+            if ((session-&gt;gpsdata.set &amp; RTCM_SET) != 0)
+                rtcm_dump(session,
+                          buf2+strlen(buf2),
+                          (sizeof(buf2)-strlen(buf2)));
+#ifdef BINARY_ENABLE
+            else
+#endif /* BINARY_ENABLE */
+#endif /* RTCM104_ENABLE */
+#ifdef BINARY_ENABLE
+                gpsd_binary_dump(session, buf2, sizeof(buf2));
+#endif /* BINARY_ENABLE */
+
+
+RGDS
+GARY
+- ---------------------------------------------------------------------------
+Gary E. Miller Rellim 20340 Empire Blvd, Suite E-3, Bend, OR 97701
+	<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gem at rellim.com</A>  Tel:+1(541)382-8588
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.3 (GNU/Linux)
+
+iD8DBQFFCbPv8KZibdeR3qURAvZ/AJ0R2FIijW3fkO6c0HuvcwQT1hjQAgCggRlr
+uQ0LnR4xS+PY3atZdmjQ3N8=
+=uQNY
+-----END PGP SIGNATURE-----
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004333.html">[Gpsd-dev] [PATCH] fix compile with --disable-rtcm104
+</A></li>
+	<LI>Next message: <A HREF="004335.html">[Gpsd-dev] [PATCH] fix compile with --disable-rtcm104
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4334">[ date ]</a>
+              <a href="thread.html#4334">[ thread ]</a>
+              <a href="subject.html#4334">[ subject ]</a>
+              <a href="author.html#4334">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

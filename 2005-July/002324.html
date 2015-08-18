@@ -1,0 +1,152 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] gpsd-2.26, cannot parse NMEA sentences that are not perfect
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-July/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd-2.26%2C%20cannot%20parse%20NMEA%20sentences%20that%20are%20not%0A%20perfect&In-Reply-To=%3C727JgFHoI8816S03.1120634074%40uwdvg003.cms.usa.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002352.html">
+   <LINK REL="Next"  HREF="002326.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] gpsd-2.26, cannot parse NMEA sentences that are not perfect</H1>
+    <B>Petr Slansky</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20gpsd-2.26%2C%20cannot%20parse%20NMEA%20sentences%20that%20are%20not%0A%20perfect&In-Reply-To=%3C727JgFHoI8816S03.1120634074%40uwdvg003.cms.usa.net%3E"
+       TITLE="[Gpsd-dev] gpsd-2.26, cannot parse NMEA sentences that are not perfect">slansky at usa.net
+       </A><BR>
+    <I>Wed Jul  6 09:14:34 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002352.html">[Gpsd-dev] Gary?  Rob?  What's your status?
+</A></li>
+        <LI>Next message: <A HREF="002326.html">[Gpsd-dev] gpsd-2.26, cannot parse NMEA sentences that are not perfect
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2324">[ date ]</a>
+              <a href="thread.html#2324">[ thread ]</a>
+              <a href="subject.html#2324">[ subject ]</a>
+              <a href="author.html#2324">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>EverMore GPS can be configured to use baud rate 4800, 9600, 19200, 38400; It
+could be configure to use checksum or no checksum; it could be configured what
+sentences to send in NMEA mode (GGA, GLL, GSA, GSV, RMC, VTG); Frequency of
+messages could be modified (navigation update rate, 1-10Hz). Power mode could
+be modified. In EverMore binary mode, there is message 0x02, navigation data,
+that contains X, Y, Z, VX, VY, VZ, number of satelites in view and used and
+firmware, all navigation values in one message. It is possible to specify
+elevation mask. It is possible to read DOP data. It is possible to configure
+1PPS output (on/off). It can work in NMEA or binary mode. In binary mode,
+messages look like this:
+0x10 0x02 length data checksum 0x10 0x03;  when 0x10 is in the
+data/length/checksum, it is repeated.
+
+There is one interesting feature of EverMore GPS. It can do data logging; you
+configure how often to store GPS possition to internal nonvoltile memory and
+data are stored in internal circular buffer. There are commands to read a
+status of logging memory, to erase it, to configure sampling frequency, to
+read stored data. Maybe useless for GPSD but could be interested for other
+applications doing possition tracking. You just configure GPS to store data,
+and after that only a battery and GPS is needed to have a track of your trip.
+In GM-X205 manual is information that up to 9000 samples could be logged to
+the buffer.
+
+Details about configuration and binary mode of EverMore GPS are here:
+<A HREF="http://www.acte.no/techstuff/gps/GM-305%20User%20Guide%20revC.PDF">http://www.acte.no/techstuff/gps/GM-305%20User%20Guide%20revC.PDF</A>
+
+Regards,
+Petr
+
+------ Original Message ------
+Received: Wed, 06 Jul 2005 05:08:50 AM CEST
+From: &quot;Eric S. Raymond&quot; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt;
+To: Petr Slansky &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">slansky at usa.net</A>&gt;Cc: <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd-dev at lists.berlios.de</A>
+Subject: Re: [Gpsd-dev] gpsd-2.26, cannot parse NMEA sentences that are not
+perfect
+
+&gt;<i> Petr Slansky &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">slansky at usa.net</A>&gt;:
+</I>&gt;<i> &gt; EverMore based GPS sends in NMEA some ID string, that looks like this:
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; $PEMT,100,05.42g,100303,001,05,1,20,15,08,0,0,2,1*52
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; This ID is send every 10 minutes, it contains firmware version, etc, it
+</I>could
+&gt;<i> &gt; be used to identify EverMore GPS (like Hicom Hi-203E).
+</I>&gt;<i> 
+</I>&gt;<i> Yes, it could, but I don't yet know a reason that gpsd should care about
+</I>the
+&gt;<i> fact that a GPS is an EverMore.  Is there some data in the PEMT string that
+</I>
+&gt;<i> gpsd should use?  Does the EverMore recognize command strings for changing
+</I>&gt;<i> baud rate or message frequencies?
+</I>&gt;<i> 
+</I>&gt;<i> Is it possible to prod an EverMore into shipping back $PEMT with some
+</I>&gt;<i> probe string?
+</I>&gt;<i> 
+</I>&gt;<i> &gt; This is perfect situation. More often, this string is send in the way it
+</I>&gt;<i> &gt; interface with sentence that is just sending.
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; Like this:
+</I>&gt;<i> &gt; $GPGGA,002820.000,$PEMT,100,05.42g,100303,001,05,1,20,15,08,0,0,2,1*52
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; GPSD cannot recognize PEMT sentense in this case. It is valid but not
+</I>&gt;<i> &gt; recognised. Could be NMEA parser modified to recognise this sentense? From
+</I>the
+&gt;<i> &gt; last '$' character to the end of line?
+</I>&gt;<i> 
+</I>&gt;<i> Actually there is a more general fix.  The packet getter can be told to
+</I>treat
+&gt;<i> a $ in an NMEA packet payload as an indication that it should return to the
+</I>NMEA
+&gt;<i> leader state.
+</I>&gt;<i> 
+</I>&gt;<i> &gt; More examples of demaged records:
+</I>&gt;<i> 
+</I>&gt;<i> Please send me a representative sample of EverMore NMEA, with a descriptive
+</I>&gt;<i> header as described in the HACKING file, for the regression-test suite.
+</I>&gt;<i> -- 
+</I>&gt;<i> 		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="http://lists.berlios.de/mailman/listinfo/gpsd-dev">http://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i> 
+</I>
+
+
+---------------------------------
+  Petr Slansky, <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">slansky at usa.net</A>
+---------------------------------
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002352.html">[Gpsd-dev] Gary?  Rob?  What's your status?
+</A></li>
+	<LI>Next message: <A HREF="002326.html">[Gpsd-dev] gpsd-2.26, cannot parse NMEA sentences that are not perfect
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2324">[ date ]</a>
+              <a href="thread.html#2324">[ thread ]</a>
+              <a href="subject.html#2324">[ subject ]</a>
+              <a href="author.html#2324">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] regresssion from 2011: git head fails to build on NetBSD
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2013-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20regresssion%20from%202011%3A%20git%20head%20fails%20to%20build%20on%20NetBSD&In-Reply-To=%3Crmizjpwlwi5.fsf%40fnord.ir.bbn.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] regresssion from 2011: git head fails to build on NetBSD</H1>
+    <B>Greg Troxel</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20regresssion%20from%202011%3A%20git%20head%20fails%20to%20build%20on%20NetBSD&In-Reply-To=%3Crmizjpwlwi5.fsf%40fnord.ir.bbn.com%3E"
+       TITLE="[Gpsd-dev] regresssion from 2011: git head fails to build on NetBSD">gdt at ir.bbn.com
+       </A><BR>
+    <I>Sat Oct 26 02:13:38 CEST 2013</I>
+    <P><UL>
+        
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9629">[ date ]</a>
+              <a href="thread.html#9629">[ thread ]</a>
+              <a href="subject.html#9629">[ subject ]</a>
+              <a href="author.html#9629">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+I have been distracted with many things for longer than I realized.  I'm
+catching up to the autoconf-&gt;scons change, and found several regressions
+when building on NetBSD 6 (it used to build find in the 2.96 days).
+
+(Thanks to Gary for provoking this by way of the GR301-W bulk order.)
+
+1) endian.h is unconditionally included without testing for where it is.
+On NetBSD it's sys/endian.h.  AFAICT POSIX does not specify this, so a
+configure-time test is necessary.  Is the current code tested on any
+BSD?
+
+2) gpsd.h uses va_list without having included stdarg.h.  It seems
+that's required by POSIX but I'm not 100% sure.  Adding stdarg.h allows
+the compile to succeed.
+
+3) curses/curses_dll.h was not found, even though it's in $prefix, and
+I was unable to find a --with-ncurses=prefix argument to scons from
+reading the help output (to cause the corresponding -I and -L/-R
+arguments).
+
+(that's as far as I got)
+
+The following patches of course should not be applied, but are
+illustrative.
+
+
+commit 2e6953b52c7c9d49f7785c144cc777f21dea1ed3
+Author: Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;
+Date:   Fri Oct 25 20:02:33 2013 -0400
+
+    XXX: stdarg
+
+diff --git a/gpsd.h-tail b/gpsd.h-tail
+index 72bcf7e..2ef1f3b 100644
+--- a/gpsd.h-tail
++++ b/gpsd.h-tail
+@@ -905,6 +905,8 @@ extern void libgps_dump_state(struct gps_data_t *);
+ # define libgps_debug_trace(args) /*@i1@*/do { } while (0)
+ #endif /* LIBGPS_DEBUG */
+ 
++#include &lt;stdarg.h&gt;
++
+ void gpsd_labeled_report(const int, const int,
+ 			 const char *, const char *, va_list);
+ # if __GNUC__ &gt;= 3 || (__GNUC__ == 2 &amp;&amp; __GNUC_MINOR__ &gt;= 7)
+
+commit 25381095c0a9f0bb8fb84a7961026bac7137fb9d
+Author: Greg Troxel &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gdt at ir.bbn.com</A>&gt;
+Date:   Fri Oct 25 19:58:38 2013 -0400
+
+    XXX: patch endian.h for NetBSD
+
+diff --git a/SConstruct b/SConstruct
+index 8cdb5d1..99e2622 100644
+--- a/SConstruct
++++ b/SConstruct
+@@ -613,7 +613,7 @@ confdefs.append('''
+ #ifdef __LITTLE_ENDIAN__
+ #undef WORDS_BIGENDIAN
+ #else
+-#include &lt;endian.h&gt;
++#include &lt;sys/endian.h&gt;
+ #if __BYTE_ORDER == __BIG_ENDIAN
+ #define WORDS_BIGENDIAN 1
+ #elif __BYTE_ORDER == __LITTLE_ENDIAN
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: application/pgp-signature
+Size: 194 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20131025/6cb79973/attachment.pgp">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20131025/6cb79973/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9629">[ date ]</a>
+              <a href="thread.html#9629">[ thread ]</a>
+              <a href="subject.html#9629">[ subject ]</a>
+              <a href="author.html#9629">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

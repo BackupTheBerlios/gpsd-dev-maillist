@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: remaining patches - summary
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-May/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20remaining%20patches%20-%20summary&In-Reply-To=%3Cp06230927c093fc42fcca%40%5B192.168.11.10%5D%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003520.html">
+   <LINK REL="Next"  HREF="003529.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: remaining patches - summary</H1>
+    <B>Robin L Darroch</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20remaining%20patches%20-%20summary&In-Reply-To=%3Cp06230927c093fc42fcca%40%5B192.168.11.10%5D%3E"
+       TITLE="[Gpsd-dev] Re: remaining patches - summary">robin at spade-men.com
+       </A><BR>
+    <I>Sat May 20 01:12:08 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003520.html">[Gpsd-dev] Re: remaining patches - summary
+</A></li>
+        <LI>Next message: <A HREF="003529.html">[Gpsd-dev] Re: remaining patches - summary
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3525">[ date ]</a>
+              <a href="thread.html#3525">[ thread ]</a>
+              <a href="subject.html#3525">[ subject ]</a>
+              <a href="author.html#3525">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>At 11:47 -0600 19/5/06, Chris Kuethe wrote:
+&gt;<i>Altitude hold, in some receivers, can be disabled. It's not
+</I>&gt;<i>necessarily a bad design: the receiver is doing it's best to give you
+</I>&gt;<i>some information, and if it's having to guess at your position, it
+</I>&gt;<i>does admit that fact with the status flags: 2D, 3D, 3D-overdetermined,
+</I>&gt;<i>3D-DGPS... if you don't like that, look at the flags and ignore the
+</I>&gt;<i>fix until it's a real 3D fix.
+</I>
+This is - in a nutshell - the reason why I think we should continue 
+to allow gpsd to report GPS-reported altitude and mode (and 
+therefore, to add mode to the O output).  It is a user decision to 
+use or ignore &quot;estimated&quot; data... we just have to be sure that gpsd 
+(and by extension, the libgps/gpsd combination) provide the complete 
+information needed to make such a decision.
+
+Here's one possible scenario: your GPS uses a combination of the 
+currently received signals and recent trends to determine altitude. 
+You've been in a steady descent for a minute or two before the 
+receiver gets unlucky with satellite geometry and loses assurance of 
+accurate 3D positioning, therefore dropping to a 2D fix mode.  Since 
+the recent 500 foot-per-minute descent rate trend still approximately 
+agrees with its best signal-based estimate for position, it continues 
+to report that estimated altitude along with the 2D fix mode. 
+Ignoring lat and long (since we're not currently discussing whether 
+to invalidate position when the receiver goes DR), here's a sequence 
+of what the GPS might report:
+
+15000', 3D
+14500', 3D
+14000', 2D
+13500', 2D
+13000', 3D
+
+We have a choice between gpsd/libgps reporting what's shown above 
+(and what has come from the GPS), or making a veto and returning the 
+following:
+
+15000', 3D
+14500', 3D
+NaN, 2D
+NaN, 2D
+13000', 3D
+
+The first gives the client flexibility: I can choose whether my 
+client program (if it uses altitude at all) will accept altitude from 
+a 2D fix mode, or will behave more conservatively and ignore it, or 
+(potentially) use last 3D-fixed altitude data (this is generally 
+going to be less accurate than a calculated estimate, but might still 
+be used since altitude typically changes very slowly compared to 
+other parameters).  The second gives me no flexibility: I am forced 
+to take gpsd's conservative approach, whether that's the decision I 
+would have made or not.
+
+Now here's the kicker: for non-critical applications (i.e. the fun 
+stuff), I'll almost always take the first approach: accept 
+GPS-reported altitude from a 2D fix, but make some indication that 
+we're in 2D mode.  If that is not an option because gpsd has made the 
+executive decision that I shouldn't be allowed to have that 
+information, gpsd becomes less useful.
+-- 
+
+-------------------------------------------------------------------------
+  Robin L. Darroch - PO Box 2715, South Hedland WA 6722 - +61 421 503 966
+       <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at darroch.id.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at nyca.org.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003520.html">[Gpsd-dev] Re: remaining patches - summary
+</A></li>
+	<LI>Next message: <A HREF="003529.html">[Gpsd-dev] Re: remaining patches - summary
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3525">[ date ]</a>
+              <a href="thread.html#3525">[ thread ]</a>
+              <a href="subject.html#3525">[ subject ]</a>
+              <a href="author.html#3525">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] [Gpsd-commit-watch] r5430 - in trunk: . www
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2009-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20r5430%20-%20in%20trunk%3A%20.%20www&In-Reply-To=%3C35f7d2d60903260927j32643a66u129e8af1936d886a%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006672.html">
+   <LINK REL="Next"  HREF="006690.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] [Gpsd-commit-watch] r5430 - in trunk: . www</H1>
+    <B>Jeff Francis&#8482;</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20%5BGpsd-commit-watch%5D%20r5430%20-%20in%20trunk%3A%20.%20www&In-Reply-To=%3C35f7d2d60903260927j32643a66u129e8af1936d886a%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] [Gpsd-commit-watch] r5430 - in trunk: . www">jeff at gritch.org
+       </A><BR>
+    <I>Thu Mar 26 17:27:48 CET 2009</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006672.html">[Gpsd-dev] [Gpsd-commit-watch] r5430 - in trunk: . www
+</A></li>
+        <LI>Next message: <A HREF="006690.html">[Gpsd-dev] [Gpsd-commit-watch] r5430 - in trunk: . www
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6688">[ date ]</a>
+              <a href="thread.html#6688">[ thread ]</a>
+              <a href="subject.html#6688">[ subject ]</a>
+              <a href="author.html#6688">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>  It prevents the configure loop, and with debug, it appears to be getting
+valid data, though cgps shows all &quot;n/a&quot; fields (ie, no data).
+
+gpsd: New data on /dev/ttyS0, not yet a packet
+gpsd: select waits
+gpsd: polling 4
+gpsd: Read 8 chars to buffer offset 48 (total 56): 3b5a0289bb237f9c
+gpsd: 00040308: character ';' [3b], new state: TSIP_PAYLOAD
+gpsd: 00040309: character 'Z' [5a], new state: TSIP_PAYLOAD
+gpsd: 00040310: character '.' [02], new state: TSIP_PAYLOAD
+gpsd: 00040311: character '.' [89], new state: TSIP_PAYLOAD
+gpsd: 00040312: character '.' [bb], new state: TSIP_PAYLOAD
+gpsd: 00040313: character '#' [23], new state: TSIP_PAYLOAD
+gpsd: 00040314: character '.' [7f], new state: TSIP_PAYLOAD
+gpsd: 00040315: character '.' [9c], new state: TSIP_PAYLOAD
+gpsd: GPS sent 8 new characters
+gpsd: New data on /dev/ttyS0, not yet a packet
+
+
+
+
+
+On Tue, Mar 24, 2009 at 7:09 PM, Eric S. Raymond &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">esr at thyrsus.com</A>&gt; wrote:
+
+&gt;<i> Jeff Francis&#8482; &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jeff at gritch.org</A>&gt;:
+</I>&gt;<i> &gt;   FYI, this patch broke Garmin Serial Binary.  5429 works, 5430 (and all
+</I>&gt;<i> &gt; newer) just endlessly spews:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; gpsd: =&gt; GPS:
+</I>&gt;<i> &gt; 245047524d432c412c2c3130302c2c2c2c2c2c412c2c312c322c312c33302a34420d0a
+</I>&gt;<i> &gt; gpsd: Garmin Serial packet seen when NMEA expected.
+</I>&gt;<i> &gt; gpsd: switch_driver(Garmin Serial) called...
+</I>&gt;<i> &gt; gpsd: Reconfiguring for Garmin Serial...
+</I>&gt;<i>
+</I>&gt;<i> Try this patch:
+</I>&gt;<i>
+</I>&gt;<i> Index: drivers.c
+</I>&gt;<i> ===================================================================
+</I>&gt;<i> --- drivers.c   (revision 5516)
+</I>&gt;<i> +++ drivers.c   (working copy)
+</I>&gt;<i> @@ -41,7 +41,7 @@
+</I>&gt;<i>  {
+</I>&gt;<i>     if (session-&gt;packet.type == COMMENT_PACKET) {
+</I>&gt;<i>        return 0;
+</I>&gt;<i> -    } else if (session-&gt;packet.type != NMEA_PACKET) {
+</I>&gt;<i> +    } else if (session-&gt;packet.type != NMEA_PACKET &amp;&amp; session-&gt;packet.type
+</I>&gt;<i> != GARMIN_PACKET) {
+</I>&gt;<i>         const struct gps_type_t **dp;
+</I>&gt;<i>
+</I>&gt;<i>        for (dp = gpsd_drivers; *dp; dp++) {
+</I>&gt;<i>
+</I>&gt;<i> If it prevents the configure loop we'll at least havre the problem
+</I>&gt;<i> localized.
+</I>&gt;<i> --
+</I>&gt;<i>                 &lt;a href=&quot;<A HREF="http://www.catb.org/~esr/&lt;http://www.catb.org/%7Eesr/">http://www.catb.org/~esr/&lt;http://www.catb.org/%7Eesr/</A>&gt;&quot;&gt;Eric
+</I>&gt;<i> S. Raymond&lt;/a&gt;
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> Gpsd-dev mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">Gpsd-dev at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">https://lists.berlios.de/mailman/listinfo/gpsd-dev</A>
+</I>&gt;<i>
+</I>
+
+
+-- 
+-=jeff=-
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090326/5e8556ed/attachment.html">https://lists.berlios.de/pipermail/gpsd-dev/attachments/20090326/5e8556ed/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006672.html">[Gpsd-dev] [Gpsd-commit-watch] r5430 - in trunk: . www
+</A></li>
+	<LI>Next message: <A HREF="006690.html">[Gpsd-dev] [Gpsd-commit-watch] r5430 - in trunk: . www
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6688">[ date ]</a>
+              <a href="thread.html#6688">[ thread ]</a>
+              <a href="subject.html#6688">[ subject ]</a>
+              <a href="author.html#6688">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Announcing release 1.94 of gpsd
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2004-September/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Announcing%20release%201.94%20of%20gpsd&In-Reply-To=%3C20040906125141.GD21303%40us.netrek.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000247.html">
+   <LINK REL="Next"  HREF="000141.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Announcing release 1.94 of gpsd</H1>
+    <B>James Cameron</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Announcing%20release%201.94%20of%20gpsd&In-Reply-To=%3C20040906125141.GD21303%40us.netrek.org%3E"
+       TITLE="[Gpsd-dev] Announcing release 1.94 of gpsd">quozl at us.netrek.org
+       </A><BR>
+    <I>Mon Sep  6 14:51:41 CEST 2004</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000247.html">[Gpsd-dev] FV-18 hardware.html update
+</A></li>
+        <LI>Next message: <A HREF="000141.html">[Gpsd-dev] Announcing release 1.94 of gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#139">[ date ]</a>
+              <a href="thread.html#139">[ thread ]</a>
+              <a href="subject.html#139">[ subject ]</a>
+              <a href="author.html#139">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Thu, Aug 26, 2004 at 08:39:08AM -0400, Eric S. Raymond wrote:
+&gt;<i> Hamish wrote:
+</I>&gt;<i> &gt; - &quot;GPS is confused about whether it has a fix&quot;
+</I>&gt;<i> &gt; I'm wondering is there is continuing confusion over what the mode and
+</I>&gt;<i> &gt; status levels mean, or this is normal. From my notes:
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; # mode gpsdrive1.06b(0=NG, 1=Good)    cvs1.09(1=NG, 2=2D fix 3=3D fix)
+</I>&gt;<i> &gt; ,
+</I>&gt;<i> &gt; int mode;        /* 1 = no fix, 2 = 2D, 3 = 3D */
+</I>&gt;<i> &gt; int status;      /* 0 = no fix, 1 = fix, 2 = dgps fix */
+</I>&gt;<i> 
+</I>&gt;<i> So, if status == 1 (STATUS_FIX) but mode == 1 (MODE_NO_FIX) the GPS is
+</I>&gt;<i> telling me two contradictory things at once, that's why I report it's
+</I>&gt;<i> confused. 
+</I>&gt;<i> 
+</I>&gt;<i> Can anyone with access to the NMEA standard clear up how one is 
+</I>&gt;<i> supposed to interpret this case?
+</I>
+I'm afraid I don't have access to the standard, but I can add some
+comments based on my observations.  With my antenna indoors, I'd been
+seeing the same message.  
+
+I suspect it stems from the receiver having enough data to set it's
+operating mode to 2D or 3D, in order to solve the equations, but that
+the result of the process has not yielded a reliable result within the
+DOP masks.  Or, that it had a fix that it is providing, but that it
+doesn't expect to be able to get another one with the current geometry.
+
+gpsd sets status according to $GPGGA.6 *and* $GPGLL.7 
+gpsd sets mode according to $GPGSA.2
+
+The two status fields are attributes of the position data, and not
+necessarily representative of the current operating mode of the unit.
+
+The mode field in $GPGSA isn't an attribute of position data; there's no
+position data in the sentence.
+
+So I don't see any contradiction; just lots of ill-defined fields from
+which it might be unwise to draw any definite conclusions.
+
+Perhaps mode should be determined from $GPGLL,7?  The FV18 module's
+specification seems to support this, where it says of the various
+fields;
+
+$GPGGA.6   GPS quality indication
+	0  fix not available, or invalid
+	1  GPS, SPS fix valid
+	2  DGPS, SPS fix valid
+
+$GPGLL.6   status
+	A  data valid, standalone or DGPS
+	V  navigation receiver warning
+
+$GPGLL.7   position system mode indication
+	A  autonomous mode
+	D  differential mode
+	N  data not valid
+
+$GPGSA.1   operation mode
+	M  2d mode
+	A  2d/3d switching mode
+
+$GPGSA.2   positioning status
+	1  fix not available
+	2  2d positioning
+	3  3d positioning
+
+-- 
+James Cameron    mailto:<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">quozl at us.netrek.org</A>     <A HREF="http://quozl.netrek.org/">http://quozl.netrek.org/</A>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000247.html">[Gpsd-dev] FV-18 hardware.html update
+</A></li>
+	<LI>Next message: <A HREF="000141.html">[Gpsd-dev] Announcing release 1.94 of gpsd
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#139">[ date ]</a>
+              <a href="thread.html#139">[ thread ]</a>
+              <a href="subject.html#139">[ subject ]</a>
+              <a href="author.html#139">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

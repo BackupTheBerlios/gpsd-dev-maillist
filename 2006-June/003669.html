@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from               meters/sec to knots
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Re%3A%20accuracy%20in%20conversion%20from%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20meters/sec%20to%20knots&In-Reply-To=%3Cp06230904c0ae8208be35%40%5B192.168.11.10%5D%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="003658.html">
+   <LINK REL="Next"  HREF="003672.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from               meters/sec to knots</H1>
+    <B>Robin L Darroch</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Re%3A%20%5BGpsd-users%5D%20Re%3A%20accuracy%20in%20conversion%20from%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20meters/sec%20to%20knots&In-Reply-To=%3Cp06230904c0ae8208be35%40%5B192.168.11.10%5D%3E"
+       TITLE="[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from               meters/sec to knots">robin at spade-men.com
+       </A><BR>
+    <I>Fri Jun  9 05:24:08 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="003658.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from              meters/sec to knots
+</A></li>
+        <LI>Next message: <A HREF="003672.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3669">[ date ]</a>
+              <a href="thread.html#3669">[ thread ]</a>
+              <a href="subject.html#3669">[ subject ]</a>
+              <a href="author.html#3669">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i>I have no problem if there is a new way to request a full data snapshot.
+</I>&gt;<i>That makes a lot of sense and would enable a simple client to simply
+</I>&gt;<i>poll current data.  My problem is more with touching the streaming
+</I>&gt;<i>data or changing the current data flow in ways that will unexpectedly
+</I>&gt;<i>break existing apps.  Adding to the current framework is good, changing
+</I>&gt;<i>it in a way that will break existing apps should only be done very
+</I>&gt;<i>deliberately.
+</I>
+Careful about making claims of changes that will &quot;break existing 
+apps&quot; - remember, no-one who hasn't downloaded and built from SVN in 
+the past &lt;24hrs has a daemon which does clear-at-start-of-cycle 
+correctly... so I think it's pretty fair to say that no existing app 
+could depend on CaSoC, or it would be broken already.
+
+&gt;<i>If we add a new command, or option, to do this, then we need to be very
+</I>&gt;<i>explicit about what data we will cache, for how long, and under what
+</I>&gt;<i>conditions.  One big problem is when and how to expire data.  How long
+</I>&gt;<i>should an altitude be held before being tossed?  How long would sats be
+</I>&gt;<i>held before being tossed?  Clearly they can not be the same time since
+</I>&gt;<i>some NMEA only provides altitude ever few seconds and sats every minute.
+</I>&gt;<i>Depending on the application I see that some apps may want very short
+</I>&gt;<i>or very long timeouts so this should also be adjustable.
+</I>
+Timeouts and such really aren't the issue here, and raising them 
+makes the design question unnecessarily complicated: we have two 
+straightforward options (and I think we're pretty close to getting 
+both properly supported at some level) - those are 
+Clear-at-Start-of-Cycle and Never-Clear.  Never-Clear means just 
+that: we never arbitrarily clear data - we simply replace it when it 
+is replaced or invalidate it when it is explicitly invalidated (i.e. 
+by loss of fix or loss of GPS connection, or when a sentence 
+including that parameter arrives with that parameter blank). 
+Clear-at-Start-of-Cycle, now that it is fixed, will clear all 
+gps-&gt;fix data (note that this is not the same as ALL received data) 
+whenever a new timestamp is received.  Satellite data is already 
+handled as &quot;never clear&quot;, because it is not part of the gps-&gt;fix 
+structure.
+
+&gt;<i>Then we need to add the complexity of under what conditions would data
+</I>&gt;<i>be tossed early?  Like when the GPS is unplugged.
+</I>
+That currently invalidates all data at the output layer of GPSd. 
+Although the data is still stored (using either Never Clear OR Clear 
+at Start of Cycle) until the appropriate trigger arrives to clear it 
+- which it never will if the GPS has been unplugged, it is never 
+returned to clients.
+
+&gt;<i>I am most nervous about adding complexity to the core functions that we
+</I>&gt;<i>already know are hard to get just right.  IMHO gpsd should be as lean
+</I>&gt;<i>and mean as we can make it so we can be sure it is correct and robust.
+</I>
+Agreed - this is why we can't use complicated designs like 
+timeouts... but there is no need to use such things anyway.
+
+&gt;<i>It seems to me that if someone is writing a really simple client then
+</I>&gt;<i>they would be using libgps or similar.  THey do not want to hassle with
+</I>&gt;<i>the already non-trvial gpsd protocol.  They just want to link in a nice
+</I>&gt;<i>library and pull what they need out of it.
+</I>
+Exactly.
+
+&gt;<i>  So we should also
+</I>&gt;<i>consider a secondary daemon that could be used as a proxy cache for gpsd
+</I>&gt;<i>data.  As a standalone daemon it would be much easier to audit than
+</I>&gt;<i>mashing more into gpsd.
+</I>
+This is certainly a possibility, but is best suited for handling such 
+requests as data smoothing/interpolation/extrapolation that come up 
+and are beyond the scope of the basic buffer-clearing question... 
+that's if we decide we're going to try to provide such extended 
+features at all.  This might be a good way of (for example) 
+permitting a client to request only one report per fix, with the 
+associated cycle-time delay, or to request on-demand 
+inter/extrapolated data... but let's look at that another day. :)
+-- 
+
+-------------------------------------------------------------------------
+  Robin L. Darroch - PO Box 2715, South Hedland WA 6722 - +61 421 503 966
+       <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at darroch.id.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at nyca.org.au</A> - <A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">robin at spade-men.com</A>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="003658.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from              meters/sec to knots
+</A></li>
+	<LI>Next message: <A HREF="003672.html">[Gpsd-dev] Re: [Gpsd-users] Re: accuracy in conversion from meters/sec to knots
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3669">[ date ]</a>
+              <a href="thread.html#3669">[ thread ]</a>
+              <a href="subject.html#3669">[ subject ]</a>
+              <a href="author.html#3669">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

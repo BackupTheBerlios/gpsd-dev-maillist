@@ -1,0 +1,169 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] I've looked at the *ctl utilities
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2006-October/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20I%27ve%20looked%20at%20the%20%2Actl%20utilities&In-Reply-To=%3C20061029212946.GA31089%40thyrsus.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="004717.html">
+   <LINK REL="Next"  HREF="004715.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] I've looked at the *ctl utilities</H1>
+    <B>Eric S. Raymond</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20I%27ve%20looked%20at%20the%20%2Actl%20utilities&In-Reply-To=%3C20061029212946.GA31089%40thyrsus.com%3E"
+       TITLE="[Gpsd-dev] I've looked at the *ctl utilities">esr at thyrsus.com
+       </A><BR>
+    <I>Sun Oct 29 22:29:46 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="004717.html">[Gpsd-dev] I've looked at the *ctl utilities
+</A></li>
+        <LI>Next message: <A HREF="004715.html">[Gpsd-dev] xml and man pages in svn
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4721">[ date ]</a>
+              <a href="thread.html#4721">[ thread ]</a>
+              <a href="subject.html#4721">[ subject ]</a>
+              <a href="author.html#4721">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Chris Kuethe &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">chris.kuethe at gmail.com</A>&gt;:
+&gt;<i> We're already going to refactor *ctl into a single gpsctl front end.
+</I>
+I know that.  But there are three possible ways to write such a tool,
+and so far the only one of the three that is dead wrong is the one I
+see in the garminctl/itraxctl/sirfctl code.
+
+1. Write a special-purpose client
+
+Advantages: it's GPS-type-independent, because it automatically inerits
+GPSD's autobauding and driver logic.  If you only have one GPS on your
+system, you don't even have to specify a device.
+
+Disadvantages: Won't work if gpsd isn't running.  If gpsd is broken,
+it will be too.
+
+2. Write a wrapper around the low-level libgpsd(3) interface library
+
+Advantages: Will work even when gpsd isn't running.  Can use libgpsd(3)'s
+autobauding and type detection, but doesn't have to (you could pass 
+it a speed and type explicitly)).
+
+3. Write a bunch of hand-crufted code that duplicates portions of gpsd's
+   drivers and autobauding.
+
+Advantages: None whatsoever over 2.
+Disadvantages:  Duplicates code out the wazoo.  Guaranteed maintainance
+problems as the tweak code in the control tool and the libgpsd(3) drivers 
+diverges.
+
+You and Gary drifted into alternative 3.  No good.  Crash landing.
+I can only guess that you forgot the libgpsd(3) layer existed and that
+gpsd itself is a thin select(2)-driven wrapper around it.
+
+Or, to put it in pictures, Here's the current organization:
+
+           gpsd                garminctl                sirfctl
+       +------------+    +-------------------+    +-------------------+
+       |   gpsd.c   |    | option processing |    | option processing |
+       +------------+    +-------------------+    +-------------------+
+       |            |    | partial duplicate |    | partial duplicate |
+       | libgpsd(3) |    |   of portions     |    |   of portions     |
+       |            |    |   of libgpsd(3)   |    |   of libgpsd(3)   |
+       +------------+    +-------------------+    +-------------------+
+
+Here's how it *should* look:
+
+           gpsd                gpsctrl        
+       +------------+    +-------------------+
+       |   gpsd.c   |    | option processing |
+       +------------+    +-------------------+
+       |            |    |                   |
+       | libgpsd(3) |    |    libgpsd(3)     |
+       |            |    |                   |
+       +------------+    +-------------------+
+
+&gt;<i> One of the reasons to have such tools is for when gpsd's code fails on
+</I>&gt;<i> badly behaved hardware. SS3 (or at least products similar to the
+</I>&gt;<i> Globalsat BU-353) have this nasty ability to not get the baud switch
+</I>&gt;<i> right. SiRFdemo even has trouble setting the protocol and speed.
+</I>
+So, when we figure out what the right thing is, we put it in *one*
+place (the libgpsd(3) drivers) and have both gpsd and the GPS control
+tool use it.  Until we figure out what the right thing is, we keep our
+best guess in *one* place (the libgpsd(3) drivers) and have both gpsd
+and the GPS control tool use it.
+
+Yes, sirfmon partially duplicates the sirf.c driver.  That was a
+belt-and-suspenders hack from back when the SiRF binary driver in
+libgpsd(3) was new and untested, because I'm careful and paranoid.
+It's not a good example to emulate two years later.  Someday I'm going
+to gut sirfmon; I think you've just persuaded me that &quot;someday&quot;
+needs to be &quot;soon&quot; so nobody else gets a wrong idea.
+
+&gt;<i> Also, it's nice when people bring me their receivers to be able to
+</I>&gt;<i> force the protocol and be done with it. A number of bluetooth users
+</I>&gt;<i> have been bitten by gpsd trying to switch port speed and protocol -
+</I>&gt;<i> again, probably Globalsat's fault.
+</I>
+Fair enough -- but almost irrelevant to how the protocol-forcer is
+actually implemented.  (Might be a weak argument against the 
+special-purpose client approach).
+
+&gt;<i> Finally, there are things that gpsd probably has no need to worry
+</I>&gt;<i> about. Static navigation - yeah, that's actually kinda relevant to
+</I>&gt;<i> gpsd.
+</I>
+Yes, it is.  At this point setting the static-nav bit is the strongest
+use case for implementing a GPSD-NG protocol.
+
+&gt;<i>           Onboard datalogger settings? Not so relevant. Retrieving logs
+</I>&gt;<i> from a suitably programmed SiRF or iTrax is probably the province of a
+</I>&gt;<i> standalone tool.
+</I>
+True, but irrelevant to my objection.  I'm not kvetching about the
+existence of the control tools, I'm kvetching about the the fact that
+you hand-crufted code that duplicates the libgpsd(3) driver
+capabilities, *Don't do that!*
+
+I'm not just going to bitch about this, I'm going to show you how it
+should be done with actual code.  I've got a gpsctrl.c prototype on
+my drive now that I wrote over brunch.  It uses the special-purpose-client 
+approach, but the obvious next step is to enable it to call libgpsd(3)
+directly when gpsd is not running.
+
+Expect some major checkins in a few minutes.
+-- 
+		&lt;a href=&quot;<A HREF="http://www.catb.org/~esr/">http://www.catb.org/~esr/</A>&quot;&gt;Eric S. Raymond&lt;/a&gt;
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="004717.html">[Gpsd-dev] I've looked at the *ctl utilities
+</A></li>
+	<LI>Next message: <A HREF="004715.html">[Gpsd-dev] xml and man pages in svn
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4721">[ date ]</a>
+              <a href="thread.html#4721">[ thread ]</a>
+              <a href="subject.html#4721">[ subject ]</a>
+              <a href="author.html#4721">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

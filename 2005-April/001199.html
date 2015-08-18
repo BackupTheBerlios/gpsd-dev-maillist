@@ -1,0 +1,118 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] Y=?
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2005-April/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Y%3D%3F&In-Reply-To=%3C25070.213.84.187.156.1112348461.squirrel%40213.84.187.156%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001198.html">
+   <LINK REL="Next"  HREF="001206.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] Y=?</H1>
+    <B>Rob Janssen</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20Y%3D%3F&In-Reply-To=%3C25070.213.84.187.156.1112348461.squirrel%40213.84.187.156%3E"
+       TITLE="[Gpsd-dev] Y=?">gpsd at xs4all.nl
+       </A><BR>
+    <I>Fri Apr  1 11:41:01 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001198.html">[Gpsd-dev] Y=?
+</A></li>
+        <LI>Next message: <A HREF="001206.html">[Gpsd-dev] Y=?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1199">[ date ]</a>
+              <a href="thread.html#1199">[ thread ]</a>
+              <a href="subject.html#1199">[ subject ]</a>
+              <a href="author.html#1199">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;&gt;<i> gpsd keeps a table of elements, each with associated timestamps, updated
+</I>&gt;&gt;<i> by receiver messages.
+</I>&gt;<i>
+</I>&gt;<i> That's pretty much how it used to work.  I got rid of most of the
+</I>&gt;<i> timestamps
+</I>&gt;<i> when I realized that what applications really want is a tuple in kinematic
+</I>&gt;<i> space - a time/position/velocity tuple plus error estimate for each degree
+</I>&gt;<i> of freedom.
+</I>&gt;<i>
+</I>&gt;<i> As a result, the library interface is now *drastically* simpler.
+</I>
+&gt;&gt;<i> the client can specify if and what timestamps it wants included with the
+</I>&gt;&gt;<i> received data.  each message to the client is just a list of tagged data
+</I>&gt;&gt;<i> items with timestamps.  it can decide by itself what age of data it
+</I>&gt;&gt;<i> considers &quot;valid&quot;.
+</I>
+&gt;<i> Good design thinking.  But timestamps for each subfield turn out not to
+</I>&gt;<i> buy you anything interesting.  I know, I've been down this route.  It's
+</I>&gt;<i> why I removed them.
+</I>
+But what about data that is not immediately related to a fix?
+For example, when you want to include almanac data in the repertoire that
+a client can request, you will find that it is sent much less frequently
+than fixes, so an almanac data item can be older than a minute and still
+be &quot;valid&quot;.
+It would not be required to have timestamps on each subfield, but there
+would have to be timestamps for each group of fields that a receiver
+normally sends in a single message.  A position fix could be one such
+group.  Satellites in view would be another, as would be a page of almanac
+data.
+
+&gt;&gt;<i> There is always a tradeoff between very simple schemes that are compact
+</I>&gt;&gt;<i> in
+</I>&gt;&gt;<i> implementation but have some limitations, and very flexible schemes that
+</I>&gt;&gt;<i> have a lot of overhead.  As it is now, a change in the protocol risks
+</I>&gt;&gt;<i> incompatability with an application that interfaces to gpsd but does not
+</I>&gt;&gt;<i> use the library.
+</I>&gt;<i>
+</I>&gt;<i> But ultraflexible bg complex protocols have a special problem here.  They
+</I>&gt;<i> introduce latency, which is bad because the value of fixes drops very
+</I>&gt;<i> quickly after they're taken.  For many important applications, a delayed
+</I>&gt;<i> fix is worse than none.
+</I>
+I have difficulty imagining a system where parsing a structured message
+would introduce more latency than the typical 4800 bps async serial
+connection or even the handling of bytes in the typical fifo-buffering
+UART does.
+Critical timing issues can be found in the handling of time data to
+synchronize the clock, and you can see how much it jitters and varies even
+without any message parsing involved...  but I don't think receiving a
+message (that took 100ms to send from receiver to system) 1ms later will
+disturb many clients.
+Also, I think the overhead of the parse (both in terms of memory size and
+precessing requirements) is over-estimated here.
+
+Rob
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001198.html">[Gpsd-dev] Y=?
+</A></li>
+	<LI>Next message: <A HREF="001206.html">[Gpsd-dev] Y=?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1199">[ date ]</a>
+              <a href="thread.html#1199">[ thread ]</a>
+              <a href="subject.html#1199">[ subject ]</a>
+              <a href="author.html#1199">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

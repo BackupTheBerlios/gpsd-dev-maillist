@@ -1,0 +1,140 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] EVK-5H patches against current
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2008-August/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20EVK-5H%20patches%20against%20current&In-Reply-To=%3C91981b3e0808231206o648f5924n2eb65f99d27d36f%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="006115.html">
+   <LINK REL="Next"  HREF="006116.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] EVK-5H patches against current</H1>
+    <B>Chris Kuethe</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20EVK-5H%20patches%20against%20current&In-Reply-To=%3C91981b3e0808231206o648f5924n2eb65f99d27d36f%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] EVK-5H patches against current">chris.kuethe at gmail.com
+       </A><BR>
+    <I>Sat Aug 23 21:06:01 CEST 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="006115.html">[Gpsd-dev] EVK-5H patches against current
+</A></li>
+        <LI>Next message: <A HREF="006116.html">[Gpsd-dev] seg fault while detaching client
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6118">[ date ]</a>
+              <a href="thread.html#6118">[ thread ]</a>
+              <a href="subject.html#6118">[ subject ]</a>
+              <a href="author.html#6118">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>best viewed in a monospaced font...
+
+On Fri, Aug 22, 2008 at 3:38 AM, Henk Fijnvandraat
+&lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">gpsd at hfijnvandraat.nl</A>&gt; wrote:
+&gt;<i> Second try then.
+</I>
+much better. compiles clean and regression tests pass. I'm curious about this:
+
+/* LEA-5H seems to have a bug reporting sats it does not see or hear*/
+
+what kind of output does the LEA-5H give you? it's not unreasonable to
+output a list of satellites that may be up but have no signal. I have
+quite a number of receivers that do this...
+
+ublox4:
++-------------------------------------------++---------------------------------+
+|<i>    Time:       2008-08-23T19:01:27.0Z     ||PRN:   Elev:  Azim:  SNR:  Used: |
+</I>|<i>    Latitude:    37.371420 N               ||  23    36    131    38      Y   |
+</I>|<i>    Longitude:  122.015049 W               ||  13    69    117    33      Y   |
+</I>|<i>    Altitude:   60.9 ft                    ||   3    26    064    00      N   |
+</I>|<i>    Speed:      0.0 mph                    ||   7    67    355    00      N   |
+</I>|<i>    Heading:    0.0 deg (true)             ||   8    43    290    24      N   |
+</I>|<i>    Climb:      0.0 ft/min                 ||  27    63    331    25      N   |
+</I>|<i>    Status:     3D FIX (575 secs)          ||  25    60    042    00      N   |
+</I>|<i>    GPS Type:   uBlox UBX                  ||  10    20    312    25      N   |
+</I>|<i>    Horizontal Err:  +/- 8 ft              ||  28    21    218    00      N   |
+</I>|<i>    Vertical Err:    +/- 6 ft              || 135    45    198    33      Y   |
+</I>|<i>    Course Err:      n/a                   ||   6    17    052    23      N   |
+</I>|<i>    Speed Err:       +/- 11 mph            || 133    -9    000    00      N   |
+</I>|<i>                                           ||  19    29    098    29      N   |
+</I>|<i>                                           ||                                 |
+</I>|<i>                                           ||                                 |
+</I>|<i>                                           ||                                 |
+</I>|<i>                                           ||                                 |
+</I>|<i>                                           ||                                 |
+</I>+-------------------------------------------++---------------------------------+
+55 0 0:8 43 290 24 0:27 63 331 25 0:25 60 42 0 0:10 20 312 25 0:28 21 218 0 0:13
+5 45 198 33 1:6 17 52 23 0:133 -9 0 0 0:19 29 98 29 0:
+
+
+garmin gps18:
++-------------------------------------------++---------------------------------+
+|<i>    Time:       2008-08-23T19:04:46.0Z     ||PRN:   Elev:  Azim:  SNR:  Used: |
+</I>|<i>    Latitude:    37.371394 N               ||   3    25    062    00      N   |
+</I>|<i>    Longitude:  122.014998 W               ||   6    17    051    00      N   |
+</I>|<i>    Altitude:   93.5 ft                    ||   7    67    357    00      N   |
+</I>|<i>    Speed:      0.0 mph                    ||   8    43    292    35      Y   |
+</I>|<i>    Heading:    43.6 deg (true)            ||  10    20    311    00      N   |
+</I>|<i>    Climb:      0.0 ft/min                 ||  13    68    119    00      N   |
+</I>|<i>    Status:     3D FIX (5 secs)            ||  19    29    096    41      Y   |
+</I>|<i>    GPS Type:   Generic NMEA               ||  23    34    131    48      Y   |
+</I>|<i>    Horizontal Err:  +/- 81 ft             ||  25    59    044    36      Y   |
+</I>|<i>    Vertical Err:    +/- 9 ft              ||  27    64    334    00      N   |
+</I>|<i>    Course Err:      n/a                   ||  48    45    198    39      Y   |
+</I>|<i>    Speed Err:       +/- 51 mph            ||                                 |
+</I>|<i>                                           ||                                 |
+</I>|<i>                                           ||                                 |
+</I>|<i>                                           ||                                 |
+</I>|<i>                                           ||                                 |
+</I>|<i>                                           ||                                 |
+</I>|<i>                                           ||                                 |
+</I>+-------------------------------------------++---------------------------------+
+GPSD,O=GLL 1219518286.000 0.005 37.371395 -122.014998 28.50 24.80 3.00 43.6000 0
+.000 0.000 ? 23.20 ? 3
+
+
+&gt;<i> Chris: I did not combine the checksum routines as the checker in packet.c and the generator in
+</I>&gt;<i> ubx.c are both simple and clean pieces of code. Combining them would introduce much overhead.
+</I>&gt;<i> Unless you want all the ubx stuff in ubx.c as a principle.
+</I>
+in principle, i'd prefer to see the $PROTOCOL checksum in $PROTOCOL.c.
+or maybe in packet.c which will always be compiled and linked so
+$PROTOCOL.c can rely on it ... but i see there are precedents for
+having the checksum routine duplicated in packet.c. nevermind.
+
+CK
+
+--
+GDB has a 'break' feature; why doesn't it have 'fix' too?
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="006115.html">[Gpsd-dev] EVK-5H patches against current
+</A></li>
+	<LI>Next message: <A HREF="006116.html">[Gpsd-dev] seg fault while detaching client
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6118">[ date ]</a>
+              <a href="thread.html#6118">[ thread ]</a>
+              <a href="subject.html#6118">[ subject ]</a>
+              <a href="author.html#6118">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>

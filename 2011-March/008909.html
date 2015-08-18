@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Gpsd-dev] GPSD Protocol Inconsistencies
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/gpsd-dev/2011-March/index.html" >
+   <LINK REL="made" HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3CAANLkTi%3Da9c0sFW7g1krwvSJd--KD0H9q2ZBMzz3LB79F%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="008907.html">
+   <LINK REL="Next"  HREF="008910.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Gpsd-dev] GPSD Protocol Inconsistencies</H1>
+    <B>tz</B> 
+    <A HREF="mailto:gpsd-dev%40lists.berlios.de?Subject=Re%3A%20%5BGpsd-dev%5D%20GPSD%20Protocol%20Inconsistencies&In-Reply-To=%3CAANLkTi%3Da9c0sFW7g1krwvSJd--KD0H9q2ZBMzz3LB79F%40mail.gmail.com%3E"
+       TITLE="[Gpsd-dev] GPSD Protocol Inconsistencies">thomas at mich.com
+       </A><BR>
+    <I>Sun Mar 20 20:14:03 CET 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="008907.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+        <LI>Next message: <A HREF="008910.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8909">[ date ]</a>
+              <a href="thread.html#8909">[ thread ]</a>
+              <a href="subject.html#8909">[ subject ]</a>
+              <a href="author.html#8909">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Sun, Mar 20, 2011 at 2:40 PM, Jon Schlueter &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">jon.schlueter at gmail.com</A>&gt; wrote:
+&gt;<i> On Sat, Mar 19, 2011 at 2:31 PM, tz &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/gpsd-dev">thomas at mich.com</A>&gt; wrote:
+</I>&gt;&gt;<i> GPGGA does have the number of satellites used, but the logs still show
+</I>&gt;&gt;<i> alt=nan with 5 satellites. &#160;Maybe you could use this being 3 (less
+</I>&gt;&gt;<i> than 4) to determine 2d v.s. 3d.
+</I>&gt;&gt;<i> If not,
+</I>&gt;<i>
+</I>&gt;<i> That might be true that the GPS doesn't have a solutions for altitude yet
+</I>&gt;<i> even with 5 satellites that it is tracking.
+</I>&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Algorithm might be:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> 1. Determine the complete timestamp sentence set.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> 2. Determine the first sentence in the set.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> 3. Use the first sentence to determine the last sentence in the set.
+</I>&gt;&gt;<i> This will be a problem - my Venus GPS only does GPGSA every second,
+</I>&gt;&gt;<i> but RMC/GGA at the higher rates.
+</I>&gt;<i>
+</I>&gt;<i> Do we have a log from your unit in the regression tests yet?
+</I>&gt;<i> it would be interesting to be able to look at the behavior as well as test
+</I>&gt;<i> any changes/proposed changes against a decent set of Data and edge cases
+</I>
+What is the best way.  I can do a cat /dev/ttyUSB0 &gt;venus.log or I can
+use some mode of gpsd.
+
+I will shortly have three new SkyTraq eval modules and can add those.
+One is GPS/GLONASS, one is the 20Hz, one is for RTK.
+
+I also have hours of logs (including most of two michigan to
+california trips, and various others).
+
+&gt;&gt;<i> 4. upon receiving the last sentence in the set, evaluate all the data
+</I>&gt;&gt;<i> (including the validity of altitude) and emit the report.
+</I>&gt;<i>
+</I>&gt;<i> NMEA Strings that are parsed for Time
+</I>&gt;<i> &#160;* processGPRMC (merge_hhmmss, merge_ddmmyy, register_fractional_time )
+</I>&gt;<i> &#160;* processGPGLL (merge_hhmmss, register_fractional_time)
+</I>&gt;<i> &#160;* processGPGGA (merge_hhmmss, register_fractional_time)
+</I>&gt;<i> &#160;* processGPGST (register_fractional_time)
+</I>&gt;<i> &#160;* processGPGBS (register_fractional_time,
+</I>&gt;<i> &#160;* processGPZDA (merge_hhmmss, set year/month/day in session)
+</I>&gt;<i> &#160;* processPASHR (merge_hhmmss, register_fractional_time)
+</I>&gt;<i>
+</I>&gt;<i> end-of-cycle detector is found and documented here
+</I>&gt;<i> driver_nmea.c:1139
+</I>
+I already looked through it.  The documentation doesn't have a list of
+states and transition criteria so it is hard to figure out.  And
+looking at the diagnostic output, I understand it less because it
+shouldn't be doing what it actually is.
+
+&gt;<i> It uses a loose set of logic to gate emitting date when it is bad and emit
+</I>&gt;<i> it when the date/time is valid.
+</I>&gt;<i>
+</I>&gt;<i> are there holes/issues you see with current implementation and time?
+</I>
+I've detailed in in successor messages.
+
+It jumps around as to what it thinks is the ender, ignores/accepts
+GPGGA based on the stale GPGGA data, Says GPRMC starts and ends, then
+says GPGGA starts and ends as the log showed, and it might be causing
+the high latency in the whitepaper.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="008907.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+	<LI>Next message: <A HREF="008910.html">[Gpsd-dev] GPSD Protocol Inconsistencies
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8909">[ date ]</a>
+              <a href="thread.html#8909">[ thread ]</a>
+              <a href="subject.html#8909">[ subject ]</a>
+              <a href="author.html#8909">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/gpsd-dev">More information about the Gpsd-dev
+mailing list</a><br>
+</body></html>
